@@ -172,7 +172,7 @@ public:
      * Stage 2 residual: call after setSessionId so the cache cannot lag
      * document order. Returns the stamped index, or -1 when unbound/unknown.
      */
-    int refreshSessionIndexCache(ImageItem *item);
+    int refreshSessionIndexCache(ImageItem *item) override;
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
     /** SessionImageIds of selected canvas items (skips unbound). */
@@ -190,7 +190,7 @@ public:
         LoadRestore = 2
     };
 
-    bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
+    bool isMultiItemMode() const override { return m_viewMode != ViewMode::Image; }
     /** Gallery empty-canvas press: rubber-band via QGraphicsView base. */
     void forwardGraphicsViewMousePress(QMouseEvent *event)
     { QGraphicsView::mousePressEvent(event); }
@@ -267,7 +267,7 @@ public:
         m_sessionDoc = doc;
     }
     SessionDocument *sessionDocument() const override { return m_sessionDoc; }
-    void takePendingWorkspacePath(const QString &path);
+    void takePendingWorkspacePath(const QString &path) override;
 
 
 // Crop/display ops — imageview_host_crop_display.inc
@@ -279,7 +279,7 @@ public:
 
 
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
-    void prepareImageModeCanvas();
+    void prepareImageModeCanvas() override;
     bool isImageMode() const override { return m_viewMode == ViewMode::Image; }
     bool isGalleryMode() const override { return m_viewMode == ViewMode::Gallery; }
     bool isWorkspaceMode() const override { return m_viewMode == ViewMode::Workspace; }
@@ -289,6 +289,18 @@ public:
     void notifyStatusChanged() override { emit statusChanged(); }
     void notifyWorkspacePathsChanged() override { emit workspacePathsChanged(); }
     void setUpdatesEnabled(bool enabled) override { QGraphicsView::setUpdatesEnabled(enabled); }
+    QString hostTr(const char *sourceText) const override { return tr(sourceText); }
+    qreal devicePixelRatioF() const override { return QGraphicsView::devicePixelRatioF(); }
+    QPointF mapFromScene(const QPointF &point) const override { return QGraphicsView::mapFromScene(point); }
+    QPointF mapToScene(const QPoint &point) const override { return QGraphicsView::mapToScene(point); }
+    QRectF mapViewportToScene() const override
+    {
+        QWidget *vp = viewport();
+        if (!vp) {
+            return QRectF();
+        }
+        return QGraphicsView::mapToScene(vp->rect()).boundingRect();
+    }
 
 
     /**
@@ -315,7 +327,7 @@ public:
      * (IDENTITY). Path first-unseen is fallback for unbound rows only.
      */
     void reorderItemsByPaths(const QStringList &paths,
-                             const QVector<SessionImageId> &ids = {});
+                             const QVector<SessionImageId> &ids = {}) override;
 
 
     /**
@@ -445,7 +457,7 @@ public:
      * @p pulseIdentity briefly shows filename/badge without a pinned HUD (H);
      * use false for silent updates (e.g. slideshow auto-advance).
      */
-    void setCurrentSessionId(SessionImageId id);
+    void setCurrentSessionId(SessionImageId id) override;
     /**
      * Exclusive-select @p item; ensure visible + HUD hover in Gallery.
      * Prefer this when the live ImageItem is already known (keyboard nav).
@@ -534,7 +546,7 @@ public:
      * captureState (mid-edit or unbound). Prefer this over ad-hoc store+live.
      */
     WorkspaceItemState freezeItemAppearance(const ImageItem *item) const;
-    void applyState(ImageItem *item, const WorkspaceItemState &state);
+    void applyState(ImageItem *item, const WorkspaceItemState &state) override;
     /**
      * Install applied ContentXform fingerprint on the live ImageItem.
      * ItemWorld remains authority for bound ids. Applied survives pixel clear.
@@ -562,11 +574,11 @@ public:
      * Prefer ItemWorld runtime lag when bound (host-side scratch); ImageItem
      * mirror for paint / unbound. Durable grade is ItemWorld Color.
      */
-    ColorAdjustments itemLiveColor(const ImageItem *item) const;
+    ColorAdjustments itemLiveColor(const ImageItem *item) const override;
     void setItemSessionId(ImageItem *item, SessionImageId id) override;
     void setItemSessionIndex(ImageItem *item, int index);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
-    void commitItemSessionEdit(ImageItem *item);
+    void commitItemSessionEdit(ImageItem *item) override;
     /** Copy of stored appearance for @p id (empty/default if none). */
     /**
      * Bound appearance for @p id (ItemWorld::appearanceValue — sparse-prefer).
@@ -594,7 +606,7 @@ public:
 
     QString statusText() const;
     QSize imageSize() const;
-    int itemCount() const;
+    int itemCount() const override;
     /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */
     bool hasWorkspaceContent() const;
     QStringList itemPaths() const;

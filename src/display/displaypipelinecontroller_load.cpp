@@ -63,7 +63,7 @@ bool DisplayPipelineController::acceptPendingLoadAdd(const QString &path, quint6
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return false;
     }
-    m_view->takePendingWorkspacePath(path);
+    m_host->takePendingWorkspacePath(path);
     return true;
 }
 
@@ -90,7 +90,7 @@ void DisplayPipelineController::handleLoadAddDecodeFailure(const QString &path)
     // Surface the error on any live placeholder for this path.
     for (ImageItem *item : m_host->liveItems()) {
         if (item && item->path() == path && !item->hasDecodedPixels()) {
-            item->setToolTip(m_view->tr("Failed to load:\n%1").arg(path));
+            item->setToolTip(m_host->hostTr("Failed to load:\n%1").arg(path));
         }
     }
     finishLoadAddStatus(/*refreshGalleryWindow=*/true);
@@ -143,7 +143,7 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
                 m_host->setItemSessionId(item, b.id);
             } else {
                 // Already bound: still refresh list-order cache from document.
-                m_view->refreshSessionIndexCache(item);
+                m_host->refreshSessionIndexCache(item);
             }
             if (m_host->sessionListIndex(item) < 0 && b.index >= 0) {
                 item->setSessionIndex(b.index);
@@ -187,10 +187,10 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                                  ? bound.id
                                  : existing->sessionId());
         if (bound.id != kInvalidSessionImageId && m_host->itemWorld().hasDurableAppearance(bound.id)) {
-            m_view->applyState(existing, m_host->sessionAppearanceValue(bound.id));
+            m_host->applyState(existing, m_host->sessionAppearanceValue(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
-        m_view->applyPendingBindScenePos(existing, bound);
+        m_host->applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
             if (m_host->hostBindBook().removeSelectId(bound.id)) {
@@ -215,7 +215,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
         // Soft was wrongly stored as "decoded"; still accept stricter long edge.
         if (!existing->hasDecodedPixels()
             || existing->shouldUpgradeDisplayTo(incoming)) {
-            if (m_view->installFullPreservingWorkspaceFootprint(existing, image)) {
+            if (m_host->installFullPreservingWorkspaceFootprint(existing, image)) {
                 sizeChanged = true;
             } else if (existing->shouldUpgradeDisplayTo(incoming)) {
                 // Footprint helper no-ops once hasDecodedPixels; force upgrade.
@@ -249,8 +249,8 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
         ++have;
         // Bind pending session row if any remain for this path (FIFO).
         PendingSessionBind bound;
-        const bool haveBound = m_view->takePendingSessionBindForNewItem(path, item, &bound);
-        m_view->applyStoredAppearance(item);
+        const bool haveBound = m_host->takePendingSessionBindForNewItem(path, item, &bound);
+        m_host->applyStoredAppearance(item);
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
             // Paste: select tiles as they finish decoding.
@@ -258,7 +258,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
                 item->setSelected(true);
             }
         }
-        m_view->placeNewLoadAddItem(item, path, image, haveBound, bound);
+        m_host->placeNewLoadAddItem(item, path, image, haveBound, bound);
     }
 }
 
@@ -268,12 +268,12 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
     if (m_host->hostGallerySizeResolve().active() || m_host->hostGalleryDecodeBook().isDeferPopulate()) {
         return;
     }
-    if (!m_view->hostLayout().isFreeForm()) {
-        if (!m_view->pathOrderIsEmpty()) {
-            const PackOrderView pack = m_view->currentPackOrder();
-            m_view->reorderItemsByPaths(pack.paths(), pack.ids());
+    if (!m_host->hostLayout().isFreeForm()) {
+        if (!m_host->pathOrderIsEmpty()) {
+            const PackOrderView pack = m_host->currentPackOrder();
+            m_host->reorderItemsByPaths(pack.paths(), pack.ids());
         }
-        if (!(m_host->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
+        if (!(m_host->isGalleryMode() && m_host->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {
                 m_host->hostGallery().applyLayout(GalleryPackReason::ContentChange);
             } else {
@@ -281,7 +281,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
             }
         }
     } else {
-        m_view->updateWorkspaceSceneRect();
+        m_host->updateWorkspaceSceneRect();
     }
 }
 
@@ -296,7 +296,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
     // Remember size even when the pending membership was cancelled — a successful
     // decode still updates the session size cache for later layout.
     if (generation == loadGate().generation() && !image.isNull()) {
-        m_view->rememberSizeFromDecode(path, image);
+        m_host->rememberSizeFromDecode(path, image);
     }
     if (!acceptPendingLoadAdd(path, generation)) {
         return;
@@ -315,10 +315,10 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
 
     reassertPendingBindPlacement(path);
 
-    const int pathOrderCount = m_view->pathOrderOccurrences(path);
+    const int pathOrderCount = m_host->pathOrderOccurrences(path);
 
     // Pending binds whose SessionImageId is already on a live tile are satisfied.
-    m_view->purgeSatisfiedPendingBinds(path);
+    m_host->purgeSatisfiedPendingBinds(path);
 
     claimUnboundItemsForPendingBinds(path, image);
 
@@ -355,7 +355,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
         return;
     }
     if (role == ImageView::LoadAdd) {
-        m_view->hostDisplayPipeline().loadGate().addPendingWorkspacePath(path);
+        loadGate().addPendingWorkspacePath(path);
     }
     // ImageView::LoadRestore pending is owned by loadGate().pendingRestoreStates() (AUDIT M27).
     // AUDIT H3a: only ImageView::LoadReplace advances the generation token so workspace
@@ -661,7 +661,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
             return false;
         }
         if (!book.hasDefinitive(path)) {
-            m_view->scheduleImageSizeProbe(path);
+            m_host->scheduleImageSizeProbe(path);
             return true; // probe queued
         }
     }
@@ -828,7 +828,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     }
     // List-order cache: prefer document position for the bound id; fall back to
     // snapshot index only when the id is unbound / not in the session list.
-    if (m_view->refreshSessionIndexCache(item) < 0 && state.sessionIndex >= 0) {
+    if (m_host->refreshSessionIndexCache(item) < 0 && state.sessionIndex >= 0) {
         item->setSessionIndex(state.sessionIndex);
     }
     // Host is in ImageCache / item. Materialize store want (soft stand-in +
@@ -845,9 +845,9 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
             rematerializeItemContent(item, app);
         }
     }
-    m_view->applyState(item, app);
-    if (!m_view->hostLayout().isFreeForm()
-        && !(m_host->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
+    m_host->applyState(item, app);
+    if (!m_host->hostLayout().isFreeForm()
+        && !(m_host->isGalleryMode() && m_host->hostGalleryRelayoutSuppress().active())) {
         m_host->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
     }
     m_host->notifyStatusChanged();

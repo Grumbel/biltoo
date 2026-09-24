@@ -301,7 +301,7 @@ void DisplayPipelineController::installImageModeSampleInPlace(ImageItem *item, c
     // Same rules as every other attach: accept → materialize → attachDisplaySample.
     installDisplayPixels(item, image, kind, resolveItemSessionId(item));
     m_host->hostSessionId().clearLastLoadError();
-    m_view->rememberSizeFromDecode(path, image);
+    m_host->rememberSizeFromDecode(path, image);
     if (m_host->viewportWidget()) {
         m_host->viewportWidget()->update();
     }
@@ -1068,7 +1068,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (m_host->isImageMode() && item == m_host->targetItem()
         && sizeBeforeAttach != item->imageSize()
         && sizeBeforeAttach.width() > 1 && sizeBeforeAttach.height() > 1) {
-        m_view->preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
+        m_host->preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
     } else if (m_host->isImageMode() && m_host->canvasScene() && m_host->liveItems().size() == 1) {
         m_host->canvasScene()->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
@@ -1078,7 +1078,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
 
     // Gallery reflow only when layout geometry actually changed.
     if (m_host->isGalleryMode() && item->imageSize() != layoutBefore) {
-        m_view->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        m_host->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
 }
 
@@ -1174,7 +1174,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         }
         biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s items=%d sz=%dx%d",
                       qPrintable(QFileInfo(path).fileName()),
-                      m_view->itemCount(),
+                      m_host->itemCount(),
                       sz.width(), sz.height());
         return;
     }
@@ -1260,7 +1260,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 m_host->applyImageModeFraming(item);
                 didFit = 1;
             } else if (sizeBefore != targetSize) {
-                m_view->preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
+                m_host->preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
             }
         }
         // Single press: sync repaint so soft is visible before PreferCache.
@@ -1289,7 +1289,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     if (!m_host->liveItems().isEmpty()) {
         m_host->captureStickyPanAnchor(m_host->liveItems().first());
     }
-    m_view->clearLiveCanvas();
+    m_host->clearLiveCanvas();
     item = createPlaceholderItem(path, isPositiveSize(sz) ? sz : QSize(1, 1));
     if (!item) {
         m_host->setUpdatesEnabled(true);
@@ -1329,7 +1329,7 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
         }
     }
     // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
-    m_view->clearLiveCanvas();
+    m_host->clearLiveCanvas();
     ImageItem *item = createItemFromImage(path, image);
     if (!item) {
         m_host->setUpdatesEnabled(true);
@@ -1345,7 +1345,7 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     resetImageModeItemPlacement(item);
     // Content flips/crop are materialised in createItemFromImage from sparse/XDG.
     // Do not re-apply path-book placement hFlip (pre–Stage 4 dual residual).
-    m_view->prepareImageModeCanvas();
+    m_host->prepareImageModeCanvas();
     frameImageModeReplaceItem(item, path);
     m_host->setUpdatesEnabled(true);
     if (m_host->viewportWidget()) {
@@ -1439,7 +1439,7 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);
-    m_view->applyItemModeFlags(item);
+    m_host->applyItemModeFlags(item);
     m_host->canvasScene()->addItem(item);
     m_host->liveItems().append(item);
     registerItemDisplaySurface(item);
@@ -1580,7 +1580,7 @@ void DisplayPipelineController::purgeTilePathRam(const QString &path)
         }
     }
     tilelod::TileLodRegistry::instance().invalidate(path);
-    m_view->hostTileNeighborPrefetch().dropPath(path);
+    m_host->hostTileNeighborPrefetch().dropPath(path);
 }
 
 
@@ -1593,7 +1593,7 @@ void DisplayPipelineController::dropAllTileLodSessions()
     };
     dropList(m_host->liveItems());
     dropList(m_host->hostGallery().stashedItems());
-    dropList(m_view->hostWorkspace().stashedItems());
+    dropList(m_host->hostWorkspace().stashedItems());
     // Reset any bag still in the map (identity-matched items above already reset).
     for (auto &entry : m_tileBags) {
         if (entry.second) {
@@ -1624,7 +1624,7 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
     if (m_host->isGalleryMode()) {
         QRectF sceneVis;
         if (m_host->viewportWidget()) {
-            sceneVis = m_view->mapToScene(m_host->viewportWidget()->rect()).boundingRect();
+            sceneVis = m_host->mapViewportToScene();
         }
         if (!sceneVis.isNull() && m_host->canvasScene()) {
             const QList<QGraphicsItem *> hit = m_host->canvasScene()->items(
@@ -1675,7 +1675,7 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
                                                     const WorkspaceItemState &want,
                                                     SessionAppearance::PixelKind kind)
 {
-    if (!item || display.isNull() || !m_view) {
+    if (!item || display.isNull() || !m_host) {
         return;
     }
     const QString path = item->path();
@@ -1719,7 +1719,7 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
 void DisplayPipelineController::applyContentLayoutSize(ImageItem *item,
                                                        const WorkspaceItemState &wantIn)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     // Placement/color-only durable rows are not content orient (2205–2211).
@@ -1779,7 +1779,7 @@ void DisplayPipelineController::applyContentLayoutSize(ImageItem *item,
 bool DisplayPipelineController::tryRematerializeFromHost(ImageItem *item,
                                                          const WorkspaceItemState &want)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return false;
     }
     if (m_host->hostCrop().isCropDraftLockedItem(item)) {
@@ -1811,7 +1811,7 @@ bool DisplayPipelineController::tryRematerializeFromHost(ImageItem *item,
 void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
                                                          const WorkspaceItemState &want)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     // Crop draft owns the live sample — pure rematerialize must not soft↔full.
@@ -1902,7 +1902,7 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
 
 void DisplayPipelineController::clearStaleAppliedFingerprintIfNeeded(ImageItem *item)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     const SessionImageId sid = item->sessionId();
@@ -1928,7 +1928,7 @@ void DisplayPipelineController::clearStaleAppliedFingerprintIfNeeded(ImageItem *
 void DisplayPipelineController::reinstallModePixelsAfterIdentityReset(
     ImageItem *item, SessionImageId sid)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     const QString path = item->path();
@@ -1960,7 +1960,7 @@ void DisplayPipelineController::reinstallModePixelsAfterIdentityReset(
 bool DisplayPipelineController::installInteractiveSoftPreview(
     ImageItem *item, const WorkspaceItemState &want)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return false;
     }
     const QString path = item->path();
@@ -1993,7 +1993,7 @@ bool DisplayPipelineController::installInteractiveSoftPreview(
 
 void DisplayPipelineController::rematerializeGalleryItemFromStore(ImageItem *item)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     const SessionImageId sid = item->sessionId();
@@ -2022,7 +2022,7 @@ void DisplayPipelineController::rematerializeGalleryItemFromStore(ImageItem *ite
 void DisplayPipelineController::scheduleAsyncHostRematerialize(
     const QString &path, SessionImageId sid, const WorkspaceItemState &want)
 {
-    if (!m_view || path.isEmpty()) {
+    if (!m_host || path.isEmpty()) {
         return;
     }
     if (m_host->hostCrop().isCropDraftLockedPath(path)) {
@@ -2068,7 +2068,7 @@ void DisplayPipelineController::finishAsyncHostRematerialize(
     const QImage &display)
 {
     ASSERT_GUI_THREAD();
-    if (!m_view || display.isNull() || path.isEmpty()) {
+    if (!m_host || display.isNull() || path.isEmpty()) {
         return;
     }
     // Crop draft owns the target item — do not reinstall over orient-only draft.
@@ -2107,14 +2107,14 @@ void DisplayPipelineController::finishAsyncHostRematerialize(
     const QSize before = item->imageSize();
     attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);
     if (before != item->imageSize()) {
-        m_view->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+        m_host->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
     }
     if (m_host->isImageMode() && m_host->canvasScene() && m_host->liveItems().size() == 1) {
         m_host->canvasScene()->setSceneRect(
             item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
     if (m_host->isGalleryMode() && before != item->imageSize()) {
-        m_view->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        m_host->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
     if (m_host->isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -2135,7 +2135,7 @@ void DisplayPipelineController::hostClearDecodedPixels(ImageItem *item)
 
 void DisplayPipelineController::hostSetIntrinsicSize(ImageItem *item, const QSize &size)
 {
-    if (!item || !m_view) {
+    if (!item || !m_host) {
         return;
     }
     // Gallery: LQIP-scale boxes must not replace an already correct layout cell.
@@ -2163,16 +2163,16 @@ void DisplayPipelineController::hostSetPreviewImage(ImageItem *item, const QImag
 
 void DisplayPipelineController::bakeItemRotate90(ImageItem *item, int quarterTurns)
 {
-    if (!item || !m_view || quarterTurns == 0) {
+    if (!item || !m_host || quarterTurns == 0) {
         return;
     }
     const QImage beforeSrc = item->sourceImage().copy();
-    WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+    WorkspaceItemState beforeSt = m_host->captureContentBakeBeforeState(item);
 
     const SessionImageId sid = resolveItemSessionId(item);
     const int turns = ContentXform::normalizeQuarterTurns(
         beforeSt.contentQuarterTurns + quarterTurns);
-    WorkspaceItemState cropMap = m_view->appearanceCropMapForEdit(item, beforeSt, sid);
+    WorkspaceItemState cropMap = m_host->appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
 
     WorkspaceItemState want = beforeSt;
@@ -2194,7 +2194,7 @@ void DisplayPipelineController::bakeItemRotate90(ImageItem *item, int quarterTur
         if (sid != kInvalidSessionImageId) {
             m_host->itemWorld().setContentBake(sid, ItemComponents::contentBakeFromState(s));
             m_host->itemWorld().setCrop(sid, ItemComponents::cropFromState(s));
-            m_view->persistDurableContentAppearance(item, s, "bakeRotate");
+            m_host->persistDurableContentAppearance(item, s, "bakeRotate");
         }
         if (sid == kInvalidSessionImageId) {
             WorkspaceItemState pathSlot;
@@ -2213,7 +2213,7 @@ void DisplayPipelineController::bakeItemRotate90(ImageItem *item, int quarterTur
         }
     }
 
-    m_view->commitItemSessionEdit(item);
+    m_host->commitItemSessionEdit(item);
 
     if (m_host->isImageMode() && m_host->canvasScene() && m_host->liveItems().size() == 1) {
         m_host->canvasScene()->setSceneRect(
@@ -2223,17 +2223,17 @@ void DisplayPipelineController::bakeItemRotate90(ImageItem *item, int quarterTur
     WorkspaceItemState afterSt = want;
     ItemComponents::applyPlacementToState(afterSt, item->placement());
     afterSt.sessionId = beforeSt.sessionId;
-    m_view->pushItemContentCommand(m_view->tr("Rotate"), item, beforeSrc,
+    m_host->pushItemContentCommand(m_host->hostTr("Rotate"), item, beforeSrc,
                                    item->sourceImage().copy(), beforeSt, afterSt);
 }
 
 void DisplayPipelineController::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
 {
-    if (!item || !m_view || (!horizontal && !vertical)) {
+    if (!item || !m_host || (!horizontal && !vertical)) {
         return;
     }
     const QImage beforeSrc = item->sourceImage().copy();
-    WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+    WorkspaceItemState beforeSt = m_host->captureContentBakeBeforeState(item);
 
     bool h = beforeSt.contentHFlip;
     bool v = beforeSt.contentVFlip;
@@ -2252,7 +2252,7 @@ void DisplayPipelineController::bakeItemFlip(ImageItem *item, bool horizontal, b
     }
 
     const SessionImageId sid = resolveItemSessionId(item);
-    WorkspaceItemState cropMap = m_view->appearanceCropMapForEdit(item, beforeSt, sid);
+    WorkspaceItemState cropMap = m_host->appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentFlip(cropMap, horizontal, vertical);
 
     WorkspaceItemState want = beforeSt;
@@ -2273,22 +2273,22 @@ void DisplayPipelineController::bakeItemFlip(ImageItem *item, bool horizontal, b
         s.sessionId = sid;
         m_host->itemWorld().setContentBake(sid, ItemComponents::contentBakeFromState(s));
         m_host->itemWorld().setCrop(sid, ItemComponents::cropFromState(s));
-        m_view->persistDurableContentAppearance(item, s, "bakeFlip");
+        m_host->persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = want;
         ItemComponents::applyPlacementToState(s, item->placement());
         m_host->itemWorld().setPathState(item->path(), s);
     }
 
-    m_view->commitItemSessionEdit(item);
+    m_host->commitItemSessionEdit(item);
 
     WorkspaceItemState afterSt = want;
     ItemComponents::applyPlacementToState(afterSt, item->placement());
     afterSt.sessionId = beforeSt.sessionId;
-    const QString text = horizontal && !vertical ? m_view->tr("Flip horizontal")
-        : vertical && !horizontal ? m_view->tr("Flip vertical")
-        : m_view->tr("Flip");
-    m_view->pushItemContentCommand(text, item, beforeSrc, item->sourceImage().copy(),
+    const QString text = horizontal && !vertical ? m_host->hostTr("Flip horizontal")
+        : vertical && !horizontal ? m_host->hostTr("Flip vertical")
+        : m_host->hostTr("Flip");
+    m_host->pushItemContentCommand(text, item, beforeSrc, item->sourceImage().copy(),
                                    beforeSt, afterSt);
 }
 

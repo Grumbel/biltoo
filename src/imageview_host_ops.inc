@@ -3,7 +3,7 @@
 
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */
-    void applyItemModeFlags(ImageItem *item);
+    void applyItemModeFlags(ImageItem *item) override;
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
     /** Live canvas only (not Workspace/Gallery stashes). Same SessionImageId may
@@ -42,12 +42,12 @@
      * destroy cannot re-seed sparse appearance.
      */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
-    void updateWorkspaceSceneRect();
+    void updateWorkspaceSceneRect() override;
     /** Queue LoadRestore for workspace rebuild from durable snapshot. */
     void scheduleRestoreLoad(const QString &path);
 
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
-    void clearLiveCanvas();
+    void clearLiveCanvas() override;
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);
@@ -70,13 +70,13 @@
                                  const ItemComponents::Placement &after);
 
     // --- Content bake host (DisplayPipelineController) ---
-    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
+    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const override;
     WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
                                                 const WorkspaceItemState &fallback,
-                                                SessionImageId sid) const;
+                                                SessionImageId sid) const override;
     void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
-                                         const char *debugTag);
+                                         const char *debugTag) override;
     void pushItemContentCommand(const QString &text, ImageItem *item,
                                 const QImage &beforeSrc, const QImage &afterSrc,
                                 const WorkspaceItemState &before,
-                                const WorkspaceItemState &after);
+                                const WorkspaceItemState &after) override;

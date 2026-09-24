@@ -28,19 +28,19 @@
     GallerySizeResolve &hostGallerySizeResolve() override { return m_gallerySizeResolve; }
     const GallerySizeResolve &hostGallerySizeResolve() const override { return m_gallerySizeResolve; }
     /** Display pipeline host: layout prefs (free-form check). */
-    LayoutPrefs &hostLayout() { return m_layout; }
-    const LayoutPrefs &hostLayout() const { return m_layout; }
+    LayoutPrefs &hostLayout() override { return m_layout; }
+    const LayoutPrefs &hostLayout() const override { return m_layout; }
     /** Display pipeline host: gallery relayout suppress guard. */
-    GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() { return m_galleryRelayoutSuppress; }
-    const GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() const
+    GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() override { return m_galleryRelayoutSuppress; }
+    const GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() const override
     {
         return m_galleryRelayoutSuppress;
     }
     /** Display pipeline host: gallery controller (stashed items). */
     GalleryController &hostGallery() override { return m_gallery; }
     const GalleryController &hostGallery() const override { return m_gallery; }
-    WorkspaceController &hostWorkspace() { return m_workspace; }
-    const WorkspaceController &hostWorkspace() const { return m_workspace; }
+    WorkspaceController &hostWorkspace() override { return m_workspace; }
+    const WorkspaceController &hostWorkspace() const override { return m_workspace; }
     ItemInteractSession &hostItemInteract() { return m_itemInteract; }
     const ItemInteractSession &hostItemInteract() const { return m_itemInteract; }
     PerfStats &hostPerf() { return m_perf; }
@@ -63,10 +63,10 @@
     AttentionController &hostAttention() { return m_attentionCtrl; }
     const AttentionController &hostAttention() const { return m_attentionCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */
-    TextLayerSession &hostTextLayer() { return m_textLayer; }
-    const TextLayerSession &hostTextLayer() const { return m_textLayer; }
+    TextLayerSession &hostTextLayer() override { return m_textLayer; }
+    const TextLayerSession &hostTextLayer() const override { return m_textLayer; }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
-    ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
+    ImageModeSoftProvider hostImageModeSoftProvider() const override { return m_imageModeSoftProvider; }
 
     SessionSeedBook &hostSeedBook() override
     {
@@ -104,8 +104,8 @@
     QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
     DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline.displaySurfaces(); }
     const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline.displaySurfaces(); }
-    TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
-    const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
+    TileNeighborPrefetch &hostTileNeighborPrefetch() override { return m_tileNeighborPrefetch; }
+    const TileNeighborPrefetch &hostTileNeighborPrefetch() const override { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
     SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }

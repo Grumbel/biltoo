@@ -221,13 +221,22 @@ and sticky pan stay per-surface.
   lambdas call ImageView-only APIs such as matchesLoadGeneration /
   hostDisplayPipeline).
 
-### Stage 1b / Stage 2 (next)
+### Stage 1b (landed — biltoo-2451)
 
-- Residual `m_view` long-tail (tr, clearLiveCanvas, applyState, load/place,
-  pack order, mapFromScene/mapToScene, hostTextLayer, …).
+- Residual long-tail migrated onto host: tr→hostTr, text/workspace/layout
+  bags, load/place/pack helpers, content-bake host ops, mapFromScene /
+  mapViewportToScene / devicePixelRatioF, etc.
+- **Zero** non-comment `m_view->` call sites in pipeline TUs.
+- `m_view` retained only for: QPointer guards, QTimer parents, TileLoadCoordinator
+  ctor, and null-guard transitions (now prefer `m_host`).
+- Self-call `m_view->hostDisplayPipeline().loadGate()` → `loadGate()`.
+
+### Stage 2 (next)
+
 - Active-host switching when two panes bind different SessionImageIds.
-- Optional: drop `m_view` once residual is zero and guards use hostObject +
-  narrow async surface.
+- Narrow async surface so QPointer can use hostObject() instead of ImageView*.
+- Optional: drop `m_view` member once async APIs are host-based.
+- Product dual-pane shell.
 
 ### Residual on single ImageView (ok to keep)
 

@@ -7,7 +7,7 @@
                              const WorkspaceItemState &s);
     bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                     SessionImageId *sidOut) const;
-    void rememberSizeFromDecode(const QString &path, const QImage &image);
+    void rememberSizeFromDecode(const QString &path, const QImage &image) override;
     void rememberImageSize(const QString &path, const QSize &size);
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
@@ -18,7 +18,7 @@
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
-    Qt::AspectRatioMode currentFitAspectMode() const;
+    Qt::AspectRatioMode currentFitAspectMode() const override;
 
     // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
@@ -26,5 +26,5 @@
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);
-    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
+    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio) override;
     QString currentPath() const;

@@ -107,12 +107,12 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         }
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.
-    QSize native = m_view->layoutSizeForPath(path, QImage());
+    QSize native = m_host->layoutSizeForPath(path, QImage());
     if (m_host->hostSizeBook().isProvisional(path)
         || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
         // Cold: 1×1 until sizeReady; soft install must not invent geometry.
         native = QSize(1, 1);
-        m_view->scheduleImageSizeProbe(path);
+        m_host->scheduleImageSizeProbe(path);
     }
     QSize intrinsic = ContentXform::layoutSize(native, app);
     if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
@@ -120,7 +120,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     }
 
     auto *item = new ImageItem(path, intrinsic);
-    m_view->applyItemModeFlags(item);
+    m_host->applyItemModeFlags(item);
     m_host->canvasScene()->addItem(item);
     m_host->liveItems().append(item);
     registerItemDisplaySurface(item);
@@ -401,7 +401,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     // Live grade leads ItemWorld during slider drag; keep store grade when live
     // is still identity (cold open / path-change before seed install).
     {
-        const ColorAdjustments liveGrade = m_view->itemLiveColor(item);
+        const ColorAdjustments liveGrade = m_host->itemLiveColor(item);
         if (!liveGrade.isIdentity() || want.colorAdjust.isIdentity()) {
             want.colorAdjust = liveGrade;
         }
@@ -420,10 +420,10 @@ int DisplayPipelineController::itemOnScreenNeedEdge(const ImageItem *item, bool 
     if (br.isEmpty()) {
         return ThumtooCache::kFilmstripLadderEdge;
     }
-    const QPointF a = m_view->mapFromScene(br.topLeft());
-    const QPointF b = m_view->mapFromScene(br.bottomRight());
+    const QPointF a = m_host->mapFromScene(br.topLeft());
+    const QPointF b = m_host->mapFromScene(br.bottomRight());
     const qreal longPx =
-        ViewTransform::chebyshev(a, b) * m_view->devicePixelRatioF();
+        ViewTransform::chebyshev(a, b) * m_host->devicePixelRatioF();
     return DisplayEdgePolicy::needEdgeFromScreenLongPx(longPx, allowHighRes);
 }
 
@@ -458,7 +458,7 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
                 if (byPath >= 0) {
                     sid = doc->idAt(byPath);
                     listIdx = byPath;
-                    m_view->setCurrentSessionId(sid);
+                    m_host->setCurrentSessionId(sid);
                 } else {
                     sid = kInvalidSessionImageId;
                 }
@@ -517,9 +517,9 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return pixels;
     }
 
-    if (m_view->hostImageModeSoftProvider()) {
+    if (m_host->hostImageModeSoftProvider()) {
         bool ready = false;
-        pixels = m_view->hostImageModeSoftProvider()(
+        pixels = m_host->hostImageModeSoftProvider()(
             path, m_host->hostSessionId().currentIdValue(), &ready);
         // ready=true would be content-baked override — discard (ECS #1/#2).
         if (!pixels.isNull() && !ready) {
@@ -616,14 +616,14 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
             item->setSessionIndex(m_host->hostSessionId().currentIndex());
         }
         if (m_host->itemWorld().hasDurableAppearance(sid)) {
-            m_view->applyState(item, m_host->sessionAppearanceValue(sid));
+            m_host->applyState(item, m_host->sessionAppearanceValue(sid));
         }
     } else if (m_host->hostSessionId().currentIndex() >= 0) {
         item->setSessionIndex(m_host->hostSessionId().currentIndex());
     }
     item->setSelected(true);
     m_host->hostFraming().armFit();
-    m_view->fitItem(item, m_view->currentFitAspectMode());
+    m_host->fitItem(item, m_host->currentFitAspectMode());
     m_host->notifyStatusChanged();
 }
 
@@ -705,14 +705,14 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
 bool DisplayPipelineController::loadImage(const QString &path)
 {
     m_host->hostImage().setClassicPath(path);
-    m_view->clearTextSelection();
-    m_view->hostTextLayer().clearLinkHoverTip();
-    if (m_view->hostTextLayer().showsRegions() || m_view->hostTextLayer().hasSearchQuery()) {
-        m_view->refreshTextLayer();
+    m_host->clearTextSelection();
+    m_host->hostTextLayer().clearLinkHoverTip();
+    if (m_host->hostTextLayer().showsRegions() || m_host->hostTextLayer().hasSearchQuery()) {
+        m_host->refreshTextLayer();
     }
     m_host->hostSessionId().clearLastLoadError();
 
-    if (m_view->isMultiItemMode()) {
+    if (m_host->isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.

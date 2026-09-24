@@ -3,28 +3,28 @@
 
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
-    void clearTextSelection();
+    void clearTextSelection() override;
     bool matchesLoadGeneration(quint64 gen) const
     {
         return m_displayPipeline.loadGate().accepts(gen);
     }
-    void refreshTextLayer();
-    void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
+    void refreshTextLayer() override;
+    void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange) override;
     void syncImageModeSceneRect(ImageItem *item) override;
     void captureStickyPanAnchor(ImageItem *item) override;
     void restoreStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item) override;
     /** View-local pack multiplicity (never SessionDocument — pathOrderClear). */
-    int pathOrderOccurrences(const QString &path) const
+    int pathOrderOccurrences(const QString &path) const override
     {
         return currentPackOrder().countPathOccurrences(path);
     }
-    bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
+    bool pathOrderIsEmpty() const override { return currentPackOrder().isEmpty(); }
     /**
      * Pack source snapshot via PackOrderOverlay::resolve.
      * SessionDocument alone is not a pack drop-in (PATH_ORDER.md).
      */
-    PackOrderView currentPackOrder() const
+    PackOrderView currentPackOrder() const override
     {
         return m_pathOrderOverlay.resolve(m_sessionDoc);
     }
@@ -40,15 +40,15 @@
         m_pathOrderOverlay.setExplicit(paths, ids);
         m_pathOrderOverlay.tryCollapseToFollowDocument(m_sessionDoc);
     }
-    QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
-    void scheduleImageSizeProbe(const QString &path);
+    QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage()) override;
+    void scheduleImageSizeProbe(const QString &path) override;
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
-                                              const QSize &after);
+                                              const QSize &after) override;
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
-                             bool haveBound, const PendingSessionBind &bound);
-    void purgeSatisfiedPendingBinds(const QString &path);
+                             bool haveBound, const PendingSessionBind &bound) override;
+    void purgeSatisfiedPendingBinds(const QString &path) override;
     bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
-                                          PendingSessionBind *out);
-    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
-    void applyStoredAppearance(ImageItem *item);
-    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
+                                          PendingSessionBind *out) override;
+    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image) override;
+    void applyStoredAppearance(ImageItem *item) override;
+    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound) override;

@@ -7,10 +7,19 @@
 #include "imageview_types.h"
 #include "content/contentxform.h"
 #include "color/coloradjust.h"
+#include "session/sessionbindbook.h"
+#include "session/packorderview.h"
 
+#include <QImage>
 #include <QList>
+#include <QPointF>
+#include <QRect>
+#include <QRectF>
 #include <QSize>
 #include <QString>
+#include <functional>
+#include <Qt>
+
 
 class ItemWorld;
 class ImageItem;
@@ -27,6 +36,11 @@ class ImageController;
 class GalleryDecodeBook;
 class ViewFraming;
 class GallerySizeResolve;
+class TextLayerSession;
+class WorkspaceController;
+class TileNeighborPrefetch;
+class LayoutPrefs;
+class GalleryRelayoutSuppress;
 class QGraphicsScene;
 class QWidget;
 class QObject;
@@ -143,6 +157,85 @@ public:
      * Stage 1 still needs a QObject identity for async guards.
      */
     virtual QObject *hostObject() = 0;
+
+    // --- Stage 1b: residual long-tail (load/place/pack/text/geometry) ---
+    virtual QString hostTr(const char *sourceText) const = 0;
+
+    virtual TextLayerSession &hostTextLayer() = 0;
+    virtual const TextLayerSession &hostTextLayer() const = 0;
+    virtual WorkspaceController &hostWorkspace() = 0;
+    virtual const WorkspaceController &hostWorkspace() const = 0;
+    virtual TileNeighborPrefetch &hostTileNeighborPrefetch() = 0;
+    virtual const TileNeighborPrefetch &hostTileNeighborPrefetch() const = 0;
+    virtual LayoutPrefs &hostLayout() = 0;
+    virtual const LayoutPrefs &hostLayout() const = 0;
+    virtual GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() = 0;
+    virtual const GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() const = 0;
+
+    using ImageModeSoftProvider =
+        std::function<QImage(const QString &path, SessionImageId sid, bool *displayReady)>;
+    virtual ImageModeSoftProvider hostImageModeSoftProvider() const = 0;
+
+    virtual void applyState(ImageItem *item, const WorkspaceItemState &state) = 0;
+    virtual void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
+                                                      const QSize &after) = 0;
+    virtual void scheduleImageSizeProbe(const QString &path) = 0;
+    virtual void applyItemModeFlags(ImageItem *item) = 0;
+    virtual void rememberSizeFromDecode(const QString &path, const QImage &image) = 0;
+    virtual void requestDebouncedGalleryPack(
+        GalleryPackReason reason = GalleryPackReason::ContentChange) = 0;
+    virtual void clearLiveCanvas() = 0;
+
+    virtual WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const = 0;
+    virtual WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
+                                                        const WorkspaceItemState &fallback,
+                                                        SessionImageId sid) const = 0;
+    virtual void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
+                                                  const char *debugTag) = 0;
+    virtual void commitItemSessionEdit(ImageItem *item) = 0;
+    virtual void pushItemContentCommand(const QString &text, ImageItem *item,
+                                        const QImage &beforeSrc, const QImage &afterSrc,
+                                        const WorkspaceItemState &before,
+                                        const WorkspaceItemState &after) = 0;
+    virtual int refreshSessionIndexCache(ImageItem *item) = 0;
+
+    virtual QSize layoutSizeForPath(const QString &path,
+                                    const QImage &previewHint = QImage()) = 0;
+    virtual ColorAdjustments itemLiveColor(const ImageItem *item) const = 0;
+    virtual qreal devicePixelRatioF() const = 0;
+    virtual void setCurrentSessionId(SessionImageId id) = 0;
+    virtual void fitItem(ImageItem *item,
+                         Qt::AspectRatioMode mode = Qt::KeepAspectRatio) = 0;
+    virtual Qt::AspectRatioMode currentFitAspectMode() const = 0;
+    virtual void clearTextSelection() = 0;
+    virtual void refreshTextLayer() = 0;
+    virtual bool isMultiItemMode() const = 0;
+    virtual int itemCount() const = 0;
+    virtual void prepareImageModeCanvas() = 0;
+
+    virtual QPointF mapFromScene(const QPointF &point) const = 0;
+    virtual QPointF mapToScene(const QPoint &point) const = 0;
+    /** Convenience: viewport rect mapped to scene (bounding rect of polygon). */
+    virtual QRectF mapViewportToScene() const = 0;
+
+    virtual void takePendingWorkspacePath(const QString &path) = 0;
+    virtual void applyPendingBindScenePos(ImageItem *item,
+                                          const PendingSessionBind &bound) = 0;
+    virtual bool installFullPreservingWorkspaceFootprint(ImageItem *item,
+                                                         const QImage &image) = 0;
+    virtual bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                                  PendingSessionBind *out) = 0;
+    virtual void applyStoredAppearance(ImageItem *item) = 0;
+    virtual void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
+                                     bool haveBound, const PendingSessionBind &bound) = 0;
+    virtual bool pathOrderIsEmpty() const = 0;
+    virtual PackOrderView currentPackOrder() const = 0;
+    virtual void reorderItemsByPaths(const QStringList &paths,
+                                     const QVector<SessionImageId> &ids = {}) = 0;
+    virtual void updateWorkspaceSceneRect() = 0;
+    virtual int pathOrderOccurrences(const QString &path) const = 0;
+    virtual void purgeSatisfiedPendingBinds(const QString &path) = 0;
 };
 
 #endif // DISPLAYPIPELINEHOST_H
+
