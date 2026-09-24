@@ -346,39 +346,6 @@ public:
     Tool currentTool() const { return m_workspace.currentTool(); }
 
 
-    /** View scale ≈41% (four ×0.8 zoom-out steps) for Workspace overview. */
-    void setWorkspaceDefaultViewScale();
-    /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
-    /**
-     * Sticky framing (Image mode only): Fit / Fill / 1:1 stay active across
-     * Image-mode navigation until toggled off or free zoom (+/−, wheel, region)
-     * runs. Gallery and Workspace use one-shot zoom + ensureVisible; sticky is
-     * released when leaving Image mode.
-     */
-    // StickyZoomKind: viewframing.h
-    /**
-     * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
-     * Esc cancels. Bound to Z from the main window.
-     */
-    /**
-     * Sole content ±90° path (Workspace chrome, toolbar, keyboard).
-     * ContentXform bake (pipeline) + mode framing.
-     * from UI code so chrome and shortcuts cannot diverge.
-     */
-    void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
-
-
-
-
-
-    /**
-     * Effective solid pad colour for slideshow letterbox (Solid mode colour,
-     * else Preferences background). Used when ZoomBlur cannot run.
-     */
-    QColor slideshowPadColor() const;
-
-
-
     /**
      * Session position for status line and HUD (index/total, 1-based display).
      * Pass total <= 1 or index < 0 to hide the prefix.
@@ -387,23 +354,9 @@ public:
      */
     void setCurrentSessionId(SessionImageId id) override;
 
-    bool contentEditMarksVisible() const;
-
-
     // Slideshow dwell/timeline/phase/Ken Burns/pause cues: SlideshowController
     // (hostSlideshow()). Not re-exported on ImageView.
-
-    /** Workspace: clone selection (same path, independent transforms). */
-    /**
-     * Duplicate selected tiles. @p newIds are pre-allocated session images
-     * (one per source, same order as selection walk). Each copy is bound
-     * immediately — no unbound window before MainWindow membership update.
-     * @p firstSessionIndex stamps list-order cache on copies when >= 0.
-     */
-    void duplicateSelected(const QVector<SessionImageId> &newIds,
-                           int firstSessionIndex = -1);
-
-
+    // Sticky zoom / region zoom / rotate / duplicate: hostImage() / hostWorkspace().
 
     void setLayoutMode(LayoutMode mode);
 

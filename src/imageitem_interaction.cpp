@@ -843,21 +843,21 @@ void ImageItem::activateChromeHandle(Handle h)
                     } else if (h == Handle::FlipV) {
                         iv->hostDisplayPipeline().bakeItemFlip(this, false, true);
                     } else if (h == Handle::Rotate90CCW) {
-                        iv->rotateContentByQuarterTurns(this, -1);
+                        iv->hostImage().rotateContentByQuarterTurns(this, -1);
                     } else {
-                        iv->rotateContentByQuarterTurns(this, 1);
+                        iv->hostImage().rotateContentByQuarterTurns(this, 1);
                     }
                     if (iv->isGalleryMode()) {
                         iv->hostGallery().applyLayout(GalleryPackReason::ContentChange);
                     } else if (iv->isWorkspaceMode()) {
-                        iv->updateWorkspaceSceneRect();
+                        iv->hostWorkspace().updateSceneRect();
                     }
                     notifyViewStatus();
                     return;
                 }
             }
         }
-        // Content chrome requires ImageView (pipeline bake + rotateContentByQuarterTurns
+        // Content chrome requires ImageView (pipeline bake + hostImage().rotateContentByQuarterTurns
         // write sparse ItemWorld). Baking pixels alone would desync the store.
         qWarning("ImageItem::activateChromeHandle: no ImageView — content op ignored");
         break;

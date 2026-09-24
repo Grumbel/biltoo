@@ -128,7 +128,7 @@ void WorkspaceController::restore()
     if (m_hasSavedView) {
         m_view->setTransform(m_savedViewTransform);
     }
-    m_view->updateWorkspaceSceneRect();
+    updateSceneRect();
     if (m_hasSavedView) {
         m_view->centerOn(m_savedViewCenter);
         m_hasSavedView = false;
@@ -313,7 +313,7 @@ void WorkspaceController::restoreStashedItems()
     if (m_hasStashedView) {
         m_view->setTransform(m_stashedViewTransform);
     }
-    m_view->updateWorkspaceSceneRect();
+    updateSceneRect();
     if (m_hasStashedView) {
         m_view->centerOn(m_stashedViewCenter);
         m_hasStashedView = false;
@@ -444,9 +444,9 @@ void WorkspaceController::enter(int previousMode)
     }
     // Fresh Workspace (no stashed/saved camera): overview scale, not 1:1.
     if (!keepViewTransform) {
-        m_view->setWorkspaceDefaultViewScale();
+        m_view->hostImage().setWorkspaceDefaultViewScale();
     }
-    m_view->updateWorkspaceSceneRect();
+    updateSceneRect();
     emit m_view->statusChanged();
 }
 
@@ -719,7 +719,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         }
     }
 
-    m_view->updateWorkspaceSceneRect();
+    updateSceneRect();
     m_view->viewport()->update();
     emit m_view->statusChanged();
     return true;

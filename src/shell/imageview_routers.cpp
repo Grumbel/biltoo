@@ -143,16 +143,6 @@ QStringList ImageView::selectedPaths() const
 
 // --- View queries (was imageview_view.cpp) ---
 
-QColor ImageView::slideshowPadColor() const
-{
-    return m_slideshow.padColorForPaint();
-}
-
-bool ImageView::contentEditMarksVisible() const
-{
-    return ImageItem::contentEditMarksVisible();
-}
-
 QString ImageView::currentPath() const
 {
     if (ImageItem *item = targetItem()) {

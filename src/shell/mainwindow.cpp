@@ -1727,7 +1727,7 @@ void MainWindow::showSlideshowSettings()
         dlg.setPanZoomFactor(m_imageView->hostSlideshow().settings().currentPanZoomFactor());
         dlg.setZoomIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentZoom()));
         dlg.setLetterboxFillIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
-        dlg.setPadColor(m_imageView->slideshowPadColor());
+        dlg.setPadColor(m_imageView->hostSlideshow().padColorForPaint());
         // Solid mode stores its own colour; surface current effective pad for UI.
         if (m_imageView->hostSlideshow().settings().currentLetterboxFill()
             == SlideshowLetterboxFill::Solid) {
@@ -2301,7 +2301,7 @@ void MainWindow::showPreferences()
         dlg.setPanZoomFactor(m_imageView->hostSlideshow().settings().currentPanZoomFactor());
         dlg.setSlideshowZoomIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentZoom()));
         dlg.setSlideshowLetterboxFillIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
-        dlg.setSlideshowPadColor(m_imageView->slideshowPadColor());
+        dlg.setSlideshowPadColor(m_imageView->hostSlideshow().padColorForPaint());
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
@@ -3531,7 +3531,7 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("slideshowLetterboxFill"),
                           static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
         settings.setValue(QStringLiteral("slideshowPadColor"),
-                          m_imageView->slideshowPadColor().name(QColor::HexRgb));
+                          m_imageView->hostSlideshow().padColorForPaint().name(QColor::HexRgb));
     }
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     settings.setValue(QStringLiteral("slideshowLoop"), m_slideshowLoop);
@@ -3592,7 +3592,7 @@ void MainWindow::writeSettings()
                           m_imageView->hostChrome().isImageModeLeftDragPan());
         settings.setValue(QStringLiteral("hudVisible"), m_imageView->hostHudPrefs().isVisible());
         settings.setValue(QStringLiteral("contentEditMarksVisible"),
-                          m_imageView->contentEditMarksVisible());
+                          ImageItem::contentEditMarksVisible());
         settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hostHudPrefs().fontPointSizeValue());
         settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hostHudPrefs().textColorRef().name(QColor::HexArgb));
         settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hostHudPrefs().panelColorRef().name(QColor::HexArgb));

@@ -1844,7 +1844,7 @@ void SlideshowController::paintZoomBlurUnderlay(QPainter *painter, const QImage 
     // Slideshow letterbox uses the dedicated pad colour; Image View content-blur
     // falls back to the Preferences / canvas primary colour.
     const QColor pad = settings().isZoomBlurLetterbox()
-        ? m_view->slideshowPadColor()
+        ? padColorForPaint()
         : m_view->hostCanvasBg().primaryColor();
     painter->fillRect(viewportRect, pad.isValid() ? pad : QColor(42, 42, 42));
 }
@@ -2038,7 +2038,7 @@ QPixmap SlideshowController::renderMotionCoverPixmap(const QImage &image, qreal 
     const int vw = ViewTransform::atLeast1(m_view->viewport()->width());
     const int vh = ViewTransform::atLeast1(m_view->viewport()->height());
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-    out.fill(m_view->slideshowPadColor());
+    out.fill(padColorForPaint());
     QPainter painter(&out);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     // pathHash was historical; recover path from phase when possible.
@@ -2389,7 +2389,7 @@ void SlideshowController::paintLetterboxComposite(QPainter &painter) const
                        const QString &fromPath = QString(),
                        const QString &toPath = QString()) {
         if (!settings().isZoomBlurLetterbox()) {
-            painter.fillRect(vr, m_view->slideshowPadColor());
+            painter.fillRect(vr, padColorForPaint());
             return;
         }
         const bool haveFrom = !fromSrc.isNull();
@@ -2416,7 +2416,7 @@ void SlideshowController::paintLetterboxComposite(QPainter &painter) const
             paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
             return;
         }
-        painter.fillRect(vr, m_view->slideshowPadColor());
+        painter.fillRect(vr, padColorForPaint());
     };
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
