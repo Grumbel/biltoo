@@ -2,14 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2554.1-drop-text-rubber-paint-forward** (base `7d823d8`).
+**Tip: biltoo-2555.1-own-viewport-overlays-paint** (base `7d823d8`).
 
 ### Ownership transfer
-- `paintViewportOverlays` dispatches `m_textCtrl.paintRubberBandOverlay` directly
-- Drop ImageView thin private `paintTextRubberBandOverlay` forward
+- **ViewShellChrome::paintViewportOverlays** — full viewport-device-pixel overlay
+  pass (text rubber, crop/attention, workspace chrome, slideshow letterbox/
+  seekbar, edges, empty invite, HUD)
+- `drawForeground` dispatches `m_shell.paintViewportOverlays`
+- Drop ImageView private `paintViewportOverlays`
+- `hostText()` accessor for TextLayerController (rubber-band paint)
 
 ### Prior
-**2553.1** Own durable freeze pure policy on SessionAppearance.
+**2554.1** Drop text rubber-band paint thin forward.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -19,7 +23,7 @@ setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
 freezeItemAppearance host residual (orchestration only),
-paint orchestration (dispatch only — no remaining private paint forwards)
+drawForeground scene-space gallery frames + transform setup (shell paint)
 
 ### Next thinning candidates
 - setViewMode body (mode shell by design)
@@ -27,5 +31,5 @@ paint orchestration (dispatch only — no remaining private paint forwards)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2554.1-drop-text-rubber-paint-forward-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2555.1-own-viewport-overlays-paint-7d823d8.bundle HEAD
 ```

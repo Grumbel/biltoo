@@ -493,3 +493,32 @@ void ViewShellChrome::paintHudPanels(QPainter &painter) const
 
 }
 
+void ViewShellChrome::paintViewportOverlays(QPainter &painter)
+{
+    if (!m_view) {
+        return;
+    }
+    // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Identity
+    // transform is set by drawForeground so this works on raster and GL viewports.
+
+    m_view->hostText().paintRubberBandOverlay(painter);
+
+    // Workspace chrome in viewport device pixels (constant on-screen size).
+    if (m_view->hostCrop().session().active()) {
+        m_view->hostCrop().paintCropOverlay(painter);
+    }
+    if (m_view->hostAttention().session().active()) {
+        m_view->hostAttention().paintAttentionOverlay(painter);
+    }
+    m_view->hostWorkspace().paintViewportChrome(painter);
+
+    // Letterbox fills the viewport during slideshow; edges/HUD paint after it.
+    m_view->hostSlideshow().paintLetterboxComposite(painter);
+    paintEmptySessionInvite(painter);
+
+    // Edge chevrons: ImageController owns zone policy + paint.
+    m_view->hostImage().drawEdgeAffordances(painter);
+
+    paintHudPanels(painter);
+    m_view->hostSlideshow().paintSeekbar(painter);
+}

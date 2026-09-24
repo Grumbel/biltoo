@@ -13,6 +13,7 @@ class QPoint;
 class QDragEnterEvent;
 class QDragMoveEvent;
 class QDropEvent;
+class QPainter;
 
 /**
  * Shell view chrome: transient viewport pointer state + canvas materials +
@@ -49,6 +50,12 @@ public:
     void paintEmptySessionInvite(QPainter &painter) const;
     /** Pinned HUD panels, action flash, centre progress (viewport device pixels). */
     void paintHudPanels(QPainter &painter) const;
+    /**
+     * Viewport-device-pixel overlay pass (text rubber, crop/attention, workspace
+     * chrome, slideshow letterbox/seekbar, edges, HUD). Called from drawForeground
+     * after identity transform.
+     */
+    void paintViewportOverlays(QPainter &painter);
 
 private:
     ImageView *m_view = nullptr;

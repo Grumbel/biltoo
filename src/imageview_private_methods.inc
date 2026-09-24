@@ -152,7 +152,6 @@
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
-    void paintViewportOverlays(QPainter &painter);
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */
     /**

@@ -316,7 +316,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
             painter->scale(dpr, dpr);
         }
     }
-    paintViewportOverlays(*painter);
+    m_shell.paintViewportOverlays(*painter);
     painter->restore();
 }
 

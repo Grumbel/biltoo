@@ -97,6 +97,9 @@
     /** Display pipeline host: text layer (loadImage side effects). */
     TextLayerSession &hostTextLayer() override { return m_textCtrl.session(); }
     const TextLayerSession &hostTextLayer() const override { return m_textCtrl.session(); }
+    /** Text/link overlay controller (rubber-band paint, search). */
+    TextLayerController &hostText() { return m_textCtrl; }
+    const TextLayerController &hostText() const { return m_textCtrl; }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const override { return m_imageModeSoftProvider; }
 

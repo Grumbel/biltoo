@@ -32,40 +32,6 @@
 #include <QGraphicsItem>
 
 
-void ImageView::paintViewportOverlays(QPainter &painter)
-{
-    // Text rubber-band: TextLayerController owns paint.
-    m_textCtrl.paintRubberBandOverlay(painter);
-
-    // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
-    // drawForeground with an identity transform so this works on both the
-    // raster and QOpenGLWidget viewports — a second QPainter on the GL viewport
-    // after QGraphicsView::paintEvent clears the framebuffer (white screen).
-
-    // Workspace chrome in *viewport* device pixels (not scene drawForeground).
-    // Painting here keeps handles a constant on-screen size under any view or
-    // item scale — the same coordinate space as edge affordances and the HUD.
-    if (m_cropCtrl.session().active()) {
-        m_cropCtrl.paintCropOverlay(painter);
-    }
-    if (m_attentionCtrl.session().active()) {
-        m_attentionCtrl.paintAttentionOverlay(painter);
-    }
-    m_workspace.paintViewportChrome(painter);
-
-    // Letterbox composite fills the viewport during slideshow; edge chevrons
-    // and HUD must paint after it or they are covered.
-    m_slideshow.paintLetterboxComposite(painter);
-    m_shell.paintEmptySessionInvite(painter);
-
-    // Edge chevrons: ImageController owns zone policy + paint (crop/attention
-    // suppress inside drawEdgeAffordances, same as edgeZoneAt).
-    m_image.drawEdgeAffordances(painter);
-
-    m_shell.paintHudPanels(painter);
-    m_slideshow.paintSeekbar(painter);
-}
-
 void ImageView::paintEvent(QPaintEvent *event)
 {
     GUI_BUDGET("ImageView::paintEvent");
