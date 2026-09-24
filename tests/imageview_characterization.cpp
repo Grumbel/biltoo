@@ -661,7 +661,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QCOMPARE(ViewTransform::scaleFrom(view.transform()), 1.0);
 
         // fitItem uses view matrix for framing (DOMAIN); scale > 0 after fit.
-        view.fitItem(focusItem, Qt::KeepAspectRatio);
+        view.hostImage().fitItem(focusItem, Qt::KeepAspectRatio);
         const qreal fitScale = ViewTransform::scaleFrom(view.transform());
         QVERIFY(fitScale > 0.0);
         QVERIFY(view.hostFraming().isFitMode());
@@ -689,7 +689,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         // Sibling now has pixels; focus still has pixels from earlier install.
         QVERIFY(focusItem->hasDisplayPixels());
 
-        view.fitItem(otherItem, Qt::KeepAspectRatio);
+        view.hostImage().fitItem(otherItem, Qt::KeepAspectRatio);
         const qreal otherFitScale = ViewTransform::scaleFrom(view.transform());
         QVERIFY(otherFitScale > 0.0);
         view.captureStickyPanAnchor(otherItem);
@@ -700,7 +700,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
 
         // Switch capture back to focus id (navigate-like framing continuity).
-        view.fitItem(focusItem, Qt::KeepAspectRatio);
+        view.hostImage().fitItem(focusItem, Qt::KeepAspectRatio);
         view.captureStickyPanAnchor(focusItem);
         view.hostImage().restoreStickyPanAnchor(focusItem);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
@@ -728,7 +728,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
                                           view.itemWorld().appearanceValue(focus)),
                  QSize(32, 24));
 
-        view.fitItem(imgItem, Qt::KeepAspectRatio);
+        view.hostImage().fitItem(imgItem, Qt::KeepAspectRatio);
         const qreal imgFitScale = ViewTransform::scaleFrom(view.transform());
         QVERIFY(imgFitScale > 0.0);
         view.captureStickyPanAnchor(imgItem);
@@ -747,7 +747,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QCOMPARE(imgOther->path(), m_pathB);
         // Sibling has no crop in ItemWorld.
         QVERIFY(!view.itemWorld().hasCrop(other));
-        view.fitItem(imgOther, Qt::KeepAspectRatio);
+        view.hostImage().fitItem(imgOther, Qt::KeepAspectRatio);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
         view.hostImage().restoreStickyPanAnchor(imgOther);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
