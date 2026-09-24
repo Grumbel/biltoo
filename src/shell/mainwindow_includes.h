@@ -13,6 +13,7 @@
 #include "host/imageloader.h"
 #include "shell/thumbnailbar.h"
 #include "shell/preferencesdialog.h"
+#include "shell/cachepreparedialog.h"
 #include "slideshow/slideshowsettingsdialog.h"
 #include "session/sessionreorderdialog.h"
 #include "shell/metadatapanel.h"

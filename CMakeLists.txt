@@ -313,6 +313,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/thumbnailbar.h
   src/shell/preferencesdialog.cpp
   src/shell/preferencesdialog.h
+  src/shell/cachepreparedialog.cpp
+  src/shell/cachepreparedialog.h
   src/slideshow/slideshowsettingsdialog.cpp
   src/slideshow/slideshowsettingsdialog.h
   src/session/sessionreorderdialog.cpp

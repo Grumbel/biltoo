@@ -2288,6 +2288,18 @@ void MainWindow::about()
     box.exec();
 }
 
+void MainWindow::showCachePrepareDialog()
+{
+    if (!ThumtooCache::isAvailable()) {
+        QMessageBox::information(
+            this, tr("Prepare tile cache"),
+            tr("Durable tile cache requires thumtoo, which is not available in this build."));
+        return;
+    }
+    CachePrepareDialog dlg(m_session.paths(), this);
+    dlg.exec();
+}
+
 void MainWindow::showPreferences()
 {
     PreferencesDialog dlg(this);

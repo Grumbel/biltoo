@@ -1992,6 +1992,187 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
     return scheduleTileSynthOrPyramid(path, maxEdge);
 }
 
+TilePrepareStats queryTilePrepareStats(const QStringList &paths)
+{
+    ASSERT_NOT_GUI_THREAD();
+    TilePrepareStats st;
+    if (paths.isEmpty()) {
+        return st;
+    }
+    init();
+    for (const QString &p : paths) {
+        if (p.isEmpty()) {
+            continue;
+        }
+        ++st.total;
+        if (isUnsupported(p)) {
+            ++st.unsupported;
+            continue;
+        }
+        if (hasDurableTiles(p)) {
+            ++st.withTiles;
+        } else {
+            ++st.missingTiles;
+        }
+    }
+    return st;
+}
+
+void prepareTiles(const QStringList &paths, int minScale,
+                  TilePrepareProgress onProgress, std::atomic<bool> *cancel)
+{
+    ASSERT_NOT_GUI_THREAD();
+    if (paths.isEmpty()) {
+        if (onProgress) {
+            onProgress(0, 0, 0, 0, 0);
+        }
+        return;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        if (onProgress) {
+            onProgress(0, paths.size(), 0, 0, paths.size());
+        }
+        return;
+    }
+
+    // Filter empties; keep order for stable progress.
+    QStringList work;
+    work.reserve(paths.size());
+    for (const QString &p : paths) {
+        if (!p.isEmpty()) {
+            work.append(p);
+        }
+    }
+    const int total = work.size();
+    if (total == 0) {
+        if (onProgress) {
+            onProgress(0, 0, 0, 0, 0);
+        }
+        return;
+    }
+
+    std::atomic<int> done{0};
+    std::atomic<int> ok{0};
+    std::atomic<int> skipped{0};
+    std::atomic<int> failed{0};
+    std::mutex doneMu;
+    std::condition_variable doneCv;
+    int remaining = total;
+
+    auto report = [&]() {
+        if (onProgress) {
+            onProgress(done.load(), total, ok.load(), skipped.load(), failed.load());
+        }
+    };
+    report();
+
+    const int minS = qMax(0, minScale);
+    for (const QString &path : work) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) {
+            // Stop enqueueing; mark not-yet-started paths skipped and wait for
+            // in-flight pyramid callbacks below.
+            skipped.fetch_add(1);
+            done.fetch_add(1);
+            {
+                std::lock_guard lock(doneMu);
+                --remaining;
+            }
+            doneCv.notify_all();
+            report();
+            continue;
+        }
+        if (isUnsupported(path)) {
+            skipped.fetch_add(1);
+            done.fetch_add(1);
+            {
+                std::lock_guard lock(doneMu);
+                --remaining;
+            }
+            doneCv.notify_all();
+            report();
+            continue;
+        }
+        // Already has a durable pyramid that covers at least minS (or finer).
+        if (hasDurableTiles(path)) {
+            const int have = durableTileMinScale(path);
+            // durableTileMinScale is finest stored scale; lower is finer.
+            // Skip when we already have tiles at or finer than requested minS.
+            if (have >= 0 && have <= minS) {
+                skipped.fetch_add(1);
+                done.fetch_add(1);
+                {
+                    std::lock_guard lock(doneMu);
+                    --remaining;
+                }
+                doneCv.notify_all();
+                report();
+                continue;
+            }
+        }
+        const std::string uri = toThumtooUri(path);
+        if (uri.empty()) {
+            failed.fetch_add(1);
+            done.fetch_add(1);
+            {
+                std::lock_guard lock(doneMu);
+                --remaining;
+            }
+            doneCv.notify_all();
+            report();
+            continue;
+        }
+        // Ensure size row exists so pyramid encode can run (plain files only).
+        if (!cachedSize(path).isValid() && !ArchivePath::isArchiveRef(path)
+            && !PagePath::isPageRef(path) && !PagePath::isPdfImageRef(path)
+            && !PagePath::isPdfImagesCollection(path)) {
+            try {
+                c->prepare_paths({absPathStd(path)}, {});
+            } catch (...) {
+            }
+        }
+        ProcessMemos::instance().clearDurableNo(path);
+        const QString pathCopy = path;
+        c->request_tile_pyramid(
+            uri, minS, /*max_scale=*/-1,
+            [pathCopy, &done, &ok, &failed, &doneMu, &doneCv, &remaining, &report](
+                std::string, int, int, int, std::optional<thumtoo::TileBlob> tile) {
+                // Completion marker uses codec "pyramid-ok"; nullopt = fail.
+                const bool pyramidOk = tile && tile->codec == "pyramid-ok";
+                if (pyramidOk) {
+                    ok.fetch_add(1);
+                    ProcessMemos::instance().noteDurableYes(pathCopy, 0);
+                    const QString p = pathCopy;
+                    QMetaObject::invokeMethod(
+                        bridge(),
+                        [p]() { emit bridge()->durableTilesReady(p); },
+                        Qt::QueuedConnection);
+                } else {
+                    failed.fetch_add(1);
+                }
+                done.fetch_add(1);
+                {
+                    std::lock_guard lock(doneMu);
+                    --remaining;
+                }
+                doneCv.notify_all();
+                report();
+            });
+    }
+
+    // Wait for all enqueued pyramids (or cancel drain).
+    {
+        std::unique_lock lock(doneMu);
+        doneCv.wait(lock, [&]() { return remaining <= 0; });
+    }
+    report();
+}
+
 void preparePaths(const QStringList &paths)
 {
     if (paths.isEmpty()) {

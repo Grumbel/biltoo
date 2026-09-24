@@ -12,6 +12,7 @@
 #include <QStringList>
 #include <QRectF>
 #include <QVector>
+#include <atomic>
 #include <functional>
 #include <optional>
 #include "tilelod/tile_types.hpp"
@@ -319,6 +320,34 @@ QString loadingBreakdownLabel();
 /** Size-probe plain files missing from the durable index. Skips warm hits and
  *  compound refs; runs off the GUI thread. */
 void preparePaths(const QStringList &paths);
+
+/**
+ * Session tile-cache summary (Store has_tile / coverage). Must not run on the
+ * GUI thread — opens the Store like hasDurableTiles.
+ */
+struct TilePrepareStats {
+    int total = 0;          ///< Paths considered (non-empty)
+    int withTiles = 0;      ///< At least one durable tile known
+    int missingTiles = 0;   ///< No durable tiles yet
+    int unsupported = 0;    ///< Codec/container rejected
+};
+
+TilePrepareStats queryTilePrepareStats(const QStringList &paths);
+
+/**
+ * Build durable 256² tile pyramids for @p paths (thumtoo-prepare --tiles).
+ * Runs off the GUI. @p minScale is the finest level to store (0 = full res;
+ * higher = coarser only — less disk, less deep zoom). LQIP is filled
+ * opportunistically by thumtoo during tile encode.
+ *
+ * @p onProgress may be called from a worker (marshal to GUI if needed).
+ * @p cancel when non-null and true stops enqueueing further pyramids.
+ */
+using TilePrepareProgress =
+    std::function<void(int done, int total, int ok, int skipped, int failed)>;
+void prepareTiles(const QStringList &paths, int minScale,
+                  TilePrepareProgress onProgress = {},
+                  std::atomic<bool> *cancel = nullptr);
 
 /**
  * Pre-resolve session paths to thumtoo URIs on a worker thread so the first

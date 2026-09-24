@@ -848,6 +848,11 @@ void MainWindow::createActions()
 
     m_preferencesAct = new QAction(tr("&Preferences…"), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
+    m_prepareTileCacheAct = new QAction(tr("Prepare &Tile Cache…"), this);
+    m_prepareTileCacheAct->setStatusTip(
+        tr("Generate zoom tiles for the current session (like thumtoo-prepare --tiles)"));
+    connect(m_prepareTileCacheAct, &QAction::triggered, this,
+            &MainWindow::showCachePrepareDialog);
     m_epubLayoutAct = new QAction(tr("EPUB &Layout…"), this);
     m_epubLayoutAct->setToolTip(tr("Edit //epub: layout profile for the current book"));
     connect(m_epubLayoutAct, &QAction::triggered, this, &MainWindow::showEpubLayoutDialog);
@@ -989,6 +994,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_duplicateAct);
     m_editMenu->addAction(m_reorderSessionAct);
     m_editMenu->addSeparator();
+    m_editMenu->addAction(m_prepareTileCacheAct);
     // Sort Session lives under Gallery + toolbar (not duplicated here).
     m_editMenu->addAction(m_preferencesAct);
 

@@ -305,6 +305,8 @@ private slots:
     void about();
     void showKeyboardShortcuts();
     void showPreferences();
+    /** Session tile cache prepare (thumtoo-prepare --tiles). */
+    void showCachePrepareDialog();
     bool resolveEpubLayoutTarget(QString *epubFile, QString *layoutParams,
                                  int *keepPage) const;
     void rewriteEpubSessionPaths(const QString &epubFile, const QString &newParams,
@@ -713,6 +715,7 @@ private:
     QAction *m_toggleLayoutPanelAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
     QAction *m_preferencesAct = nullptr;
+    QAction *m_prepareTileCacheAct = nullptr;
     QAction *m_epubLayoutAct = nullptr;
     QAction *m_pdfEmbeddedImagesAct = nullptr;
     QAction *m_aboutAct = nullptr;
