@@ -379,3 +379,21 @@ void WorkspaceController::paintPageGuidePaper(QPainter *painter, const QRectF &e
     painter->drawRect(page);
     painter->restore();
 }
+
+void WorkspaceController::renderForPrint(QPainter *painter, const QRectF &pageRect) const
+{
+    if (!painter || !painter->isActive() || !pageRect.isValid() || !m_view) {
+        return;
+    }
+    if (!m_view->canvasScene()) {
+        return;
+    }
+    const QRectF source = (m_pageGuide.isVisible() && pageGuideSceneRect().isValid())
+        ? pageGuideSceneRect()
+        : m_view->contentExportBounds();
+    if (!source.isValid() || source.isEmpty()) {
+        return;
+    }
+    // High-res materialize — same path as PNG export (not Soft scene samples).
+    m_view->paintHighResExportItems(painter, source, pageRect);
+}

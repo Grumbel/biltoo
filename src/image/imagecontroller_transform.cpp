@@ -183,3 +183,36 @@ int ImageController::resetContentAppearanceForTargets()
     }
     return n;
 }
+
+void ImageController::renderForPrint(QPainter *painter, const QRectF &pageRect) const
+{
+    if (!painter || !painter->isActive() || !pageRect.isValid() || !m_view) {
+        return;
+    }
+    ImageItem *item = m_view->primaryItem();
+    if (!item) {
+        item = m_view->targetItem();
+    }
+    if (!item || item->path().isEmpty()) {
+        return;
+    }
+    const QImage img = m_view->hostDisplayPipeline().blockingExportDisplayForItem(item);
+    if (img.isNull()) {
+        return;
+    }
+    QSizeF fitted(img.size());
+    fitted.scale(pageRect.size(), Qt::KeepAspectRatio);
+    const QRectF target(
+        pageRect.center().x() - fitted.width() / 2.0,
+        pageRect.center().y() - fitted.height() / 2.0,
+        fitted.width(), fitted.height());
+    painter->save();
+    painter->translate(target.center());
+    const ItemComponents::Placement pl = item->placement();
+    painter->rotate(pl.rotation);
+    painter->scale(pl.hFlip ? -1.0 : 1.0, pl.vFlip ? -1.0 : 1.0);
+    painter->translate(-target.center());
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter->drawImage(target, img);
+    painter->restore();
+}

@@ -670,6 +670,41 @@ QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
     return bookKnown.isValid() && !bookKnown.isEmpty() ? bookKnown : logical;
 }
 
+QSize resolveContentLayoutSize(const QSize &logical, const QSize &bookKnown,
+                               const QSize &storeKnown, bool allowStoreAppearance,
+                               SessionImageId sessionId, const QString &path,
+                               bool hasBoundDurable,
+                               const WorkspaceItemState *boundAppearance,
+                               bool hasContentOrient,
+                               const WorkspaceItemState *pathState)
+{
+    // Ground truth: native × content ops (same as filmstrip provider).
+    const QSize native = pickNativeSize(logical, bookKnown, storeKnown, allowStoreAppearance);
+    if (!(native.width() > 1 && native.height() > 1)) {
+        // Callers still call layoutSizeForPath which schedules probes.
+        return native; // may be empty/provisional
+    }
+    WorkspaceItemState want;
+    if (hasBoundDurable && boundAppearance) {
+        want = *boundAppearance;
+        // Placement/color-only durable row is not content orient — same strip as
+        // installDisplayPixels / createItemFromImage (2205–2211).
+        want = orientAuthorityWant(hasContentOrient, want);
+    } else if (sessionId == kInvalidSessionImageId && pathState) {
+        want = *pathState;
+    }
+    // Bound: never path XDG. Unbound path rows may still use full XDG including crop.
+    // Virtual plan / bulk open: never Store loadContentAppearance (GUI freeze).
+    if (shouldAugmentFromPathStore(allowStoreAppearance, hasContentAppearance(want),
+                                   path.isEmpty(), sessionId)) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+            applyStoredContentAppearance(&want, stored, false);
+        }
+    }
+    return layoutSizeOrNative(native, want);
+}
+
 
 bool shouldAugmentFromPathStore(bool allowStoreAppearance,
                                 bool hasContentAlready,

@@ -8,8 +8,6 @@
 
     /** Native host + materialize for PNG/PDF/print (off-GUI load). */
     QImage blockingExportDisplayForItem(const ImageItem *item) const;
-    void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
-                                 const QRectF &targetRect) const;
     /**
      * Best-known native pixel size for @p path from the session cache only.
      * Never does filesystem I/O — returns a neutral size and schedules an async

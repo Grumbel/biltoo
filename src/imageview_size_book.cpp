@@ -30,39 +30,31 @@
 QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId,
                                    bool allowStoreAppearance) const
 {
-    // Ground truth: native × ItemWorld content ops (same as filmstrip provider).
-    const QSize native = SessionAppearance::pickNativeSize(
+    WorkspaceItemState boundWant;
+    const WorkspaceItemState *boundPtr = nullptr;
+    bool hasBoundDurable = false;
+    bool hasContentOrient = false;
+    if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
+        boundWant = sessionAppearanceValue(sessionId);
+        boundPtr = &boundWant;
+        hasBoundDurable = true;
+        hasContentOrient = m_itemWorld.hasContentOrient(sessionId);
+    }
+    const WorkspaceItemState *pathState = nullptr;
+    if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
+        pathState = m_itemWorld.getPathState(path);
+    }
+    return SessionAppearance::resolveContentLayoutSize(
         logicalSizeForPath(path),
         m_size.book().known(path),
         allowStoreAppearance ? ThumtooCache::cachedSize(path) : QSize(),
-        allowStoreAppearance);
-    if (!(native.width() > 1 && native.height() > 1)) {
-        // Callers still call layoutSizeForPath which schedules probes.
-        return native; // may be empty/provisional
-    }
-    WorkspaceItemState want;
-    if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
-        want = sessionAppearanceValue(sessionId);
-        // Placement/color-only durable row is not content orient — same strip as
-        // installDisplayPixels / createItemFromImage (2205–2211).
-        want = SessionAppearance::orientAuthorityWant(
-            m_itemWorld.hasContentOrient(sessionId), want);
-    } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
-        if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
-            want = *st;
-        }
-    }
-    // Bound: never path XDG. Unbound path rows may still use full XDG including crop.
-    // Virtual plan / bulk open: never Store loadContentAppearance (GUI freeze).
-    if (SessionAppearance::shouldAugmentFromPathStore(
-            allowStoreAppearance, SessionAppearance::hasContentAppearance(want),
-            path.isEmpty(), sessionId)) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-            SessionAppearance::applyStoredContentAppearance(&want, stored, false);
-        }
-    }
-    return SessionAppearance::layoutSizeOrNative(native, want);
+        allowStoreAppearance,
+        sessionId,
+        path,
+        hasBoundDurable,
+        boundPtr,
+        hasContentOrient,
+        pathState);
 }
 
 

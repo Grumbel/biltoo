@@ -335,6 +335,19 @@ QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
                      const QSize &storeKnown, bool allowStore);
 
 /**
+ * Full content layout size: pick native, assemble want (bound orient authority
+ * or path state), optional path-store augment, layoutSizeOrNative.
+ * ImageView::contentLayoutSize gathers host sizes/state and calls this.
+ */
+QSize resolveContentLayoutSize(const QSize &logical, const QSize &bookKnown,
+                               const QSize &storeKnown, bool allowStoreAppearance,
+                               SessionImageId sessionId, const QString &path,
+                               bool hasBoundDurable,
+                               const WorkspaceItemState *boundAppearance,
+                               bool hasContentOrient,
+                               const WorkspaceItemState *pathState);
+
+/**
  * Unbound path may load XDG content appearance for layout when allowStore and
  * no content yet. Bound SessionImageId never uses path XDG.
  */

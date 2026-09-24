@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2588.1-reset-content-appearance**.
-Latest tip: **biltoo-2588** (+ thumtoo-338). ImageController owns resetContentAppearanceForTargets.
+Latest agent handoff: **TODO.md → biltoo-2589.1-layout-size-print**.
+Latest tip: **biltoo-2589** (+ thumtoo-338). SessionAppearance layout size; mode controllers own print.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

@@ -237,6 +237,8 @@ public:
     QRectF pageGuideSceneRect() const;
     void fitPageGuideToContent(qreal marginPx);
     void setPageGuideSelected(bool on);
+    /** High-res print into @p pageRect (page guide or content bounds). */
+    void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
     int pageGuideHandleAt(const QPoint &viewPos) const;
     bool beginPageGuideResize(int handle);
     void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);

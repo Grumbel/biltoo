@@ -88,6 +88,9 @@ public:
      * @return number of items reset.
      */
     int resetContentAppearanceForTargets();
+    /** Image-mode high-res print of primary/target into @p pageRect. */
+    void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
+
 
     /** Image-mode framing / sticky pan (per-view; dual-safe). */
     ViewFraming &framing() { return m_framing; }

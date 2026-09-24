@@ -56,6 +56,9 @@
     void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
     /** Scene bounds of live image tiles (no chrome), with a small margin. */
     QRectF contentExportBounds() const;
+    /** High-res materialize of live tiles into @p targetRect (export/print). */
+    void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
+                                 const QRectF &targetRect) const;
     /** Rasterize @p sourceSceneRect into an image of @p pixelSize. */
     QImage renderExportImage(const QSize &pixelSize, const QRectF &sourceSceneRect,
                              bool transparentBackground = true) const;
