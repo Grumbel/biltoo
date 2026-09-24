@@ -2,26 +2,22 @@
 
 ## Status (2026-09-25)
 
-**Tip: biltoo-2640.1-gallery-bar-range-recenter** (base `64c7465`).
+**Tip: biltoo-2641.1-gallery-always-on-bars** (base `1e40934`).
 
-## Research answer (signals / SO)
+### GUI_BUDGET spam
+Exceed logs are silent unless `BILTOO_GUI_BUDGET_LOG=1` (or STRICT).
 
-There is **no** public “scrollbar appeared” signal on QAbstractScrollArea.
+### Gallery “off centre” / covered edge without H-bar
+Layout packs left→right from margin into `availW`. With **AsNeeded**, that
+`availW` was the full client; a vertical bar then covers the right edge of the
+pack while scene width stays ≈ client → **no horizontal scrollbar**, content
+looks shifted/clipped under the bar. Image mode centres a single underlay and
+does not hit this.
 
-Qt shows/hides AsNeeded bars from:
-`QScrollBar::rangeChanged` → internal `_q_showOrHideScrollBars` (QueuedConnection)
-(see qabstractscrollarea.cpp).
-
-Community patterns:
-- Connect to `rangeChanged` (this tip)
-- Event-filter Show/Hide on the bar widgets (Qt forum)
-- AlwaysOn (avoids the problem; not desired here)
-- SO 38254367: same “contents shift when scrollbar appears” — no solid accepted fix
-
-This tip: on rangeChanged in Gallery, capture scene centre under the viewport,
-then `QTimer::singleShot(0)` re-centre after Qt’s queued bar layout.
+**Fix:** when scrollbars are enabled, Gallery uses **AlwaysOn** (viewport already
+excludes gutters); pack measures live viewport only. Image/Workspace stay AsNeeded.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2640.1-gallery-bar-range-recenter-64c7465.bundle HEAD
+git pull --ff-only …/biltoo-2641.1-gallery-always-on-bars-1e40934.bundle HEAD
 ```

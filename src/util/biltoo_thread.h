@@ -51,6 +51,7 @@ constexpr qint64 kGuiBudgetChainGapMs = 3;
  *   biltoo/GUI_BUDGET EXCEEDED: chained-turn … (via last-label)
  * so N× small handlers cannot freeze the UI without a report.
  *
+ * Logging is off by default. Set BILTOO_GUI_BUDGET_LOG=1 to print exceeds.
  * Aborts only if BILTOO_GUI_BUDGET_STRICT is set (non-empty, not "0").
  */
 class GuiBudgetScope
@@ -61,6 +62,10 @@ public:
         , m_budgetMs(budgetMs > 0 ? budgetMs : kGuiBudgetDefaultMs)
     {
         if (!QThread::isMainThread()) {
+            return;
+        }
+        // Skip all timing when neither log nor strict is enabled (cheap no-op).
+        if (!logEnabled() && !strictMode()) {
             return;
         }
         m_onGui = true;
@@ -100,24 +105,28 @@ public:
 private:
     static void logExceed(const char *label, qint64 ms, qint64 budgetMs)
     {
-        std::fprintf(stderr,
-                     "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)%s\n",
-                     label ? label : "?",
-                     static_cast<long long>(ms),
-                     static_cast<long long>(budgetMs),
-                     strictMode() ? " [STRICT abort]"
-                                  : " [log only; set BILTOO_GUI_BUDGET_STRICT=1 to abort]");
-        std::fflush(stderr);
+        if (logEnabled() || strictMode()) {
+            std::fprintf(stderr,
+                         "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)%s\n",
+                         label ? label : "?",
+                         static_cast<long long>(ms),
+                         static_cast<long long>(budgetMs),
+                         strictMode() ? " [STRICT abort]"
+                                      : " [log only; set BILTOO_GUI_BUDGET_STRICT=1 to abort]");
+            std::fflush(stderr);
+        }
         if (strictMode()) {
             Q_ASSERT_X(ms <= budgetMs, label ? label : "GuiBudget",
                        "GUI thread work exceeded budget — move off GUI or shrink");
         }
     }
-    static bool strictMode()
+    static bool envTruthy(const char *name)
     {
-        const char *e = std::getenv("BILTOO_GUI_BUDGET_STRICT");
+        const char *e = std::getenv(name);
         return e && e[0] && e[0] != '0';
     }
+    static bool strictMode() { return envTruthy("BILTOO_GUI_BUDGET_STRICT"); }
+    static bool logEnabled() { return envTruthy("BILTOO_GUI_BUDGET_LOG"); }
 
     const char *m_label = nullptr;
     qint64 m_budgetMs = kGuiBudgetDefaultMs;

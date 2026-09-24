@@ -61,18 +61,9 @@
 namespace {
 
 /**
- * Pack client size without toggling scrollbar policy (policy toggles resize the
- * viewport mid-pack and fight AlignCenter).
- *
- * Qt: AlignCenter only applies while sceneRect fits in the viewport. Once a
- * bar appears, scene > viewport and only scroll position matters — but the
- * classic failure is packing to the *full* client, then a vertical bar eats
- * width so sceneWidth > clientWidth and the view looks horizontally shifted.
- *
- * When AsNeeded/AlwaysOn can show a bar that is not yet taking space, reserve
- * PM_ScrollBarExtent on that axis so the pack already fits the post-bar client.
- * When the bar is already visible, viewport() is already reduced — do not
- * double-subtract.
+ * Pack client = live viewport size. Gallery uses AlwaysOn when scrollbars are
+ * enabled so the viewport already excludes both gutters — pack to that size,
+ * not the full client. Speculative extent subtraction was a separate failure.
  */
 struct PackClientSize {
     int width = 0;
@@ -85,38 +76,9 @@ PackClientSize measurePackClient(QGraphicsView *view)
     if (!view) {
         return out;
     }
-    QWidget *vp = view->viewport();
-    if (!vp) {
-        return out;
-    }
-    out.width = vp->width();
-    out.height = vp->height();
-    const int extent = view->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, view);
-    if (extent < 1) {
-        return out;
-    }
-    const auto hPol = view->horizontalScrollBarPolicy();
-    const auto vPol = view->verticalScrollBarPolicy();
-    QScrollBar *hBar = view->horizontalScrollBar();
-    QScrollBar *vBar = view->verticalScrollBar();
-    // isVisible can be false while the bar still reserves layout space under
-    // AlwaysOn; prefer width()/height() of the bar widget when parented.
-    const bool vTakesSpace = vBar && vBar->isVisibleTo(view) && vBar->width() > 0;
-    const bool hTakesSpace = hBar && hBar->isVisibleTo(view) && hBar->height() > 0;
-    // Vertical bar consumes width; horizontal bar consumes height.
-    if (!vTakesSpace
-        && (vPol == Qt::ScrollBarAsNeeded || vPol == Qt::ScrollBarAlwaysOn)) {
-        out.width -= extent;
-    }
-    if (!hTakesSpace
-        && (hPol == Qt::ScrollBarAsNeeded || hPol == Qt::ScrollBarAlwaysOn)) {
-        out.height -= extent;
-    }
-    if (out.width < 32) {
-        out.width = 32;
-    }
-    if (out.height < 32) {
-        out.height = 32;
+    if (QWidget *vp = view->viewport()) {
+        out.width = qMax(32, vp->width());
+        out.height = qMax(32, vp->height());
     }
     return out;
 }

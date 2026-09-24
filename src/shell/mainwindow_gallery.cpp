@@ -556,9 +556,17 @@ void MainWindow::updateScrollBarPolicyForMode()
         h = Qt::ScrollBarAlwaysOff;
         v = Qt::ScrollBarAlwaysOff;
     } else if (m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked()) {
-        // Gallery packs reserve bar space inside applyLayout when needed.
-        h = Qt::ScrollBarAsNeeded;
-        v = Qt::ScrollBarAsNeeded;
+        // Gallery: AlwaysOn so the live viewport already excludes both gutters.
+        // AsNeeded packs to the full client; then a vertical bar covers the right
+        // edge of the pack without a horizontal bar (scene width still ≈ client).
+        // Image/Workspace keep AsNeeded (single underlay / free-form).
+        if (m_imageView->isGalleryMode()) {
+            h = Qt::ScrollBarAlwaysOn;
+            v = Qt::ScrollBarAlwaysOn;
+        } else {
+            h = Qt::ScrollBarAsNeeded;
+            v = Qt::ScrollBarAsNeeded;
+        }
     }
     if (m_imageView->horizontalScrollBarPolicy() != h) {
         m_imageView->setHorizontalScrollBarPolicy(h);
