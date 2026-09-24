@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "gallery/gallerycontroller.h"
+#include <QPen>
 #include "gallery/gallerylayout.h"
 #include <QWidget>
 #include "gallery/gallerydecodesm.h"
@@ -1240,6 +1241,56 @@ void GalleryController::onContentAppearanceReset()
     applyLayout(GalleryPackReason::ContentChange);
     // Soft state was reset; kick the ladder for visible tiles.
     updateDecodeWindow();
+}
+
+void GalleryController::paintSelectionFrames(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view) {
+        return;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return;
+    }
+    const QList<QGraphicsItem *> selected = scene->selectedItems();
+    if (selected.isEmpty()) {
+        return;
+    }
+    painter->save();
+    painter->setBrush(Qt::NoBrush);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    // Double ring so selection reads on light and dark tiles (single cyan was
+    // easy to lose). Cosmetic widths = device pixels under any zoom.
+    QPen outer(QColor(0, 0, 0, 200));
+    outer.setCosmetic(true);
+    outer.setWidthF(7.0);
+    QPen inner(QColor(0, 200, 255, 255));
+    inner.setCosmetic(true);
+    inner.setWidthF(3.0);
+    // Soft wash so the cell is obviously "in" the selection set.
+    const QColor wash(0, 180, 255, 36);
+    for (QGraphicsItem *gi : selected) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->isInteractive()) {
+            continue;
+        }
+        // Same rect the content paint uses (gallery clip when Grid-Crop).
+        const QRectF local = item->displayContentRect();
+        const QPolygonF scenePoly = item->mapToScene(local);
+        const QRectF bounds = scenePoly.boundingRect();
+        if (!exposed.isNull() && !exposed.intersects(bounds)) {
+            continue;
+        }
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(wash);
+        painter->drawPolygon(scenePoly);
+        painter->setBrush(Qt::NoBrush);
+        painter->setPen(outer);
+        painter->drawPolygon(scenePoly);
+        painter->setPen(inner);
+        painter->drawPolygon(scenePoly);
+    }
+    painter->restore();
 }
 
 

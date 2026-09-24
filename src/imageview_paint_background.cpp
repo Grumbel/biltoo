@@ -297,7 +297,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
     // is not invalidated on select or scroll (was painted inside ImageItem::paint).
     if (isGalleryMode()) {
-        paintGallerySelectionFrames(painter, rect);
+        m_gallery.paintSelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hud.appearance().isVisible() && !m_hud.flash().isVisible() && !m_hud.flash().isIdentityPulse()

@@ -138,6 +138,12 @@ public:
     void onContentAppearancePropagated();
     /** After Reset Content Appearance: immediate pack + soft ladder kick. */
     void onContentAppearanceReset();
+
+    /**
+     * Gallery selection rings in scene space (drawForeground).
+     * Skips interactive (Workspace) items.
+     */
+    void paintSelectionFrames(QPainter *painter, const QRectF &exposed) const;
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();
