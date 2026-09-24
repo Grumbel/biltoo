@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2458.1-stage-2c3-secondary-session-load**.
-Latest tip: **biltoo-2458** (+ thumtoo-338). Stage 2c.3: secondary session load + independent nav.
+Latest agent handoff: **TODO.md → biltoo-2459.1-fix-mapfromscene-overloads**.
+Latest tip: **biltoo-2459** (+ thumtoo-338). Fix mapFromScene overload hiding.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

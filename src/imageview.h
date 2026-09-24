@@ -318,6 +318,8 @@ public:
     void setUpdatesEnabled(bool enabled) override { QGraphicsView::setUpdatesEnabled(enabled); }
     QString hostTr(const char *sourceText) const override { return tr(sourceText); }
     qreal devicePixelRatioF() const override { return QGraphicsView::devicePixelRatioF(); }
+    // Keep QRect / QPolygonF overloads visible (DisplayPipelineHost only needs QPointF).
+    using QGraphicsView::mapFromScene;
     QPointF mapFromScene(const QPointF &point) const override { return QGraphicsView::mapFromScene(point); }
     // Keep QRect / QPolygonF overloads visible (DisplayPipelineHost only needs QPoint).
     using QGraphicsView::mapToScene;
