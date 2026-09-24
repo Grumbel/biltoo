@@ -41,6 +41,8 @@
 #include <QMouseEvent>
 #include <QEvent>
 #include <QKeyEvent>
+#include <QResizeEvent>
+#include <QWheelEvent>
 #include <QScrollBar>
 
 bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
@@ -873,3 +875,43 @@ void ViewShellChrome::handleLeave()
     m_view->hostGallery().onViewportLeave();
     m_view->hostSlideshow().onViewportLeave();
 }
+
+void ViewShellChrome::handleWheel(QWheelEvent *event)
+{
+    if (!m_view || !event) {
+        return;
+    }
+    if (m_view->hostGallery().tryWheelGalleryZoom(event)
+        || m_view->hostGallery().tryWheelGalleryScroll(event)) {
+        return;
+    }
+    m_view->hostImage().wheelZoomAboutCursor(event);
+}
+
+void ViewShellChrome::handleResize()
+{
+    if (!m_view) {
+        return;
+    }
+    if (m_view->hostLayoutApply().active()) {
+        return;
+    }
+    if (m_view->isGalleryMode()) {
+        m_view->hostGallery().onViewResized();
+        return;
+    }
+    if (m_view->isWorkspaceMode()) {
+        m_view->hostDisplayPipeline().ensureWorkspaceQualityClimb();
+        return;
+    }
+    // Image mode
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
+        return;
+    }
+    if (m_view->hostSlideshow().dwell().isMotionActive()) {
+        m_view->hostSlideshow().onViewResizedDuringDwell();
+        return;
+    }
+    m_view->hostImage().onViewResized();
+}
+

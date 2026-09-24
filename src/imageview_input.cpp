@@ -62,34 +62,12 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 }
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    if (m_gallery.tryWheelGalleryZoom(event) || m_gallery.tryWheelGalleryScroll(event)) {
-        return;
-    }
-    m_image.wheelZoomAboutCursor(event);
+    m_shell.handleWheel(event);
 }
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (hostLayoutApply().active()) {
-        return;
-    }
-    if (isGalleryMode()) {
-        m_gallery.onViewResized();
-        return;
-    }
-    if (isWorkspaceMode()) {
-        m_displayPipeline->ensureWorkspaceQualityClimb();
-        return;
-    }
-    // Image mode
-    if (m_slideshow.hud().isProgressActive()) {
-        return;
-    }
-    if (m_slideshow.dwell().isMotionActive()) {
-        m_slideshow.onViewResizedDuringDwell();
-        return;
-    }
-    m_image.onViewResized();
+    m_shell.handleResize();
 }
 bool ImageView::setHoverEdge(EdgeZone zone)
 {

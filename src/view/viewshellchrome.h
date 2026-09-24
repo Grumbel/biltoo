@@ -15,6 +15,8 @@ class QDragMoveEvent;
 class QDropEvent;
 class QPainter;
 class QKeyEvent;
+class QWheelEvent;
+class QResizeEvent;
 class QEvent;
 class QRectF;
 
@@ -84,6 +86,14 @@ public:
     bool handleKeyPress(QKeyEvent *event);
     bool handleMouseDoubleClick(QMouseEvent *event);
     void handleLeave();
+
+    /** Wheel: Gallery zoom/scroll first, else Image zoom-about-cursor. */
+    void handleWheel(QWheelEvent *event);
+    /**
+     * Post-QGraphicsView resize: mode-specific quality climb / pack / framing.
+     * Caller must invoke QGraphicsView::resizeEvent first.
+     */
+    void handleResize();
 
 private:
     ImageView *m_view = nullptr;
