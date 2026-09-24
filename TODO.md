@@ -2,7 +2,7 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2420-fix-residual-clear** (base `d80d461`).
+**Tip: biltoo-2421.1-verify-ownership** (base `d80d461`).
 
 ### Phase 5 ownership — complete for friend/pixel boundary
 - Sole ImageItem pixel friend: DisplayPipelineController
@@ -22,5 +22,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2420.1-fix-residual-clear-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2421.1-verify-ownership-d80d461.bundle HEAD
 ```
