@@ -103,37 +103,7 @@ void ImageView::takePendingWorkspacePath(const QString &path)
 
 void ImageView::clearSceneKeepingStashes()
 {
-    if (!m_scene) {
-        return;
-    }
-    // Do not QGraphicsScene::clear() — that deletes every item still parented to
-    // the scene. Workspace/Gallery stashes are supposed to be off-scene, but if a
-    // tile is still parented, clear() would free it and leave a dangling stash
-    // pointer (Workspace re-enter → empty canvas).
-    QSet<ImageItem *> keep;
-    for (ImageItem *item : m_workspace.stashedItems()) {
-        if (item) {
-            keep.insert(item);
-        }
-    }
-    for (ImageItem *item : m_gallery.stashedItems()) {
-        if (item) {
-            keep.insert(item);
-        }
-    }
-    m_scene->blockSignals(true);
-    const QList<QGraphicsItem *> all = m_scene->items();
-    for (QGraphicsItem *gi : all) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            if (keep.contains(ii)) {
-                m_scene->removeItem(ii);
-                continue;
-            }
-        }
-        m_scene->removeItem(gi);
-        delete gi;
-    }
-    m_scene->blockSignals(false);
+    m_image.clearSceneKeepingStashes();
 }
 
 void ImageView::scheduleReplaceLoad(const QString &path)
@@ -189,23 +159,8 @@ void ImageView::clearWorkspace()
 
 void ImageView::prepareImageModeCanvas()
 {
-    m_undoStack->clear();
-    m_scene->clearSelection();
-    {
-        resetTransform();
-        if (horizontalScrollBar()) {
-            horizontalScrollBar()->setValue(0);
-        }
-        if (verticalScrollBar()) {
-            verticalScrollBar()->setValue(0);
-        }
-    }
-    // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
-    m_scene->setSceneRect(QRectF());
-    m_image.framing().setFitOnly();
+    m_image.prepareModeCanvas();
 }
-
-
 
 void ImageView::setViewMode(ViewMode mode)
 {

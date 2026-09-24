@@ -513,3 +513,7 @@ Product shell (minimal):
 54. **biltoo-2512:** WorkspaceController owns clearWorkspace (full session wipe)
     and validateUniqueLiveSessionIds; ImageView thin routers.
 
+55. **biltoo-2513:** ImageController owns prepareModeCanvas and
+    clearSceneKeepingStashes (Image enter canvas reset; stash-safe scene
+    detach); ImageView thin routers.
+

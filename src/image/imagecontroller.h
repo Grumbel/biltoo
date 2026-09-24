@@ -61,6 +61,11 @@ public:
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
 
+    /** Reset undo, view transform, scene rect, framing for Image enter. */
+    void prepareModeCanvas();
+    /** Remove scene items without deleting mode-stashed tiles. */
+    void clearSceneKeepingStashes();
+
     /** Content flip / quarter-turn rotate (all modes; pipeline bake + mode post). */
     void flipHorizontal();
     void flipVertical();

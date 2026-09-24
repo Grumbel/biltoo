@@ -18,6 +18,12 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QApplication>
+#include <QUndoStack>
+#include <QScrollBar>
+#include <QGraphicsScene>
+#include <QGraphicsItem>
+#include "workspace/workspacecontroller.h"
+#include "gallery/gallerycontroller.h"
 
 ImageController::ImageController(ImageView *view)
     : m_view(view)
@@ -277,4 +283,60 @@ void ImageController::hardReloadFromDisk()
             }
         });
     }
+}
+
+void ImageController::prepareModeCanvas()
+{
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        stack->clear();
+    }
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        scene->clearSelection();
+        // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
+        scene->setSceneRect(QRectF());
+    }
+    m_view->resetTransform();
+    if (QScrollBar *h = m_view->horizontalScrollBar()) {
+        h->setValue(0);
+    }
+    if (QScrollBar *v = m_view->verticalScrollBar()) {
+        v->setValue(0);
+    }
+    m_framing.setFitOnly();
+}
+
+void ImageController::clearSceneKeepingStashes()
+{
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return;
+    }
+    // Do not QGraphicsScene::clear() — that deletes every item still parented to
+    // the scene. Workspace/Gallery stashes are supposed to be off-scene, but if a
+    // tile is still parented, clear() would free it and leave a dangling stash
+    // pointer (Workspace re-enter → empty canvas).
+    QSet<ImageItem *> keep;
+    for (ImageItem *item : m_view->hostWorkspace().stashedItems()) {
+        if (item) {
+            keep.insert(item);
+        }
+    }
+    for (ImageItem *item : m_view->hostGallery().stashedItems()) {
+        if (item) {
+            keep.insert(item);
+        }
+    }
+    scene->blockSignals(true);
+    const QList<QGraphicsItem *> all = scene->items();
+    for (QGraphicsItem *gi : all) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (keep.contains(ii)) {
+                scene->removeItem(ii);
+                continue;
+            }
+        }
+        scene->removeItem(gi);
+        delete gi;
+    }
+    scene->blockSignals(false);
 }

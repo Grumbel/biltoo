@@ -2,12 +2,11 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2512.1-own-workspace-clear-session** (base `7d823d8`).
+**Tip: biltoo-2513.1-own-image-canvas-prep** (base `7d823d8`).
 
 ### Ownership transfer
-- **clearWorkspace / validateUniqueLiveSessionIds** on WorkspaceController
-  (`workspace_clear.cpp`)
-- ImageView thin routers
+- **prepareModeCanvas / clearSceneKeepingStashes** on ImageController
+- ImageView thin routers (`prepareImageModeCanvas` / `clearSceneKeepingStashes`)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -16,10 +15,10 @@ QUndoStack, display pipeline, fitItem host orchestration
 
 ### Still on ImageView
 - geometry undo command helpers
-- setViewMode / mode enter-leave shell
-- prepareImageModeCanvas / clearSceneKeepingStashes
+- setViewMode / setActiveMode / mode enter-leave shell
+- applyItemModeFlags
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2512.1-own-workspace-clear-session-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2513.1-own-image-canvas-prep-7d823d8.bundle HEAD
 ```
