@@ -786,15 +786,14 @@ void ViewShellChrome::applyModeViewportPolicy(int viewMode)
     const auto mode = static_cast<VM>(viewMode);
     if (mode == VM::Gallery) {
         m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-        // Top-left: AlignCenter floated a pack measured under AlwaysOn gutters
-        // inside a larger AsNeeded/Off viewport (phantom scrollbar margins /
-        // off-centre overview after Image→Gallery).
-        m_view->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     } else {
         m_view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-        // Image / Workspace: centre the sole underlay / free-form canvas.
-        m_view->setAlignment(Qt::AlignCenter);
     }
+    // All modes: AlignCenter so zoom-out keeps the view centre (top-left
+    // pinned the overview to the corner when the scene was smaller than the
+    // viewport). Off-centre Image→Gallery return is handled by scene-centre
+    // restore + PackViewportGuard, not by alignment.
+    m_view->setAlignment(Qt::AlignCenter);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
