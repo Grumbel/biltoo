@@ -9,6 +9,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "item/itemcomponents.h"
 #include "display/displayedgepolicy.h"
 #include "display/pathrasterservice.h"
 #include "host/thumtoocache.h"
@@ -2144,3 +2145,135 @@ void DisplayPipelineController::hostSetPreviewImage(ImageItem *item, const QImag
         item->setPreviewImage(preview);
     }
 }
+
+void DisplayPipelineController::bakeItemRotate90(ImageItem *item, int quarterTurns)
+{
+    if (!item || !m_view || quarterTurns == 0) {
+        return;
+    }
+    const QImage beforeSrc = item->sourceImage().copy();
+    WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+
+    const SessionImageId sid = resolveItemSessionId(item);
+    const int turns = ContentXform::normalizeQuarterTurns(
+        beforeSt.contentQuarterTurns + quarterTurns);
+    WorkspaceItemState cropMap = m_view->appearanceCropMapForEdit(item, beforeSt, sid);
+    SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
+
+    WorkspaceItemState want = beforeSt;
+    want.contentQuarterTurns = turns;
+    want.hasCrop = cropMap.hasCrop;
+    want.cropRect = cropMap.cropRect;
+    want.cropRotation = cropMap.cropRotation;
+    want.cropSourceSize = cropMap.cropSourceSize;
+    m_view->syncLiveContentMetaFromState(item, want);
+
+    rematerializeItemContent(item, want);
+    applyContentLayoutSize(item, want);
+
+    {
+        WorkspaceItemState s = want;
+        s.sessionId = sid;
+        s.path = item->path();
+        s.contentQuarterTurns = turns;
+        if (sid != kInvalidSessionImageId) {
+            m_view->itemWorld().setContentBake(sid, ItemComponents::contentBakeFromState(s));
+            m_view->itemWorld().setCrop(sid, ItemComponents::cropFromState(s));
+            m_view->persistDurableContentAppearance(item, s, "bakeRotate");
+        }
+        if (sid == kInvalidSessionImageId) {
+            WorkspaceItemState pathSlot;
+            if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
+                pathSlot = *st;
+            }
+            pathSlot.path = item->path();
+            pathSlot.contentQuarterTurns = turns;
+            pathSlot.contentHFlip = want.contentHFlip;
+            pathSlot.contentVFlip = want.contentVFlip;
+            pathSlot.hasCrop = want.hasCrop;
+            pathSlot.cropRect = want.cropRect;
+            pathSlot.cropRotation = want.cropRotation;
+            pathSlot.cropSourceSize = want.cropSourceSize;
+            m_view->itemWorld().setPathState(item->path(), pathSlot);
+        }
+    }
+
+    m_view->commitItemSessionEdit(item);
+
+    if (m_view->isImageMode() && m_view->canvasScene() && m_view->liveItems().size() == 1) {
+        m_view->canvasScene()->setSceneRect(
+            item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+
+    WorkspaceItemState afterSt = want;
+    ItemComponents::applyPlacementToState(afterSt, item->placement());
+    afterSt.sessionId = beforeSt.sessionId;
+    m_view->pushItemContentCommand(m_view->tr("Rotate"), item, beforeSrc,
+                                   item->sourceImage().copy(), beforeSt, afterSt);
+}
+
+void DisplayPipelineController::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
+{
+    if (!item || !m_view || (!horizontal && !vertical)) {
+        return;
+    }
+    const QImage beforeSrc = item->sourceImage().copy();
+    WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+
+    bool h = beforeSt.contentHFlip;
+    bool v = beforeSt.contentVFlip;
+    int turns = beforeSt.contentQuarterTurns % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    const bool swapAxes = (turns == 1 || turns == 3);
+    const bool srcH = swapAxes ? vertical : horizontal;
+    const bool srcV = swapAxes ? horizontal : vertical;
+    if (srcH) {
+        h = !h;
+    }
+    if (srcV) {
+        v = !v;
+    }
+
+    const SessionImageId sid = resolveItemSessionId(item);
+    WorkspaceItemState cropMap = m_view->appearanceCropMapForEdit(item, beforeSt, sid);
+    SessionAppearance::mapCropThroughContentFlip(cropMap, horizontal, vertical);
+
+    WorkspaceItemState want = beforeSt;
+    want.contentHFlip = h;
+    want.contentVFlip = v;
+    want.hasCrop = cropMap.hasCrop;
+    want.cropRect = cropMap.cropRect;
+    want.cropRotation = cropMap.cropRotation;
+    want.cropSourceSize = cropMap.cropSourceSize;
+    want.contentQuarterTurns = cropMap.contentQuarterTurns;
+
+    m_view->syncLiveContentMetaFromState(item, want);
+    rematerializeItemContent(item, want);
+    applyContentLayoutSize(item, want);
+
+    if (sid != kInvalidSessionImageId) {
+        WorkspaceItemState s = want;
+        s.sessionId = sid;
+        m_view->itemWorld().setContentBake(sid, ItemComponents::contentBakeFromState(s));
+        m_view->itemWorld().setCrop(sid, ItemComponents::cropFromState(s));
+        m_view->persistDurableContentAppearance(item, s, "bakeFlip");
+    } else if (cropMap.hasCrop) {
+        WorkspaceItemState s = want;
+        ItemComponents::applyPlacementToState(s, item->placement());
+        m_view->itemWorld().setPathState(item->path(), s);
+    }
+
+    m_view->commitItemSessionEdit(item);
+
+    WorkspaceItemState afterSt = want;
+    ItemComponents::applyPlacementToState(afterSt, item->placement());
+    afterSt.sessionId = beforeSt.sessionId;
+    const QString text = horizontal && !vertical ? m_view->tr("Flip horizontal")
+        : vertical && !horizontal ? m_view->tr("Flip vertical")
+        : m_view->tr("Flip");
+    m_view->pushItemContentCommand(text, item, beforeSrc, item->sourceImage().copy(),
+                                   beforeSt, afterSt);
+}
+

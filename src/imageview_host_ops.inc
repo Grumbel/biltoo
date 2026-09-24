@@ -71,3 +71,14 @@
                                  const ItemComponents::Placement &before,
                                  const ItemComponents::Placement &after);
 
+    // --- Content bake host (DisplayPipelineController) ---
+    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
+    WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
+                                                const WorkspaceItemState &fallback,
+                                                SessionImageId sid) const;
+    void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
+                                         const char *debugTag);
+    void pushItemContentCommand(const QString &text, ImageItem *item,
+                                const QImage &beforeSrc, const QImage &afterSrc,
+                                const WorkspaceItemState &before,
+                                const WorkspaceItemState &after);

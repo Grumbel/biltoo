@@ -109,9 +109,11 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3j. **Done:** interactive color-grade SoftPreview via `installInteractiveSoftPreview` on pipeline.
 3k. **Done:** `reinstallModePixelsAfterIdentityReset` (Gallery soft / Image full) on pipeline.
 3l. **Done:** `clearStaleAppliedFingerprintIfNeeded` on pipeline (pairs with gallery rematerialize).
+3m. **Done:** `bakeItemRotate90` / `bakeItemFlip` orchestration on pipeline;
+    ImageView host helpers for capture/crop-map/persist/undo; thin forwards.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
-5. Residual on ImageView: bake orchestration (undo + setContentBake);
-    interactive grade live-grade fast path + filmstrip emit.
+5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
+    bake host helpers (capture/undo) remain on view by design.
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 

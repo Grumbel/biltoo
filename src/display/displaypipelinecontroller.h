@@ -113,6 +113,15 @@ public:
      */
     void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
     /**
+     * Durable ±90° content bake: want composition, rematerialize, ItemWorld, undo.
+     * ImageView::bakeItemRotate90 forwards here.
+     */
+    void bakeItemRotate90(ImageItem *item, int quarterTurns);
+    /**
+     * Durable content flip bake. ImageView::bakeItemFlip forwards here.
+     */
+    void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
+    /**
      * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
      * Used by content bake (rotate/flip) for the pure GUI path.
      */

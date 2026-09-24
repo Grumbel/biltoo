@@ -114,25 +114,8 @@
 
     void flushColorAdjustCommit();
 
-    /** Bake ±90° content into pixels and session state (not placement). */
-    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
-
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
-
-    WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
-                                                const WorkspaceItemState &fallback,
-                                                SessionImageId sid) const;
-
-    void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
-                                         const char *debugTag);
-
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
-
-    /** Push content bake undo (pixels + session appearance). */
-    void pushItemContentCommand(const QString &text, ImageItem *item,
-                                const QImage &beforeSrc, const QImage &afterSrc,
-                                const WorkspaceItemState &before,
-                                const WorkspaceItemState &after);
 
     void appendThumtooDebugStatus(QString *text, ImageItem *item) const;
 
