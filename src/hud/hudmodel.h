@@ -56,6 +56,12 @@ QString loadingLineWithGalleryExtras(const QString &core, int blankTiles, int we
  */
 QString placementFlipRotationSuffix(qreal rotationDegrees, bool hFlip, bool vFlip);
 
+/** THUMTOO_DEBUG gallery mix: blank / lqip / soft / higher [/ climbing]. */
+QString galleryDebugPixelMixSuffix(int blank, int lqip, int soft, int higher, int climbing);
+
+/** Workspace selected-item scale · rotation status suffix. */
+QString workspaceSelectedItemScaleSuffix(qreal scaleX, qreal scaleY, qreal rotationDegrees);
+
 } // namespace HudModel
 
 #endif // HUDMODEL_H

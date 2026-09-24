@@ -221,14 +221,7 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         // Pipeline mix is debug-only — never put "LQIP" in the status bar.
         const char *dbg = std::getenv("THUMTOO_DEBUG");
         if (dbg && dbg[0] && dbg[0] != '0') {
-            text += tr(" · %1 blank · %2 lqip · %3 soft · %4 higher")
-                        .arg(blank)
-                        .arg(lqip)
-                        .arg(soft)
-                        .arg(better);
-            if (climb > 0) {
-                text += tr(" · climbing %1").arg(climb);
-            }
+            text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
         }
         const int pending = pendingDecodeCount();
         if (pending > 0) {
@@ -248,17 +241,7 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
     }
     if (isWorkspaceMode() && item->isSelected()) {
         const ItemComponents::Placement pl = item->placement();
-        const qreal sy = pl.scaleY > 0.0 ? pl.scaleY : pl.scale;
-        if (qAbs(pl.scale - sy) < 0.005) {
-            text += tr(" · Item %1% · Rot %2°")
-                        .arg(qRound(pl.scale * 100))
-                        .arg(qRound(pl.rotation));
-        } else {
-            text += tr(" · Item %1%×%2% · Rot %3°")
-                        .arg(qRound(pl.scale * 100))
-                        .arg(qRound(sy * 100))
-                        .arg(qRound(pl.rotation));
-        }
+        text += HudModel::workspaceSelectedItemScaleSuffix(pl.scale, pl.scaleY, pl.rotation);
     }
     if (targetHasContentAppearance()) {
         text += tr(" · Edited");

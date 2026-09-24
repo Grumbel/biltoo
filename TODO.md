@@ -2,13 +2,12 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2537.1-own-content-appearance-reset-gallery** (base `7d823d8`).
+**Tip: biltoo-2538.1-own-multiitem-status-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **ItemWorld::hasContentEditComponents** — crop/bake/colour presence (not pose/attention)
-- **GalleryController::onContentAppearanceReset** — pack + decode window after identity reset
-- ImageView::targetHasContentAppearance / resetContentAppearanceForTargets use the above;
-  Image fit path uses ImageController::fitItem
+- **HudModel::galleryDebugPixelMixSuffix** — pure THUMTOO_DEBUG gallery mix line
+- **HudModel::workspaceSelectedItemScaleSuffix** — pure Workspace selected scale/rot
+- ImageView::statusTextMultiItem stays host (counts + pending decode + orchestration)
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -17,14 +16,14 @@ QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-appearance peer-sync / paint / remaining status
+appearance peer-sync / paint / climb status / remaining status
 
 ### Next thinning candidates
 - syncSessionEditPeers residual
-- remaining status composition (quality climb labels still view-coupled)
+- imageModeClimbActivityLabel (pipeline-coupled)
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2537.1-own-content-appearance-reset-gallery-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2538.1-own-multiitem-status-pure-7d823d8.bundle HEAD
 ```

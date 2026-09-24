@@ -152,4 +152,35 @@ QString placementFlipRotationSuffix(qreal rotationDegrees, bool hFlip, bool vFli
     return text;
 }
 
+
+QString galleryDebugPixelMixSuffix(int blank, int lqip, int soft, int higher, int climbing)
+{
+    if (blank <= 0 && lqip <= 0 && soft <= 0 && higher <= 0 && climbing <= 0) {
+        return {};
+    }
+    QString text = tr(" · %1 blank · %2 lqip · %3 soft · %4 higher")
+                       .arg(blank)
+                       .arg(lqip)
+                       .arg(soft)
+                       .arg(higher);
+    if (climbing > 0) {
+        text += tr(" · climbing %1").arg(climbing);
+    }
+    return text;
+}
+
+QString workspaceSelectedItemScaleSuffix(qreal scaleX, qreal scaleY, qreal rotationDegrees)
+{
+    const qreal sy = scaleY > 0.0 ? scaleY : scaleX;
+    if (qAbs(scaleX - sy) < 0.005) {
+        return tr(" · Item %1% · Rot %2°")
+            .arg(qRound(scaleX * 100))
+            .arg(qRound(rotationDegrees));
+    }
+    return tr(" · Item %1%×%2% · Rot %3°")
+        .arg(qRound(scaleX * 100))
+        .arg(qRound(sy * 100))
+        .arg(qRound(rotationDegrees));
+}
+
 } // namespace HudModel
