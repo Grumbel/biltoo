@@ -2,28 +2,20 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2461.1-fix-dual-per-surface-pipeline** (base `7d823d8`).
+**Tip: biltoo-2462.1-fix-dual-shortcut-and-secondary-paint** (base `7d823d8`).
 
-### Dual compare goal
-Side-by-side Image-mode compare of two session rows. Shared **ItemWorld**
-(appearance). **Per-surface DisplayPipeline** so both panes can hold pixels at once.
+### Fixes
+- **Shortcut:** Dual compare is `Ctrl+Shift+2` (was `Ctrl+Shift+D`, clashed with Open Directory)
+- **Secondary paint:** software viewport (avoids second QOpenGLWidget under splitter)
+- **Soft seed:** warm ImageCache from filmstrip/LQIP before/during open
+- **Retry:** 50ms + 100ms re-open if still no display pixels
 
-### Why secondary was black
-Shared pipeline + single `activeHost` rejected secondary installs when
-`classicPath` / host still referred to the primary. OpenGL dual viewports were
-a secondary suspicion; installs never reached the right scene.
-
-### Fix 2461
-- Dual secondary keeps its **own** DisplayPipelineController
-- Still `bindSharedItemWorld` (+ shared size book via hostSizeBook)
-- `setActiveHost` only when `hasSharedDisplayPipeline()`
-
-### Next
-- PreferCache coordination across two pipelines (same SessionImageId)
-- Optional lock-step nav
-- Confirm both panes show images on host
+### Dual model
+- Shared ItemWorld + size book
+- Per-surface DisplayPipeline
+- Primary keeps OpenGL; secondary uses QWidget viewport
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2461.1-fix-dual-per-surface-pipeline-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2462.1-fix-dual-shortcut-and-secondary-paint-7d823d8.bundle HEAD
 ```

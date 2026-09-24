@@ -4138,11 +4138,25 @@ void MainWindow::setDualCompareEnabled(bool on)
     const int other = (n > 1) ? (seed + 1) % n : seed;
     const QString path = m_session.paths().at(other);
     const SessionImageId sid = sessionIdAt(other);
+    // Wait for splitter layout so secondary has a non-zero viewport.
     QTimer::singleShot(0, this, [this, path, sid]() {
         if (!m_dualShell || !m_dualShell->isDualEnabled()) {
             return;
         }
         m_dualShell->openOnSecondary(path, sid);
+        // Second pass after paint/layout (OpenGL→software viewport + soft seed).
+        QTimer::singleShot(100, this, [this, path, sid]() {
+            if (!m_dualShell || !m_dualShell->isDualEnabled()) {
+                return;
+            }
+            if (ImageView *sec = m_dualShell->secondary()) {
+                if (sec->itemCount() == 0
+                    || !sec->primaryItem()
+                    || !sec->primaryItem()->hasDisplayPixels()) {
+                    m_dualShell->openOnSecondary(path, sid);
+                }
+            }
+        });
     });
 }
 

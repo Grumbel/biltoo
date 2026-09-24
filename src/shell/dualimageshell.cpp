@@ -4,14 +4,20 @@
 #include "shell/dualimageshell.h"
 
 #include "imageview.h"
+#include "imageitem.h"
 #include "display/displaypipelinecontroller.h"
 #include "session/sessiondocument.h"
 #include "session/sessionseedbook.h"
 #include "util/biltoo_thread.h"
+#include "display/imagecache.h"
+#include "host/thumtoocache.h"
 
 #include <QHBoxLayout>
 #include <QEvent>
 #include <QSplitter>
+#include <QTimer>
+#include <QPointer>
+#include <QWidget>
 
 DualImageShell::DualImageShell(ImageView *primary, QWidget *parent)
     : QWidget(parent)
@@ -46,6 +52,17 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
     m_secondary->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setMinimumHeight(120);
+    // Primary keeps QOpenGLWidget. A second GL viewport created late under a
+    // splitter stays blank on some drivers; software viewport is reliable for
+    // the compare pane (QPainter path, no context share needed).
+    {
+        auto *softVp = new QWidget(m_secondary);
+        softVp->setMouseTracking(true);
+        softVp->setAcceptDrops(true);
+        m_secondary->setViewport(softVp);
+        m_secondary->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+        m_secondary->setMouseTracking(true);
+    }
 
     if (sessionDoc) {
         m_secondary->bindSessionDocument(sessionDoc);
@@ -118,20 +135,61 @@ void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
     // Track active pane for independent ←/→ (nav uses isSecondaryActive).
     noteFocus(m_secondary);
 
+    // Soft provider may have been set on primary after secondary was created.
+    m_secondary->setImageModeSoftProvider(m_primary->hostImageModeSoftProvider());
+    m_secondary->setBackgroundBrush(m_primary->backgroundBrush());
+
     m_secondary->hostImage().setClassicPath(path);
     m_secondary->setCurrentSessionId(sid);
     m_secondarySessionId = sid;
     m_secondaryPath = path;
 
     // Always enter Image mode: prepare canvas, clearLiveCanvas, loadImage.
-    // loadImage alone leaves a first-time secondary without setActiveMode side
-    // effects and can race an empty size book (fixed via shared hostSizeBook).
     m_secondary->hostImage().enter();
+
+    // Warm ImageCache from filmstrip/LQIP so pending-tile has pixels even when
+    // secondary never opened this path before (common dual-enable case).
+    if (!ImageCache::has(path)) {
+        bool ready = false;
+        QImage soft;
+        if (auto provider = m_secondary->hostImageModeSoftProvider()) {
+            soft = provider(path, sid, &ready);
+        }
+        if (soft.isNull()) {
+            soft = ThumtooCache::cachedLqipImage(path);
+        }
+        if (!soft.isNull()) {
+            ImageCache::put(path, soft);
+            m_secondary->hostDisplayPipeline().loadImage(path);
+        }
+    }
 
     if (QWidget *vp = m_secondary->viewport()) {
         vp->update();
     }
     m_secondary->update();
+
+    // Second chance after geometry settles: zero-size framing / deferred soft.
+    QPointer<ImageView> sec(m_secondary);
+    QTimer::singleShot(50, m_secondary, [sec, path]() {
+        if (!sec || sec->hostImage().classicPath() != path) {
+            return;
+        }
+        bool need = sec->itemCount() == 0;
+        if (!need) {
+            ImageItem *item = sec->primaryItem();
+            need = !item || !item->hasDisplayPixels();
+        }
+        if (need) {
+            sec->hostDisplayPipeline().loadImage(path);
+        } else if (ImageItem *item = sec->primaryItem()) {
+            // Re-frame once the viewport has a real size.
+            sec->applyImageModeFraming(item);
+        }
+        if (sec->viewport()) {
+            sec->viewport()->update();
+        }
+    });
 
     emit secondarySessionChanged(sid, path);
 }

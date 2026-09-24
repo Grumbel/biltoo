@@ -223,8 +223,8 @@ void MainWindow::createActions()
     m_dualCompareAct->setObjectName(QStringLiteral("dualCompare"));
     m_dualCompareAct->setCheckable(true);
     m_dualCompareAct->setChecked(false);
-    m_dualCompareAct->setStatusTip(tr("Side-by-side Image-mode surfaces sharing appearance and pipeline"));
-    m_dualCompareAct->setShortcut(QKeySequence(tr("Ctrl+Shift+D")));
+    m_dualCompareAct->setStatusTip(tr("Side-by-side Image-mode compare (Ctrl+Shift+2)"));
+    m_dualCompareAct->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_2));
     connect(m_dualCompareAct, &QAction::toggled, this, &MainWindow::setDualCompareEnabled);
 
     // Keyboard F/F11 are QShortcut WindowShortcuts in MainWindow so leave
