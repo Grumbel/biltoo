@@ -146,6 +146,7 @@ set(BILTOO_LIB_SOURCES
   src/display/tileneighborprefetch.h
   src/workspace/workspacecontroller.cpp
   src/workspace/workspace_group.cpp
+  src/workspace/workspace_pageguide.cpp
   src/workspace/workspacecontroller.h
   src/image/imagecontroller.cpp
   src/image/imagecontroller.h

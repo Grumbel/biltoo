@@ -14,19 +14,22 @@
 #include <QString>
 #include <QTransform>
 #include "workspace/grouptransformsession.h"
+#include "workspace/pageguidesession.h"
 
 class ImageView;
 class ImageItem;
 class QMouseEvent;
 class QKeyEvent;
 class QPainter;
+class QPrinter;
 
 /**
  * Workspace-mode collaborator for ImageView.
  *
  * Owns free-form placement snapshot state, the durable Workspace snapshot,
  * the live tile stash used while Image mode is active, and multi-select
- * group scale/rotate (GroupTransformSession + chrome).
+ * group scale/rotate (GroupTransformSession + chrome), and the print
+ * page-guide overlay (PageGuideSession).
  * ImageView remains the QGraphicsView shell and public API surface.
  */
 class WorkspaceController
@@ -79,6 +82,22 @@ public:
     void endGroupScale();
     void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
 
+    // Print page-guide overlay (owns PageGuideSession).
+    PageGuideSession &pageGuideSession() { return m_pageGuide; }
+    const PageGuideSession &pageGuideSession() const { return m_pageGuide; }
+
+    void setPageGuideVisible(bool on);
+    void setPageGuideFromPrinter(const QPrinter &printer);
+    QRectF pageGuideSceneRect() const;
+    void fitPageGuideToContent(qreal marginPx);
+    void setPageGuideSelected(bool on);
+    int pageGuideHandleAt(const QPoint &viewPos) const;
+    bool beginPageGuideResize(int handle);
+    void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void endPageGuideResize();
+    void paintPageGuideHandles(QPainter *painter) const;
+    static qreal pageGuidePxPerMm();
+
 private:
 
     // Free-form restore helper (no external callers)
@@ -96,6 +115,7 @@ private:
     bool m_hasSavedView = false;
 
     GroupTransformSession m_groupXform;
+    PageGuideSession m_pageGuide;
 
     /** Free-form pose while Gallery layout temporarily packs tiles. */
     QHash<SessionImageId, ItemComponents::Placement> m_freeFormById;

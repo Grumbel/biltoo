@@ -175,7 +175,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
     }
 
     // Page guide paper (under images): plain white sheet in scene units.
-    if (m_pageGuide.isVisible() && isWorkspaceMode()) {
+    if (m_workspace.pageGuideSession().isVisible() && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
@@ -198,7 +198,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     GUI_BUDGET("ImageView::drawForeground");
     // Page guide outline above images so the frame stays visible when tiles
     // cover the white sheet (scene coordinates).
-    if (m_pageGuide.isVisible() && isWorkspaceMode()) {
+    if (m_workspace.pageGuideSession().isVisible() && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();

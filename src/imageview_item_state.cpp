@@ -318,14 +318,6 @@ ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
     return nullptr;
 }
 
-qreal ImageView::pageGuidePxPerMm()
-{
-    // Workspace items use native image pixels as scene units. A 12MP photo is
-    // ~4000px wide; at screen 96dpi an A4 sheet is only ~794px and looks tiny.
-    // Use 300dpi so a page is roughly photo-scale (~2480×3508 for A4) while
-    // still mapping 1:1 to physical paper on print/PDF.
-    return PageGuideGeometry::pixelsPerMm();
-}
 
 ImageItem *ImageView::selectedOrFirstGalleryItem() const
 {

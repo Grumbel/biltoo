@@ -2,22 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2464.1-own-workspace-group-transform** (base `7d823d8`).
+**Tip: biltoo-2465.1-own-workspace-page-guide** (base `7d823d8`).
 
-### Ownership transfer (real)
-- **Group scale/rotate** session + behaviour moved from ImageView façade to
-  `WorkspaceController` (`workspace_group.cpp`).
-- `GroupTransformSession m_groupXform` lives on the controller.
-- ImageView keeps input routing only (`tryMouseMove/ReleaseGroup*`).
+### Ownership transfer
+- **2464:** Workspace multi-select group transform → `WorkspaceController`
+- **2465:** Print page-guide session + behaviour → `WorkspaceController`
+  (`workspace_pageguide.cpp`). ImageView keeps thin public API +
+  `renderForPrint` + input try*.
 
-### Dual (prior stack)
-- Dual compare works (per-surface pipeline, software secondary viewport).
-
-### Next ownership cuts
-- Page guide (ImageView → WorkspaceController) same pattern
-- Optional: drop residual try* hop when input router is extracted
+### Next
+- Further façade cuts (paint/input collaborators) as needed
+- Dual PreferCache coordination (optional)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2464.1-own-workspace-group-transform-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2465.1-own-workspace-page-guide-7d823d8.bundle HEAD
 ```

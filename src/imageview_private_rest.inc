@@ -167,15 +167,7 @@
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;
 
-    int pageGuideHandleAt(const QPoint &viewPos) const;
-    void paintPageGuideHandles(QPainter *painter) const;
-    bool beginPageGuideResize(int handle);
-    void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    QRectF pageGuideRectFromHandleDrag(const QPointF &scenePos,
-                                       Qt::KeyboardModifiers mods) const;
-    void endPageGuideResize();
 
-    PageGuideSession m_pageGuide;
     ViewFraming m_framing;
     ViewMode m_viewMode = ViewMode::Image;
     SessionNavFlags m_sessionNav;

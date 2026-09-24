@@ -41,7 +41,6 @@
     // --- completeLoadReplace phases ---
 
     /** Scene pixels per millimetre for the page guide (layout scale). */
-    static qreal pageGuidePxPerMm();
 
     /**
      * Choose live tiles to remove when setWorkspacePaths rebuilds membership.

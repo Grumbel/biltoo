@@ -54,9 +54,9 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         }
     }
     // Page guide scale grips when the guide is selected.
-    if (m_pageGuide.isInteractive()) {
-        const int ph = pageGuideHandleAt(event->pos());
-        if (ph >= 0 && beginPageGuideResize(ph)) {
+    if (m_workspace.pageGuideSession().isInteractive()) {
+        const int ph = m_workspace.pageGuideHandleAt(event->pos());
+        if (ph >= 0 && m_workspace.beginPageGuideResize(ph)) {
             event->accept();
             return true;
         }

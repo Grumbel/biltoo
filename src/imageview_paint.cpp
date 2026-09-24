@@ -173,8 +173,8 @@ void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
             }
             m_workspace.paintGroupSelectionChrome(&painter, selected);
         }
-        if (m_pageGuide.isInteractive()) {
-            paintPageGuideHandles(&painter);
+        if (m_workspace.pageGuideSession().isInteractive()) {
+            m_workspace.paintPageGuideHandles(&painter);
         }
     }
 
