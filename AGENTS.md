@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2454.1-fix-maptoscene-tilecoord**.
-Latest tip: **biltoo-2454** (+ thumtoo-338). Phase 5 CLOSED; pipeline host-only; fix mapToScene + TileLoadCoordinator complete types.
+Latest agent handoff: **TODO.md → biltoo-2455.1-stage-2c0-active-host-shared-itemworld**.
+Latest tip: **biltoo-2455** (+ thumtoo-338). Stage 2c.0: setActiveHost + bindSharedItemWorld.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
