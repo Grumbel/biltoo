@@ -2375,7 +2375,7 @@ void SlideshowController::stopProgressTimer()
     }
 }
 
-void SlideshowController::paintLetterboxComposite(QPainter &painter)
+void SlideshowController::paintLetterboxComposite(QPainter &painter) const
 {
     // Letterbox underlay. During transitions, crossfade from→to underlays.
     // Blurs are cached by stable path key; each paint only draws two pixmaps
@@ -2506,7 +2506,7 @@ void SlideshowController::paintLetterboxComposite(QPainter &painter)
 
 }
 
-void SlideshowController::paintSeekbar(QPainter &painter)
+void SlideshowController::paintSeekbar(QPainter &painter) const
 {
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from

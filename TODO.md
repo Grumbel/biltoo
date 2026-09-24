@@ -2,13 +2,14 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2549.1-own-hud-panels-paint** (base `7d823d8`).
+**Tip: biltoo-2550.1-fix-slideshow-paint-const** (base `7d823d8`).
 
-### Ownership transfer
-- **ViewShellChrome::paintHudPanels** — pinned HUD panels, action flash, centre
-  progress, session badge, filename (viewport device pixels)
-- ImageView exposes hudFileName / loadingStatusHudLine as public status helpers
-- paintViewportOverlays dispatches; drop private paintHudPanels
+### Fix
+- `SlideshowController::paintLetterboxComposite` / `paintSeekbar` definitions
+  match the `const` declarations (compile error after 2549 ownership move).
+
+### Prior
+**2549.1** Own HUD panel paint on ViewShellChrome.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -26,5 +27,5 @@ freezeItemAppearance / edge affordances / paint orchestration
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2549.1-own-hud-panels-paint-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2550.1-fix-slideshow-paint-const-7d823d8.bundle HEAD
 ```
