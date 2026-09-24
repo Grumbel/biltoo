@@ -43,32 +43,13 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     // Dual-write live chrome once want is absolute (ItemWorld updated below).
     syncLiveContentMetaFromState(item, want);
 
-    // ContentXform is ground truth: absolute want from store + delta, pure
-    // materialize from unoriented host. Never stack incremental transforms.
-    // ≤512 host: GUI pure. Multi-MP: soft stand-in from clamped host + async.
-    if (!m_displayPipeline.tryRematerializeFromHost(item, want)) {
+    // Pixel path owned by DisplayPipelineController (try / soft / async).
+    // Never stack incremental transforms on display (ECS_GUI_BYPASSES #7).
+    m_displayPipeline.rematerializeItemContent(item, want);
+    // Cold cache residual: disk soft so chrome is not blank until async lands.
+    if (!item->hasDisplayPixels()) {
         const QString path = item->path();
-        const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        bool gotDisplay = false;
-        if (!host.isNull()) {
-            QImage soft = host;
-            if (ContentXform::longEdge(host.size())
-                > ContentXform::kGuiMaterializeMaxEdge) {
-                soft = ImageCache::clampToMaxEdge(
-                    host, ContentXform::kGuiMaterializeMaxEdge);
-            }
-            const QImage display = SessionAppearance::materializeDisplay(
-                soft, want, SessionAppearance::PixelKind::SoftPreview);
-            if (!display.isNull()) {
-                // Soft attach must not be ignored when full was present.
-                clearItemDecodedPixels(item);
-                attachDisplaySample(item, display, want,
-                                    SessionAppearance::PixelKind::SoftPreview);
-                gotDisplay = true;
-            }
-        }
-        if (!gotDisplay && !path.isEmpty()) {
-            // Load host-raw from disk for soft stand-in (ECS — no incremental).
+        if (!path.isEmpty()) {
             QImage disk = ImageLoader::loadThumbnail(
                 path, ThumtooCache::kGalleryLadderEdge);
             if (disk.isNull()) {
@@ -88,24 +69,11 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                     clearItemDecodedPixels(item);
                     attachDisplaySample(item, display, want,
                                         SessionAppearance::PixelKind::SoftPreview);
-                    gotDisplay = true;
                 }
             }
         }
-        if (!gotDisplay) {
-            // No host-raw: never incremental-transform display (ECS_GUI_BYPASSES #7).
-            // Absolute want is already on the applied fingerprint via
-            // syncLiveContentMetaFromState; drop pixels so paint does not show
-            // a mismatched orient until async host rematerialize completes.
-            if (item->hasDisplayPixels()) {
-                clearItemDecodedPixels(item);
-            }
-        }
-        applyContentLayoutSize(item, want);
-        scheduleAsyncHostRematerialize(path, sid, want);
-    } else {
-        applyContentLayoutSize(item, want);
     }
+    applyContentLayoutSize(item, want);
 
     // Write ContentXform absolute state first — before commitItemSessionEdit
     // captureState, so commit cannot resurrect stale path-map turns.
@@ -204,44 +172,34 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.cropSourceSize = cropMap.cropSourceSize;
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
-    // Prefer pure rematerialize from unoriented host; soft stand-in + async
-    // full when host is large or missing. Never incremental on display (#7).
-    // Install applied ContentXform fingerprint (syncLiveContentMetaFromState).
+    // Install applied ContentXform fingerprint, then pipeline rematerialize.
     syncLiveContentMetaFromState(item, want);
-    if (!m_displayPipeline.tryRematerializeFromHost(item, want)) {
+    m_displayPipeline.rematerializeItemContent(item, want);
+    if (!item->hasDisplayPixels()) {
         const QString path = item->path();
-        QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        bool gotDisplay = false;
-        if (host.isNull() && !path.isEmpty()) {
-            host = ImageLoader::loadThumbnail(path, ThumtooCache::kGalleryLadderEdge);
-            if (!host.isNull()) {
-                ImageCache::put(path, host);
+        if (!path.isEmpty()) {
+            QImage disk = ImageLoader::loadThumbnail(
+                path, ThumtooCache::kGalleryLadderEdge);
+            if (disk.isNull()) {
+                disk = ImageLoader::loadThumbnail(path, 512);
+            }
+            if (!disk.isNull()) {
+                ImageCache::put(path, disk);
+                QImage soft = disk;
+                if (ContentXform::longEdge(disk.size())
+                    > ContentXform::kGuiMaterializeMaxEdge) {
+                    soft = ImageCache::clampToMaxEdge(
+                        disk, ContentXform::kGuiMaterializeMaxEdge);
+                }
+                const QImage display = SessionAppearance::materializeDisplay(
+                    soft, want, SessionAppearance::PixelKind::SoftPreview);
+                if (!display.isNull()) {
+                    clearItemDecodedPixels(item);
+                    attachDisplaySample(item, display, want,
+                                        SessionAppearance::PixelKind::SoftPreview);
+                }
             }
         }
-        if (!host.isNull()) {
-            QImage soft = host;
-            if (ContentXform::longEdge(host.size())
-                > ContentXform::kGuiMaterializeMaxEdge) {
-                soft = ImageCache::clampToMaxEdge(
-                    host, ContentXform::kGuiMaterializeMaxEdge);
-            }
-            const QImage display = SessionAppearance::materializeDisplay(
-                soft, want, SessionAppearance::PixelKind::SoftPreview);
-            if (!display.isNull()) {
-                clearItemDecodedPixels(item);
-                attachDisplaySample(item, display, want,
-                                    SessionAppearance::PixelKind::SoftPreview);
-                gotDisplay = true;
-            }
-        }
-        if (!gotDisplay) {
-            // No host-raw: never incremental-transform display (ECS_GUI_BYPASSES #7).
-            if (item->hasDisplayPixels()) {
-                clearItemDecodedPixels(item);
-            }
-        }
-        syncLiveContentMetaFromState(item, want);
-        scheduleAsyncHostRematerialize(path, sid, want);
     }
     applyContentLayoutSize(item, want);
 

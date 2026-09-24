@@ -2,29 +2,27 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2425.1-bake-uses-pipeline-try** (base `d80d461`).
+**Tip: biltoo-2426.1-bake-rematerialize-pixels** (base `d80d461`).
 
 ### Phase 5 ownership — continued
 - Sole ImageItem pixel friend: DisplayPipelineController
-- Dead `setSourceImage` removed (2422)
-- `applyContentLayoutSize` on pipeline (2423)
-- Rematerialize + async on pipeline (2424)
-- **Bake/crop restore use pipeline `tryRematerializeFromHost` (2425)**
-  - Made try public (bake + crop appearance restore)
-  - Dropped dead ImageView private try/finish decls (would not link after 2424)
-  - `bakeItemRotate90` / `bakeItemFlip` still on ImageView for undo/ItemWorld; pixel path is pipeline
+- Layout + rematerialize + async on pipeline (2423–2424)
+- **Bake pixel path → `rematerializeItemContent` (2426)**
+  - Rotate/flip want composition, ItemWorld contentBake, undo stay on ImageView
+  - Soft/async install no longer duplicated in bake
+  - Cold-cache disk soft residual only when still no display pixels
 
 ### Verification
-- Friend: only DisplayPipelineController on ImageItem
+- Friend: only DisplayPipelineController
 - Private pixel/path/tile mutators: only displaypipelinecontroller.cpp
-- tryRematerializeFromHost: only pipeline impl; callers use m_displayPipeline
+- bake has no tryRematerializeFromHost; uses rematerializeItemContent
 - Full nix build not run in this sandbox
 
 ### Next
-- Move bakeItemRotate90/Flip orchestration onto pipeline (or leave with undo on view)
+- Optional: move bake orchestration (undo/setContentBake) onto pipeline
 - Phase 6 header closure / Dual ImageView (0.3)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2425.1-bake-uses-pipeline-try-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2426.1-bake-rematerialize-pixels-d80d461.bundle HEAD
 ```

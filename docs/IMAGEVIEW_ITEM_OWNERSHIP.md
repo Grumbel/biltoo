@@ -101,11 +101,11 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
     redundant post-`attachDisplaySample` layout calls removed.
 3e. **Done:** `rematerializeItemContent` + async host rematerialize owned by pipeline;
     ImageView forwards; tryRematerializeFromHost on pipeline (public for bake/crop restore).
-3f. **Done:** Bake/crop restore call `m_displayPipeline.tryRematerializeFromHost`;
-    remove dead ImageView private decls for try/finish (link fix after 2424).
+3f. **Done:** Bake/crop restore call pipeline try/rematerialize; dead view decls removed.
+3g. **Done:** `bakeItemRotate90` / `bakeItemFlip` pixel path uses `rematerializeItemContent`;
+    ImageView keeps want composition, ItemWorld contentBake, and undo commands.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
-5. Residual on ImageView: `bakeItemRotate90` / `bakeItemFlip` (undo + ItemWorld contentBake);
-    pixel path already uses pipeline try/attach/schedule.
+5. Residual on ImageView: bake orchestration (undo + setContentBake); optional full move later.
 
 5. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book/rematerialize collaborator extractions.
 
