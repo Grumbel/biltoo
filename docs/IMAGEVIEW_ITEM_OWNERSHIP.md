@@ -359,3 +359,7 @@ Product shell (minimal):
     LayoutApplyGuard owned by GalleryController; hostLayout* forwards; debounce
     QTimer stays on ImageView.
 
+16. **biltoo-2474:** Image-mode edge hover + affordance paint on ImageController
+    (EdgeNavPolicy::Zone); ImageView::EdgeZone remains public host enum with
+    conversion bridges.
+

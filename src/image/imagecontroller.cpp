@@ -3,6 +3,7 @@
 
 #include "util/biltoo_thread.h"
 #include "image/imagecontroller.h"
+#include "image/edgenavpolicy.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"
 #include "imageview_types.h"
@@ -131,18 +132,18 @@ bool ImageController::tryMousePressEdges(QMouseEvent *event)
         || (event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
         return false;
     }
-    const ImageView::EdgeZone zone = m_view->edgeZoneAt(event->pos());
-    if (zone == ImageView::EdgeZone::GalleryReturn) {
+    const EdgeNavPolicy::Zone zone = edgeZoneAt(event->pos());
+    if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
         emit m_view->galleryReturnRequested();
         event->accept();
         return true;
     }
-    if (zone == ImageView::EdgeZone::Previous) {
+    if (zone == EdgeNavPolicy::Zone::Previous) {
         emit m_view->navigatePreviousRequested();
         event->accept();
         return true;
     }
-    if (zone == ImageView::EdgeZone::Next) {
+    if (zone == EdgeNavPolicy::Zone::Next) {
         emit m_view->navigateNextRequested();
         event->accept();
         return true;
@@ -150,7 +151,7 @@ bool ImageController::tryMousePressEdges(QMouseEvent *event)
     // Slideshow: centre click pauses / resumes. Edges stay navigation above.
     // Ignore the second press of a double-click so we do not toggle twice.
     if ((m_view->hostSlideshow().hud().isProgressActive() || m_view->hostSlideshow().hud().isPausedHud())
-        && zone == ImageView::EdgeZone::None) {
+        && zone == EdgeNavPolicy::Zone::None) {
         if (m_view->hostSlideshow().lastCenterClick().isValid()
             && m_view->hostSlideshow().lastCenterClick().elapsed()
                 < QApplication::doubleClickInterval()) {

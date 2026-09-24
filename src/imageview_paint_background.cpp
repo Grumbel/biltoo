@@ -303,7 +303,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
         && !m_slideshow.hud().isPausedHud() && !hostGallerySizeResolve().active()
         && m_centreProgress.titleRef().isEmpty()
-        && m_hoverEdge == EdgeZone::None && !m_cropCtrl.session().active()
+        && hostHoverEdge() == EdgeZone::None && !m_cropCtrl.session().active()
         && !m_slideshow.dwell().isMotionActive() 
         ) {
         return;

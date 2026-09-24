@@ -54,28 +54,7 @@
 
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
 {
-    if (!isImageMode()) {
-        return EdgeZone::None;
-    }
-    // Tool modes own the canvas: no Up-to-Gallery / prev-next edge chrome
-    // (same as crop). Esc or the toolbar toggle leaves the mode.
-    if (m_cropCtrl.session().active() || m_attentionCtrl.session().active()) {
-        return EdgeZone::None;
-    }
-    const EdgeNavPolicy::Zone z = EdgeNavPolicy::zoneAt(
-        viewPos, width(), height(), m_sessionNav.isGalleryReturnAvailable(),
-        m_sessionNav.isImageModeNavEnabled());
-    switch (z) {
-    case EdgeNavPolicy::Zone::Previous:
-        return EdgeZone::Previous;
-    case EdgeNavPolicy::Zone::Next:
-        return EdgeZone::Next;
-    case EdgeNavPolicy::Zone::GalleryReturn:
-        return EdgeZone::GalleryReturn;
-    case EdgeNavPolicy::Zone::None:
-    default:
-        return EdgeZone::None;
-    }
+    return edgeZoneFromPolicy(m_image.edgeZoneAt(viewPos));
 }
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 
@@ -232,34 +211,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
     return false;
 }
 
-int ImageView::edgeZoneWidth() const
-{
-    return EdgeNavPolicy::zoneWidth(width());
-}
-
-int ImageView::edgeZoneHeight() const
-{
-    return EdgeNavPolicy::zoneHeight(height());
-}
-
 bool ImageView::setHoverEdge(EdgeZone zone)
 {
-    if (zone == m_hoverEdge) {
-        return false;
-    }
-    m_hoverEdge = zone;
-    if (isNavEdge(m_hoverEdge)) {
-        setCursor(Qt::PointingHandCursor);
-    } else if (!m_chrome.isPanning() && !m_workspace.itemInteract().isRotating()) {
-        setCursor(ToolPolicy::cursorFor(m_tool));
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
-    return true;
-}
-
-void ImageView::updateHoverEdge(const QPoint &viewPos)
-{
-    (void)setHoverEdge(edgeZoneAt(viewPos));
+    return m_image.setHoverEdge(edgeZoneToPolicy(zone));
 }

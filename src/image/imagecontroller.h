@@ -5,12 +5,15 @@
 #define IMAGECONTROLLER_H
 
 #include <QString>
+#include "image/edgenavpolicy.h"
 #include <QSize>
 
 class ImageView;
 class ImageItem;
 class QKeyEvent;
 class QMouseEvent;
+class QPainter;
+class QPoint;
 
 /**
  * Image-mode collaborator for ImageView.
@@ -38,6 +41,16 @@ public:
     bool tryKeyPressNavigate(QKeyEvent *event);
     bool tryMousePressEdges(QMouseEvent *event);
 
+    // Edge hover chrome (owns zone; EdgeNavPolicy is pure geometry).
+    EdgeNavPolicy::Zone hoverEdge() const;
+    EdgeNavPolicy::Zone edgeZoneAt(const QPoint &viewPos) const;
+    int edgeZoneWidth() const;
+    int edgeZoneHeight() const;
+    bool setHoverEdge(EdgeNavPolicy::Zone zone);
+    void clearHoverEdge();
+    void updateHoverEdge(const QPoint &viewPos);
+    void drawEdgeAffordances(QPainter &painter) const;
+
     /** Soft reload focused classic path (Image mode). */
     void reloadFromDisk();
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
@@ -55,6 +68,7 @@ public:
 private:
     ImageView *m_view = nullptr;
     QString m_classicPath;
+    EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
 };
 
 #endif // IMAGECONTROLLER_H

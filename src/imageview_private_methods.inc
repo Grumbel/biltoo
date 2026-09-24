@@ -11,6 +11,28 @@
             || zone == EdgeZone::GalleryReturn;
     }
 
+    static EdgeZone edgeZoneFromPolicy(EdgeNavPolicy::Zone z)
+    {
+        switch (z) {
+        case EdgeNavPolicy::Zone::Previous: return EdgeZone::Previous;
+        case EdgeNavPolicy::Zone::Next: return EdgeZone::Next;
+        case EdgeNavPolicy::Zone::GalleryReturn: return EdgeZone::GalleryReturn;
+        case EdgeNavPolicy::Zone::None:
+        default: return EdgeZone::None;
+        }
+    }
+
+    static EdgeNavPolicy::Zone edgeZoneToPolicy(EdgeZone z)
+    {
+        switch (z) {
+        case EdgeZone::Previous: return EdgeNavPolicy::Zone::Previous;
+        case EdgeZone::Next: return EdgeNavPolicy::Zone::Next;
+        case EdgeZone::GalleryReturn: return EdgeNavPolicy::Zone::GalleryReturn;
+        case EdgeZone::None:
+        default: return EdgeNavPolicy::Zone::None;
+        }
+    }
+
     /** qCritical if two live/stashed items share one SessionImageId. */
     bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
 

@@ -25,7 +25,7 @@
     // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     ImageItem *primaryItem() const override;
-    void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
+    void setHostHoverEdge(EdgeZone z) { m_image.setHoverEdge(edgeZoneToPolicy(z)); }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio) override;

@@ -475,7 +475,7 @@ void ImageView::setImageModeNavigationEnabled(bool on)
     if (!m_sessionNav.setImageModeNav(on)) {
         return;
     }
-    if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
+    if (!on && hostHoverEdge() != EdgeZone::GalleryReturn) {
         clearHoverEdge();
     }
     viewport()->update();
@@ -486,7 +486,7 @@ void ImageView::setGalleryReturnAvailable(bool on)
     if (!m_sessionNav.setGalleryReturnAvailable(on)) {
         return;
     }
-    if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
+    if (!on && hostHoverEdge() == EdgeZone::GalleryReturn) {
         clearHoverEdge();
     }
     viewport()->update();

@@ -102,7 +102,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
             if (tip.isEmpty()) {
                 tip = tr("Link");
             }
-        } else if (m_hoverEdge == EdgeZone::None) {
+        } else if (hostHoverEdge() == EdgeZone::None) {
             setCursor(m_chrome.isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
         if (m_textLayer.setLinkHoverTip(tip)) {
@@ -459,7 +459,7 @@ void ImageView::leaveEvent(QEvent *event)
         m_chrome.clearMouseInfo();
         emit mouseInfoChanged(m_chrome.currentMouseInfo());
     }
-    if (m_hoverEdge != EdgeZone::None) {
+    if (hostHoverEdge() != EdgeZone::None) {
         clearHoverEdge();
         viewport()->update();
     }

@@ -39,6 +39,8 @@
     const ViewFraming &hostFraming() const override { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }
     const ViewportChrome &hostChrome() const { return m_chrome; }
+    SessionNavFlags &hostSessionNav() { return m_sessionNav; }
+    const SessionNavFlags &hostSessionNav() const { return m_sessionNav; }
     /** Print page-guide session (Workspace overlay). */
     PageGuideSession &hostPageGuide() { return m_workspace.pageGuideSession(); }
     const PageGuideSession &hostPageGuide() const { return m_workspace.pageGuideSession(); }
@@ -131,6 +133,6 @@
     const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline->displaySurfaces(); }
     TileNeighborPrefetch &hostTileNeighborPrefetch() override { return m_tileNeighborPrefetch; }
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const override { return m_tileNeighborPrefetch; }
-    EdgeZone hostHoverEdge() const { return m_hoverEdge; }
+    EdgeZone hostHoverEdge() const { return edgeZoneFromPolicy(m_image.hoverEdge()); }
     SessionLoadGate &hostLoadGate() { return m_displayPipeline->loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline->loadGate(); }

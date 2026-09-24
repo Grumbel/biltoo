@@ -64,13 +64,12 @@
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     /** Centre position that does not overlap existing items (viewport-aware). */
     QPointF findEmptyPlacement(const QSizeF &itemSize) const;
-    int edgeZoneWidth() const;
-    int edgeZoneHeight() const;
-    /** @return true when the hover edge zone changed. */
+    int edgeZoneWidth() const { return m_image.edgeZoneWidth(); }
+    int edgeZoneHeight() const { return m_image.edgeZoneHeight(); }
     bool setHoverEdge(EdgeZone zone);
-    void clearHoverEdge() { (void)setHoverEdge(EdgeZone::None); }
-    void updateHoverEdge(const QPoint &viewPos);
-    void drawEdgeAffordances(QPainter &painter);
+    void clearHoverEdge() { m_image.clearHoverEdge(); }
+    void updateHoverEdge(const QPoint &viewPos) { m_image.updateHoverEdge(viewPos); }
+    void drawEdgeAffordances(QPainter &painter) { m_image.drawEdgeAffordances(painter); }
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
@@ -145,7 +144,7 @@
     SessionIdentity m_sessionId;
     HudFlash m_hudFlash;
     QTimer *m_hudFlashTimer = nullptr;
-    EdgeZone m_hoverEdge = EdgeZone::None;
+    // Edge hover: owned by ImageController (m_image).
     Tool m_tool = Tool::Select;
     // LayoutPrefs: owned by GalleryController (hostLayout).
     // GalleryDecodeBook: owned by GalleryController (hostGalleryDecodeBook).
