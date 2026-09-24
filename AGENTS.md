@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2547.1-own-empty-session-invite-paint**.
-Latest tip: **biltoo-2547** (+ thumtoo-338). ViewShellChrome owns empty-session invite.
+Latest agent handoff: **TODO.md → biltoo-2548.1-own-slideshow-overlay-paint**.
+Latest tip: **biltoo-2548** (+ thumtoo-338). Slideshow owns letterbox/seekbar paint.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

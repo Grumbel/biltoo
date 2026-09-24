@@ -112,6 +112,8 @@ public:
     void setSlideshowNavHot(bool hot);
     void preloadSlideshowImage(const QString &path);
     void paintZoomBlurUnderlay(QPainter *painter, const QImage &image, const QRect &viewportRect, qint64 stableKey) const;
+    void paintLetterboxComposite(QPainter &painter) const;
+    void paintSeekbar(QPainter &painter) const;
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT, QPointF biasA, QPointF biasB, const QString &path) const;
     void maybeStartSlideshowMotion();
     bool prepareSlideshowMotionDwell(ImageItem *item);

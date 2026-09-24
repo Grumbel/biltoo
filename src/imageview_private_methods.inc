@@ -158,9 +158,7 @@
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     void paintTextRubberBandOverlay(QPainter &painter);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */
-    void paintSlideshowLetterboxComposite(QPainter &painter);
     void paintHudPanels(QPainter &painter);
-    void paintSlideshowSeekbar(QPainter &painter);
     /**
      * Map a page text/link region into the primary item's current image-pixel
      * space (after session content flip / quarter-turn bake). Empty if the
