@@ -105,16 +105,17 @@ void climb_to_scale(tilelod::TileSession& session, FakeTileSource& src,
         && session.coverage().fully_covered()) {
       return;
     }
-    if (session.issue_requests(64) > 0) {
+    // Issue → complete → drain pump in a tight loop. pump() caps at 16/call
+    // (GUI budget). A trailing issue_requests without complete left keys
+    // InFlight and the next step saw nothing to issue (early exit, exact=0).
+    int issued = 0;
+    while (session.issue_requests(64) > 0) {
+      ++issued;
       src.complete_all_requested(static_cast<std::uint8_t>(40 + step));
+      while (session.pump() > 0) {
+      }
     }
-    // Drain inbox: TileSession::pump caps at 16/call (GUI budget). A single
-    // pump left most keys InFlight so progressive climb never reached want.
-    int applied = 0;
-    while ((applied = session.pump()) > 0) {
-    }
-    if (session.issue_requests(64) == 0
-        && session.target_scale() <= want_scale
+    if (issued == 0 && session.target_scale() <= want_scale
         && !session.request_scale_holding()) {
       // Nothing to issue but not fully covered (failed cells) — stop.
       return;
