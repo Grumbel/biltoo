@@ -45,6 +45,14 @@ void HudModelTest::qualityLabel_galleryDetail()
         Tier::Preview, 512, 4000, /*gallery*/ true, /*image*/ false, 800, 512);
     QVERIFY(s.contains(QStringLiteral("512")));
     QVERIFY(s.contains(QStringLiteral("800")));
+    QVERIFY(s.contains(QStringLiteral("need")));
+    // No pipeline jargon (show/have) after tiles-everywhere HUD cleanup.
+    QVERIFY(!s.contains(QStringLiteral("show")));
+    QVERIFY(!s.contains(QStringLiteral("have")));
+    // Covered need → tier only.
+    const QString covered = HudModel::qualityLabelDetail(
+        Tier::Preview, 800, 4000, true, false, 800, 800);
+    QCOMPARE(covered, HudModel::qualityTierLabel(Tier::Preview));
 }
 
 void HudModelTest::qualityLabel_imagePartial()
@@ -54,6 +62,8 @@ void HudModelTest::qualityLabel_imagePartial()
         Tier::HighQuality, 1200, 4000, false, true);
     QVERIFY(s.contains(QStringLiteral("1200")));
     QVERIFY(s.contains(QStringLiteral("4000")));
+    QVERIFY(s.contains(QStringLiteral("of")));
+    QVERIFY(!s.contains(QStringLiteral("show")));
 }
 
 void HudModelTest::qualityLabel_fullResolution()
@@ -114,6 +124,14 @@ void HudModelTest::formatMultiItemStatus_basic()
     QVERIFY(s.contains(QStringLiteral("Preview")));
     QVERIFY(s.contains(QStringLiteral("4000")));
     QVERIFY(!s.contains(QStringLiteral("Edited")));
+
+    // Quality string already carries px — must not append a second edge.
+    const QString detailed = HudModel::formatMultiItemStatusLine(
+        true, 3, 100,
+        QStringLiteral("Preview · 128px (need 512px)"), 128, QSize(4000, 3000),
+        false, 0, 0, 0, 0, 0, 0, {}, false, 1.0, 1.0, 0.0, false, {});
+    QCOMPARE(detailed.count(QStringLiteral("128")), 1);
+    QVERIFY(!detailed.contains(QStringLiteral("(128px)")));
 }
 
 void HudModelTest::formatImageModeStatus_basic()

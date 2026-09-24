@@ -23,9 +23,10 @@ QString qualityTierLabel(DisplayEdgePolicy::QualityTier tier);
 
 /**
  * Full quality line for the status bar.
- * @p edge on-screen long edge; @p native logical native long edge (0 unknown).
- * Gallery path: when need/have > 0, appends "show · need · have" diagnostics.
- * Image path: when not full coverage, appends show vs native.
+ * @p edge painted long edge; @p native logical native long edge (0 unknown).
+ * Gallery: when under need, "Tier · havePx (need Npx)"; else tier only.
+ * Image: when below native, "Tier · edgePx of nativePx"; else tier only.
+ * Outer assemblers must not re-append edge when this already contains "px".
  */
 QString qualityLabelDetail(DisplayEdgePolicy::QualityTier tier, int edge, int native,
                            bool galleryMode, bool imageMode,

@@ -57,19 +57,25 @@ QString qualityLabelDetail(DisplayEdgePolicy::QualityTier tier, int edge, int na
     if (tier == Tier::FullResolution) {
         return tierLabel;
     }
+    // Gallery: on-screen pixels vs target for this cell. "show/need/have" was
+    // pipeline jargon (and often repeated the same edge three times after the
+    // tiles-everywhere path made display edge ≡ have). One short gap line is
+    // enough; full resolution / covered need is just the tier.
     if (galleryMode) {
-        if (galleryNeed > 0 && galleryHave > 0) {
-            return tr("%1 · show %2px · need %3px · have %4px")
+        const int have = galleryHave > 0 ? galleryHave : edge;
+        if (galleryNeed > 0 && have > 0
+            && !DisplayEdgePolicy::coversEdge(have, galleryNeed)) {
+            return tr("%1 · %2px (need %3px)")
                 .arg(tierLabel)
-                .arg(edge)
-                .arg(galleryNeed)
-                .arg(galleryHave);
+                .arg(have)
+                .arg(galleryNeed);
         }
         return tierLabel;
     }
+    // Image: painted long edge vs native when still climbing.
     if (imageMode && edge > 0) {
         if (native > 0 && !DisplayEdgePolicy::coversEdge(edge, native)) {
-            return tr("%1 · show %2px · native %3px")
+            return tr("%1 · %2px of %3px")
                 .arg(tierLabel)
                 .arg(edge)
                 .arg(native);
@@ -290,7 +296,10 @@ QString formatMultiItemStatusLine(
     bool edited, const QString &thumtooDebugSuffix)
 {
     QString text = multiItemHeader(galleryMode, itemCount, zoomPercent);
-    text += qualityStatusSuffix(quality, edge, edge > 0);
+    // qualityLabelDetail already embeds px when under-resolved; do not append
+    // a second "(Npx)" (was "… have 128px · 128px" / "(128px)").
+    const bool appendEdge = shouldAppendQualityEdgePx(edge, /*hasDecodedPixels=*/true, quality);
+    text += qualityStatusSuffix(quality, edge, appendEdge);
     text += nativeSizeStatusSuffix(native);
     if (thumtooDebugGalleryMix) {
         text += galleryDebugPixelMixSuffix(blank, lqip, soft, higher, climbing);

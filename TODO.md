@@ -2,15 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2631.3-prepare-dialog-layout** (base `560319b`).
+**Tip: biltoo-2632.1-hud-quality-status** (base `0d34dd8`).
 
-### Stack
-- 2631.1 — Prepare Tile Cache dialog
-- 2631.2 — QPointer / close-while-running / min_scale memo
-- 2631.3 — dialog layout: SetMinimumSize, label size policies, wider
-  default, grow with stats (no more squished word-wrap)
+### This tip — HUD quality line
+Status was `show Npx · need Mpx · have Npx` (plus a duplicated edge). After
+tiles-everywhere, show≡have often; jargon was meaningless in the status bar.
+
+- Gallery under-need: `Preview · 128px (need 512px)`
+- Gallery covered: tier only
+- Image partial: `High quality · 1200px of 4000px`
+- Multi-item assembler no longer appends `(Npx)` when quality already has `px`
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2631.3-prepare-dialog-layout-560319b.bundle HEAD
+git pull --ff-only …/biltoo-2632.1-hud-quality-status-0d34dd8.bundle HEAD
 ```
