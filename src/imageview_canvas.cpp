@@ -249,79 +249,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
 void ImageView::reorderItemsByPaths(const QStringList &paths,
                                     const QVector<SessionImageId> &ids)
 {
-    if (m_items.isEmpty() || paths.isEmpty()) {
-        return;
-    }
-    // Local indexes — findItemBySessionId + path scan per row was O(n²) and ran
-    // at the end of every progressive ensurePlaceholders during the size gate.
-    QHash<SessionImageId, ImageItem *> bySessionId;
-    QMultiHash<QString, ImageItem *> byPath;
-    bySessionId.reserve(m_items.size() * 2);
-    byPath.reserve(m_items.size() * 2);
-    for (ImageItem *item : m_items) {
-        if (!item) {
-            continue;
-        }
-        const SessionImageId id = item->sessionId();
-        if (id != kInvalidSessionImageId) {
-            bySessionId.insert(id, item);
-        }
-        if (!item->path().isEmpty()) {
-            byPath.insert(item->path(), item);
-        }
-    }
-    QList<ImageItem *> ordered;
-    ordered.reserve(m_items.size());
-    QSet<ImageItem *> seen;
-    // Prefer SessionImageId when parallel ids are present so duplicate paths
-    // map to distinct tiles. Path first-unseen is unbound / legacy only.
-    const int n = paths.size();
-    for (int i = 0; i < n; ++i) {
-        ImageItem *picked = nullptr;
-        const SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
-        if (sid != kInvalidSessionImageId) {
-            if (ImageItem *byId = bySessionId.value(sid, nullptr)) {
-                if (!seen.contains(byId)) {
-                    picked = byId;
-                }
-            }
-        }
-        if (!picked) {
-            const QString &path = paths.at(i);
-            const auto range = byPath.equal_range(path);
-            for (auto it = range.first; it != range.second; ++it) {
-                ImageItem *item = it.value();
-                if (!item || seen.contains(item)) {
-                    continue;
-                }
-                picked = item;
-                break;
-            }
-        }
-        if (picked) {
-            ordered.append(picked);
-            seen.insert(picked);
-        }
-    }
-    for (ImageItem *item : m_items) {
-        if (item && !seen.contains(item)) {
-            ordered.append(item);
-            seen.insert(item);
-        }
-    }
-    if (ordered != m_items) {
-        m_items = ordered;
-        for (int i = 0; i < m_items.size(); ++i) {
-            if (ImageItem *it = m_items.at(i)) {
-                ItemComponents::Placement pl = it->placement();
-                pl.z = i;
-                it->applyPlacement(pl);
-            }
-        }
-    }
+    m_workspace.reorderItemsByPaths(paths, ids);
 }
-
-
 
 void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                                        const QVector<SessionImageId> &sessionIds)

@@ -113,6 +113,9 @@ public:
                                           const QVector<SessionImageId> &sessionIds) const;
     void destroyDoomedItems(const QList<ImageItem *> &doomed);
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
+    /** Reorder live tiles to match session/pack order (id-prefer, path fallback). */
+    void reorderItemsByPaths(const QStringList &paths,
+                             const QVector<SessionImageId> &ids = {});
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */
     void duplicateSelected(const QVector<SessionImageId> &newIds, int firstSessionIndex);

@@ -119,3 +119,79 @@ WorkspaceItemState WorkspaceController::defaultStateForPath(const QString &path,
     s.z = ordinal;
     return s;
 }
+
+void WorkspaceController::reorderItemsByPaths(const QStringList &paths,
+                                              const QVector<SessionImageId> &ids)
+{
+    QList<ImageItem *> &items = m_view->liveItems();
+    if (items.isEmpty() || paths.isEmpty()) {
+        return;
+    }
+    // Local indexes — findItemBySessionId + path scan per row was O(n²) and ran
+    // at the end of every progressive ensurePlaceholders during the size gate.
+    QHash<SessionImageId, ImageItem *> bySessionId;
+    QMultiHash<QString, ImageItem *> byPath;
+    bySessionId.reserve(items.size() * 2);
+    byPath.reserve(items.size() * 2);
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId id = item->sessionId();
+        if (id != kInvalidSessionImageId) {
+            bySessionId.insert(id, item);
+        }
+        if (!item->path().isEmpty()) {
+            byPath.insert(item->path(), item);
+        }
+    }
+    QList<ImageItem *> ordered;
+    ordered.reserve(items.size());
+    QSet<ImageItem *> seen;
+    // Prefer SessionImageId when parallel ids are present so duplicate paths
+    // map to distinct tiles. Path first-unseen is unbound / legacy only.
+    const int n = paths.size();
+    for (int i = 0; i < n; ++i) {
+        ImageItem *picked = nullptr;
+        const SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
+        if (sid != kInvalidSessionImageId) {
+            if (ImageItem *byId = bySessionId.value(sid, nullptr)) {
+                if (!seen.contains(byId)) {
+                    picked = byId;
+                }
+            }
+        }
+        if (!picked) {
+            const QString &path = paths.at(i);
+            const auto range = byPath.equal_range(path);
+            for (auto it = range.first; it != range.second; ++it) {
+                ImageItem *item = it.value();
+                if (!item || seen.contains(item)) {
+                    continue;
+                }
+                picked = item;
+                break;
+            }
+        }
+        if (picked) {
+            ordered.append(picked);
+            seen.insert(picked);
+        }
+    }
+    for (ImageItem *item : items) {
+        if (item && !seen.contains(item)) {
+            ordered.append(item);
+            seen.insert(item);
+        }
+    }
+    if (ordered != items) {
+        items = ordered;
+        for (int i = 0; i < items.size(); ++i) {
+            if (ImageItem *it = items.at(i)) {
+                ItemComponents::Placement pl = it->placement();
+                pl.z = i;
+                it->applyPlacement(pl);
+            }
+        }
+    }
+}

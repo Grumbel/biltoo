@@ -468,3 +468,7 @@ Product shell (minimal):
     Gallery; mode-specific placement); ImageView thin router. Host exposes
     hostSessionAppearanceImage for filmstrip/session appearance samples.
 
+44. **biltoo-2502:** WorkspaceController owns reorderItemsByPaths (live tile
+    order by session/pack id+path); ImageView thin router for Gallery /
+    DisplayPipelineHost / MainWindow callers.
+
