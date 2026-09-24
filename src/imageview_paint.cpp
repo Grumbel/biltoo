@@ -373,7 +373,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while progress is active (expand / size resolve / tile load).
     if (m_items.isEmpty() && !m_image.hasClassicPath() && !m_cropCtrl.session().active()
-        && m_centreProgress.titleRef().isEmpty() && !hostGallerySizeResolve().active()) {
+        && m_hud.centreProgress().titleRef().isEmpty() && !hostGallerySizeResolve().active()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -444,7 +444,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString loadingLine = m_hud.appearance().isVisible() ? loadingStatusHudLine() : QString();
     if (m_cropCtrl.session().active() || m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_hud.flash().isIdentityPulse()
         || m_slideshow.hud().isPausedHud() || hostGallerySizeResolve().active()
-        || !m_centreProgress.titleRef().isEmpty()
+        || !m_hud.centreProgress().titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
@@ -519,18 +519,18 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
-        } else if (!m_centreProgress.titleRef().isEmpty()) {
+        } else if (!m_hud.centreProgress().titleRef().isEmpty()) {
             QList<HudLine> lines;
-            lines.append({m_centreProgress.titleRef(), true});
-            if (!m_centreProgress.detailRef().isEmpty()) {
-                lines.append({m_centreProgress.detailRef(), false});
+            lines.append({m_hud.centreProgress().titleRef(), true});
+            if (!m_hud.centreProgress().detailRef().isEmpty()) {
+                lines.append({m_hud.centreProgress().detailRef(), false});
             }
             // Non-blocking background work → sticky top-left. Only true
             // blockers (archive expand / open progress) use the viewport centre.
             const bool corner =
-                m_centreProgress.matchesTitlePrefix(tr("Loading tiles"))
-                || m_centreProgress.matchesTitlePrefix(tr("Improving previews"))
-                || m_centreProgress.matchesTitlePrefix(tr("Resolving sizes"));
+                m_hud.centreProgress().matchesTitlePrefix(tr("Loading tiles"))
+                || m_hud.centreProgress().matchesTitlePrefix(tr("Improving previews"))
+                || m_hud.centreProgress().matchesTitlePrefix(tr("Resolving sizes"));
             if (corner) {
                 drawPanel(lines, margin, margin, false, false, false);
             } else {

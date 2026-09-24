@@ -176,7 +176,7 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
         clearCentreProgress();
         return;
     }
-    if (!m_centreProgress.set(title, detail)) {
+    if (!m_hud.centreProgress().set(title, detail)) {
         return;
     }
     // Empty scene needs FullViewportUpdate or the progress panel never paints.
@@ -193,10 +193,10 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
 
 void ImageView::clearCentreProgress()
 {
-    if (!m_centreProgress.active()) {
+    if (!m_hud.centreProgress().active()) {
         return;
     }
-    m_centreProgress.clear();
+    m_hud.centreProgress().clear();
     if (isGalleryMode() && !hostGallerySizeResolve().active()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }

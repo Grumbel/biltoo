@@ -74,8 +74,8 @@
     const LayoutApplyGuard &hostLayoutApply() const { return m_gallery.layoutApply(); }
     /** Gallery pack debounce single-shot timer (may be null until first use). */
     // Layout debounce QTimer: GalleryController::layoutDebounceTimer().
-    CentreProgress &hostCentreProgress() { return m_centreProgress; }
-    const CentreProgress &hostCentreProgress() const { return m_centreProgress; }
+    CentreProgress &hostCentreProgress() { return m_hud.centreProgress(); }
+    const CentreProgress &hostCentreProgress() const { return m_hud.centreProgress(); }
     QUndoStack *hostUndoStack() { return m_undoStack; }
     const QUndoStack *hostUndoStack() const { return m_undoStack; }
     DisplayPipelineController &hostDisplayPipeline()

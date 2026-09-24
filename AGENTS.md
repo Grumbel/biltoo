@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2487.1-own-path-raster-on-pipeline**.
-Latest tip: **biltoo-2487** (+ thumtoo-338). Own: PathRasterService on DisplayPipelineController.
+Latest agent handoff: **TODO.md → biltoo-2488.1-own-centre-progress-in-hud**.
+Latest tip: **biltoo-2488** (+ thumtoo-338). Own: CentreProgress on HudChrome.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

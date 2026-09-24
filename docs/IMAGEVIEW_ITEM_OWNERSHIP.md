@@ -402,3 +402,6 @@ Product shell (minimal):
 29. **biltoo-2487:** PathRasterService owned by DisplayPipelineController;
     hostPathRaster forwards to pipeline pathRaster().
 
+30. **biltoo-2488:** CentreProgress owned by HudChrome; drop unused ImageView
+    gallery decode constants (limits live in GalleryDecode).
+

@@ -121,7 +121,7 @@
      */
     ImageSizeCoordinator m_size;
     /** Centre HUD progress (expand / size resolve / sort). */
-    CentreProgress m_centreProgress;
+    // CentreProgress: owned by HudChrome (m_hud.centreProgress()).
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     /** Session path list + parallel SessionImageId order (IDENTITY). */
@@ -152,10 +152,6 @@
     ImageModeSoftProvider m_imageModeSoftProvider;
 
     // PathRasterService: owned by DisplayPipelineController (pathRaster()).
-    static constexpr int kGalleryVirtualThreshold = 1;
-    static constexpr int kMaxConcurrentGalleryDecodes = 8;
-    /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
-    static constexpr int kMaxIdleGalleryDecodes = 2;
     // --- LoadAdd pending-bind helpers ---
 
     SessionBindBook m_bindBook;

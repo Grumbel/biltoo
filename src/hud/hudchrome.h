@@ -6,6 +6,7 @@
 
 #include "hud/hudappearance.h"
 #include "hud/hudflash.h"
+#include "shell/centreprogress.h"
 
 #include <functional>
 
@@ -24,6 +25,9 @@ public:
 
     HudFlash &flash() { return m_flash; }
     const HudFlash &flash() const { return m_flash; }
+
+    CentreProgress &centreProgress() { return m_centreProgress; }
+    const CentreProgress &centreProgress() const { return m_centreProgress; }
 
     QTimer *flashTimer() const { return m_flashTimer; }
     QTimer *statusRefreshTimer() const { return m_statusRefreshTimer; }
@@ -54,6 +58,7 @@ public:
 private:
     HudAppearance m_appearance;
     HudFlash m_flash;
+    CentreProgress m_centreProgress;
     QTimer *m_flashTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
 };
