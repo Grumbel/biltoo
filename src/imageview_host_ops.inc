@@ -27,8 +27,6 @@
     /** Page-guide selection chrome (Workspace print frame). */
     void setPageGuideSelected(bool on);
     ImageItem *targetItem() const override;
-    /** Scene angle from item origin to @p scenePos (Workspace free-rotate). */
-    qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void hostPushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                   const ItemComponents::Placement &after, const QString &text);
     void restoreToolCursor();

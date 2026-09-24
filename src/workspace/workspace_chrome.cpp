@@ -94,7 +94,8 @@ bool WorkspaceController::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_itemInteract.beginRotate(hit, m_view->angleAt(scenePos, hit), (hit ? hit->placement() : ItemComponents::Placement{}));
+    m_itemInteract.beginRotate(hit, PlacementLinear::angleAbout(hit->scenePos(), scenePos),
+                              (hit ? hit->placement() : ItemComponents::Placement{}));
     m_view->canvasScene()->clearSelection();
     hit->setSelected(true);
     m_view->viewport()->setCursor(Qt::CrossCursor);
@@ -108,7 +109,10 @@ bool WorkspaceController::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         return false;
     }
     const QPointF scenePos = m_view->mapToScene(event->pos());
-    const qreal angle = m_view->angleAt(scenePos, m_itemInteract.currentRotateItem());
+    ImageItem *item = m_itemInteract.currentRotateItem();
+    const qreal angle = item
+        ? PlacementLinear::angleAbout(item->scenePos(), scenePos)
+        : 0.0;
     // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
     // Stage 2: press-time placement rotation from interact session Placement.
     const qreal rot = PlacementLinear::placementRotationFromDrag(
@@ -116,7 +120,9 @@ bool WorkspaceController::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         m_itemInteract.currentRotateStartAngle(), angle,
         event->modifiers() & Qt::ControlModifier,
         event->modifiers() & Qt::ShiftModifier);
-    ImageItem *item = m_itemInteract.currentRotateItem();
+    if (!item) {
+        return false;
+    }
     ItemComponents::Placement pl = m_itemInteract.currentDragStartPlacement();
     pl.rotation = rot;
     item->applyPlacement(pl);
