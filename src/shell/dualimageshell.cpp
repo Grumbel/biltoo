@@ -170,24 +170,27 @@ void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
     m_secondary->update();
 
     // Second chance after geometry settles: zero-size framing / deferred soft.
-    QPointer<ImageView> sec(m_secondary);
-    QTimer::singleShot(50, m_secondary, [sec, path]() {
-        if (!sec || sec->hostImage().classicPath() != path) {
+    // Use QPointer + raw pointer after the null check so -Wnull-dereference is quiet
+    // when the lambda is inlined through Qt's slot machinery.
+    QPointer<ImageView> secGuard(m_secondary);
+    QTimer::singleShot(50, m_secondary, [secGuard, path]() {
+        ImageView *view = secGuard.data();
+        if (!view || view->hostImage().classicPath() != path) {
             return;
         }
-        bool need = sec->itemCount() == 0;
+        bool need = view->itemCount() == 0;
         if (!need) {
-            ImageItem *item = sec->primaryItem();
+            ImageItem *item = view->primaryItem();
             need = !item || !item->hasDisplayPixels();
         }
         if (need) {
-            sec->hostDisplayPipeline().loadImage(path);
-        } else if (ImageItem *item = sec->primaryItem()) {
+            view->hostDisplayPipeline().loadImage(path);
+        } else if (ImageItem *item = view->primaryItem()) {
             // Re-frame once the viewport has a real size.
-            sec->applyImageModeFraming(item);
+            view->applyImageModeFraming(item);
         }
-        if (sec->viewport()) {
-            sec->viewport()->update();
+        if (QWidget *vp = view->viewport()) {
+            vp->update();
         }
     });
 

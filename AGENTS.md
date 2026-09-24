@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2462.1-fix-dual-shortcut-and-secondary-paint**.
-Latest tip: **biltoo-2462** (+ thumtoo-338). Dual: Ctrl+Shift+2; software secondary viewport.
+Latest agent handoff: **TODO.md → biltoo-2463.1-fix-dual-timer-null-warnings**.
+Latest tip: **biltoo-2463** (+ thumtoo-338). Quiet dual timer null-deref warnings.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
