@@ -783,10 +783,17 @@ void ViewShellChrome::applyModeViewportPolicy(int viewMode)
     // must call item->update() (installDisplayPixels already does).
     // Image/Workspace: FullViewportUpdate for HUD/chrome.
     using VM = ImageView::ViewMode;
-    if (static_cast<VM>(viewMode) == VM::Gallery) {
+    const auto mode = static_cast<VM>(viewMode);
+    if (mode == VM::Gallery) {
         m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+        // Top-left: AlignCenter floated a pack measured under AlwaysOn gutters
+        // inside a larger AsNeeded/Off viewport (phantom scrollbar margins /
+        // off-centre overview after Image→Gallery).
+        m_view->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     } else {
         m_view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+        // Image / Workspace: centre the sole underlay / free-form canvas.
+        m_view->setAlignment(Qt::AlignCenter);
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();

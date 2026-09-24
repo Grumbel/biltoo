@@ -390,6 +390,10 @@ void MainWindow::returnToGallery()
     // Warm stash restore keeps the same ImageItem* cells (pixels, tile sessions
     // via registry idle). Skipping populateGalleryCanvas avoids setWorkspacePaths
     // re-walking the full session (size gate / membership) after a mode switch.
+    //
+    // Scrollbar policy *before* restore: same order as enterGalleryMode. Pack /
+    // centre must see the final AlwaysOff or AsNeeded client, not Image leftovers.
+    updateScrollBarPolicyForMode();
     bool restoredStash = false;
     if (m_imageView) {
         restoredStash = m_imageView->hostGallery().returnFromImage(
@@ -406,15 +410,15 @@ void MainWindow::returnToGallery()
         m_imageView->hostDisplayPipeline().tickPrimaryTileLod(16);
     }
     if (m_imageView) {
+        m_imageView->refreshScrollBarGeometry();
         m_imageView->hostGallery().applyPendingRestore();
-        // After the event loop settles (scrollbar policy / sceneRect geometry),
-        // re-centre once. Do not re-arm pendingRestore — that kept the leave
-        // snapshot alive so an ExplicitLayout that looked correct was snapped
-        // back off-centre a tick later.
+        // One settle pass after bar geometry; applyPendingRestore clears the
+        // snapshot when stable so this cannot fight a later ExplicitLayout.
         QTimer::singleShot(0, this, [this]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;
             }
+            m_imageView->refreshScrollBarGeometry();
             m_imageView->hostGallery().reassertViewport();
         });
     }

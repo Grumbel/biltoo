@@ -58,7 +58,16 @@
 
 namespace {
 
-/** AlwaysOn both axes for pack measure; restore previous policy on exit. */
+/**
+ * Pack measure viewport.
+ * - AlwaysOff / AlwaysOn: measure the live viewport (no policy change).
+ * - AsNeeded: force AlwaysOn on both axes so the pack reserves both gutters.
+ *   Packing to the full AsNeeded client then showing one bar shrinks the other
+ *   axis and can force a dual-bar loop.
+ * AlwaysOff must NOT force AlwaysOn: that measured a gutter-shrunken size, then
+ * restored a full client — AlignCenter floated the pack (off-centre “scrollbar”
+ * margins after Image→Gallery).
+ */
 class PackViewportGuard
 {
 public:
@@ -70,10 +79,14 @@ public:
         }
         m_savedH = m_view->horizontalScrollBarPolicy();
         m_savedV = m_view->verticalScrollBarPolicy();
-        if (m_savedH != Qt::ScrollBarAlwaysOn
-            || m_savedV != Qt::ScrollBarAlwaysOn) {
+        const bool asNeeded = (m_savedH == Qt::ScrollBarAsNeeded
+                               || m_savedV == Qt::ScrollBarAsNeeded);
+        if (asNeeded
+            && (m_savedH != Qt::ScrollBarAlwaysOn
+                || m_savedV != Qt::ScrollBarAlwaysOn)) {
             m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
             m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+            m_forced = true;
         }
         if (QWidget *vp = m_view->viewport()) {
             m_width = vp->width();
@@ -91,13 +104,16 @@ public:
         if (!m_view) {
             return;
         }
-        if (m_view->horizontalScrollBarPolicy() != m_savedH) {
-            m_view->setHorizontalScrollBarPolicy(m_savedH);
-        }
-        if (m_view->verticalScrollBarPolicy() != m_savedV) {
-            m_view->setVerticalScrollBarPolicy(m_savedV);
+        if (m_forced) {
+            if (m_view->horizontalScrollBarPolicy() != m_savedH) {
+                m_view->setHorizontalScrollBarPolicy(m_savedH);
+            }
+            if (m_view->verticalScrollBarPolicy() != m_savedV) {
+                m_view->setVerticalScrollBarPolicy(m_savedV);
+            }
         }
         m_view = nullptr;
+        m_forced = false;
     }
 
     [[nodiscard]] int width() const { return m_width; }
@@ -109,6 +125,7 @@ private:
     Qt::ScrollBarPolicy m_savedV = Qt::ScrollBarAsNeeded;
     int m_width = 0;
     int m_height = 0;
+    bool m_forced = false;
 };
 
 } // namespace
@@ -315,8 +332,13 @@ void GalleryController::applyPendingRestore()
 
     // Stay pending while loads complete — each applyLayout would otherwise
     // centerOn(0,0) and wipe the restored position.
-    if (!m_view->hostDisplayPipeline().loadGate().hasPendingWorkspacePaths() && !m_view->liveItems().isEmpty()) {
+    if (!m_view->hostDisplayPipeline().loadGate().hasPendingWorkspacePaths()
+        && !m_view->liveItems().isEmpty()) {
         m_pendingRestore = false;
+        // Snapshot consumed. Leaving it armed let deferred reassert / packs
+        // snap a correct ExplicitLayout back to the leave camera.
+        m_haveScroll = false;
+        m_haveViewCenter = false;
     }
 }
 

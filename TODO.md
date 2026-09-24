@@ -2,19 +2,25 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2629.1-gallery-centre-vs-scrollbar** (base `78739ac`).
+**Tip: biltoo-2630.1-gallery-pack-align-bars** (base `e9c1e25`).
 
-### This tip — Gallery return still off-centre by scrollbar gutter; relayout snaps back
-- Root cause (follow-up to 2628): `reassertViewport` preferred **scrollbar pixel**
-  values over the **scene centre** snapshot. Bar AlwaysOn↔AsNeeded (and one vs
-  two bars) changes viewport size between leave and return → pack a bar-width off.
-- Deferred `restoreViewport` in `returnToGallery` **re-armed** `pendingRestore`,
-  so an ExplicitLayout that looked correct was snapped back by the leave snapshot.
-- Fix: prefer `centerOn(m_viewCenter)`; ExplicitLayout/EnterGallery clears
-  restore state; singleShot only `reassertViewport` (no re-arm); refresh bar
-  geometry after PackViewportGuard restore before reassert.
+### This tip — Gallery still off-centre after Image (scrollbar gutters)
+Follow-up to 2628/2629. Remaining causes:
+
+1. **PackViewportGuard** forced AlwaysOn even when policy was AlwaysOff, so the
+   pack was measured for a gutter-shrunken viewport then shown full-size.
+2. **AlignCenter** floated that undersized pack in the larger client (phantom
+   scrollbar margins / off-centre overview).
+3. Viewport snapshot stayed armed after restore → deferred reassert could snap
+   a good ExplicitLayout back.
+
+Fixes:
+- PackViewportGuard only forces AlwaysOn under AsNeeded; AlwaysOff measures live
+- Gallery: AlignLeft|AlignTop; Image/Workspace: AlignCenter
+- Consume scroll/centre snapshot when pending restore finishes
+- returnToGallery: updateScrollBarPolicyForMode before restore + bar geometry settle
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2629.1-gallery-centre-vs-scrollbar-78739ac.bundle HEAD
+git pull --ff-only …/biltoo-2630.1-gallery-pack-align-bars-e9c1e25.bundle HEAD
 ```
