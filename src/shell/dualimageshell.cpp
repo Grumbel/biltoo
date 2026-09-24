@@ -42,7 +42,7 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
     m_secondary->setAccessibleName(tr("Compare image view"));
     m_secondary->setAccessibleDescription(
         tr("Secondary Image-mode surface for side-by-side compare. Shares "
-           "appearance and display pipeline with the primary view."));
+           "appearance (ItemWorld) with the primary view; each pane has its own display pipeline."));
     m_secondary->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setMinimumHeight(120);
@@ -54,8 +54,12 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
         m_secondary->bindSessionSeedBook(seedBook);
     }
 
+    // Share durable appearance (ItemWorld + size book via hostSizeBook).
+    // Keep a *per-surface* DisplayPipelineController: a single shared pipeline
+    // with one active host drops secondary installs when classicPath / host
+    // still point at the primary (right pane stayed black). PreferCache is
+    // coordinated later; dual display needs two independent install targets.
     m_secondary->bindSharedItemWorld(&m_primary->itemWorld());
-    m_secondary->bindSharedDisplayPipeline(&m_primary->hostDisplayPipeline());
     // Filmstrip soft samples + canvas chrome match the primary session surface.
     m_secondary->setImageModeSoftProvider(m_primary->hostImageModeSoftProvider());
     m_secondary->setBackgroundBrush(m_primary->backgroundBrush());
@@ -71,7 +75,6 @@ void DualImageShell::destroySecondary()
     }
     if (m_active == m_secondary) {
         m_active = m_primary;
-        m_primary->hostDisplayPipeline().setActiveHost(m_primary);
         emit activeViewChanged(m_primary);
     }
     m_secondary->removeEventFilter(this);
@@ -101,7 +104,6 @@ void DualImageShell::setDualEnabled(bool on, SessionDocument *sessionDoc, Sessio
             destroySecondary();
         }
         m_active = m_primary;
-        m_primary->hostDisplayPipeline().setActiveHost(m_primary);
     }
     emit dualEnabledChanged(m_dual);
 }
@@ -113,7 +115,7 @@ void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
         return;
     }
 
-    // Shared pipeline must install into the secondary's liveItems / scene.
+    // Track active pane for independent ←/→ (nav uses isSecondaryActive).
     noteFocus(m_secondary);
 
     m_secondary->hostImage().setClassicPath(path);
@@ -180,7 +182,11 @@ void DualImageShell::noteFocus(ImageView *view)
         return;
     }
     m_active = view;
-    view->hostDisplayPipeline().setActiveHost(view);
+    // Shared-pipeline mode only: re-point active host. Per-surface pipelines
+    // (default dual) are already bound to their ImageView at construction.
+    if (view->hasSharedDisplayPipeline()) {
+        view->hostDisplayPipeline().setActiveHost(view);
+    }
     emit activeViewChanged(view);
 }
 

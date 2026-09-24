@@ -295,6 +295,11 @@ Product shell (minimal):
 - Session navigation / filmstrip / Gallery still drive the **primary** only.
 - Secondary starts empty (compare load / lock-step nav is later product work).
 
+### Stage 2c.3 (landed — biltoo-2458) / 2461 dual display fix
+
+- **2461:** Dual secondary uses **per-surface** DisplayPipeline (shared ItemWorld
+  only). Shared pipeline + one active host dropped secondary installs → black pane.
+
 ### Stage 2c.3 (landed — biltoo-2458)
 
 - `DualImageShell::openOnSecondary(path, sid)` — setActiveHost(secondary), classic

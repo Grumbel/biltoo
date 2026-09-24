@@ -2,26 +2,28 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2460.1-fix-secondary-black-sizebook** (base `7d823d8`).
+**Tip: biltoo-2461.1-fix-dual-per-surface-pipeline** (base `7d823d8`).
 
 ### Dual compare goal
-Image-mode **side-by-side compare** of two session rows: shared ItemWorld +
-DisplayPipeline; independent ←/→ on the focused pane; primary keeps session
-cursor / filmstrip.
+Side-by-side Image-mode compare of two session rows. Shared **ItemWorld**
+(appearance). **Per-surface DisplayPipeline** so both panes can hold pixels at once.
 
-### Fix 2460 (secondary was black)
-- `hostSizeBook()` uses shared ItemWorld size book when bound (secondary had
-  empty local book → 1×1 layout / blank paint)
-- Secondary always `ImageController::enter()` on open
-- Copy soft provider + background brush from primary
-- Defer seed open until after splitter layout (`QTimer::singleShot(0)`)
+### Why secondary was black
+Shared pipeline + single `activeHost` rejected secondary installs when
+`classicPath` / host still referred to the primary. OpenGL dual viewports were
+a secondary suspicion; installs never reached the right scene.
+
+### Fix 2461
+- Dual secondary keeps its **own** DisplayPipelineController
+- Still `bindSharedItemWorld` (+ shared size book via hostSizeBook)
+- `setActiveHost` only when `hasSharedDisplayPipeline()`
 
 ### Next
-- Optional lock-step dual nav
-- QTimer lifetime on host switch
-- Confirm dual shows two images on host
+- PreferCache coordination across two pipelines (same SessionImageId)
+- Optional lock-step nav
+- Confirm both panes show images on host
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2460.1-fix-secondary-black-sizebook-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2461.1-fix-dual-per-surface-pipeline-7d823d8.bundle HEAD
 ```

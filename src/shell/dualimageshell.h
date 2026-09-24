@@ -18,10 +18,10 @@ class SessionSeedBook;
 
 /**
  * Dual ImageView Stage 2c.2–2c.3 shell: primary host (session owner) plus an
- * optional secondary compare surface that shares ItemWorld + DisplayPipeline.
+ * optional secondary compare surface that shares ItemWorld; each pane owns its DisplayPipeline.
  *
  * MainWindow keeps talking to primary() for Gallery/Workspace/session chrome.
- * Focus → setActiveHost on the shared pipeline.
+ * Focus tracks active pane for nav; pipelines stay per-surface unless explicitly shared.
  *
  * Stage 2c.3: openOnSecondary + navigateSecondary (independent compare nav).
  * Secondary is destroyed on disable without tearing down the shared pipeline.
