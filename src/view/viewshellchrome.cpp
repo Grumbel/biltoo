@@ -719,3 +719,41 @@ void ViewShellChrome::paintBackground(QPainter *painter, const QRectF &rect, qre
     // Page guide paper under images.
     m_view->hostWorkspace().paintPageGuidePaper(painter, rect);
 }
+
+void ViewShellChrome::refreshScrollBarGeometry()
+{
+    if (!m_view) {
+        return;
+    }
+    // fitInView / sceneRect changes can leave AsNeeded bars with a stale range
+    // until policy is toggled. Re-apply the current policies to force
+    // QAbstractScrollArea to recompute visibility (public API only).
+    const auto h = m_view->horizontalScrollBarPolicy();
+    const auto v = m_view->verticalScrollBarPolicy();
+    if (h == Qt::ScrollBarAsNeeded || v == Qt::ScrollBarAsNeeded) {
+        m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_view->setHorizontalScrollBarPolicy(h);
+        m_view->setVerticalScrollBarPolicy(v);
+    }
+}
+
+void ViewShellChrome::applyModeViewportPolicy(int viewMode)
+{
+    if (!m_view) {
+        return;
+    }
+    // Gallery: BoundingRect — FullViewportUpdate repaints every tile on each
+    // scroll/zoom tick and is unusable with large soft bitmaps. Soft upgrades
+    // must call item->update() (installDisplayPixels already does).
+    // Image/Workspace: FullViewportUpdate for HUD/chrome.
+    using VM = ImageView::ViewMode;
+    if (static_cast<VM>(viewMode) == VM::Gallery) {
+        m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    } else {
+        m_view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}

@@ -78,17 +78,7 @@ void ImageView::zoomReset()
 
 void ImageView::refreshScrollBarGeometry()
 {
-    // fitInView / sceneRect changes can leave AsNeeded bars with a stale range
-    // until policy is toggled. Re-apply the current policies to force
-    // QAbstractScrollArea to recompute visibility (public API only).
-    const auto h = horizontalScrollBarPolicy();
-    const auto v = verticalScrollBarPolicy();
-    if (h == Qt::ScrollBarAsNeeded || v == Qt::ScrollBarAsNeeded) {
-        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        setHorizontalScrollBarPolicy(h);
-        setVerticalScrollBarPolicy(v);
-    }
+    m_shell.refreshScrollBarGeometry();
 }
 
 void ImageView::zoomFit()

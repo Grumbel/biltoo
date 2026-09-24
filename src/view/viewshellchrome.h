@@ -67,6 +67,10 @@ public:
     void paintCanvasBackground(QPainter *painter, const QRectF &rect, qreal viewScale);
     /** Full drawBackground: canvas + gallery placeholders + page paper. */
     void paintBackground(QPainter *painter, const QRectF &rect, qreal viewScale);
+    /** Re-apply AsNeeded scrollbar policies after fit/sceneRect (stale range fix). */
+    void refreshScrollBarGeometry();
+    /** Gallery → BoundingRect updates; Image/Workspace → FullViewportUpdate. */
+    void applyModeViewportPolicy(int viewMode);
 
 private:
     ImageView *m_view = nullptr;
