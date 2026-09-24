@@ -403,7 +403,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
                 const QImage soft = it->displayImage();
                 const QString pathCopy = path;
                 // One frame for soft paint, then PreferCache for the settled path.
-                QTimer::singleShot(16, m_view, [this, pathCopy, soft]() {
+                QTimer::singleShot(16, m_host->hostObject(), [this, pathCopy, soft]() {
                     if (!m_host->isImageMode() || m_host->hostImage().classicPath() != pathCopy) {
                         return;
                     }
@@ -434,8 +434,8 @@ bool DisplayPipelineController::tryDeliverReplaceFromSlideshowRaster(const QStri
     if (ready.isNull()) {
         return false;
     }
-    const QPointer<ImageView> guard(m_view);
-    queueImageLoaded(guard, path, ready, gen, static_cast<int>(ImageView::LoadReplace));
+    const QPointer<QObject> life(m_host->hostObject());
+    queueImageLoaded(life, this, path, ready, gen, static_cast<int>(ImageView::LoadReplace));
     return true;
 }
 
@@ -446,7 +446,7 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
     // Key-repeat skips loadImage entirely (MainWindow debounce); this path is
     // for settled index / auto-advance — must climb above soft max or the show
     // stays on thumbnails forever.
-    const QPointer<ImageView> guard(m_view);
+    const QPointer<QObject> life(m_host->hostObject());
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const int qualityEdge = m_host->hostSlideshow().slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
@@ -459,23 +459,23 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
         const int have = ImageCache::longEdge(cached);
         if (have > 0) {
             ImageCache::put(path, cached);
-            queuePreviewLoaded(guard, path, cached, gen, roleInt);
+            queuePreviewLoaded(life, this, path, cached, gen, roleInt);
             if (ImageCache::adequate(cached, qualityEdge)) {
-                queueImageLoaded(guard, path, cached, gen, roleInt);
+                queueImageLoaded(life, this, path, cached, gen, roleInt);
                 return;
             }
         }
         if (ThumtooCache::hasDurableTilesKnown(path)) {
             tickPrimaryTileLod(12);
             if (qualityEdge > softEdge) {
-                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
+                startDisplayQualityJob(life, this, path, gen, roleInt, qualityEdge,
                                        sessionApp);
             }
             return;
         }
         if (have > 0 && ImageCache::adequate(cached, softEdge)) {
             if (qualityEdge > softEdge) {
-                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
+                startDisplayQualityJob(life, this, path, gen, roleInt, qualityEdge,
                                        sessionApp);
             }
             return;
@@ -483,9 +483,9 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
     }
 
     // Cold only: soft stand-in then quality job.
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
+    startSoftPreviewJob(life, this, path, gen, roleInt, softEdge, sessionApp);
     if (qualityEdge > softEdge) {
-        startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge, sessionApp);
+        startDisplayQualityJob(life, this, path, gen, roleInt, qualityEdge, sessionApp);
     }
 }
 
@@ -505,15 +505,16 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         const bool needSoft = !it || !it->hasDisplayPixels()
             || it->displayPixelLongEdge() <= 0;
         if (needSoft) {
-            const QPointer<ImageView> guard(m_view);
+            const QPointer<QObject> life(m_host->hostObject());
             const int roleInt = static_cast<int>(role);
             QImage cached = ImageCache::get(path);
             if (!cached.isNull()) {
-                queueImageLoaded(guard, path, cached, gen, roleInt);
+                queueImageLoaded(life, this, path, cached, gen, roleInt);
             } else {
+                DisplayPipelineController *pipe = this;
                 QThreadPool::globalInstance()->start(
-                    [guard, path, roleInt, gen]() {
-                        if (!guard || !guard->matchesLoadGeneration(gen)) {
+                    [life, pipe, path, roleInt, gen]() {
+                        if (!life || !pipe || !pipe->loadGate().accepts(gen)) {
                             return;
                         }
                         QImage preview = loadSoftPreviewPixels(path, 0);
@@ -525,7 +526,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
                             return;
                         }
                         ImageCache::put(path, preview);
-                        queueImageLoaded(guard, path, preview, gen, roleInt);
+                        queueImageLoaded(life, pipe, path, preview, gen, roleInt);
                     },
                     2);
             }
@@ -542,17 +543,18 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     // jobs only queue onImagePreviewLoaded — that path never creates items —
     // so always queueImageLoaded here (cache hit or soft worker).
     if (role == static_cast<int>(ImageView::LoadRestore) && m_host->isWorkspaceMode()) {
-        const QPointer<ImageView> guard(m_view);
+        const QPointer<QObject> life(m_host->hostObject());
         const int roleInt = static_cast<int>(role);
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()) {
-            queueImageLoaded(guard, path, cached, gen, roleInt);
+            queueImageLoaded(life, this, path, cached, gen, roleInt);
             return;
         }
         ThumtooCache::scheduleProbe(path);
+        DisplayPipelineController *pipe = this;
         QThreadPool::globalInstance()->start(
-            [guard, path, roleInt, gen]() {
-                if (!guard || !guard->matchesLoadGeneration(gen)) {
+            [life, pipe, path, roleInt, gen]() {
+                if (!life || !pipe || !pipe->loadGate().accepts(gen)) {
                     return;
                 }
                 QImage preview = loadSoftPreviewPixels(path, 0);
@@ -563,7 +565,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
                     return;
                 }
                 ImageCache::put(path, preview);
-                queueImageLoaded(guard, path, preview, gen, roleInt);
+                queueImageLoaded(life, pipe, path, preview, gen, roleInt);
             },
             2);
         return;
@@ -575,8 +577,8 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()
             && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
-            const QPointer<ImageView> guard(m_view);
-            queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
+            const QPointer<QObject> life(m_host->hostObject());
+            queuePreviewLoaded(life, this, path, cached, gen, static_cast<int>(role));
         }
         if (m_host->isGalleryMode()) {
             scheduleGalleryDecode(path);
@@ -587,7 +589,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     }
 
     // Fallback (rare non-mode): soft stand-in — prefer cache LQIP first.
-    const QPointer<ImageView> guard(m_view);
+    const QPointer<QObject> life(m_host->hostObject());
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
@@ -595,13 +597,13 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()
             && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
-            queuePreviewLoaded(guard, path, cached, gen, roleInt);
+            queuePreviewLoaded(life, this, path, cached, gen, roleInt);
             tickPrimaryTileLod(8);
             Q_UNUSED(sessionApp);
             return;
         }
     }
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
+    startSoftPreviewJob(life, this, path, gen, roleInt, softEdge, sessionApp);
     Q_UNUSED(gen);
 }
 

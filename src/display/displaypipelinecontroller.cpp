@@ -157,33 +157,34 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
     }
     m_host->hostGalleryDecodeBook().markImageModeNativeDecode(path);
     const quint64 gen = loadGate().generation();
-    const QPointer<ImageView> guard(m_view);
-    QThreadPool::globalInstance()->start([guard, path, gen]() {
+    const QPointer<QObject> life(m_host->hostObject());
+    DisplayPipelineController *pipe = this;
+    QThreadPool::globalInstance()->start([life, pipe, path, gen]() {
         ASSERT_NOT_GUI_THREAD();
         const QImage decoded = ImageLoader::load(path);
-        if (!guard) {
+        if (!life || !pipe) {
             return;
         }
         QMetaObject::invokeMethod(
-            guard.data(),
-            [guard, path, decoded, gen]() {
-                ImageView *const host = guard.data();
-                if (!host) {
+            life.data(),
+            [life, pipe, path, decoded, gen]() {
+                if (!life || !pipe || !pipe->host()) {
                     return;
                 }
                 if (!decoded.isNull()) {
                     ImageCache::put(path, decoded);
                 }
-                if (host->isImageMode()) {
-                    if (gen != host->hostLoadGate().generation()) {
+                DisplayPipelineHost *h = pipe->host();
+                if (h->isImageMode()) {
+                    if (gen != pipe->loadGate().generation()) {
                         return;
                     }
                     if (!decoded.isNull()) {
-                        (void)host->hostDisplayPipeline().tryInstallImageModeSample(path, decoded);
+                        (void)pipe->tryInstallImageModeSample(path, decoded);
                     }
-                } else if (host->isWorkspaceMode() && !decoded.isNull()) {
-                    host->hostDisplayPipeline().onImagePreviewLoaded(
-                        path, decoded, host->hostLoadGate().generation(),
+                } else if (h->isWorkspaceMode() && !decoded.isNull()) {
+                    pipe->onImagePreviewLoaded(
+                        path, decoded, pipe->loadGate().generation(),
                         static_cast<int>(ImageView::LoadAdd));
                 }
             },
@@ -1451,9 +1452,9 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
 void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
 {
     if (!tileLodZoomDebounce()) {
-        tileLodZoomDebounce() = new QTimer(m_view);
+        tileLodZoomDebounce() = new QTimer(m_host->hostObject());
         tileLodZoomDebounce()->setSingleShot(true);
-        QObject::connect(tileLodZoomDebounce(), &QTimer::timeout, m_view, [this]() {
+        QObject::connect(tileLodZoomDebounce(), &QTimer::timeout, m_host->hostObject(), [this]() {
             // Always issue visible tiles first (scroll/pan settle). Gallery
             // uses this path for Ctrl+wheel; Image/Workspace also need LOD
             // coverage after scrollbar storms — not only PreferCache climb.
@@ -1611,7 +1612,7 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
         return;
     }
     if (!tileCoordinator()) {
-        tileCoordinator() = std::make_unique<TileLoadCoordinator>(m_view);
+        tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
     }
     tileCoordinator()->tick(budget);
 
@@ -1655,9 +1656,9 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
         return;
     }
     if (!tileLodTimer()) {
-        tileLodTimer() = new QTimer(m_view);
+        tileLodTimer() = new QTimer(m_host->hostObject());
         tileLodTimer()->setSingleShot(true);
-        QObject::connect(tileLodTimer(), &QTimer::timeout, m_view, [this]() {
+        QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(), [this]() {
             // Image focus: higher budget so density climb is not starved.
             tickPrimaryTileLod(m_host->isGalleryMode() ? 48 : 32);
         });
@@ -2037,10 +2038,11 @@ void DisplayPipelineController::scheduleAsyncHostRematerialize(
         return; // GUI path already handled by tryRematerializeFromHost
     }
     const quint64 gen = loadGate().generation();
-    QPointer<ImageView> guard(m_view);
+    QPointer<QObject> life(m_host->hostObject());
+    DisplayPipelineController *pipe = this;
     const WorkspaceItemState wantCopy = want;
-    QThreadPool::globalInstance()->start([guard, path, sid, wantCopy, gen]() {
-        if (!guard) {
+    QThreadPool::globalInstance()->start([life, pipe, path, sid, wantCopy, gen]() {
+        if (!life || !pipe) {
             return;
         }
         const QImage host = ImageCache::get(path);
@@ -2053,12 +2055,11 @@ void DisplayPipelineController::scheduleAsyncHostRematerialize(
         if (display.isNull()) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, path, sid, wantCopy, display, gen]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
+        QMetaObject::invokeMethod(life.data(), [life, pipe, path, sid, wantCopy, display, gen]() {
+            if (!life || !pipe || !pipe->loadGate().accepts(gen)) {
                 return;
             }
-            guard->hostDisplayPipeline().finishAsyncHostRematerialize(
-                path, sid, wantCopy, display);
+            pipe->finishAsyncHostRematerialize(path, sid, wantCopy, display);
         }, Qt::QueuedConnection);
     });
 }

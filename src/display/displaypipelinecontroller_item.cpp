@@ -188,8 +188,9 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
     }
     QVector<SessionImageId> idsCopy = ids.mid(0, n);
     QStringList pathsCopy = paths.mid(0, n);
-    const QPointer<ImageView> guard(m_view);
-    QThreadPool::globalInstance()->start([guard, pathsCopy, idsCopy]() {
+    const QPointer<QObject> life(m_host->hostObject());
+    DisplayPipelineController *pipe = this;
+    QThreadPool::globalInstance()->start([life, pipe, pathsCopy, idsCopy]() {
         struct Hit {
             SessionImageId sid = kInvalidSessionImageId;
             QString path;
@@ -219,17 +220,15 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
         if (hits.isEmpty() && attempted.isEmpty()) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, hits, attempted]() {
-            ImageView *host = guard.data();
-            if (!host) {
+        QMetaObject::invokeMethod(life.data(), [life, pipe, hits, attempted]() {
+            if (!life || !pipe) {
                 return;
             }
             for (const SessionImageId sid : attempted) {
-                host->hostDisplayPipeline().markAppearanceSeedAttempted(sid);
+                pipe->markAppearanceSeedAttempted(sid);
             }
             for (const Hit &h : hits) {
-                host->hostDisplayPipeline().applyStoredContentAppearanceSeed(
-                    h.sid, h.path, h.stored);
+                pipe->applyStoredContentAppearanceSeed(h.sid, h.path, h.stored);
             }
         }, Qt::QueuedConnection);
     });
@@ -261,23 +260,22 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
     }
     m_host->hostSeedBook().markSeedAttempted(sid);
     // Store loadContentAppearance is SQLite — never on the GUI.
-    const QPointer<ImageView> guard(m_view);
+    const QPointer<QObject> life(m_host->hostObject());
+    DisplayPipelineController *pipe = this;
     const SessionImageId sidCopy = sid;
     const QString pathCopy = path;
-    QThreadPool::globalInstance()->start([guard, sidCopy, pathCopy]() {
+    QThreadPool::globalInstance()->start([life, pipe, sidCopy, pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
         ThumtooCache::StoredContentAppearance stored;
         if (!ThumtooCache::loadContentAppearance(pathCopy, &stored)
             || stored.isIdentity()) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, sidCopy, pathCopy, stored]() {
-            ImageView *host = guard.data();
-            if (!host) {
+        QMetaObject::invokeMethod(life.data(), [life, pipe, sidCopy, pathCopy, stored]() {
+            if (!life || !pipe) {
                 return;
             }
-            host->hostDisplayPipeline().applyStoredContentAppearanceSeed(
-                sidCopy, pathCopy, stored);
+            pipe->applyStoredContentAppearanceSeed(sidCopy, pathCopy, stored);
         }, Qt::QueuedConnection);
     });
 }

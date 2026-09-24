@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/tile_load_coordinator.h"
+#include "display/displaypipelinecontroller.h"
+#include "display/displaypipelinehost.h"
 #include "view/viewtransform.h"
 
 #include "util/biltoo_thread.h"
 #include "imageitem.h"
-#include "imageview.h"
 #include "display/pathrasterservice.h"
 #include "host/thumtoocache.h"
 #include "tilelod/tile_session.hpp"
@@ -23,8 +24,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-TileLoadCoordinator::TileLoadCoordinator(ImageView *view)
-    : m_view(view)
+TileLoadCoordinator::TileLoadCoordinator(DisplayPipelineController *pipeline)
+    : m_pipeline(pipeline)
 {
 }
 
@@ -51,18 +52,18 @@ QList<TileLoadCoordinator::Cand>
 TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
 {
     QList<Cand> cands;
-    if (!m_view || !m_view->scene()) {
+    if (!m_pipeline || !m_pipeline->host() || !m_pipeline->host()->canvasScene()) {
         return cands;
     }
     cands.reserve(16);
 
     qreal viewScale = 1.0;
     qreal dpr = 1.0;
-    if (QWidget *vp = m_view->viewport()) {
+    if (QWidget *vp = m_pipeline->host()->viewportWidget()) {
         dpr = vp->devicePixelRatioF();
     }
     {
-        const QTransform vt = m_view->transform();
+        const QTransform vt = m_pipeline->host()->viewTransform();
         viewScale = qMax(0.01, qMax(qAbs(vt.m11()), qAbs(vt.m22())));
     }
     if (!(dpr > 0.0)) {
@@ -75,15 +76,15 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
     // GUI budget on large galleries (hundreds of ms).
     const QList<QGraphicsItem *> hit =
         sceneVis.isNull()
-            ? m_view->scene()->items()
-            : m_view->scene()->items(sceneVis, Qt::IntersectsItemBoundingRect);
+            ? m_pipeline->host()->canvasScene()->items()
+            : m_pipeline->host()->canvasScene()->items(sceneVis, Qt::IntersectsItemBoundingRect);
 
     for (QGraphicsItem *gi : hit) {
         auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
         if (!ii || ii->path().isEmpty()) {
             continue;
         }
-        if (m_view->hostCrop().isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
+        if (m_pipeline->host()->hostCrop().isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
             continue;
         }
         // Gallery packed cell: screen long edge without re-entering tileLodWanted.
@@ -131,19 +132,19 @@ void TileLoadCoordinator::tick(int globalBudget)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("TileLoadCoordinator::tick");
-    if (!m_view || globalBudget < 0) {
+    if (!m_pipeline || !m_pipeline->host() || globalBudget < 0) {
         return;
     }
-    if (m_view->hostSlideshow().hud().isProgressActive()) {
+    if (m_pipeline->host()->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     // Image ←/→ key-repeat: soft swap only; tile plan/issue stalls the GUI.
-    if (m_view->hostSlideshow().hud().isNavHot()) {
+    if (m_pipeline->host()->hostSlideshow().hud().isNavHot()) {
         return;
     }
     // Size probes first: do not compete with EnsureTiles while Gallery is still
     // resolving the session (thumtoo prefers tiles over ProbeSize in the queue).
-    if (m_view->hostGallerySizeResolve().active()) {
+    if (m_pipeline->host()->hostGallerySizeResolve().active()) {
         return;
     }
 
@@ -160,13 +161,13 @@ void TileLoadCoordinator::tick(int globalBudget)
     // focus needs a longer wall so progressive climb is not starved at 4 keys.
     // Hard wall — one tickItemTileLod must not run multi-second (warm PDF
     // pyramid issue used to do SQLite get_tile + JPEG decode on this thread).
-    const bool gallery = m_view->isGalleryMode();
+    const bool gallery = m_pipeline->host()->isGalleryMode();
     const qint64 kWallMs = gallery ? 8 : 12;
 
     QRectF sceneVis;
-    if (m_view->scene()) {
-        if (QWidget *vp = m_view->viewport()) {
-            sceneVis = m_view->mapToScene(vp->rect()).boundingRect();
+    if (m_pipeline->host()->canvasScene()) {
+        if (QWidget *vp = m_pipeline->host()->viewportWidget()) {
+            sceneVis = m_pipeline->host()->mapViewportToScene();
         }
     }
 
@@ -194,7 +195,7 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     QList<ImageItem *> issueTargets;
     issueTargets.reserve(cands.size());
-    PathRasterService *pathRaster = m_view->hostPathRaster();
+    PathRasterService *pathRaster = m_pipeline->host()->hostPathRaster();
 
     for (const Cand &c : cands) {
         if (wall.elapsed() >= kWallMs) {
@@ -235,7 +236,7 @@ void TileLoadCoordinator::tick(int globalBudget)
                 break;
             }
             if (c.item) {
-                m_view->hostDisplayPipeline().tickItemTileLod(c.item, 0);
+                m_pipeline->tickItemTileLod(c.item, 0);
             }
         }
         return;
@@ -292,7 +293,7 @@ void TileLoadCoordinator::tick(int globalBudget)
         const int share = remaining > 0
             ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
             : 0;
-        m_view->hostDisplayPipeline().tickItemTileLod(item, share);
+        m_pipeline->tickItemTileLod(item, share);
         remaining -= share;
         // If one item already ate the wall, stop — do not start the next.
         if (wall.elapsed() >= kWallMs) {

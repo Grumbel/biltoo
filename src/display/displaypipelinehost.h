@@ -17,6 +17,7 @@
 #include <QRectF>
 #include <QSize>
 #include <QString>
+#include <QTransform>
 #include <functional>
 #include <Qt>
 
@@ -217,6 +218,8 @@ public:
     virtual QPointF mapToScene(const QPoint &point) const = 0;
     /** Convenience: viewport rect mapped to scene (bounding rect of polygon). */
     virtual QRectF mapViewportToScene() const = 0;
+    /** QGraphicsView transform (tile screen-scale estimate). */
+    virtual QTransform viewTransform() const = 0;
 
     virtual void takePendingWorkspacePath(const QString &path) = 0;
     virtual void applyPendingBindScenePos(ImageItem *item,

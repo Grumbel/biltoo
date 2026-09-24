@@ -231,11 +231,21 @@ and sticky pan stay per-surface.
   ctor, and null-guard transitions (now prefer `m_host`).
 - Self-call `m_view->hostDisplayPipeline().loadGate()` → `loadGate()`.
 
-### Stage 2 (next)
+### Stage 2a (landed — biltoo-2452)
+
+- Async jobs (`displaypipeline_jobs`) take `QPointer<QObject> life` +
+  `DisplayPipelineController *` — no `QPointer<ImageView>`.
+- `TileLoadCoordinator` bound to pipeline (host via `pipe->host()`); uses
+  `viewTransform()` / `mapViewportToScene` on host.
+- QTimer parents and `QTimer::singleShot` contexts use `hostObject()`.
+- Inline worker lambdas capture `life` + `pipe`; call pipeline methods
+  directly (no `hostDisplayPipeline()` hop).
+- `m_view` retained only for ctor/`view()` API.
+
+### Stage 2b (next)
 
 - Active-host switching when two panes bind different SessionImageIds.
-- Narrow async surface so QPointer can use hostObject() instead of ImageView*.
-- Optional: drop `m_view` member once async APIs are host-based.
+- Optional: drop `m_view` / `view()` once no external callers.
 - Product dual-pane shell.
 
 ### Residual on single ImageView (ok to keep)

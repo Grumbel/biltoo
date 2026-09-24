@@ -11,10 +11,10 @@
 #include <QtGlobal>
 
 class ImageItem;
-class ImageView;
+class DisplayPipelineController;
 
 /**
- * Sole owner of Gallery/Image tile *load* policy for an ImageView.
+ * Sole owner of Gallery/Image tile *load* policy for a display pipeline host.
  *
  * All tile issue / progressive climb / per-item tick routing goes through here.
  * DisplayPipelineController::tickItemTileLod is the per-item entry (forwards to
@@ -23,9 +23,10 @@ class ImageView;
  *
  *   1. Collect viewport hits (gallery screen-edge or tileLodWanted).
  *   2. Prioritize cells with zero tiles (LQIP/blank) before upres.
- *   3. Split budget; call hostDisplayPipeline().tickItemTileLod(item, share).
+ *   3. Split budget; call pipeline tickItemTileLod(item, share).
  *
  * GUI thread only (DisplayPipelineController::tickPrimaryTileLod).
+ * Dual ImageView Stage 2a: bound to DisplayPipelineController (host via pipe).
  */
 class TileLoadCoordinator
 {
@@ -37,7 +38,7 @@ public:
     static constexpr int kPriorityIncomplete = 500;
     static constexpr int kPriorityCovered = 0;
 
-    explicit TileLoadCoordinator(ImageView *view);
+    explicit TileLoadCoordinator(DisplayPipelineController *pipeline);
 
     /**
      * Issue up to @p globalBudget tile requests across visible need.
@@ -63,7 +64,7 @@ private:
     static Cand makeCand(ImageItem *ii, bool inView, qreal screenLong);
     static void sortByPolicy(QList<Cand> &cands);
 
-    ImageView *m_view = nullptr;
+    DisplayPipelineController *m_pipeline = nullptr; // not owned
     qint64 m_lastTickMs = 0;
     /** Paths whose PreferCache climb was cancelled for tile issue this session. */
     QSet<QString> m_preferCancelled;

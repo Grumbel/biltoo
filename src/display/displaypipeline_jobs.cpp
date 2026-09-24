@@ -3,7 +3,7 @@
 
 #include "display/displaypipeline_jobs.h"
 
-#include "imageview.h"
+#include "display/displaypipelinecontroller.h"
 #include "display/imagecache.h"
 #include "display/displayedgepolicy.h"
 #include "display/lqipdisplaypolicy.h"
@@ -17,33 +17,33 @@
 #include <QThreadPool>
 #include <QTimer>
 
-/** Queue pipeline onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
-void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
-                        const QImage &preview, quint64 gen, int role)
+/** Queue pipeline onImagePreviewLoaded on the GUI thread; no-op if @a life is gone. */
+void queuePreviewLoaded(const QPointer<QObject> &life, DisplayPipelineController *pipe,
+                        const QString &path, const QImage &preview, quint64 gen, int role)
 {
-    if (!guard || preview.isNull()) {
+    if (!life || !pipe || preview.isNull()) {
         return;
     }
-    QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
-        if (!guard) {
+    QTimer::singleShot(0, life.data(), [life, pipe, path, preview, gen, role]() {
+        if (!life || !pipe) {
             return;
         }
-        guard->hostDisplayPipeline().onImagePreviewLoaded(path, preview, gen, role);
+        pipe->onImagePreviewLoaded(path, preview, gen, role);
     });
 }
 
-/** Queue pipeline onImageLoaded on the GUI thread; no-op if @a guard is gone. */
-void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
-                      const QImage &image, quint64 gen, int role)
+/** Queue pipeline onImageLoaded on the GUI thread; no-op if @a life is gone. */
+void queueImageLoaded(const QPointer<QObject> &life, DisplayPipelineController *pipe,
+                      const QString &path, const QImage &image, quint64 gen, int role)
 {
-    if (!guard) {
+    if (!life || !pipe) {
         return;
     }
-    QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
-        if (!guard) {
+    QTimer::singleShot(0, life.data(), [life, pipe, path, image, gen, role]() {
+        if (!life || !pipe) {
             return;
         }
-        guard->hostDisplayPipeline().onImageLoaded(path, image, gen, role);
+        pipe->onImageLoaded(path, image, gen, role);
     });
 }
 
@@ -57,8 +57,8 @@ QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
  * LQIP seed job only. Never SoftOnly / loadThumbnail / PreferCache soft encode.
  * Gallery product is tiles + LQIP underlay only.
  */
-void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
-                         quint64 gen, int roleInt, int softEdge,
+void startSoftPreviewJob(const QPointer<QObject> &life, DisplayPipelineController *pipe,
+                         const QString &path, quint64 gen, int roleInt, int softEdge,
                          const WorkspaceItemState &sessionApp)
 {
     biltooLoadDbg("lqipSeed START path=%s gen=%llu",
@@ -66,8 +66,8 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                   static_cast<unsigned long long>(gen));
     Q_UNUSED(softEdge);
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, sessionApp]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
+        [life, pipe, path, roleInt, gen, sessionApp]() {
+            if (!life || !pipe || !pipe->loadGate().accepts(gen)) {
                 return;
             }
             ThumtooCache::scheduleProbe(path);
@@ -76,7 +76,7 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                 ImageCache::put(path, preview);
             }
             Q_UNUSED(sessionApp);
-            queuePreviewLoaded(guard, path, preview, gen, roleInt);
+            queuePreviewLoaded(life, pipe, path, preview, gen, roleInt);
         },
         2);
 }
@@ -85,13 +85,13 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
  * Low-priority pool job: PreferCache / loadThumbnail at a display edge
  * (slideshow quality climb). Schedules PreferCache on miss.
  */
-void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &path,
-                            quint64 gen, int roleInt, int qualityEdge,
+void startDisplayQualityJob(const QPointer<QObject> &life, DisplayPipelineController *pipe,
+                            const QString &path, quint64 gen, int roleInt, int qualityEdge,
                             const WorkspaceItemState &sessionApp)
 {
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, qualityEdge, sessionApp]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
+        [life, pipe, path, roleInt, gen, qualityEdge, sessionApp]() {
+            if (!life || !pipe || !pipe->loadGate().accepts(gen)) {
                 return;
             }
             // Keep any host sample; do not require qualityEdge up front or a
@@ -117,16 +117,16 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                     }
                 }
             }
-            if (!guard) {
+            if (!life || !pipe) {
                 return;
             }
             if (image.isNull()) {
                 // PreferCache/Full only via PathRaster on the GUI (contract §1).
                 QMetaObject::invokeMethod(
-                    guard.data(),
-                    [guard, path, qualityEdge]() {
-                        if (guard) {
-                            guard->hostDisplayPipeline().requestEscalateClimb(path, qualityEdge);
+                    life.data(),
+                    [life, pipe, path, qualityEdge]() {
+                        if (life && pipe) {
+                            pipe->requestEscalateClimb(path, qualityEdge);
                         }
                     },
                     Qt::QueuedConnection);
@@ -135,10 +135,10 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
             // Soft stand-in still upgrades the view; climb via PathRaster on GUI.
             if (!ImageCache::adequate(image, qualityEdge) && ThumtooCache::isAvailable()) {
                 QMetaObject::invokeMethod(
-                    guard.data(),
-                    [guard, path, qualityEdge]() {
-                        if (guard) {
-                            guard->hostDisplayPipeline().requestEscalateClimb(path, qualityEdge);
+                    life.data(),
+                    [life, pipe, path, qualityEdge]() {
+                        if (life && pipe) {
+                            pipe->requestEscalateClimb(path, qualityEdge);
                         }
                     },
                     Qt::QueuedConnection);
@@ -154,9 +154,7 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                                      Qt::FastTransformation);
             }
             Q_UNUSED(sessionApp);
-            queueImageLoaded(guard, path, image, gen, roleInt);
+            queueImageLoaded(life, pipe, path, image, gen, roleInt);
         },
         -1);
 }
-
-

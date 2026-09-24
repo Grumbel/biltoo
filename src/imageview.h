@@ -293,6 +293,7 @@ public:
     qreal devicePixelRatioF() const override { return QGraphicsView::devicePixelRatioF(); }
     QPointF mapFromScene(const QPointF &point) const override { return QGraphicsView::mapFromScene(point); }
     QPointF mapToScene(const QPoint &point) const override { return QGraphicsView::mapToScene(point); }
+    QTransform viewTransform() const override { return QGraphicsView::transform(); }
     QRectF mapViewportToScene() const override
     {
         QWidget *vp = viewport();

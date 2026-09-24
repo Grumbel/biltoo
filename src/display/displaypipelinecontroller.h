@@ -287,7 +287,7 @@ private:
         SessionImageId preferred = kInvalidSessionImageId) const;
 
     DisplayPipelineHost *m_host = nullptr; // not owned; Stage 0 dual-critical surface
-    ImageView *m_view = nullptr; // not owned; long-tail until Stage 1 host migration
+    ImageView *m_view = nullptr; // not owned; ctor/view() only — async uses hostObject()
     SessionLoadGate m_loadGate;
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
