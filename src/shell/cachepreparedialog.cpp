@@ -14,6 +14,7 @@
 #include <QPointer>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QThreadPool>
 #include <QVBoxLayout>
 
@@ -45,9 +46,13 @@ CachePrepareDialog::CachePrepareDialog(const QStringList &sessionPaths, QWidget 
 {
     setWindowTitle(tr("Prepare tile cache"));
     setModal(true);
-    resize(480, 320);
 
     auto *root = new QVBoxLayout(this);
+    // Grow with content; do not let the window shrink below the laid-out size
+    // (word-wrapped labels were getting vertically squished at 480×320).
+    root->setSizeConstraint(QLayout::SetMinimumSize);
+    root->setSpacing(12);
+    root->setContentsMargins(12, 12, 12, 12);
 
     auto *intro = new QLabel(
         tr("Generate zoom tiles for images in the current session so Gallery "
@@ -55,28 +60,39 @@ CachePrepareDialog::CachePrepareDialog(const QStringList &sessionPaths, QWidget 
            "automatically when tiles are built."),
         this);
     intro->setWordWrap(true);
+    intro->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     root->addWidget(intro);
 
     auto *statsBox = new QGroupBox(tr("Cache status"), this);
+    statsBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     auto *statsLay = new QVBoxLayout(statsBox);
     m_statsLabel = new QLabel(tr("Scanning…"), statsBox);
     m_statsLabel->setWordWrap(true);
+    m_statsLabel->setMinimumWidth(360);
+    m_statsLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     statsLay->addWidget(m_statsLabel);
     root->addWidget(statsBox);
 
     auto *opts = new QGroupBox(tr("Options"), this);
+    opts->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     auto *form = new QFormLayout(opts);
+    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+    form->setRowWrapPolicy(QFormLayout::WrapLongRows);
     m_detailCombo = new QComboBox(opts);
     m_detailCombo->addItem(tr("Full detail (all zoom levels)"));
     m_detailCombo->addItem(tr("High detail"));
     m_detailCombo->addItem(tr("Medium detail"));
     m_detailCombo->addItem(tr("Overview only"));
     m_detailCombo->setCurrentIndex(0);
+    m_detailCombo->setMinimumContentsLength(28);
+    m_detailCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_detailCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_detailHint = new QLabel(
         tr("Full detail stores the finest tiles (more disk space). "
            "Coarser levels skip deep zoom but finish faster."),
         opts);
     m_detailHint->setWordWrap(true);
+    m_detailHint->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     m_detailHint->setStyleSheet(QStringLiteral("color: palette(mid);"));
     form->addRow(tr("Detail level:"), m_detailCombo);
     form->addRow(QString(), m_detailHint);
@@ -86,10 +102,12 @@ CachePrepareDialog::CachePrepareDialog(const QStringList &sessionPaths, QWidget 
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
     m_progress->setTextVisible(true);
+    m_progress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     root->addWidget(m_progress);
 
     m_statusLabel = new QLabel(tr("Ready."), this);
     m_statusLabel->setWordWrap(true);
+    m_statusLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     root->addWidget(m_statusLabel);
 
     auto *buttons = new QDialogButtonBox(this);
@@ -97,12 +115,17 @@ CachePrepareDialog::CachePrepareDialog(const QStringList &sessionPaths, QWidget 
     m_cancelBtn = buttons->addButton(tr("Cancel"), QDialogButtonBox::ActionRole);
     m_closeBtn = buttons->addButton(QDialogButtonBox::Close);
     m_cancelBtn->setEnabled(false);
+    buttons->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     root->addWidget(buttons);
 
     connect(m_startBtn, &QPushButton::clicked, this, &CachePrepareDialog::startPrepare);
     connect(m_cancelBtn, &QPushButton::clicked, this, &CachePrepareDialog::cancelPrepare);
     connect(m_closeBtn, &QPushButton::clicked, this, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    setMinimumWidth(520);
+    // Height from content, not a short fixed box that compresses labels.
+    resize(560, qMax(400, sizeHint().height()));
 
     if (!ThumtooCache::isAvailable()) {
         m_statsLabel->setText(tr("Tile cache is not available in this build."));
@@ -157,6 +180,14 @@ void CachePrepareDialog::applyStatsLabel(int total, int withTiles, int missing, 
         m_statusLabel->setText(
             tr("All session images already have tiles. "
                "Start again to fill a finer detail level if needed."));
+    }
+    // Multi-line stats can raise the content height after the initial resize.
+    if (QLayout *lay = layout()) {
+        lay->activate();
+    }
+    const QSize want = sizeHint();
+    if (width() < want.width() || height() < want.height()) {
+        resize(qMax(width(), want.width()), qMax(height(), want.height()));
     }
 }
 
