@@ -3,6 +3,7 @@
 
 #include "hud/hudchrome.h"
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
 
@@ -62,4 +63,19 @@ void HudChrome::stopStatusRefreshTimer()
     if (m_statusRefreshTimer) {
         m_statusRefreshTimer->stop();
     }
+}
+
+void HudChrome::runTimedPaint(const std::function<void()> &paint)
+{
+    if (!paint) {
+        return;
+    }
+    if (!m_perf.isEnabled()) {
+        paint();
+        return;
+    }
+    QElapsedTimer t;
+    t.start();
+    paint();
+    m_perf.notePaintUs(t.nsecsElapsed() / 1000);
 }

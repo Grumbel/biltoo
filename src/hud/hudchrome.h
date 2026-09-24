@@ -60,6 +60,13 @@ public:
 
     void stopStatusRefreshTimer();
 
+    /**
+     * Run the base QGraphicsView paint path. When perf overlay is enabled,
+     * records duration into PerfStats (FPS / lastPaintUs). ImageView::paintEvent
+     * is a thin shell that calls this.
+     */
+    void runTimedPaint(const std::function<void()> &paint);
+
 private:
     HudAppearance m_appearance;
     HudFlash m_flash;
