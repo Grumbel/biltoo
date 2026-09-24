@@ -62,94 +62,27 @@ private:
 
 void ImageView::flipHorizontal()
 {
-    const QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        return;
-    }
-    for (ImageItem *item : targets) {
-        m_displayPipeline->bakeItemFlip(item, true, false);
-        if (m_image.framing().isFitMode() && isImageMode()) {
-            fitItem(item, currentFitAspectMode());
-        }
-    }
-    if (isGalleryMode()) {
-        m_gallery.applyLayout(GalleryPackReason::ContentChange);
-    }
-    emit statusChanged();
+    m_image.flipHorizontal();
 }
 
 void ImageView::flipVertical()
 {
-    const QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        return;
-    }
-    for (ImageItem *item : targets) {
-        m_displayPipeline->bakeItemFlip(item, false, true);
-        if (m_image.framing().isFitMode() && isImageMode()) {
-            fitItem(item, currentFitAspectMode());
-        }
-    }
-    if (isGalleryMode()) {
-        m_gallery.applyLayout(GalleryPackReason::ContentChange);
-    }
-    emit statusChanged();
+    m_image.flipVertical();
 }
 
 void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
 {
-    // One content-rotate path for Workspace chrome, toolbar, and keyboard.
-    // DisplayPipelineController::bakeItemRotate90 composes want + ItemWorld/undo + pixels. Placement scale
-    // is NOT adjusted: fitting into the pre-rotate AABB (even uniformly) shrinks
-    // non-square images on every 90° (min(footW/afterW, footH/afterH) compounds).
-    // Workspace scene units = content pixels × scale; intrinsic swap is enough.
-    if (!item || quarterTurns == 0) {
-        return;
-    }
-
-    m_displayPipeline->bakeItemRotate90(item, quarterTurns);
-
-    if (isImageMode()) {
-        if (m_image.framing().isFitMode()) {
-            fitItem(item, currentFitAspectMode());
-        } else if (m_image.framing().isFillMode()) {
-            fitItem(item, Qt::KeepAspectRatioByExpanding);
-        }
-    }
+    m_image.rotateContentByQuarterTurns(item, quarterTurns);
 }
 
 void ImageView::rotateLeft()
 {
-    const QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        return;
-    }
-    for (ImageItem *item : targets) {
-        rotateContentByQuarterTurns(item, -1);
-    }
-    if (isGalleryMode()) {
-        m_gallery.applyLayout(GalleryPackReason::ContentChange);
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    emit statusChanged();
+    m_image.rotateLeft();
 }
 
 void ImageView::rotateRight()
 {
-    const QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        return;
-    }
-    for (ImageItem *item : targets) {
-        rotateContentByQuarterTurns(item, 1);
-    }
-    if (isGalleryMode()) {
-        m_gallery.applyLayout(GalleryPackReason::ContentChange);
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    emit statusChanged();
+    m_image.rotateRight();
 }
 
 void ImageView::raiseItem(ImageItem *item)

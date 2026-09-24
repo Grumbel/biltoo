@@ -159,6 +159,7 @@ set(BILTOO_LIB_SOURCES
   src/image/imagecontroller_edges.cpp
   src/image/imagecontroller_zoom.cpp
   src/image/imagecontroller_color.cpp
+  src/image/imagecontroller_transform.cpp
   src/image/imagecontroller.h
   src/imageview_modes.cpp
   src/imageview_canvas.cpp

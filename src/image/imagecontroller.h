@@ -23,10 +23,10 @@ class QPoint;
 /**
  * Image-mode collaborator for ImageView.
  *
- * Owns the classic (single-image) path and the Image-mode enter transition
- * (canvas prepare, clear live items, reload classic path).
- * Gallery/Workspace leave policy (stash) runs in those controllers' onLeave
- * before enter is called.
+ * Owns the classic (single-image) path, Image-mode enter transition,
+ * framing/sticky pan, edge nav, and content flip/rotate (all modes; pipeline
+ * bake with mode post-steps). Gallery/Workspace leave (stash) runs in those
+ * controllers' onLeave before enter is called.
  * ImageView remains the QGraphicsView shell and public API surface.
  */
 class ImageController
@@ -60,6 +60,13 @@ public:
     void reloadFromDisk();
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
+
+    /** Content flip / quarter-turn rotate (all modes; pipeline bake + mode post). */
+    void flipHorizontal();
+    void flipVertical();
+    void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
+    void rotateLeft();
+    void rotateRight();
 
     /** Image-mode framing / sticky pan (per-view; dual-safe). */
     ViewFraming &framing() { return m_framing; }

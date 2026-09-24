@@ -456,3 +456,7 @@ Product shell (minimal):
     placement search, and hasContent; ImageView thin routers (host
     updateWorkspaceSceneRect / findEmptyPlacement / hasWorkspaceContent).
 
+41. **biltoo-2499:** ImageController owns content flip and quarter-turn rotate
+    (all modes; pipeline bake + Image framing / Gallery pack / Workspace scene
+    rect post-steps); ImageView thin routers.
+
