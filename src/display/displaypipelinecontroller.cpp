@@ -1894,6 +1894,35 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
     }
 }
 
+
+void DisplayPipelineController::rematerializeGalleryItemFromStore(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    if (!m_view->itemWorld().hasDurableAppearance(sid)) {
+        return;
+    }
+    const WorkspaceItemState st = m_view->sessionAppearanceValue(sid);
+    if (!SessionAppearance::hasContentAppearance(st)) {
+        return;
+    }
+    const ContentXform::Value want = ContentXform::Value::fromState(st);
+    const ContentXform::Value applied = m_view->itemAppliedContentXform(item);
+    if (m_view->itemHasAppliedContentXform(item) && ContentXform::equal(applied, want)
+        && item->hasDisplayPixels()) {
+        // Applied matches store; still fix layout if intrinsic is full-frame.
+        applyContentLayoutSize(item, st);
+        return;
+    }
+    m_view->clearStaleAppliedFingerprintIfNeeded(item);
+    rematerializeItemContent(item, st);
+}
+
 void DisplayPipelineController::scheduleAsyncHostRematerialize(
     const QString &path, SessionImageId sid, const WorkspaceItemState &want)
 {

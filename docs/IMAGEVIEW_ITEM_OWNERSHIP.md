@@ -105,10 +105,12 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3g. **Done:** bake pixel path uses `rematerializeItemContent` (want/undo stay on view).
 3h. **Done:** cold-cache disk soft stand-in lives in pipeline `rematerializeItemContent`;
     bake no longer loads thumbnails itself.
+3i. **Done:** `rematerializeGalleryItemFromStore` owned by pipeline; ImageView forward.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
-5. Residual on ImageView: bake orchestration (undo + setContentBake); optional full move later.
+5. Residual on ImageView: bake orchestration (undo + setContentBake); clearStaleApplied fingerprint
+    (ItemWorld + clearLiveContentMeta); interactive color-grade soft drag path.
 
-5. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book/rematerialize collaborator extractions.
+6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 
 ## Related
 

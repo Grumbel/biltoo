@@ -58,28 +58,5 @@ void ImageView::clearStaleAppliedFingerprintIfNeeded(ImageItem *item)
 
 void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId) {
-        return;
-    }
-    if (!m_itemWorld.hasDurableAppearance(sid)) {
-        return;
-    }
-    const WorkspaceItemState st = sessionAppearanceValue(sid);
-    if (!SessionAppearance::hasContentAppearance(st)) {
-        return;
-    }
-    const ContentXform::Value want = ContentXform::Value::fromState(st);
-    const ContentXform::Value applied = itemAppliedContentXform(item);
-    if (itemHasAppliedContentXform(item) && ContentXform::equal(applied, want)
-        && item->hasDisplayPixels()) {
-        // Applied matches store; still fix layout if intrinsic is full-frame.
-        applyContentLayoutSize(item, st);
-        return;
-    }
-    clearStaleAppliedFingerprintIfNeeded(item);
-    rematerializeItemContent(item, st);
+    m_displayPipeline.rematerializeGalleryItemFromStore(item);
 }

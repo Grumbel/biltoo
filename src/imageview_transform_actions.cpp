@@ -146,7 +146,7 @@ void ImageView::flipVertical()
 void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
 {
     // One content-rotate path for Workspace chrome, toolbar, and keyboard.
-    // bakeItemRotate90 owns ContentXform + pixels + intrinsic. Placement scale
+    // bakeItemRotate90 composes want + ItemWorld/undo; pixels via pipeline rematerialize. Placement scale
     // is NOT adjusted: fitting into the pre-rotate AABB (even uniformly) shrinks
     // non-square images on every 90° (min(footW/afterW, footH/afterH) compounds).
     // Workspace scene units = content pixels × scale; intrinsic swap is enough.

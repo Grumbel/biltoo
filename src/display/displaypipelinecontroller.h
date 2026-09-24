@@ -93,6 +93,11 @@ public:
      */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     /**
+     * Gallery restore: rematerialize from ItemWorld durable appearance when
+     * applied fingerprint is stale or pixels missing. ImageView forwards.
+     */
+    void rematerializeGalleryItemFromStore(ImageItem *item);
+    /**
      * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
      * Used by content bake (rotate/flip) for the pure GUI path.
      */
