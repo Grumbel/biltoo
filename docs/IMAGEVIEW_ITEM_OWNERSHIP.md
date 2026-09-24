@@ -448,3 +448,7 @@ Product shell (minimal):
     shear) for Workspace selection and Image target/primary; ImageView thin
     routers. Completes transform_actions Workspace geometry ownership with 2495.
 
+39. **biltoo-2497:** WorkspaceController owns workspace clipboard capture and
+    paste place (`captureSelectedClipboard` / `placeClipboardItems`); ImageView
+    thin routers. `duplicateSelected` stays on ImageView (Workspace + Gallery).
+

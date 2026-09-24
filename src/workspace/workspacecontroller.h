@@ -14,6 +14,7 @@
 #include <QRectF>
 #include <QString>
 #include <QTransform>
+#include <QVector>
 #include "workspace/grouptransformsession.h"
 #include "item/iteminteractsession.h"
 #include "workspace/pageguidesession.h"
@@ -29,9 +30,9 @@ class QPrinter;
  * Workspace-mode collaborator for ImageView.
  *
  * Owns free-form placement snapshot state, the durable Workspace snapshot,
- * the live tile stash used while Image mode is active, and multi-select
- * group scale/rotate (GroupTransformSession + chrome), and the print
- * page-guide overlay (PageGuideSession).
+ * the live tile stash used while Image mode is active, multi-select
+ * group scale/rotate (GroupTransformSession + chrome), print page-guide
+ * (PageGuideSession), stack/opacity/placement resets, and clipboard place.
  * ImageView remains the QGraphicsView shell and public API surface.
  */
 class WorkspaceController
@@ -93,6 +94,12 @@ public:
     void resetItemScale();
     void resetItemRotation();
     void resetItemShear();
+
+    /** Clipboard capture (Workspace selection freeze) / paste place. */
+    QList<WorkspaceItemState> captureSelectedClipboard() const;
+    void placeClipboardItems(const QList<WorkspaceItemState> &items,
+                             const QVector<SessionImageId> &newIds,
+                             const QList<int> &sessionIndices);
 
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);

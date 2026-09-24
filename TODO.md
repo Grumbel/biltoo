@@ -2,22 +2,22 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2496.1-own-workspace-placement-resets** (base `7d823d8`).
+**Tip: biltoo-2497.1-own-workspace-clipboard** (base `7d823d8`).
 
 ### Ownership transfer
-- **resetItemScale / Rotation / Shear** on WorkspaceController (`workspace_stack.cpp`)
-- ImageView thin routers; target gather covers Workspace selection + Image primary
+- **captureSelectedClipboard / placeClipboardItems** on WorkspaceController
+- ImageView thin routers for MainWindow paste/copy paths
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
 ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline, fitItem host orchestration
 
-### Still on ImageView (cross-mode content)
-flip / rotate (pipeline bake + Image framing + Gallery pack)
-duplicate / workspace clipboard (selection TU)
+### Still on ImageView
+- flip / rotate (cross-mode pipeline + framing + Gallery pack)
+- `duplicateSelected` (Workspace **and** Gallery — not Workspace-only)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2496.1-own-workspace-placement-resets-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2497.1-own-workspace-clipboard-7d823d8.bundle HEAD
 ```

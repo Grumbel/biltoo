@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Canvas selection, transform targets, and workspace clipboard.
+// Canvas selection, transform targets, and duplicate (Workspace+Gallery).
+// Workspace clipboard capture/place: WorkspaceController thin routers.
 
 #include "imageview.h"
 #include "item/itemcomponents.h"
@@ -355,51 +356,13 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
 
 QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
 {
-    QList<WorkspaceItemState> out;
-    if (!isWorkspaceMode()) {
-        return out;
-    }
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
-        if (!item || !m_items.contains(item)) {
-            continue;
-        }
-        // Stage 4a / 2: freeze policy (store + live when durable, not mid-edit).
-        const SessionImageId sid = item->sessionId();
-        WorkspaceItemState s = freezeItemAppearance(item);
-        s.path = item->path();
-        s.sessionId = sid;
-        out.append(s);
-    }
-    return out;
+    return m_workspace.captureSelectedClipboard();
 }
-
-
-
 
 void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,
                                              const QVector<SessionImageId> &newIds,
                                              const QList<int> &sessionIndices)
 {
-    if (!isWorkspaceMode() || items.isEmpty() || newIds.size() != items.size()) {
-        return;
-    }
-    if (m_scene) {
-        m_scene->clearSelection();
-    }
-    m_session.bindBook().clearSelectIds();
-    for (int i = 0; i < items.size(); ++i) {
-        const WorkspaceItemState &st = items.at(i);
-        const SessionImageId sid = newIds.at(i);
-        const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
-        if (st.path.isEmpty() || sid == kInvalidSessionImageId) {
-            continue;
-        }
-        m_session.bindBook().addSelectId(sid);
-        // Appearance (content + pose) must already be in the store under sid.
-        addImageForSession(st.path, sid, idx);
-    }
-    emit statusChanged();
-    emit workspacePathsChanged();
-    viewport()->update();
+    m_workspace.placeClipboardItems(items, newIds, sessionIndices);
 }
+
