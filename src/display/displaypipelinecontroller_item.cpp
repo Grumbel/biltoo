@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/displaypipelinecontroller.h"
+#include "hud/hudmodel.h"
 #include <QDebug>
 #include "item/itemcomponents.h"
 #include "display/displaypipeline_jobs.h"
@@ -711,6 +712,36 @@ QString DisplayPipelineController::imageModeClimbActivityLabel(const ImageItem *
     }
     // No climb / decode pending: stay quiet even if below native.
     return {};
+}
+
+QString DisplayPipelineController::pixelQualityLabel(const ImageItem *item) const
+{
+    if (!item || !m_host) {
+        return {};
+    }
+    // Prefer what is actually on screen over last thumtoo pipeline tag.
+    // hasDecodedPixels alone is not "full": soft samples may have been installed
+    // as FullSource by a mistaken PreferCache shortfall classification.
+    const int edge = item->displayPixelLongEdge();
+    const QSize logical = m_host->logicalSizeForPath(item->path());
+    const int native = (logical.width() > 0 && logical.height() > 0)
+        ? ContentXform::longEdge(logical)
+        : 0;
+    using Tier = DisplayEdgePolicy::QualityTier;
+    const Tier t = DisplayEdgePolicy::classifyQualityTier(
+        edge, native, item->hasDecodedPixels(),
+        ThumtooCache::kBatchOverviewEdge, ThumtooCache::kGalleryLadderEdge,
+        ThumtooCache::kFilmstripLadderEdge, DisplayQuality::kLqipMaxEdge);
+    int galleryNeed = 0;
+    int galleryHave = 0;
+    if (m_host->isGalleryMode()) {
+        galleryNeed = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        const GalleryDecodeState *st = m_host->hostGalleryDecodeBook().get(item->path());
+        galleryHave = st ? GalleryDecode::maxHave(st->have, edge) : edge;
+    }
+    return HudModel::qualityLabelDetail(
+        t, edge, native, m_host->isGalleryMode(), m_host->isImageMode(),
+        galleryNeed, galleryHave);
 }
 
 

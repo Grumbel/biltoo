@@ -183,4 +183,13 @@ QString workspaceSelectedItemScaleSuffix(qreal scaleX, qreal scaleY, qreal rotat
         .arg(qRound(rotationDegrees));
 }
 
+
+QString imageModeStatusHeader(int nativeWidth, int nativeHeight, int zoomPercent)
+{
+    return tr("%1×%2 · Zoom %3%")
+        .arg(nativeWidth)
+        .arg(nativeHeight)
+        .arg(zoomPercent);
+}
+
 } // namespace HudModel

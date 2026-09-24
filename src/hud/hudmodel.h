@@ -62,6 +62,9 @@ QString galleryDebugPixelMixSuffix(int blank, int lqip, int soft, int higher, in
 /** Workspace selected-item scale · rotation status suffix. */
 QString workspaceSelectedItemScaleSuffix(qreal scaleX, qreal scaleY, qreal rotationDegrees);
 
+/** Image-mode status header: "W×H · Zoom Z%". */
+QString imageModeStatusHeader(int nativeWidth, int nativeHeight, int zoomPercent);
+
 } // namespace HudModel
 
 #endif // HUDMODEL_H

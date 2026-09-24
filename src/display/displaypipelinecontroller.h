@@ -222,6 +222,8 @@ public:
     int imageModeOnScreenNeedEdge() const;
     /** User-visible climb activity label for Image-mode status (empty when idle). */
     QString imageModeClimbActivityLabel(const ImageItem *item) const;
+    /** On-screen quality tier label for status bar (Gallery need/have when applicable). */
+    QString pixelQualityLabel(const ImageItem *item) const;
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
     bool loadImage(const QString &path);
 

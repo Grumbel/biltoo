@@ -124,29 +124,7 @@ QString ImageView::hudFileName() const
 
 QString ImageView::pixelQualityLabel(const ImageItem *item) const
 {
-    if (!item) {
-        return {};
-    }
-    // Prefer what is actually on screen over last thumtoo pipeline tag.
-    // hasDecodedPixels alone is not "full": soft samples may have been installed
-    // as FullSource by a mistaken PreferCache shortfall classification.
-    const int edge = item->displayPixelLongEdge();
-    const QSize logical = logicalSizeForPath(item->path());
-    const int native = isPositiveSize(logical) ? ContentXform::longEdge(logical) : 0;
-    using Tier = DisplayEdgePolicy::QualityTier;
-    const Tier t = DisplayEdgePolicy::classifyQualityTier(
-        edge, native, item->hasDecodedPixels(),
-        ThumtooCache::kBatchOverviewEdge, ThumtooCache::kGalleryLadderEdge,
-        ThumtooCache::kFilmstripLadderEdge, DisplayQuality::kLqipMaxEdge);
-    int galleryNeed = 0;
-    int galleryHave = 0;
-    if (isGalleryMode()) {
-        galleryNeed = m_displayPipeline->galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        const GalleryDecodeState *st = hostGalleryDecodeBook().get(item->path());
-        galleryHave = st ? GalleryDecode::maxHave(st->have, edge) : edge;
-    }
-    return HudModel::qualityLabelDetail(
-        t, edge, native, isGalleryMode(), isImageMode(), galleryNeed, galleryHave);
+    return m_displayPipeline->pixelQualityLabel(item);
 }
 
 void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
@@ -254,10 +232,8 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
 QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
                                        int edge, const QSize &native) const
 {
-    QString text = tr("%1×%2 · Zoom %3%")
-                       .arg(native.width())
-                       .arg(native.height())
-                       .arg(qRound(viewScale() * 100));
+    QString text = HudModel::imageModeStatusHeader(
+        native.width(), native.height(), qRound(viewScale() * 100));
     if (!quality.isEmpty()) {
         // quality may already include "show Npx · native Mpx" — avoid double edge.
         if (edge > 0 && !item->hasDecodedPixels() && !quality.contains(QLatin1String("px"))) {
