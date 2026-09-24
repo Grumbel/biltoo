@@ -4,21 +4,8 @@
 #include "imageview.h"
 #include "view/viewmodeflags.h"
 #include "util/biltoo_thread.h"
-#include "image/toolpolicy.h"
-#include "display/imagecache.h"
-#include <QDebug>
-#include "imageitem.h"
-#include "host/imageloader.h"
-#include "host/thumtoocache.h"
 #include "util/biltoo_logging.h"
-#include "tilelod/tile_lod_registry.hpp"
-#include "tilelod/tile_lod_controller.hpp"
-
-#include <QScrollBar>
-#include <QUndoStack>
-#include <QTimer>
-#include <QSet>
-
+#include "imageitem.h"
 
 void ImageView::stopDeferredPacking()
 {
@@ -33,14 +20,10 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     m_shell.applyModeViewportPolicy(static_cast<int>(mode));
 }
 
-
-
-
 void ImageView::invalidateSessionLoads()
 {
     m_displayPipeline->invalidateSessionLoads();
 }
-
 
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
@@ -81,15 +64,10 @@ void ImageView::applyModeFlagsToLiveItems()
     }
 }
 
-
 void ImageView::applyToolDragMode()
 {
     m_workspace.applyToolDragMode();
 }
-
-
-
-
 
 void ImageView::clearInteractionState()
 {
@@ -105,7 +83,6 @@ void ImageView::clearWorkspace()
 {
     m_workspace.clearWorkspace();
 }
-
 
 void ImageView::prepareImageModeCanvas()
 {
@@ -184,10 +161,6 @@ void ImageView::setViewMode(ViewMode mode)
     setActiveMode(ViewMode::Gallery, layout);
     m_gallery.enter(static_cast<int>(layout), static_cast<int>(previous));
 }
-
-
-
-// --- from imageview_layout.cpp (modes) ---
 
 void ImageView::applyItemModeFlags(ImageItem *item)
 {

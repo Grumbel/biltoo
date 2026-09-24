@@ -18,7 +18,7 @@ class ImageView;
  * Owns the session ImageSizeBook and probe/remember policy (SIZE.md).
  *
  * ImageView remains the DisplayPipelineHost surface and GallerySizeResolveHost;
- * applyProbedImageSize (canvas apply) stays on the view.
+ * applyProbedImageSize body lives on DisplayPipelineController; ImageView is a thin router.
  */
 class ImageSizeCoordinator
 {

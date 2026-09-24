@@ -239,6 +239,12 @@ public:
      * ImageView::blockingExportDisplayForItem is a thin router.
      */
     QImage blockingExportDisplayForItem(const ImageItem *item) const;
+    /**
+     * Apply a probed file-native size to all live tiles for @p path (layout
+     * size via content orient, gallery cell fixup, Image framing, pack, slideshow
+     * atlas). ImageView::applyProbedImageSize is a thin router.
+     */
+    void applyProbedImageSize(const QString &path, const QSize &size);
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
     bool loadImage(const QString &path);
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Image size book + probe scheduling (owned by ImageSizeCoordinator).
-// GallerySizeResolve host / applyProbedImageSize remain on ImageView.
+// GallerySizeResolve host remains on ImageView; applyProbedImageSize body on DisplayPipelineController.
 
 #include "item/imagesizecoordinator.h"
 #include "imageview.h"

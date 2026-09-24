@@ -2367,3 +2367,59 @@ QImage DisplayPipelineController::blockingExportDisplayForItem(const ImageItem *
     }
     return shared->out.isNull() ? fallback : shared->out;
 }
+
+void DisplayPipelineController::applyProbedImageSize(const QString &path, const QSize &size)
+{
+    GUI_BUDGET("DisplayPipelineController::applyProbedImageSize");
+    if (!m_host || path.isEmpty() || !size.isValid()) {
+        return;
+    }
+    bool any = false;
+    for (ImageItem *item : m_host->liveItems()) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        // Probe is authoritative file-native size. Layout = ContentXform
+        // (turns + crop), not a simple axis swap.
+        const SessionImageId sid = resolveItemSessionId(item);
+        WorkspaceItemState want = wantAppearanceForItem(item, sid);
+        const QSize layoutSize = SessionAppearance::layoutSizeOrNative(size, want);
+        const QSize cur = item->imageSize();
+        if (cur == layoutSize) {
+            continue;
+        }
+        hostSetIntrinsicSize(item, layoutSize);
+        any = true;
+        // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
+        // cropping the updated contentRect until the next pack.
+        if (m_host->isGalleryMode()
+            && SessionAppearance::galleryCellAspectStale(item->galleryCellSize(),
+                                                         layoutSize)) {
+            item->setGalleryCellSize({});
+        }
+        if (m_host->isImageMode() && item == m_host->targetItem()) {
+            m_host->preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
+        }
+    }
+    if (any && m_host->isGalleryMode() && !m_host->hostLayout().isFreeForm()) {
+        // ContentChange is allowed during the size gate (prefix pack). Debounced
+        // so sizeReady chunks do not reflow every path.
+        m_host->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+    } else if (any && m_host->viewportWidget()) {
+        m_host->viewportWidget()->update();
+    }
+    // Slideshow paints from path→logical, not the underlay item. When the probe
+    // lands for a phase path, refresh dest aspect (and atlas if needed).
+    SlideshowController &ss = m_host->hostSlideshow();
+    if (ss.hud().isProgressActive() && ss.phase().isPhasePath(path)) {
+        if (ss.phase().isFromPath(path) && ss.phase().hasFromImage()) {
+            ss.requestDwellAtlasRebuild();
+        }
+        if (ss.phase().isToPath(path) && ss.phase().hasToImage()) {
+            ss.requestToPhaseAtlasRebuild();
+        }
+        if (m_host->viewportWidget()) {
+            m_host->viewportWidget()->update();
+        }
+    }
+}
