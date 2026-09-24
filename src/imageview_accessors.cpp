@@ -14,31 +14,7 @@
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 {
-    const bool progressive = hostGallerySizeResolve().active();
-    m_gallery.layoutDebounce().arm(reason, progressive);
-    if (!m_layoutDebounceTimer) {
-        if (progressive) {
-            m_gallery.ensurePlaceholders();
-        }
-        m_gallery.applyLayout(reason);
-        return;
-    }
-    // Continuous sizeReady restarts a quiet-period timer and can leave the
-    // sized prefix unlaid-out for the whole probe stream. Force a pack when
-    // the progressive arm has been pending past the max wait.
-    if (progressive && m_gallery.layoutDebounce().progressiveMaxWaitExceeded()) {
-        m_layoutDebounceTimer->stop();
-        GalleryPackReason r = reason;
-        if (m_gallery.layoutDebounce().take(&r)) {
-            m_gallery.ensurePlaceholders();
-            m_gallery.applyLayout(r);
-        }
-        return;
-    }
-    m_layoutDebounceTimer->setInterval(
-        progressive ? LayoutDebounce::kProgressiveIntervalMs
-                    : LayoutDebounce::kIntervalMs);
-    m_layoutDebounceTimer->start();
+    m_gallery.requestDebouncedPack(reason);
 }
 
 int ImageView::pendingDecodeCount() const

@@ -378,3 +378,6 @@ Product shell (minimal):
 21. **biltoo-2479:** ColorAdjustCommit bag owned by ImageController; commit
     QTimer remains on ImageView (same pattern as gallery layout debounce).
 
+22. **biltoo-2480:** Gallery layout-debounce QTimer owned by GalleryController
+    (parented to ImageView shell); completes 2473 residual.
+

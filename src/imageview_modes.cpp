@@ -21,9 +21,7 @@
 
 void ImageView::stopDeferredPacking()
 {
-    if (m_layoutDebounceTimer) {
-        m_layoutDebounceTimer->stop();
-    }
+    m_gallery.stopLayoutDebounceTimer();
     hostLayoutApply().clear();
 }
 

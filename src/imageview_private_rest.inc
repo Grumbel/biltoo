@@ -178,7 +178,7 @@
     PerfStats m_perf;
 
     QTimer *m_galleryDecodeWatchdog = nullptr;
-    QTimer *m_layoutDebounceTimer = nullptr;
+    // Layout debounce QTimer: owned by GalleryController.
     // LayoutDebounce: owned by GalleryController.
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
     QTimer *m_colorAdjustCommitTimer = nullptr;

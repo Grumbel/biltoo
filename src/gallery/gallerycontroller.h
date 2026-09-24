@@ -160,6 +160,11 @@ public:
     LayoutDebounce &layoutDebounce() { return m_layoutDebounce; }
     const LayoutDebounce &layoutDebounce() const { return m_layoutDebounce; }
 
+    /** Debounce QTimer (parented to ImageView shell). */
+    QTimer *layoutDebounceTimer() const { return m_layoutDebounceTimer; }
+    void requestDebouncedPack(GalleryPackReason reason);
+    void stopLayoutDebounceTimer();
+
     GalleryRelayoutSuppress &relayoutSuppress() { return m_relayoutSuppress; }
     const GalleryRelayoutSuppress &relayoutSuppress() const { return m_relayoutSuppress; }
 
@@ -196,6 +201,7 @@ private:
     GalleryDecodeBook m_decodeBook;
     LayoutPrefs m_layout;
     LayoutDebounce m_layoutDebounce;
+    QTimer *m_layoutDebounceTimer = nullptr;
     GalleryRelayoutSuppress m_relayoutSuppress;
     LayoutApplyGuard m_layoutApply;
 

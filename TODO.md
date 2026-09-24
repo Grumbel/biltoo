@@ -2,13 +2,14 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2479.1-own-color-adjust-commit** (base `7d823d8`).
+**Tip: biltoo-2480.1-own-gallery-layout-debounce-timer** (base `7d823d8`).
 
 ### Ownership transfer
-- **ColorAdjustCommit** on ImageController (`colorAdjustCommit()`)
-- QTimer remains on ImageView for shell lifetime
+- **Layout debounce QTimer** on GalleryController (parented to ImageView)
+- `requestDebouncedPack` / `stopLayoutDebounceTimer` on GalleryController
+- ImageView: thin `requestDebouncedGalleryPack` / `stopDeferredPacking`
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2479.1-own-color-adjust-commit-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2480.1-own-gallery-layout-debounce-timer-7d823d8.bundle HEAD
 ```

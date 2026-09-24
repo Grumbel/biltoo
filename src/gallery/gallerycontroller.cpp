@@ -113,6 +113,20 @@ GalleryController::GalleryController(ImageView *view)
     : m_view(view)
     , m_sizeResolve(this, view)
 {
+    // Parent timer to the shell so lifetime tracks ImageView.
+    m_layoutDebounceTimer = new QTimer(m_view);
+    m_layoutDebounceTimer->setSingleShot(true);
+    m_layoutDebounceTimer->setInterval(LayoutDebounce::kIntervalMs);
+    QObject::connect(m_layoutDebounceTimer, &QTimer::timeout, m_view, [this]() {
+        GalleryPackReason reason = GalleryPackReason::ContentChange;
+        if (m_view->isGalleryMode() && !m_layout.isFreeForm()
+            && m_layoutDebounce.take(&reason)) {
+            if (m_sizeResolve.active()) {
+                ensurePlaceholders();
+            }
+            applyLayout(reason);
+        }
+    });
 }
 
 void GalleryController::discardStash()
@@ -2233,9 +2247,7 @@ void GalleryController::setRelayoutSuppressed(bool on)
 {
     if (on) {
         m_relayoutSuppress.push(true);
-        if (m_view->hostLayoutDebounceTimer()) {
-            m_view->hostLayoutDebounceTimer()->stop();
-        }
+        stopLayoutDebounceTimer();
     } else if (m_relayoutSuppress.active()) {
         m_relayoutSuppress.push(false);
     }
@@ -2257,4 +2269,40 @@ void GalleryController::setPathOrderFromLiveItems()
     if (!paths.isEmpty()) {
         m_view->pathOrderSetOrder(paths, ids);
     }
+}
+
+void GalleryController::stopLayoutDebounceTimer()
+{
+    if (m_layoutDebounceTimer) {
+        m_layoutDebounceTimer->stop();
+    }
+}
+
+void GalleryController::requestDebouncedPack(GalleryPackReason reason)
+{
+    const bool progressive = m_sizeResolve.active();
+    m_layoutDebounce.arm(reason, progressive);
+    if (!m_layoutDebounceTimer) {
+        if (progressive) {
+            ensurePlaceholders();
+        }
+        applyLayout(reason);
+        return;
+    }
+    // Continuous sizeReady restarts a quiet-period timer and can leave the
+    // sized prefix unlaid-out for the whole probe stream. Force a pack when
+    // the progressive arm has been pending past the max wait.
+    if (progressive && m_layoutDebounce.progressiveMaxWaitExceeded()) {
+        m_layoutDebounceTimer->stop();
+        GalleryPackReason r = reason;
+        if (m_layoutDebounce.take(&r)) {
+            ensurePlaceholders();
+            applyLayout(r);
+        }
+        return;
+    }
+    m_layoutDebounceTimer->setInterval(
+        progressive ? LayoutDebounce::kProgressiveIntervalMs
+                    : LayoutDebounce::kIntervalMs);
+    m_layoutDebounceTimer->start();
 }

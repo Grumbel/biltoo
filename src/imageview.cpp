@@ -266,21 +266,7 @@ ImageView::ImageView(QWidget *parent)
     m_perf.enableFromEnv();
     m_hudFlashTimer = new QTimer(this);
     m_hudFlashTimer->setSingleShot(true);
-    m_layoutDebounceTimer = new QTimer(this);
-    m_layoutDebounceTimer->setSingleShot(true);
-    m_layoutDebounceTimer->setInterval(LayoutDebounce::kIntervalMs);
-    connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
-        GalleryPackReason reason = GalleryPackReason::ContentChange;
-        if (isGalleryMode() && !hostLayout().isFreeForm()
-            && m_gallery.layoutDebounce().take(&reason)) {
-            // Coalesce create+pack: ensurePlaceholders was O(session) per
-            // sizeReady; run once with the pack so progressive open stays smooth.
-            if (hostGallerySizeResolve().active()) {
-                m_gallery.ensurePlaceholders();
-            }
-            m_gallery.applyLayout(reason);
-        }
-    });
+    // Layout debounce QTimer: owned by GalleryController (parented to this).
     // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
     m_colorAdjustCommitTimer = new QTimer(this);
     m_colorAdjustCommitTimer->setSingleShot(true);
@@ -415,9 +401,7 @@ ImageView::~ImageView()
     if (m_slideshow.progressTimer()) {
         m_slideshow.progressTimer()->stop();
     }
-    if (m_layoutDebounceTimer) {
-        m_layoutDebounceTimer->stop();
-    }
+    m_gallery.stopLayoutDebounceTimer();
 
     // Scene clear emits selectionChanged; our handler calls viewport()->update().
     // That is unsafe once ~QWidget has started deleting children — tear the
