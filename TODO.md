@@ -2,20 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2633.1-gallery-lqip-store-seed** (base `08fe2d1`).
+**Tip: biltoo-2634.1-gallery-scroll-restore** (base `3ae7a41`).
 
-### This tip — Gallery LQIP missing despite tile cache
-LQIP/EMB underlay was only seeded from SizeReply → ImageCache. After tile
-prepare, Store has LQIP but process ImageCache often does not (warm size memo
-skips request_size when something is cached, or size-only warm). Gallery cells
-stayed blank until tiles painted — and cells ≤32px screen never request tiles.
+### This tip — Gallery→Image→Gallery forgot scroll
+applyPendingRestore cleared m_haveViewCenter immediately after the first
+centerOn. returnToGallery then refreshed scrollbar geometry and singleShot
+reassert became a no-op — overview jumped to origin / wrong place.
 
-- `cachedLqipImage`: worker may read Store get_embedded / get_lqip
-- `scheduleStoreUnderlaySeed`: async seed + sizeReady for GUI install
-- `tryInstallGalleryUnderlay`: on miss, schedule Store seed
-- `putEmbeddedOrLqipUnderlay`: only skip when underlay-band sample exists
+- Keep leave camera flags until ExplicitLayout (or EnterGallery with no camera)
+- Pack must not centerOn(0,0) while leave camera is armed
+- Warm stash enter reasserts after sceneRect is restored
+- Pack end reasserts leave camera even when pendingRestore already false
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2633.1-gallery-lqip-store-seed-08fe2d1.bundle HEAD
+git pull --ff-only …/biltoo-2634.1-gallery-scroll-restore-3ae7a41.bundle HEAD
 ```

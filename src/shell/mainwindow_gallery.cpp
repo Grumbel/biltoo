@@ -412,8 +412,9 @@ void MainWindow::returnToGallery()
     if (m_imageView) {
         m_imageView->refreshScrollBarGeometry();
         m_imageView->hostGallery().applyPendingRestore();
-        // One settle pass after bar geometry; applyPendingRestore clears the
-        // snapshot when stable so this cannot fight a later ExplicitLayout.
+        // After bar geometry settles, re-apply the leave camera once. Snapshot
+        // flags stay armed through this pass (not cleared in applyPendingRestore)
+        // so refreshScrollBarGeometry cannot strand the view at origin.
         QTimer::singleShot(0, this, [this]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;

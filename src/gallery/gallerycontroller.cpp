@@ -335,10 +335,10 @@ void GalleryController::applyPendingRestore()
     if (!m_view->hostDisplayPipeline().loadGate().hasPendingWorkspacePaths()
         && !m_view->liveItems().isEmpty()) {
         m_pendingRestore = false;
-        // Snapshot consumed. Leaving it armed let deferred reassert / packs
-        // snap a correct ExplicitLayout back to the leave camera.
-        m_haveScroll = false;
-        m_haveViewCenter = false;
+        // Keep m_haveViewCenter / m_haveScroll until ExplicitLayout or a settle
+        // clear. Clearing them here made returnToGallery's post-geometry
+        // reassert a no-op after refreshScrollBarGeometry shifted the view —
+        // Gallery→Image→Gallery forgot the scroll position.
     }
 }
 
@@ -577,6 +577,13 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
             if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
                 m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
             }
+        }
+        // prepareCanvas zeroed scroll; re-apply leave camera now that sceneRect
+        // is valid again (returnFromImage also reasserts after enter returns).
+        if (m_pendingRestore) {
+            applyPendingRestore();
+        } else if (m_haveViewCenter || m_haveScroll) {
+            reassertViewport();
         }
         updateDecodeWindow();
     }
@@ -1586,10 +1593,15 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     ASSERT_GUI_THREAD();
     GUI_BUDGET("GalleryController::applyLayout");
     // User-driven relayout: drop Image→Gallery restore snapshots so a deferred
-    // applyPendingRestore / singleShot cannot snap the view back off-centre.
-    // EnterGallery without a pending return is the same (setLayoutMode in-Gallery).
-    if (reason == GalleryPackReason::ExplicitLayout
-        || (reason == GalleryPackReason::EnterGallery && !m_pendingRestore)) {
+    // reassert cannot snap a new layout back to the leave camera.
+    // EnterGallery still keeps the leave camera when returning from Image
+    // (m_haveViewCenter) even after pendingRestore was cleared post-install.
+    if (reason == GalleryPackReason::ExplicitLayout) {
+        m_pendingRestore = false;
+        m_haveScroll = false;
+        m_haveViewCenter = false;
+    } else if (reason == GalleryPackReason::EnterGallery && !m_pendingRestore
+               && !m_haveViewCenter) {
         m_pendingRestore = false;
         m_haveScroll = false;
         m_haveViewCenter = false;
@@ -1651,7 +1663,8 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     m_view->resetTransform();
-    if (!m_pendingRestore && !preserveView) {
+    // Do not origin-jump when returning from Image (leave camera still armed).
+    if (!m_pendingRestore && !preserveView && !m_haveViewCenter) {
         m_view->centerOn(0, 0);
     }
 
@@ -1718,8 +1731,13 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         emit m_view->statusChanged();
     }
     // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
-    // Re-apply scene centre (preferred) after bar policy settles — returning from Image.
-    applyPendingRestore();
+    // Re-apply scene centre after bar policy settles — returning from Image.
+    // Prefer leave-camera reassert over pending-only (pending may already be false).
+    if (m_pendingRestore) {
+        applyPendingRestore();
+    } else if (m_haveViewCenter || m_haveScroll) {
+        reassertViewport();
+    }
     if (preserveView) {
         if (keptScrollH >= 0 && m_view->horizontalScrollBar()) {
             m_view->horizontalScrollBar()->setValue(keptScrollH);
