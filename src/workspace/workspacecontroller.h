@@ -101,6 +101,12 @@ public:
     void resetItemRotation();
     void resetItemShear();
 
+    /**
+     * After a session content edit: refresh durable Workspace snapshot pose
+     * for @p item's SessionImageId (content stays on ItemWorld sparse tables).
+     */
+    void updateSavedAppearanceFromItem(ImageItem *item);
+
     /** Clipboard capture (Workspace selection freeze) / paste place. */
     QList<WorkspaceItemState> captureSelectedClipboard() const;
     void placeClipboardItems(const QList<WorkspaceItemState> &items,

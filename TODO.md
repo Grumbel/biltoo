@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2534.1-own-hud-status-pure** (base `7d823d8`).
+**Tip: biltoo-2535.1-own-workspace-saved-appearance** (base `7d823d8`).
 
 ### Ownership transfer
-- **HudModel::loadingLineWithGalleryExtras** — pure loading line + Gallery blank/weak
-- **HudModel::placementFlipRotationSuffix** — pure rot/flip status suffix
-- **SlideshowController::syncProgressTimerWithHud** — progress timer ↔ pinned HUD
-- ImageView status/HUD setters stay thin hosts over HudChrome + pure formatters
+- **WorkspaceController::updateSavedAppearanceFromItem** — durable Workspace snapshot
+  pose after session content edit (content stays on ItemWorld sparse tables)
+- ImageView::commitItemSessionEdit calls the controller; drop private
+  updateWorkspaceSavedAppearance
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -17,14 +17,15 @@ QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-appearance load/apply / paint / remaining status orchestration
+appearance commit peer-sync / propagate / paint / remaining status
 
 ### Next thinning candidates
-- appearance apply/commit residual
+- syncSessionEditPeers / propagateSessionAppearanceToViews residual
+- resetContentAppearanceForTargets
 - remaining status composition (quality climb labels still view-coupled)
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2534.1-own-hud-status-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2535.1-own-workspace-saved-appearance-7d823d8.bundle HEAD
 ```

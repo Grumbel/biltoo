@@ -98,38 +98,6 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
 }
 
 
-void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
-{
-    // Bound durable content is ItemWorld only (Workspace restore re-reads
-    // sessionAppearanceValue). Snapshot slots hold pose identity + path —
-    // never dual-write crop/orient into m_savedItems (2194 / ECS #5 / 2212).
-    if (!item) {
-        return;
-    }
-    const SessionImageId sessionId = item->sessionId();
-    if (sessionId == kInvalidSessionImageId) {
-        return;
-    }
-    const QString path = item->path();
-    const ItemComponents::Placement itemPl = placementFromItem(item);
-    for (WorkspaceItemState &slot : m_workspace.savedItems()) {
-        if (slot.sessionId != sessionId) {
-            continue;
-        }
-        // Never rewrite another tile's path under the same id (IDENTITY).
-        if (!slot.path.isEmpty() && slot.path != path) {
-            qCritical("updateWorkspaceSavedAppearance: sid %lld slot path %s != %s — skip",
-                      static_cast<long long>(sessionId),
-                      qPrintable(slot.path), qPrintable(path));
-            continue;
-        }
-        // Full Placement pose from the live item; content stays on ItemWorld
-        // sparse tables (same bridge as restore / completeLoadRestore — 2214).
-        ItemComponents::applyPlacementToState(slot, itemPl);
-        slot.sessionId = sessionId;
-        slot.path = path;
-    }
-}
 
 
 void ImageView::commitItemSessionEdit(ImageItem *item)
@@ -146,7 +114,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     persistSessionAppearanceSlot(item);
     validateUniqueLiveSessionIds("commitItemSessionEdit");
     syncSessionEditPeers(item);
-    updateWorkspaceSavedAppearance(item);
+    m_workspace.updateSavedAppearanceFromItem(item);
     // All modes / widgets that depend on content aspect or appearance pixels.
     propagateSessionAppearanceToViews(item);
     emit statusChanged();

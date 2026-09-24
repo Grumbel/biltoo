@@ -5,6 +5,9 @@
 // ImageView keeps private thin wrappers where the methods were private.
 
 #include "workspace/workspacecontroller.h"
+#include <QDebug>
+#include "item/itemcomponents.h"
+#include "imageitem.h"
 #include "imageview.h"
 #include "item/itemworld.h"
 #include "session/sessionbindbook.h"
@@ -588,3 +591,36 @@ void WorkspaceController::setPaths(const QStringList &paths,
     finishPathsSet(haveIds, paths, sessionIds);
 }
 
+
+void WorkspaceController::updateSavedAppearanceFromItem(ImageItem *item)
+{
+    // Bound durable content is ItemWorld only (Workspace restore re-reads
+    // sessionAppearanceValue). Snapshot slots hold pose identity + path —
+    // never dual-write crop/orient into m_savedItems (2194 / ECS #5 / 2212).
+    if (!item) {
+        return;
+    }
+    const SessionImageId sessionId = item->sessionId();
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    const QString path = item->path();
+    const ItemComponents::Placement itemPl = item->placement();
+    for (WorkspaceItemState &slot : m_savedItems) {
+        if (slot.sessionId != sessionId) {
+            continue;
+        }
+        // Never rewrite another tile's path under the same id (IDENTITY).
+        if (!slot.path.isEmpty() && slot.path != path) {
+            qCritical("updateSavedAppearanceFromItem: sid %lld slot path %s != %s — skip",
+                      static_cast<long long>(sessionId),
+                      qPrintable(slot.path), qPrintable(path));
+            continue;
+        }
+        // Full Placement pose from the live item; content stays on ItemWorld
+        // sparse tables (same bridge as restore / completeLoadRestore — 2214).
+        ItemComponents::applyPlacementToState(slot, itemPl);
+        slot.sessionId = sessionId;
+        slot.path = path;
+    }
+}

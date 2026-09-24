@@ -107,7 +107,6 @@
 
     void syncSessionEditPeers(ImageItem *item);
 
-    void updateWorkspaceSavedAppearance(ImageItem *item);
 
     /**
      * After content appearance changed for @p item: filmstrip id override,
