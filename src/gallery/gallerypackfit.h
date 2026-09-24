@@ -141,10 +141,11 @@ inline QRectF clampSceneRectToPack(QRectF bounds, GalleryLayout::Mode mode,
 }
 
 /**
- * When the pack is smaller than the live viewport (common after AlwaysOn
- * measure + AlwaysOff/AsNeeded restore), expand sceneRect to at least the
- * viewport size, centred on the pack. AlignCenter then fills the view instead
- * of floating a gutter-shrunken pack (off-centre “scrollbar” margins).
+ * When the pack (measured with both scrollbar gutters reserved) is smaller
+ * than the live viewport after policy restore, expand sceneRect to at least
+ * the viewport size, centred on the pack. AlignCenter then fills the view
+ * instead of floating a gutter-shrunken pack. Call after bar geometry has
+ * settled; a second pass may be needed if bars appear once after the first set.
  * Gallery packs use identity view transform (scene ≈ pixels).
  */
 inline QRectF expandPackSceneRectToViewport(QRectF packBounds, int viewportW,

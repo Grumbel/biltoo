@@ -2,18 +2,20 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2636.1-gallery-scene-expand-center** (base `b867c6e`).
+**Tip: biltoo-2637.1-gallery-pack-always-gutter** (base `a4d3856`).
 
-### This tip — off-centre Gallery with AlignCenter again
-After restoring AlignCenter for zoom-out, a pack measured under AlwaysOn (or
-otherwise smaller than the live client) was floated by AlignCenter → phantom
-scrollbar margins / off-centre overview.
+### This tip — layout for no bars → bars appear → off-centre
+Pack measured the full client (AlwaysOff / no gutter reserve). AsNeeded bars
+then appeared, viewport shrank, AlignCenter shifted.
 
-Fix: after bar policy restore, expand sceneRect to at least the live viewport
-size, centred on the pack bounds. AlignCenter then fills the view; content
-stays geometrically centred. Zoom-out still uses AlignCenter.
+- PackViewportGuard always forces AlwaysOn for measure (both gutters)
+- Measure width/height only after AlwaysOn is applied
+- After policy restore: two-pass sceneRect expand + refreshScrollBarGeometry
+  so a post-set bar spawn resizes and re-centres the sceneRect
+
+Keeps AlignCenter for zoom-out.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2636.1-gallery-scene-expand-center-b867c6e.bundle HEAD
+git pull --ff-only …/biltoo-2637.1-gallery-pack-always-gutter-a4d3856.bundle HEAD
 ```
