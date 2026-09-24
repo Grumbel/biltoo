@@ -4,6 +4,8 @@
 // ImageView thin routers co-located with display/ ownership.
 
 #include "imageview.h"
+#include "host/thumtoocache.h"
+#include "content/contentxform.h"
 #include "imageitem.h"
 #include "view/viewtransform.h"
 #include <QPainter>
@@ -74,3 +76,120 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
     return img;
 }
 
+
+// --- from imageview_size_book.cpp ---
+QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId,
+                                   bool allowStoreAppearance) const
+{
+    WorkspaceItemState boundWant;
+    const WorkspaceItemState *boundPtr = nullptr;
+    bool hasBoundDurable = false;
+    bool hasContentOrient = false;
+    if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
+        boundWant = sessionAppearanceValue(sessionId);
+        boundPtr = &boundWant;
+        hasBoundDurable = true;
+        hasContentOrient = m_itemWorld.hasContentOrient(sessionId);
+    }
+    const WorkspaceItemState *pathState = nullptr;
+    if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
+        pathState = m_itemWorld.getPathState(path);
+    }
+    return SessionAppearance::resolveContentLayoutSize(
+        logicalSizeForPath(path),
+        m_size.book().known(path),
+        allowStoreAppearance ? ThumtooCache::cachedSize(path) : QSize(),
+        allowStoreAppearance,
+        sessionId,
+        path,
+        hasBoundDurable,
+        boundPtr,
+        hasContentOrient,
+        pathState);
+}
+
+
+void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
+{
+    m_displayPipeline->applyProbedImageSize(path, size);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void ImageView::setCentreProgress(const QString &title, const QString &detail)
+{
+    m_shell.setCentreProgress(title, detail);
+}
+
+void ImageView::clearCentreProgress()
+{
+    m_shell.clearCentreProgress();
+}
+
+// --- Logical size (was imageview_view.cpp) ---
+
+
+// --- Size book / probe: ImageSizeCoordinator (thin forwards) ---
+
+void ImageView::rememberImageSize(const QString &path, const QSize &size)
+{
+    m_size.rememberImageSize(path, size);
+}
+
+void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
+{
+    m_size.rememberSizeFromDecode(path, image);
+}
+
+QSize ImageView::imageSizeForPath(const QString &path)
+{
+    return m_size.imageSizeForPath(path);
+}
+
+QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
+{
+    return m_size.layoutSizeForPath(path, previewHint);
+}
+
+void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
+{
+    m_size.primeGalleryGeometryFromCache(paths);
+}
+
+void ImageView::scheduleImageSizeProbe(const QString &path)
+{
+    m_size.scheduleImageSizeProbe(path);
+}
+
+QSize ImageView::logicalSizeForPath(const QString &path) const
+{
+    return m_size.logicalSizeForPath(path);
+}
+
+QSize ImageView::ensureLogicalSizeForPath(const QString &path)
+{
+    return m_size.ensureLogicalSizeForPath(path);
+}

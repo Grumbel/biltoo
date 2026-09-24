@@ -25,8 +25,8 @@ Domain subdirectories under `src/`. Includes use the domain prefix
 | `item/` | components, frame, handles, ItemWorld, placement/selection, size/state books |
 | `util/` | logging, thread helpers, PerfStats, TTFP trace |
 | `tilelod/` | tile LOD subsystem (pre-existing) |
-| `src/` root | **façade only:** `imageview.{h,cpp}`, residual host gather TUs (`imageview_modes`, `_appearance`, `_item_state`, `_status`, `_accessors`, `_size_book`, `_framing_image`), `imageitem*`, `imageview_types.h`, `main.cpp` |
-| `*/imageview_routers.cpp` | Thin ImageView public routers **co-located** with domain ownership (not dumped without transfer) |
+| `src/` root | **façade only:** `imageview.{h,cpp}`, `imageitem*`, `imageview_types.h`, `main.cpp` |
+| `*/imageview_routers.cpp` | ImageView public method bodies co-located with domain ownership (image, crop, text, workspace, view, display, session, hud, shell) |
 
 ## Rules
 

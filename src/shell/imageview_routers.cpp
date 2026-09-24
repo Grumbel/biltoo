@@ -1,12 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Thin ImageView accessors and pack/decode status queries.
+// ImageView public accessors co-located with shell/ (MainWindow API surface).
 
 #include "imageview.h"
 #include "imageitem.h"
-
-#include <QGraphicsItem>
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 {

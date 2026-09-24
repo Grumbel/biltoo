@@ -121,9 +121,8 @@ set(BILTOO_LIB_SOURCES
   src/gallery/gallerylayout.cpp
   src/gallery/gallerylayout.h
   src/imageview.cpp
-  src/imageview_accessors.cpp
-  src/imageview_size_book.cpp
-  src/gallery/gallerycontroller.cpp
+  src/shell/imageview_routers.cpp
+    src/gallery/gallerycontroller.cpp
   src/gallery/gallerycontroller_sizeresolve.cpp
   src/gallery/gallerycontroller_focus.cpp
   src/slideshow/slideshowcontroller.cpp
@@ -173,13 +172,11 @@ set(BILTOO_LIB_SOURCES
   src/view/viewshellchrome.cpp
   src/item/geometryundocommand.cpp
   src/image/imagecontroller.h
-  src/imageview_modes.cpp
-  src/workspace/imageview_routers.cpp
-            src/imageview_appearance.cpp
+    src/workspace/imageview_routers.cpp
+            src/session/imageview_routers.cpp
   src/image/imageview_routers.cpp
   src/crop/imageview_routers.cpp
-    src/imageview_item_state.cpp
-  src/crop/cropgeometry.cpp
+      src/crop/cropgeometry.cpp
   src/crop/cropgeometry.h
   src/crop/cropsession.cpp
   src/crop/cropsession.h
@@ -263,8 +260,7 @@ set(BILTOO_LIB_SOURCES
   src/display/lqipdisplaypolicy.h
   src/display/lqipdisplaypolicy.cpp
   src/display/tile_load_coordinator.cpp
-  src/imageview_framing_image.cpp
-  src/imageview_status.cpp
+    src/hud/imageview_routers.cpp
     src/view/imageview_routers.cpp
         src/text/imageview_routers.cpp
     src/display/imageview_routers.cpp

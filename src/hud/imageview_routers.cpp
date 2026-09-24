@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// ImageView status/HUD routers co-located with hud/ ownership.
+
 #include "imageview.h"
 #include "imageitem.h"
 #include "host/thumtoocache.h"
 #include "host/pagepath.h"
 #include "hud/hudmodel.h"
+#include "item/itemcomponents.h"
 
 void ImageView::refreshStatus()
 {
