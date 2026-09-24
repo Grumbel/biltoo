@@ -580,4 +580,22 @@ QImage applyLiveDisplayOverlays(QImage img, bool hFlip, bool vFlip,
     return img;
 }
 
+
+WorkspaceItemState preferDurableColor(WorkspaceItemState slot,
+                                      bool hasDurableColor,
+                                      const ColorAdjustments &durableGrade)
+{
+    if (hasDurableColor) {
+        slot.colorAdjust = durableGrade;
+    }
+    return slot;
+}
+
+bool shouldWriteCropToPathStore(bool sessionBound,
+                                bool hasCrop,
+                                bool cropRectEmpty)
+{
+    return !sessionBound && hasCrop && !cropRectEmpty;
+}
+
 } // namespace SessionAppearance

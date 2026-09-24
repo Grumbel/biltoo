@@ -354,7 +354,8 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
     // Bound session images: path XDG keeps orient/flip/grade as a file-level
     // hint; crop stays SessionImageId-only (duplicates share a path — IDENTITY).
     const bool bound = item && item->sessionId() != kInvalidSessionImageId;
-    const bool writeCrop = !bound && s.hasCrop && !s.cropRect.isEmpty();
+    const bool writeCrop = SessionAppearance::shouldWriteCropToPathStore(
+        bound, s.hasCrop, s.cropRect.isEmpty());
     ThumtooCache::StoredContentAppearance stored;
     if (SessionAppearance::fillStoredContentAppearance(&stored, s, writeCrop)) {
         ThumtooCache::saveContentAppearance(item->path(), stored);
@@ -404,15 +405,14 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionId = sid;
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
-        // freeze may carry live color lag in colorAdjust. Durable Color is
-        // written only by setTargetColorAdjustments — never promote lag here.
-        if (m_itemWorld.hasColor(sid)) {
-            slot.colorAdjust = m_itemWorld.color(sid).grade;
-        }
+        // freeze may carry live color lag; durable Color is grade-commit only.
+        slot = SessionAppearance::preferDurableColor(
+            slot, m_itemWorld.hasColor(sid), m_itemWorld.color(sid).grade);
         // Full freeze replace into sparse tables (placement preserved when
         // identity — tip 2059). Color field is durable (above), not lag.
         m_itemWorld.setAppearance(sid, slot);
-        slot.colorAdjust = m_itemWorld.color(sid).grade;
+        slot = SessionAppearance::preferDurableColor(
+            slot, m_itemWorld.hasColor(sid), m_itemWorld.color(sid).grade);
         contentSlot = slot;
         haveContentSlot = true;
     } else {
@@ -426,8 +426,9 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         // Unbound: may include crop (legacy single-instance path edit).
         // Writing identity deletes the SQLite row; intentional clear goes
         // through clearContentAppearance (Reset / undo-to-identity).
-        const bool writeCrop = (sid == kInvalidSessionImageId)
-            && contentSlot.hasCrop && !contentSlot.cropRect.isEmpty();
+        const bool writeCrop = SessionAppearance::shouldWriteCropToPathStore(
+            sid != kInvalidSessionImageId, contentSlot.hasCrop,
+            contentSlot.cropRect.isEmpty());
         ThumtooCache::StoredContentAppearance stored;
         if (SessionAppearance::fillStoredContentAppearance(
                 &stored, contentSlot, writeCrop)) {

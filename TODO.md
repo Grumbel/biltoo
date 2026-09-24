@@ -2,15 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2562.1-own-live-display-overlays** (base `7d823d8`).
+**Tip: biltoo-2563.1-own-persist-color-crop-policy** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::applyLiveDisplayOverlays** — placement flips + live grade
-  when no applied ContentXform (filmstrip / soft-sample path)
-- `ImageView::sessionAppearanceImage` keeps display-image host fetch
+- **SessionAppearance::preferDurableColor** — freeze lag must not overwrite
+  ItemWorld durable Color (grade-commit authority)
+- **SessionAppearance::shouldWriteCropToPathStore** — path XDG crop only for
+  unbound tiles
+- `persistSessionAppearanceSlot` / `persistDurableContentAppearance` keep host
+  ItemWorld + ThumtooCache writes
 
 ### Prior
-**2561.1** Own rememberKind pure policy on SessionAppearance.
+**2562.1** Own live display overlays on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -18,7 +21,7 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freeze / flush / remember / sessionAppearanceImage host residual,
+freeze / flush / remember / persist host residual (orchestration only),
 drawBackground / drawForeground one-line QGraphicsView overrides,
 input event routers (QGraphicsView overrides)
 
@@ -28,5 +31,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2562.1-own-live-display-overlays-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2563.1-own-persist-color-crop-policy-7d823d8.bundle HEAD
 ```

@@ -287,6 +287,22 @@ QImage applyLiveDisplayOverlays(QImage img, bool hFlip, bool vFlip,
                                 bool hasAppliedContentXform,
                                 const ColorAdjustments &liveColor);
 
+/**
+ * Prefer ItemWorld durable Color over freeze/live lag in @p slot.
+ * Grade commit is the sole durable color authority (ECS_GUI_BYPASSES #5).
+ */
+WorkspaceItemState preferDurableColor(WorkspaceItemState slot,
+                                      bool hasDurableColor,
+                                      const ColorAdjustments &durableGrade);
+
+/**
+ * Path XDG content store: write crop only for unbound tiles (bound crop is
+ * SessionImageId-only; duplicates share a path).
+ */
+[[nodiscard]] bool shouldWriteCropToPathStore(bool sessionBound,
+                                              bool hasCrop,
+                                              bool cropRectEmpty);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H
