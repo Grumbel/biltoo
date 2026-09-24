@@ -490,3 +490,6 @@ Product shell (minimal):
     ImageView thin routers. validateUniqueLiveSessionIds stays on ImageView
     (live + workspace/gallery stashes).
 
+49. **biltoo-2507:** WorkspaceController owns primaryItem and targetItem
+    (Image-mode session-id prefer + selection fallback); ImageView thin routers.
+

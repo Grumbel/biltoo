@@ -132,6 +132,8 @@ public:
     QList<ImageItem *> transformTargets() const;
     bool hasTransformTargets() const;
     bool hasSingleCropTarget() const;
+    ImageItem *primaryItem() const;
+    ImageItem *targetItem() const;
 
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */

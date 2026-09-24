@@ -129,3 +129,47 @@ QList<int> WorkspaceController::selectedSessionIndices() const
     }
     return out;
 }
+
+ImageItem *WorkspaceController::primaryItem() const
+{
+    // Image mode: prefer the tile bound to the current SessionImageId so
+    // duplicate paths do not resolve to the wrong live item via first-in-list.
+    if (m_view->isImageMode()) {
+        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+        if (sid != kInvalidSessionImageId) {
+            if (ImageItem *byId = m_view->findItemBySessionId(sid)) {
+                return byId;
+            }
+        }
+    }
+    if (m_view->liveItems().isEmpty()) {
+        return nullptr;
+    }
+    return m_view->liveItems().first();
+}
+
+ImageItem *WorkspaceController::targetItem() const
+{
+    // Transform targets:
+    //   Image → primary (sole) canvas object
+    //   Gallery / Workspace → first selected item; Workspace also falls back to
+    //   the sole object when the selection is empty
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return m_view->liveItems().isEmpty() ? nullptr : m_view->liveItems().first();
+    }
+    const QList<QGraphicsItem *> selected = scene->selectedItems();
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            // Selection can briefly hold stale pointers after destroyCanvasItem.
+            if (!m_view->liveItems().contains(item) || item->scene() != scene) {
+                continue;
+            }
+            return item;
+        }
+    }
+    if (m_view->isImageMode() || m_view->liveItems().size() == 1) {
+        return m_view->liveItems().isEmpty() ? nullptr : m_view->liveItems().first();
+    }
+    return nullptr;
+}

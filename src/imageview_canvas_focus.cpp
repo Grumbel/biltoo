@@ -28,48 +28,13 @@
 
 ImageItem *ImageView::primaryItem() const
 {
-    // Image mode: prefer the tile bound to the current SessionImageId so
-    // duplicate paths do not resolve to the wrong live item via first-in-list.
-    if (isImageMode()) {
-        const SessionImageId sid = m_session.identity().currentIdValue();
-        if (sid != kInvalidSessionImageId) {
-            if (ImageItem *byId = findItemBySessionId(sid)) {
-                return byId;
-            }
-        }
-    }
-    if (m_items.isEmpty()) {
-        return nullptr;
-    }
-    return m_items.first();
+    return m_workspace.primaryItem();
 }
 
 ImageItem *ImageView::targetItem() const
 {
-    // Transform targets:
-    //   Image → primary (sole) canvas object
-    //   Gallery / Workspace → first selected item; Workspace also falls back to
-    //   the sole object when the selection is empty
-    if (!m_scene) {
-        return m_items.isEmpty() ? nullptr : m_items.first();
-    }
-    const QList<QGraphicsItem *> selected = m_scene->selectedItems();
-    for (QGraphicsItem *gi : selected) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-            // Selection can briefly hold stale pointers after destroyCanvasItem.
-            if (!m_items.contains(item) || item->scene() != m_scene) {
-                continue;
-            }
-            return item;
-        }
-    }
-    if (isImageMode() || m_items.size() == 1) {
-        return m_items.isEmpty() ? nullptr : m_items.first();
-    }
-    return nullptr;
+    return m_workspace.targetItem();
 }
-
-
 
 // --- from imageview_layout.cpp (canvas) ---
 
