@@ -189,6 +189,8 @@ public:
 
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
+    /** Live TileLodController when pipeline bag is attached; else nullptr. */
+    tilelod::TileLodController *tileLodController() const;
     /** True when pipeline bag is suppressed (crop draft, etc.). */
     bool tileLodSuppressed() const
     {

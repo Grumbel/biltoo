@@ -19,6 +19,7 @@
 #include "slideshow/slideshowmotiongeometry.h"
 #include "attention/attentiongeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
+#include "tilelod/tile_cover_paint.hpp"
 
 #include <QGraphicsScene>
 #include <QPainter>
@@ -1873,9 +1874,25 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (!painter || path.isEmpty() || dest.isEmpty()) {
         return false;
     }
-    tilelod::TileLodController *lod = slideshowTilesForPath(path);
+    // Prefer the live ImageItem session (same path registry + climbed scale)
+    // so slideshow tracks ImageView up-res instead of a cold phase session.
+    tilelod::TileLodController *lod = nullptr;
+    for (ImageItem *it : m_view->liveItems()) {
+        if (it && it->path() == path) {
+            lod = it->tileLodController();
+            if (lod) {
+                break;
+            }
+        }
+    }
+    if (!lod) {
+        lod = slideshowTilesForPath(path);
+    }
     if (!lod) {
         return false;
+    }
+    if (lod->path() != path) {
+        lod->setPath(path);
     }
     QSize native = m_view->logicalSizeForPath(path);
     if (!isPositiveSize(native)) {
@@ -1884,32 +1901,26 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (!isPositiveSize(native)) {
         return false;
     }
-    const int longEdge = ContentXform::longEdge(native);
-    if (longEdge < 256) {
-        return false;
+    if (!ThumtooCache::hasDurableTilesKnown(path)) {
+        (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    lod->setContentSize(native.width(), native.height(),
-                        ThumtooCache::durableTileMinScale(path));
-    // Full content into dest (same model as drawImage(dest, image)).
-    const double dpc = SlideshowMotionGeometry::coverDevicePixelScale(
-        QSizeF(dest.width(), dest.height()), native);
-    if (!tilelod::TileLodController::shouldUseTiles(dpc, longEdge)) {
-        return false;
+    // Image-mode floor: min_scale 0 so density can climb to full-res (Gallery
+    // durable floor left slideshow stuck on coarse overview tiles).
+    tilelod::CoverPaintArgs args;
+    args.lod = lod;
+    args.native = native;
+    args.dest = dest;
+    args.underlay = underlay;
+    args.tick_budget = 32;
+    args.min_scale = 0;
+    args.tick = true;
+    const bool drew = tilelod::prepare_and_paint_cover(painter, args);
+    if (drew && !lod->viewportFullyCovered() && m_view->viewport()) {
+        // Keep climbing while the motion/progress timer paints.
+        m_view->viewport()->update();
     }
-    lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
-    (void)lod->tick(12);
-    if (!lod->hasAnyTile()) {
-        if (!ThumtooCache::hasDurableTilesKnown(path)) {
-            (void)ThumtooCache::scheduleTilePyramid(path);
-        }
-        return false;
-    }
-    painter->save();
-    painter->translate(dest.topLeft());
-    painter->scale(SlideshowMotionGeometry::coverAxisScaleX(QSizeF(dest.size()), native),
-                   SlideshowMotionGeometry::coverAxisScaleY(QSizeF(dest.size()), native));
-    const bool drew = lod->paint(painter, underlay);
-    painter->restore();
+    // Drive shared coordinator so in-flight tiles complete off the paint path.
+    m_view->hostDisplayPipeline().tickPrimaryTileLod(32);
     return drew;
 }
 
@@ -1936,7 +1947,9 @@ void SlideshowController::paintMotionCover(QPainter *painter, const QImage &imag
         return;
     }
 
-    // Tiles first (shared TileLodRegistry path cache) — same as Image/Gallery.
+    // Tiles first (shared TileLodRegistry + ImageItem session) — same cover paint
+    // helper as Image/Gallery. Prefer tiles whenever the path has RAM/durable
+    // coverage so SoftDisplay atlases cannot pin the slideshow on low-res.
     if (paintSlideshowTiles(painter, path, dest, image)) {
         return;
     }
@@ -2227,6 +2240,8 @@ void SlideshowController::tickSlideshowMotion()
     if (!m_view->viewport()) {
         return;
     }
+    // Climb shared path tiles while Ken Burns runs (same coordinator as ImageView).
+    m_view->hostDisplayPipeline().tickPrimaryTileLod(24);
 
     if (hud().isProgressActive()
         && (phase().isFromMotionClockRunning() || phase().isToMotionClockRunning())) {

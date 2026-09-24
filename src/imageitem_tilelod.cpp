@@ -30,6 +30,14 @@
 #include <QTimer>
 
 
+tilelod::TileLodController *ImageItem::tileLodController() const
+{
+    if (!m_tileLodAttached || !m_tileLodAttached->controller) {
+        return nullptr;
+    }
+    return m_tileLodAttached->controller.get();
+}
+
 tilelod::ItemBag &ImageItem::tileLodBag()
 {
     if (m_tileLodAttached) {

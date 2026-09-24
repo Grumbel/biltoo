@@ -2,19 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2413-tilelod-climb-complete-loop** (base `d80d461`).
+**Tip: biltoo-2415-slideshow-tile-cover** (base `d80d461`).
 
-### tilelod climb_to_scale
-Trailing `issue_requests` without `complete_all` left scale-0 keys InFlight;
-next step saw n=0 and early-returned → exact==0 / shared-cache failures.
-
-**Fix:** issue → complete → drain pump in a loop until nothing left to issue.
-
-Verified: `tilelod_test: all passed` (standalone compile).
+### Slideshow tiles / up-res
+- Shared `tilelod::prepare_and_paint_cover` (dest cover transform + tick + paint)
+- Slideshow prefers live **ImageItem** TileLodController for the path (same climb as ImageView)
+- Phase fallback still uses ensureFromTiles/ToTiles
+- `min_scale = 0` (was durable floor → stuck coarse)
+- Motion timer ticks primary TileLod so in-flight tiles complete
+- Soft atlas only when tiles cannot paint yet
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2413.1-tilelod-climb-complete-loop-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2415.1-slideshow-tile-cover-d80d461.bundle HEAD
 ```
 
-**Next:** RC smoke; VERSION 0.2.0 + tag.
+Prior: 2414 pan-zoom factor ceiling; 2413 climb complete loop.
