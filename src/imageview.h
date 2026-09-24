@@ -292,6 +292,8 @@ public:
     QString hostTr(const char *sourceText) const override { return tr(sourceText); }
     qreal devicePixelRatioF() const override { return QGraphicsView::devicePixelRatioF(); }
     QPointF mapFromScene(const QPointF &point) const override { return QGraphicsView::mapFromScene(point); }
+    // Keep QRect / QPolygonF overloads visible (DisplayPipelineHost only needs QPoint).
+    using QGraphicsView::mapToScene;
     QPointF mapToScene(const QPoint &point) const override { return QGraphicsView::mapToScene(point); }
     QTransform viewTransform() const override { return QGraphicsView::transform(); }
     QRectF mapViewportToScene() const override

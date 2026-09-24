@@ -8,6 +8,9 @@
 
 #include "util/biltoo_thread.h"
 #include "imageitem.h"
+#include "crop/cropcontroller.h"
+#include "slideshow/slideshowcontroller.h"
+#include "gallery/gallerysizeresolve.h"
 #include "display/pathrasterservice.h"
 #include "host/thumtoocache.h"
 #include "tilelod/tile_session.hpp"
@@ -165,10 +168,8 @@ void TileLoadCoordinator::tick(int globalBudget)
     const qint64 kWallMs = gallery ? 8 : 12;
 
     QRectF sceneVis;
-    if (m_pipeline->host()->canvasScene()) {
-        if (QWidget *vp = m_pipeline->host()->viewportWidget()) {
-            sceneVis = m_pipeline->host()->mapViewportToScene();
-        }
+    if (m_pipeline->host()->canvasScene() && m_pipeline->host()->viewportWidget()) {
+        sceneVis = m_pipeline->host()->mapViewportToScene();
     }
 
     QList<Cand> cands = collectCandidates(sceneVis);

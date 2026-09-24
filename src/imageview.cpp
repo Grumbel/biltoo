@@ -195,7 +195,7 @@ ImageView::ImageView(QWidget *parent)
                 }
             });
     m_pathRaster = new PathRasterService(this);
-    m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
+    m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(&m_displayPipeline);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 if (path.isEmpty()) {
