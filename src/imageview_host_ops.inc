@@ -106,3 +106,7 @@
         return findItemBySessionIndex(sessionIndex);
     }
 
+    /** Controller host: snapshot bound appearance/pose before tile teardown. */
+    void hostRememberItemState(ImageItem *item) { rememberItemState(item); }
+    bool hostPreserveUndoOnDestroy() const { return m_preserveUndoOnDestroy; }
+

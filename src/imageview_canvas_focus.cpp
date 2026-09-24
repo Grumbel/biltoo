@@ -79,73 +79,8 @@ void ImageView::revealGallerySessionId(SessionImageId sessionId)
 
 void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
 {
-    if (!item) {
-        return;
-    }
-    const QString path = item->path();
-    // Stage 2: drop tile session and release pipeline-owned bag before delete.
-    m_displayPipeline->dropItemTileLodSession(item);
-    m_displayPipeline->releaseTileBag(item);
-    m_displayPipeline->unregisterItemDisplaySurface(item);
-    // Re-entrancy / double-destroy: after the first call the pointer is gone from
-    // live and stash lists. A second call must not touch a deleted QGraphicsItem
-    // (seen as SIGSEGV in QObject::blockSignals on a garbage scene pointer).
-    const bool inLive = m_items.contains(item);
-    const bool inGalleryStash = m_gallery.stashedItems().contains(item);
-    const bool inWorkspaceStash = m_workspace.stashedItems().contains(item);
-    if (!inLive && !inGalleryStash && !inWorkspaceStash) {
-        return;
-    }
-    // AUDIT H8/H9: clear every view-owned pointer before delete so paint /
-    // input cannot touch a dangling ImageItem (BSP crashes in scene paint).
-    m_workspace.itemInteract().dropIfItem(item);
-    if (item == m_gallery.selectionAnchor()) {
-        m_gallery.setSelectionAnchor(nullptr);
-    }
-    // Group scale holds raw pointers — drop before delete or BSP paint UAF.
-    if (m_workspace.groupSession().isScaleDrag() || m_workspace.groupSession().isRotateDrag() || m_workspace.groupSession().hasDragItems()) {
-        m_workspace.groupSession().endDrag();
-    }
-    // Also drop from gallery stash so discardStashedGallery cannot double-free.
-    m_gallery.stashedItems().removeAll(item);
-    m_workspace.stashedItems().removeAll(item);
-
-    // Default: snapshot bound appearance/pose before the tile is gone.
-    // Session-id *delete* paths pass persistState=false after removeAppearance
-    // so this cannot re-insert the DTO that was just cleared.
-    if (persistState) {
-        rememberItemState(item);
-    }
-    m_items.removeAll(item);
-    // Off-canvas neighbor prefetch may still hold a controller for this path.
-    if (!path.isEmpty() && !pathOnLiveCanvas(path)) {
-        m_tileNeighborPrefetch.dropPath(path);
-    }
-    if (QGraphicsScene *sc = item->scene()) {
-        // selectionChanged → statusChanged → paint must not run mid-teardown
-        // (re-entrant paint was UAF in the BSP / item lists).
-        const bool blocked = sc->blockSignals(true);
-        item->setSelected(false);
-        sc->removeItem(item);
-        sc->blockSignals(blocked);
-    } else {
-        item->setSelected(false);
-    }
-    delete item;
-    // TransformCommand stores raw ImageItem*; drop undo history that would
-    // redo/undo against a deleted object — unless a session-level command is
-    // intentionally removing canvas tiles and must stay on the stack.
-    if (m_undoStack && !m_preserveUndoOnDestroy) {
-        m_undoStack->clear();
-    }
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
+    m_workspace.destroyCanvasItem(item, persistState);
 }
-
-
-
-
 
 
 // --- session remove / bind residual from layout ---

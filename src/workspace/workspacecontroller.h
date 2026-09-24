@@ -134,6 +134,8 @@ public:
     bool hasSingleCropTarget() const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
+    /** Teardown live/stash tile (pipeline bags, scene, undo). */
+    void destroyCanvasItem(ImageItem *item, bool persistState = true);
 
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */

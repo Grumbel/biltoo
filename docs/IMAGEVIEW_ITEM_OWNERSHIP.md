@@ -493,3 +493,7 @@ Product shell (minimal):
 49. **biltoo-2507:** WorkspaceController owns primaryItem and targetItem
     (Image-mode session-id prefer + selection fallback); ImageView thin routers.
 
+50. **biltoo-2508:** WorkspaceController owns destroyCanvasItem (pipeline bags,
+    stash/live lists, scene remove, undo clear, scene rect); ImageView thin
+    host router. Host exposes hostRememberItemState / hostPreserveUndoOnDestroy.
+
