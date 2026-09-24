@@ -2,21 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2620.1-peel-currenttool-sessionindex** (base `7d823d8`).
+**Tip: biltoo-2621.1-status-assemblers-surface-doc** (base `7d823d8`).
 
 ### This tip
-| Peeled | Replacement |
-|--------|-------------|
-| `currentTool()` | `hostWorkspace().currentTool()` |
-| `setItemSessionIndex` | `item->setSessionIndex(...)` |
-
-Header ~509 lines. Domain routers kept split.
-
-### Remaining intentional public API
-Mode shell, status gather, selectedPaths/pendingDecodeCount, capture/freeze
-appearance, bindShared*, setActiveMode, host surface.
+1. **Status gather → HudModel assemblers**
+   - `HudModel::formatMultiItemStatusLine`
+   - `HudModel::formatImageModeStatusLine`
+   - ImageView only collects inputs; formatting is pure.
+2. **Private incs:** drop orphan comment stubs (no methods).
+3. **`docs/IMAGEVIEW_SURFACE.md`** — what stays vs peel rules.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2620.1-peel-currenttool-sessionindex-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2621.1-status-assemblers-surface-doc-7d823d8.bundle HEAD
 ```

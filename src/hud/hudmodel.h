@@ -103,6 +103,29 @@ bool isThumtooDebugEnabled();
 QString thumtooDebugStatusSuffix(const QString &pixelSourceLabel,
                                  const QString &queueStatsLabel);
 
+
+/**
+ * Assemble multi-item (Gallery/Workspace) status bar line from precomputed bits.
+ * Pure; no ImageView dependency.
+ */
+QString formatMultiItemStatusLine(
+    bool galleryMode, int itemCount, int zoomPercent,
+    const QString &quality, int edge, const QSize &native,
+    bool thumtooDebugGalleryMix, int blank, int lqip, int soft, int higher, int climbing,
+    int pendingDecodeCount, const QString &loadingBreakdown,
+    bool workspaceSelected, qreal scaleX, qreal scaleY, qreal rotationDegrees,
+    bool edited, const QString &thumtooDebugSuffix);
+
+/**
+ * Assemble Image-mode status bar line from precomputed bits.
+ */
+QString formatImageModeStatusLine(
+    int nativeWidth, int nativeHeight, int zoomPercent,
+    const QString &quality, int edge, bool appendQualityEdgePx,
+    const QString &climbActivityLabel,
+    qreal rotationDegrees, bool hFlip, bool vFlip,
+    bool edited, const QString &thumtooDebugSuffix);
+
 } // namespace HudModel
 
 #endif // HUDMODEL_H

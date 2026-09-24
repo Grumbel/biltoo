@@ -54,13 +54,9 @@
     /** Write Placement (or path-book pose) without requiring a full DTO snapshot. */
     void persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl);
 
-    /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
 
-    /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
 
-    // --- completeLoadReplace phases ---
 
-    /** Scene pixels per millimetre for the page guide (layout scale). */
 
     /**
      * Choose live tiles to remove when setWorkspacePaths rebuilds membership.

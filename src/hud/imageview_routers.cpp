@@ -89,48 +89,49 @@ QString ImageView::statusTextEmpty() const
 }
 
 QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
-                                       int edge, const QSize &native) const
+                                        int edge, const QSize &native) const
 {
-    QString text = HudModel::multiItemHeader(
-        isGalleryMode(), m_items.size(), qRound(viewScale() * 100));
-    text += HudModel::qualityStatusSuffix(quality, edge, edge > 0);
-    text += HudModel::nativeSizeStatusSuffix(native);
-    if (isGalleryMode() && HudModel::isThumtooDebugEnabled()) {
-        // Pipeline mix is debug-only — never put "LQIP" in the status bar.
-        int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
+    int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
+    const bool galleryDbg = isGalleryMode() && HudModel::isThumtooDebugEnabled();
+    if (galleryDbg) {
         m_gallery.countDebugPixelMix(&blank, &lqip, &soft, &better, &climb);
-        text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
     }
-    text += HudModel::pendingLoadStatusSuffix(pendingDecodeCount());
-    text += HudModel::labeledStatusSuffix(ThumtooCache::loadingBreakdownLabel());
-    if (isWorkspaceMode() && item->isSelected()) {
+    qreal scaleX = 1.0, scaleY = 1.0, rot = 0.0;
+    const bool wsSel = isWorkspaceMode() && item->isSelected();
+    if (wsSel) {
         const ItemComponents::Placement pl = item->placement();
-        text += HudModel::workspaceSelectedItemScaleSuffix(pl.scale, pl.scaleY, pl.rotation);
+        scaleX = pl.scale;
+        scaleY = pl.scaleY;
+        rot = pl.rotation;
     }
-    text += HudModel::editedStatusSuffix(hostImage().targetHasContentAppearance());
-    appendThumtooDebugStatus(&text, item);
-    return text;
+    QString dbg;
+    appendThumtooDebugStatus(&dbg, item);
+    return HudModel::formatMultiItemStatusLine(
+        isGalleryMode(), itemCount(), qRound(viewScale() * 100),
+        quality, edge, native,
+        galleryDbg, blank, lqip, soft, better, climb,
+        pendingDecodeCount(), ThumtooCache::loadingBreakdownLabel(),
+        wsSel, scaleX, scaleY, rot,
+        hostImage().targetHasContentAppearance(), dbg);
 }
+
 
 
 QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
                                        int edge, const QSize &native) const
 {
-    QString text = HudModel::imageModeStatusHeader(
-        native.width(), native.height(), qRound(viewScale() * 100));
-    text += HudModel::qualityStatusSuffix(
+    const ItemComponents::Placement pl = item->placement();
+    QString dbg;
+    appendThumtooDebugStatus(&dbg, item);
+    return HudModel::formatImageModeStatusLine(
+        native.width(), native.height(), qRound(viewScale() * 100),
         quality, edge,
-        HudModel::shouldAppendQualityEdgePx(edge, item->hasDecodedPixels(), quality));
-    text += HudModel::labeledStatusSuffix(
-        m_displayPipeline->imageModeClimbActivityLabel(item));
-    {
-        const ItemComponents::Placement pl = item->placement();
-        text += HudModel::placementFlipRotationSuffix(pl.rotation, pl.hFlip, pl.vFlip);
-    }
-    text += HudModel::editedStatusSuffix(hostImage().targetHasContentAppearance());
-    appendThumtooDebugStatus(&text, item);
-    return text;
+        HudModel::shouldAppendQualityEdgePx(edge, item->hasDecodedPixels(), quality),
+        m_displayPipeline->imageModeClimbActivityLabel(item),
+        pl.rotation, pl.hFlip, pl.vFlip,
+        hostImage().targetHasContentAppearance(), dbg);
 }
+
 
 QString ImageView::statusText() const
 {

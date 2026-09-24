@@ -280,4 +280,45 @@ QString thumtooDebugStatusSuffix(const QString &pixelSourceLabel,
     return text;
 }
 
+
+QString formatMultiItemStatusLine(
+    bool galleryMode, int itemCount, int zoomPercent,
+    const QString &quality, int edge, const QSize &native,
+    bool thumtooDebugGalleryMix, int blank, int lqip, int soft, int higher, int climbing,
+    int pendingDecodeCount, const QString &loadingBreakdown,
+    bool workspaceSelected, qreal scaleX, qreal scaleY, qreal rotationDegrees,
+    bool edited, const QString &thumtooDebugSuffix)
+{
+    QString text = multiItemHeader(galleryMode, itemCount, zoomPercent);
+    text += qualityStatusSuffix(quality, edge, edge > 0);
+    text += nativeSizeStatusSuffix(native);
+    if (thumtooDebugGalleryMix) {
+        text += galleryDebugPixelMixSuffix(blank, lqip, soft, higher, climbing);
+    }
+    text += pendingLoadStatusSuffix(pendingDecodeCount);
+    text += labeledStatusSuffix(loadingBreakdown);
+    if (workspaceSelected) {
+        text += workspaceSelectedItemScaleSuffix(scaleX, scaleY, rotationDegrees);
+    }
+    text += editedStatusSuffix(edited);
+    text += thumtooDebugSuffix;
+    return text;
+}
+
+QString formatImageModeStatusLine(
+    int nativeWidth, int nativeHeight, int zoomPercent,
+    const QString &quality, int edge, bool appendQualityEdgePx,
+    const QString &climbActivityLabel,
+    qreal rotationDegrees, bool hFlip, bool vFlip,
+    bool edited, const QString &thumtooDebugSuffix)
+{
+    QString text = imageModeStatusHeader(nativeWidth, nativeHeight, zoomPercent);
+    text += qualityStatusSuffix(quality, edge, appendQualityEdgePx);
+    text += labeledStatusSuffix(climbActivityLabel);
+    text += placementFlipRotationSuffix(rotationDegrees, hFlip, vFlip);
+    text += editedStatusSuffix(edited);
+    text += thumtooDebugSuffix;
+    return text;
+}
+
 } // namespace HudModel
