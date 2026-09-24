@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2481.1-own-color-adjust-commit-timer**.
-Latest tip: **biltoo-2481** (+ thumtoo-338). Own: colour-adjust commit QTimer on ImageController.
+Latest agent handoff: **TODO.md → biltoo-2482.1-own-gallery-decode-watchdog**.
+Latest tip: **biltoo-2482** (+ thumtoo-338). Own: gallery decode-watchdog QTimer on GalleryController.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

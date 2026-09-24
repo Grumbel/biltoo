@@ -279,6 +279,8 @@ ImageView::ImageView(QWidget *parent)
         if (m_slideshow.hud().isProgressActive()) {
             // Pump shared path tiles for phase slides (paint uses TileLodController).
             m_displayPipeline->tickPrimaryTileLod(8);
+            // Phase transition surfaces (was on the Gallery decode watchdog).
+            m_slideshow.slideshowPhaseSurfaceTick();
             if (viewport()) {
                 viewport()->update();
             }
@@ -346,19 +348,7 @@ ImageView::ImageView(QWidget *parent)
 
     // Recover Gallery tiles that received soft pixels but never repainted
     // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).
-    m_galleryDecodeWatchdog = new QTimer(this);
-    m_galleryDecodeWatchdog->setInterval(GalleryDecode::kWatchdogIntervalMs);
-    connect(m_galleryDecodeWatchdog, &QTimer::timeout, this, [this]() {
-        if (isGalleryMode()) {
-            m_gallery.decodeWatchdogTick();
-        }
-        // ImageFocus is event-driven only (rasterImproved / load / resize climb).
-        // Slideshow phase buffers: DisplaySurface::decide while transition is live.
-        if (m_slideshow.hud().isProgressActive()) {
-            m_slideshow.slideshowPhaseSurfaceTick();
-        }
-    });
-    m_galleryDecodeWatchdog->start();
+    m_gallery.startDecodeWatchdog();
 }
 
 void ImageView::bindSharedDisplayPipeline(DisplayPipelineController *pipeline)

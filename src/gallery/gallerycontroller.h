@@ -126,6 +126,9 @@ public:
     /** Scene-space cell frames for slots without/under live items. */
     void paintVirtualPlaceholders(QPainter *painter, const QRectF &exposed) const;
     void decodeWatchdogTick();
+    /** Continuous Gallery soft-pixel repaint recovery (parented to ImageView). */
+    void startDecodeWatchdog();
+    void stopDecodeWatchdog();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);
     void setMasonryRows(int rows);
@@ -202,6 +205,7 @@ private:
     LayoutPrefs m_layout;
     LayoutDebounce m_layoutDebounce;
     QTimer *m_layoutDebounceTimer = nullptr;
+    QTimer *m_decodeWatchdogTimer = nullptr;
     GalleryRelayoutSuppress m_relayoutSuppress;
     LayoutApplyGuard m_layoutApply;
 

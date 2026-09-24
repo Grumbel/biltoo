@@ -2306,3 +2306,24 @@ void GalleryController::requestDebouncedPack(GalleryPackReason reason)
                     : LayoutDebounce::kIntervalMs);
     m_layoutDebounceTimer->start();
 }
+
+void GalleryController::startDecodeWatchdog()
+{
+    if (!m_decodeWatchdogTimer) {
+        m_decodeWatchdogTimer = new QTimer(m_view);
+        m_decodeWatchdogTimer->setInterval(GalleryDecode::kWatchdogIntervalMs);
+        QObject::connect(m_decodeWatchdogTimer, &QTimer::timeout, m_view, [this]() {
+            if (m_view->isGalleryMode()) {
+                decodeWatchdogTick();
+            }
+        });
+    }
+    m_decodeWatchdogTimer->start();
+}
+
+void GalleryController::stopDecodeWatchdog()
+{
+    if (m_decodeWatchdogTimer) {
+        m_decodeWatchdogTimer->stop();
+    }
+}

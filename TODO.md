@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2481.1-own-color-adjust-commit-timer** (base `7d823d8`).
+**Tip: biltoo-2482.1-own-gallery-decode-watchdog** (base `7d823d8`).
 
 ### Ownership transfer
-- **Colour-adjust commit QTimer** on ImageController (parented to ImageView)
-- `scheduleColorAdjustCommit` arms controller timer; flush stays on ImageView
+- **Gallery decode-watchdog QTimer** on GalleryController
+- Slideshow `slideshowPhaseSurfaceTick` on progress timer (was dual-purpose watchdog)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2481.1-own-color-adjust-commit-timer-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2482.1-own-gallery-decode-watchdog-7d823d8.bundle HEAD
 ```

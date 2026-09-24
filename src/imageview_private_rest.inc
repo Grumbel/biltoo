@@ -177,7 +177,7 @@
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
     PerfStats m_perf;
 
-    QTimer *m_galleryDecodeWatchdog = nullptr;
+    // Gallery decode watchdog QTimer: owned by GalleryController.
     // Layout debounce QTimer: owned by GalleryController.
     // LayoutDebounce: owned by GalleryController.
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */

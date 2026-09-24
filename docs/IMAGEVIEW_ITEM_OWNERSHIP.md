@@ -384,3 +384,6 @@ Product shell (minimal):
 23. **biltoo-2481:** Colour-adjust commit QTimer owned by ImageController
     (parented to ImageView); completes 2479 residual.
 
+24. **biltoo-2482:** Gallery decode-watchdog QTimer owned by GalleryController;
+    slideshow phase surface tick moved onto the slideshow progress timer.
+
