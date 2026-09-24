@@ -71,7 +71,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 }
 void ImageView::restoreToolCursor()
 {
-    setCursor(ToolPolicy::cursorFor(m_workspace.currentTool()));
+    m_shell.restoreToolCursor();
 }
 void ImageView::pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                       const ItemComponents::Placement &after, const QString &text)

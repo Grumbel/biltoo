@@ -45,6 +45,8 @@ public:
     void updateMouseInfo(const QPoint &viewPos);
     /** Pointer left the viewport: clear transient mouse info. */
     void onLeave();
+    /** Restore cursor for the current Workspace tool (after pan / chrome drag). */
+    void restoreToolCursor();
 
     /** External / internal path drag-drop (accept + filesDropped emit). */
     void dragEnterEvent(QDragEnterEvent *event);

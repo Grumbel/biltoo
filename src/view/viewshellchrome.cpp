@@ -117,10 +117,18 @@ bool ViewShellChrome::tryMouseReleasePan(QMouseEvent *event)
         return false;
     }
     m_viewport.endPan();
-    m_view->restoreToolCursor();
+    restoreToolCursor();
     m_view->hostDisplayPipeline().tickPrimaryTileLod(8);
     event->accept();
     return true;
+}
+
+void ViewShellChrome::restoreToolCursor()
+{
+    if (!m_view) {
+        return;
+    }
+    m_view->setCursor(ToolPolicy::cursorFor(m_view->hostWorkspace().currentTool()));
 }
 
 void ViewShellChrome::updateMouseInfo(const QPoint &viewPos)
