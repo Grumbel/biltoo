@@ -10,7 +10,7 @@
 
 /**
  * Pending durable colour-grade commit target after slider idle debounce.
- * QTimer stays on ImageView; this bag only holds sid + path.
+ * Bag owned by ImageController; QTimer stays on ImageView (shell lifetime).
  */
 struct ColorAdjustCommit {
     /** Idle debounce before durable grade commit (ms). */

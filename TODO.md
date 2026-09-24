@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2478.1-own-session-nav-flags** (base `7d823d8`).
+**Tip: biltoo-2479.1-own-color-adjust-commit** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionNavFlags** on ImageController (`sessionNav()`)
-- hostSessionNav → m_image.sessionNav()
+- **ColorAdjustCommit** on ImageController (`colorAdjustCommit()`)
+- QTimer remains on ImageView for shell lifetime
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2478.1-own-session-nav-flags-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2479.1-own-color-adjust-commit-7d823d8.bundle HEAD
 ```

@@ -375,3 +375,6 @@ Product shell (minimal):
 20. **biltoo-2478:** SessionNavFlags owned by ImageController (with edge nav);
     hostSessionNav forwards.
 
+21. **biltoo-2479:** ColorAdjustCommit bag owned by ImageController; commit
+    QTimer remains on ImageView (same pattern as gallery layout debounce).
+

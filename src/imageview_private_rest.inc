@@ -182,4 +182,4 @@
     // LayoutDebounce: owned by GalleryController.
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
     QTimer *m_colorAdjustCommitTimer = nullptr;
-    ColorAdjustCommit m_colorAdjustCommit;
+    // ColorAdjustCommit: owned by ImageController (m_image).

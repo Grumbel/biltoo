@@ -8,6 +8,7 @@
 #include "image/edgenavpolicy.h"
 #include "slideshow/zoomregiongesture.h"
 #include "session/sessionchrome.h"
+#include "color/coloradjustcommit.h"
 #include <QSize>
 
 class ImageView;
@@ -81,12 +82,17 @@ public:
     SessionNavFlags &sessionNav() { return m_sessionNav; }
     const SessionNavFlags &sessionNav() const { return m_sessionNav; }
 
+    /** Pending durable colour-grade commit target (timer stays on ImageView). */
+    ColorAdjustCommit &colorAdjustCommit() { return m_colorAdjustCommit; }
+    const ColorAdjustCommit &colorAdjustCommit() const { return m_colorAdjustCommit; }
+
 private:
     ImageView *m_view = nullptr;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
     ZoomRegionGesture m_zoomRegion;
     SessionNavFlags m_sessionNav;
+    ColorAdjustCommit m_colorAdjustCommit;
 };
 
 #endif // IMAGECONTROLLER_H
