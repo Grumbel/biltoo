@@ -842,7 +842,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
         if (SessionAppearance::hasContentAppearance(app)
             || !app.colorAdjust.isIdentity()
             || (sid != kInvalidSessionImageId && m_view->itemWorld().hasColor(sid))) {
-            m_view->rematerializeItemContent(item, app);
+            rematerializeItemContent(item, app);
         }
     }
     m_view->applyState(item, app);

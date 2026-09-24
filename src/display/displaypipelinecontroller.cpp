@@ -1417,7 +1417,7 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
     const int before = item->displayPixelLongEdge();
     installDisplayPixels(item, under, SessionAppearance::PixelKind::SoftPreview, sid);
     if (item->displayPixelLongEdge() <= before) {
-        m_view->setItemPreviewImage(item, under);
+        hostSetPreviewImage(item, under);
     }
     return item->hasDisplayPixels();
 }
