@@ -69,10 +69,7 @@
     QList<ImageItem *> collectDoomedWorkspaceItems(const QStringList &paths,
                                                    const QVector<SessionImageId> &sessionIds) const;
 
-    void destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed);
 
-    void finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
-                                 const QVector<SessionImageId> &sessionIds);
 
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
 

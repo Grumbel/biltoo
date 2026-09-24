@@ -69,7 +69,6 @@
     void updateHoverEdge(const QPoint &viewPos) { m_image.updateHoverEdge(viewPos); }
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
     static QSizeF nativeSize(const ImageItem *item);
-    void zoomViewBy(qreal factor);
 
     QGraphicsScene *m_scene = nullptr;
     /** Gallery-mode collaborator (stash, viewport snapshot, transitions). */
