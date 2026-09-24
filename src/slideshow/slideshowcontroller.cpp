@@ -552,7 +552,7 @@ void SlideshowController::restoreImageFramingAfterSlideshow()
         return;
     }
     m_view->hostFraming().setFitOnly();
-    m_view->fitItem(item, Qt::KeepAspectRatio);
+    m_view->hostImage().fitItem(item, Qt::KeepAspectRatio);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }

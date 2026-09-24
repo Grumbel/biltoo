@@ -141,7 +141,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         switch (m_framing.currentStickyZoomKind()) {
         case StickyZoomKind::Fill:
             m_framing.setFillMode();
-            m_view->fitItem(item, Qt::KeepAspectRatioByExpanding);
+            fitItem(item, Qt::KeepAspectRatioByExpanding);
             break;
         case StickyZoomKind::Actual:
             m_framing.clearFitFill();
@@ -157,7 +157,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         case StickyZoomKind::Fit:
         default:
             m_framing.setFitOnly();
-            m_view->fitItem(item, Qt::KeepAspectRatio);
+            fitItem(item, Qt::KeepAspectRatio);
             break;
         }
         syncImageModeSceneRect(item);
@@ -188,7 +188,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         if (!qIsFinite(sx) || sx <= 1e-6 || sx > 50.0) {
             m_framing.clearPreservedViewScale();
             m_framing.setFitOnly();
-            m_view->fitItem(item, Qt::KeepAspectRatio);
+            fitItem(item, Qt::KeepAspectRatio);
             return;
         }
         m_framing.clearFitFill();
@@ -217,7 +217,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         return;
     }
     m_framing.setFitOnly();
-    m_view->fitItem(item, Qt::KeepAspectRatio);
+    fitItem(item, Qt::KeepAspectRatio);
 }
 
 
@@ -242,7 +242,7 @@ void ImageController::preserveImageViewOnLogicalSizeChange(ImageItem *item,
             if (m_framing.isStickyZoomEnabled() || m_framing.hasPreservedViewScale()) {
                 applyImageModeFraming(item);
             } else {
-                m_view->fitItem(item, m_view->currentFitAspectMode());
+                fitItem(item, framing().aspectMode());
             }
         }
     } else if (beforeOk && before != after && !m_view->hostSlideshow().hud().isProgressActive()) {

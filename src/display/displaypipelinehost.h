@@ -207,9 +207,6 @@ public:
     virtual ColorAdjustments itemLiveColor(const ImageItem *item) const = 0;
     virtual qreal devicePixelRatioF() const = 0;
     virtual void setCurrentSessionId(SessionImageId id) = 0;
-    virtual void fitItem(ImageItem *item,
-                         Qt::AspectRatioMode mode = Qt::KeepAspectRatio) = 0;
-    virtual Qt::AspectRatioMode currentFitAspectMode() const = 0;
     virtual bool isMultiItemMode() const = 0;
     virtual int itemCount() const = 0;
     virtual void prepareImageModeCanvas() = 0;

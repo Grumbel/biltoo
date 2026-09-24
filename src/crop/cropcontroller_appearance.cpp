@@ -132,7 +132,7 @@ void CropController::applyCropAppearance(ImageItem *item, const QImage &src,
     }
     if (m_view->isImageMode()) {
         m_view->hostImage().framing().armFit();
-        m_view->fitItem(item, m_view->currentFitAspectMode());
+        m_view->hostImage().fitItem(item, m_view->hostImage().framing().aspectMode());
     } else if (m_view->isWorkspaceMode()) {
         m_view->updateWorkspaceSceneRect();
     }

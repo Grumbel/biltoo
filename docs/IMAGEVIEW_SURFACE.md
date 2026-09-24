@@ -66,3 +66,4 @@ That caused link failures (framing, reorder, sticky pan, edge zones).
 | Tip | Change |
 |-----|--------|
 | 2625 | Removed `clearTextSelection` / `refreshTextLayer` from `DisplayPipelineHost`; pipeline uses `hostText().clearSelection()` / `hostText().refresh()`. Added `hostText()` virtuals. |
+| 2626 | Removed `fitItem` / `currentFitAspectMode` from host; callers use `hostImage().fitItem` / `hostImage().framing().aspectMode()`. |

@@ -26,7 +26,7 @@ void ImageController::flipHorizontal()
     for (ImageItem *item : targets) {
         m_view->hostDisplayPipeline().bakeItemFlip(item, true, false);
         if (m_framing.isFitMode() && m_view->isImageMode()) {
-            m_view->fitItem(item, m_view->currentFitAspectMode());
+            fitItem(item, framing().aspectMode());
         }
     }
     if (m_view->isGalleryMode()) {
@@ -44,7 +44,7 @@ void ImageController::flipVertical()
     for (ImageItem *item : targets) {
         m_view->hostDisplayPipeline().bakeItemFlip(item, false, true);
         if (m_framing.isFitMode() && m_view->isImageMode()) {
-            m_view->fitItem(item, m_view->currentFitAspectMode());
+            fitItem(item, framing().aspectMode());
         }
     }
     if (m_view->isGalleryMode()) {
@@ -67,9 +67,9 @@ void ImageController::rotateContentByQuarterTurns(ImageItem *item, int quarterTu
 
     if (m_view->isImageMode()) {
         if (m_framing.isFitMode()) {
-            m_view->fitItem(item, m_view->currentFitAspectMode());
+            fitItem(item, framing().aspectMode());
         } else if (m_framing.isFillMode()) {
-            m_view->fitItem(item, Qt::KeepAspectRatioByExpanding);
+            fitItem(item, Qt::KeepAspectRatioByExpanding);
         }
     }
 }
@@ -165,7 +165,7 @@ int ImageController::resetContentAppearanceForTargets()
         m_view->hostDisplayPipeline().reinstallModePixelsAfterIdentityReset(item, sid);
 
         if (m_view->isImageMode() && m_framing.isFitMode()) {
-            m_view->fitItem(item, m_view->currentFitAspectMode());
+            fitItem(item, framing().aspectMode());
         }
 
         // Filmstrip: emit current display pixels (soft in Gallery, full in Image).

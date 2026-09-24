@@ -345,7 +345,7 @@ void ImageController::onViewResized()
 {
     m_view->hostDisplayPipeline().maybeClimbImageModePixelsForView();
     if (m_framing.isFitMode() && m_view->liveItems().size() == 1) {
-        fitItem(m_view->liveItems().first(), m_view->currentFitAspectMode());
+        fitItem(m_view->liveItems().first(), framing().aspectMode());
     }
 }
 

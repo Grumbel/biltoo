@@ -20,7 +20,6 @@
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
-    Qt::AspectRatioMode currentFitAspectMode() const override;
 
     // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
@@ -28,5 +27,4 @@
     void setHostHoverEdge(EdgeZone z) { m_image.setHoverEdge(edgeZoneToPolicy(z)); }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);
-    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio) override;
     QString currentPath() const;

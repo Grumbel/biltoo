@@ -626,7 +626,7 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     }
     item->setSelected(true);
     m_host->hostFraming().armFit();
-    m_host->fitItem(item, m_host->currentFitAspectMode());
+    m_host->hostImage().fitItem(item, m_host->hostImage().framing().aspectMode());
     m_host->notifyStatusChanged();
 }
 

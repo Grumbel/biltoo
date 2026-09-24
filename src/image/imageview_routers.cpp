@@ -62,10 +62,6 @@ void ImageView::refreshScrollBarGeometry()
 
 
 // DisplayPipelineHost framing surface (thin forwards to ImageController).
-void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
-{
-    m_image.fitItem(item, mode);
-}
 
 void ImageView::captureStickyPanAnchor(ImageItem *item)
 {

@@ -117,7 +117,7 @@ void CropController::fitImageOrUpdateWorkspace(ImageItem *item)
     }
     if (m_view->isImageMode()) {
         m_view->hostFraming().armFit();
-        m_view->fitItem(item, m_view->currentFitAspectMode());
+        m_view->hostImage().fitItem(item, m_view->hostImage().framing().aspectMode());
     } else if (m_view->isWorkspaceMode()) {
         m_view->updateWorkspaceSceneRect();
     }
