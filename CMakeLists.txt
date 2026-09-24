@@ -157,6 +157,7 @@ set(BILTOO_LIB_SOURCES
   src/workspace/workspace_paths.cpp
   src/workspace/workspace_selection.cpp
   src/workspace/workspace_destroy.cpp
+  src/workspace/workspace_clear.cpp
   src/workspace/workspace_duplicate.cpp
   src/workspace/workspacecontroller.h
   src/image/imagecontroller.cpp

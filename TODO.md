@@ -2,11 +2,11 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2510.1-own-workspace-set-paths** (base `7d823d8`).
+**Tip: biltoo-2511.1-own-workspace-clear-live** (base `7d823d8`).
 
 ### Ownership transfer
-- **setPaths** on WorkspaceController (`workspace_paths.cpp`)
-- ImageView thin public router for MainWindow / session load
+- **clearInteractionState / clearLiveCanvas** on WorkspaceController (`workspace_clear.cpp`)
+- ImageView thin routers; clearWorkspace still orchestrates on ImageView
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -14,11 +14,11 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline, fitItem host orchestration
 
 ### Still on ImageView
-- geometry undo command helpers (`pushItemGeometryCommand` + command class)
+- geometry undo command helpers
 - validateUniqueLiveSessionIds
-- mode enter/leave / clearWorkspace / clearLiveCanvas shell
+- clearWorkspace / setViewMode / mode enter-leave shell
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2510.1-own-workspace-set-paths-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2511.1-own-workspace-clear-live-7d823d8.bundle HEAD
 ```

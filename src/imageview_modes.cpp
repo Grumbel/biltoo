@@ -173,56 +173,12 @@ void ImageView::applyToolDragMode()
 
 void ImageView::clearInteractionState()
 {
-    m_workspace.itemInteract().clear();
-    m_workspace.clearGroupTransform();
-    m_gallery.clearChrome();
+    m_workspace.clearInteractionState();
 }
 
 void ImageView::clearLiveCanvas()
 {
-    // Destroy only the live scene items. Mode stashes (Workspace/Gallery tiles
-    // kept while in Image mode) must survive Image-mode LoadReplace / Next.
-    clearInteractionState();
-    if (m_undoStack) {
-        m_undoStack->clear();
-    }
-    QSet<ImageItem *> protectedStash;
-    for (ImageItem *item : m_workspace.stashedItems()) {
-        if (item) {
-            protectedStash.insert(item);
-        }
-    }
-    for (ImageItem *item : m_gallery.stashedItems()) {
-        if (item) {
-            protectedStash.insert(item);
-        }
-    }
-    // Snapshot unique pointers — m_items must never hold duplicates, but if it
-    // does, destroying by index while mutating the list is unsafe.
-    QList<ImageItem *> doomed;
-    QSet<ImageItem *> seen;
-    for (ImageItem *item : m_items) {
-        if (item && !seen.contains(item)) {
-            seen.insert(item);
-            // Structural: never free a pointer that mode-stash still owns.
-            if (protectedStash.contains(item)) {
-                biltooModeDbg("clearLiveCanvas SKIP stashed ptr path=%s",
-                              qPrintable(item->path()));
-                Q_ASSERT_X(false, "clearLiveCanvas",
-                           "live list holds a mode-stashed ImageItem* — ownership bug");
-                continue;
-            }
-            doomed.append(item);
-        }
-    }
-    for (ImageItem *item : doomed) {
-        destroyCanvasItem(item);
-    }
-    m_items.clear();
-    // Do not m_scene->clear() — that would delete stashed items if any were
-    // still parented (they are not). Scene may hold no items; that is fine.
-    m_shell.viewport().clearMouseInfo();
-    emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
+    m_workspace.clearLiveCanvas();
 }
 
 void ImageView::clearWorkspace()

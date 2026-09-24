@@ -142,6 +142,8 @@ public:
     ImageItem *targetItem() const;
     /** Teardown live/stash tile (pipeline bags, scene, undo). */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
+    void clearInteractionState();
+    void clearLiveCanvas();
 
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */

@@ -505,3 +505,8 @@ Product shell (minimal):
     ensure, doomed destroy, path order, gallery size-gate, load schedule);
     ImageView thin public router. Host exposes hostPrimeGalleryGeometryFromCache.
 
+53. **biltoo-2511:** WorkspaceController owns clearInteractionState and
+    clearLiveCanvas (stash-safe live teardown + undo clear + mouse info);
+    ImageView thin routers. clearWorkspace remains shell orchestration on
+    ImageView.
+
