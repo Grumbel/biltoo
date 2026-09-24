@@ -5,16 +5,35 @@
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
 #include "slideshow/slideshowmotiongeometry.h"
+#include "shell/icons.h"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QPushButton>
 #include <QColorDialog>
-#include <QSpinBox>
+#include <QStyle>
+#include <QToolButton>
 #include <QVBoxLayout>
+
+namespace {
+
+// Match Preferences / MainWindow::readSettings fallbacks.
+constexpr int kDefaultIntervalMs = 3000;
+constexpr bool kDefaultFullscreen = true;
+constexpr bool kDefaultLoop = true;
+constexpr int kDefaultTransition = 1; // Crossfade
+constexpr int kDefaultTransitionMs = 400;
+constexpr int kDefaultMotion = 0; // Off
+constexpr double kDefaultPanZoomFactor = 1.12;
+constexpr int kDefaultZoom = 0; // Fit
+constexpr int kDefaultLetterbox = 0; // App background
+const QColor kDefaultPadColor(42, 42, 42);
+
+} // namespace
 
 SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -23,7 +42,6 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     setModal(true);
 
     m_intervalSpin = new QDoubleSpinBox(this);
-    // 0 = as fast as the event loop allows (e.g. frame sequences / PNG “video”).
     m_intervalSpin->setRange(0.0, 3600.0);
     m_intervalSpin->setDecimals(3);
     m_intervalSpin->setSingleStep(0.05);
@@ -37,8 +55,9 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
 
     m_loopCheck = new QCheckBox(tr("Loop slideshow"), this);
     m_loopCheck->setToolTip(
-        tr("When enabled, advance from the last image back to the first.\nWhen disabled, the slideshow stops after the last image."));
-    m_loopCheck->setChecked(true);
+        tr("When enabled, advance from the last image back to the first.\n"
+           "When disabled, the slideshow stops after the last image."));
+    m_loopCheck->setChecked(kDefaultLoop);
 
     m_transitionCombo = new QComboBox(this);
     m_transitionCombo->addItem(tr("None"), 0);
@@ -48,7 +67,6 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_transitionCombo->setToolTip(tr("Effect used when advancing to the next image"));
 
     m_transitionMsSpin = new QDoubleSpinBox(this);
-    // Maximum is kept in sync with the interval (no fixed 5s ceiling).
     m_transitionMsSpin->setRange(0.0, 3600.0);
     m_transitionMsSpin->setSingleStep(0.05);
     m_transitionMsSpin->setDecimals(3);
@@ -61,40 +79,24 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     m_motionCombo->addItem(tr("Pan and zoom"), 1);
     m_motionCombo->addItem(tr("Pan and scan"), 2);
     m_motionCombo->setToolTip(
-        tr("Pan and zoom: Ken Burns zoom while panning between points of interest.\n"
-           "Pan and scan: pan across the image (no zoom).\n"
-           "Both start from the Slideshow zoom base (Fit / Fill / 1:1)."));
+        tr("Pan and zoom: slowly zoom while panning.\n"
+           "Pan and scan: pan across the image (no zoom)."));
 
     m_panZoomFactorSpin = new QDoubleSpinBox(this);
-    m_panZoomFactorSpin->setRange(1.02, 1.40);
+    // Wide range — no artificial 1.02…1.40 ceiling; clamp only rejects ≤0 / non-finite.
+    m_panZoomFactorSpin->setRange(0.01, 1000.0);
+    m_panZoomFactorSpin->setDecimals(3);
     m_panZoomFactorSpin->setSingleStep(0.01);
-    m_panZoomFactorSpin->setDecimals(2);
+    m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
     m_panZoomFactorSpin->setToolTip(
-        tr("Pan and zoom only: end scale relative to the Slideshow zoom base"));
+        tr("End scale relative to the start of the dwell (1 = no zoom change).\n"
+           "Values above 1 zoom in; below 1 zoom out."));
 
     m_zoomCombo = new QComboBox(this);
     m_zoomCombo->addItem(tr("Fit"), 0);
     m_zoomCombo->addItem(tr("Fill"), 1);
     m_zoomCombo->addItem(tr("1:1"), 2);
-    m_zoomCombo->setToolTip(
-        tr("Base framing for each slide (also when dwell motion is On).\n"
-           "Fit: whole image visible (letterbox).\n"
-           "Fill: cover the window (may crop).\n"
-           "1:1: native pixels, centred (padding if smaller than the window).\n"
-           "Pan and zoom starts from this scale; pan and scan pans at this scale."));
-
-    auto *form = new QFormLayout;
-    form->setContentsMargins(0, 0, 0, 0);
-    form->setHorizontalSpacing(12);
-    form->setVerticalSpacing(8);
-    form->addRow(tr("Interval:"), m_intervalSpin);
-    form->addRow(QString(), m_fullscreenCheck);
-    form->addRow(QString(), m_loopCheck);
-    form->addRow(tr("Transition:"), m_transitionCombo);
-    form->addRow(tr("Transition duration:"), m_transitionMsSpin);
-    form->addRow(tr("Dwell motion:"), m_motionCombo);
-    form->addRow(tr("Pan and zoom factor:"), m_panZoomFactorSpin);
-    form->addRow(tr("Slideshow zoom:"), m_zoomCombo);
+    m_zoomCombo->setToolTip(tr("Base zoom for each slide before dwell motion"));
 
     m_letterboxCombo = new QComboBox(this);
     m_letterboxCombo->addItem(tr("App background"), 0);
@@ -104,27 +106,92 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
         tr("When the image does not cover the window (Fit / 1:1):\n"
            "App background: Preferences canvas colour.\n"
            "Solid colour: dedicated pad colour.\n"
-           "Zoom and blur: TV-style — cover-scaled blurred copy of the current image."));
+           "Zoom and blur: scaled, blurred image fill."));
 
     m_padColorBtn = new QPushButton(this);
-    m_padColorBtn->setToolTip(tr("Colour used for Solid letterbox fill"));
+    m_padColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
     styleColorButton(m_padColorBtn, m_padColor);
     connect(m_padColorBtn, &QPushButton::clicked, this, [this]() {
         const QColor c = QColorDialog::getColor(m_padColor, this, tr("Letterbox colour"));
         if (c.isValid()) {
             setPadColor(c);
+            updateResetButtons();
             emitChanged();
         }
     });
 
-    form->addRow(tr("Letterbox fill:"), m_letterboxCombo);
-    form->addRow(tr("Letterbox colour:"), m_padColorBtn);
+    auto *form = new QFormLayout;
+    form->setContentsMargins(0, 0, 0, 0);
+    form->setHorizontalSpacing(12);
+    form->setVerticalSpacing(8);
+
+    form->addRow(tr("Interval:"),
+                 wrapWithReset(m_intervalSpin, &m_resetIntervalBtn, [this]() {
+                     setIntervalMs(kDefaultIntervalMs);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(QString(),
+                 wrapWithReset(m_fullscreenCheck, &m_resetFullscreenBtn, [this]() {
+                     setStartFullscreen(kDefaultFullscreen);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(QString(),
+                 wrapWithReset(m_loopCheck, &m_resetLoopBtn, [this]() {
+                     setLoop(kDefaultLoop);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Transition:"),
+                 wrapWithReset(m_transitionCombo, &m_resetTransitionBtn, [this]() {
+                     setTransitionIndex(kDefaultTransition);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Transition duration:"),
+                 wrapWithReset(m_transitionMsSpin, &m_resetTransitionMsBtn, [this]() {
+                     setTransitionDurationMs(kDefaultTransitionMs);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Dwell motion:"),
+                 wrapWithReset(m_motionCombo, &m_resetMotionBtn, [this]() {
+                     setMotionIndex(kDefaultMotion);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Pan and zoom factor:"),
+                 wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
+                     setPanZoomFactor(kDefaultPanZoomFactor);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Zoom:"),
+                 wrapWithReset(m_zoomCombo, &m_resetZoomBtn, [this]() {
+                     setZoomIndex(kDefaultZoom);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Letterbox fill:"),
+                 wrapWithReset(m_letterboxCombo, &m_resetLetterboxBtn, [this]() {
+                     setLetterboxFillIndex(kDefaultLetterbox);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
+    form->addRow(tr("Letterbox colour:"),
+                 wrapWithReset(m_padColorBtn, &m_resetPadColorBtn, [this]() {
+                     setPadColor(kDefaultPadColor);
+                     updateResetButtons();
+                     emitChanged();
+                 }));
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    // Close button maps to reject() for a Close-only box.
-    if (QPushButton *closeBtn = buttons->button(QDialogButtonBox::Close)) {
-        connect(closeBtn, &QPushButton::clicked, this, &QDialog::close);
+    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    // Close button is RejectRole in some styles; also wire clicked Close.
+    if (auto *closeBtn = buttons->button(QDialogButtonBox::Close)) {
+        connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
     }
 
     auto *root = new QVBoxLayout(this);
@@ -136,28 +203,98 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     connect(m_intervalSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) {
                 syncTransitionCap();
+                updateResetButtons();
                 emitChanged();
             });
-    connect(m_fullscreenCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
-    connect(m_loopCheck, &QCheckBox::toggled, this, [this](bool) { emitChanged(); });
+    connect(m_fullscreenCheck, &QCheckBox::toggled, this, [this](bool) {
+        updateResetButtons();
+        emitChanged();
+    });
+    connect(m_loopCheck, &QCheckBox::toggled, this, [this](bool) {
+        updateResetButtons();
+        emitChanged();
+    });
     connect(m_transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](int) { emitChanged(); });
+            this, [this](int) {
+                updateResetButtons();
+                emitChanged();
+            });
     connect(m_transitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this, [this](double) { emitChanged(); });
+            this, [this](double) {
+                updateResetButtons();
+                emitChanged();
+            });
     connect(m_motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](int) { emitChanged(); });
+            this, [this](int) {
+                updateResetButtons();
+                emitChanged();
+            });
     connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this, [this](double) { emitChanged(); });
+            this, [this](double) {
+                updateResetButtons();
+                emitChanged();
+            });
     connect(m_zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](int) { emitChanged(); });
+            this, [this](int) {
+                updateResetButtons();
+                emitChanged();
+            });
     connect(m_letterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
                 updateLetterboxControls();
+                updateResetButtons();
                 emitChanged();
             });
 
     updateLetterboxControls();
+    updateResetButtons();
     setMinimumWidth(360);
+}
+
+QWidget *SlideshowSettingsDialog::wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
+                                                const std::function<void()> &resetFn)
+{
+    auto *row = new QWidget(this);
+    auto *lay = new QHBoxLayout(row);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(4);
+    field->setParent(row);
+    lay->addWidget(field, 1);
+
+    auto *btn = new QToolButton(row);
+    btn->setAutoRaise(true);
+    btn->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
+    btn->setToolTip(tr("Reset to default"));
+    btn->setAccessibleName(tr("Reset to default"));
+    btn->setFocusPolicy(Qt::TabFocus);
+    const int side = qMax(20, field->sizeHint().height());
+    btn->setFixedSize(side, side);
+    connect(btn, &QToolButton::clicked, this, [resetFn]() { resetFn(); });
+    lay->addWidget(btn, 0, Qt::AlignVCenter);
+    if (resetBtnOut) {
+        *resetBtnOut = btn;
+    }
+    return row;
+}
+
+void SlideshowSettingsDialog::updateResetButtons()
+{
+    auto setOn = [](QToolButton *btn, bool differs) {
+        if (btn) {
+            btn->setEnabled(differs);
+        }
+    };
+    setOn(m_resetIntervalBtn, intervalMs() != kDefaultIntervalMs);
+    setOn(m_resetFullscreenBtn, startFullscreen() != kDefaultFullscreen);
+    setOn(m_resetLoopBtn, loop() != kDefaultLoop);
+    setOn(m_resetTransitionBtn, transitionIndex() != kDefaultTransition);
+    setOn(m_resetTransitionMsBtn, transitionDurationMs() != kDefaultTransitionMs);
+    setOn(m_resetMotionBtn, motionIndex() != kDefaultMotion);
+    setOn(m_resetPanZoomFactorBtn,
+          !qFuzzyCompare(panZoomFactor(), kDefaultPanZoomFactor));
+    setOn(m_resetZoomBtn, zoomIndex() != kDefaultZoom);
+    setOn(m_resetLetterboxBtn, letterboxFillIndex() != kDefaultLetterbox);
+    setOn(m_resetPadColorBtn, padColor() != kDefaultPadColor);
 }
 
 void SlideshowSettingsDialog::emitChanged()
@@ -172,8 +309,6 @@ void SlideshowSettingsDialog::syncTransitionCap()
     if (!m_intervalSpin || !m_transitionMsSpin) {
         return;
     }
-    // Duration is the full transition (out + in); may use the whole dwell.
-    // Cap only at the interval (open-ended — no fixed 5s ceiling).
     const double intervalSec = m_intervalSpin->value();
     const double capSec = ViewTransform::nonNeg(intervalSec);
     m_blockEmit = true;
@@ -198,6 +333,7 @@ void SlideshowSettingsDialog::setIntervalMs(int ms)
     m_intervalSpin->setValue(SlideshowClocks::msToSeconds(ms));
     m_blockEmit = false;
     syncTransitionCap();
+    updateResetButtons();
 }
 
 bool SlideshowSettingsDialog::startFullscreen() const
@@ -213,6 +349,7 @@ void SlideshowSettingsDialog::setStartFullscreen(bool on)
     m_blockEmit = true;
     m_fullscreenCheck->setChecked(on);
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 bool SlideshowSettingsDialog::loop() const
@@ -228,11 +365,12 @@ void SlideshowSettingsDialog::setLoop(bool on)
     m_blockEmit = true;
     m_loopCheck->setChecked(on);
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 int SlideshowSettingsDialog::transitionIndex() const
 {
-    return m_transitionCombo ? m_transitionCombo->currentData().toInt() : 1;
+    return m_transitionCombo ? m_transitionCombo->currentData().toInt() : 0;
 }
 
 void SlideshowSettingsDialog::setTransitionIndex(int index)
@@ -246,11 +384,11 @@ void SlideshowSettingsDialog::setTransitionIndex(int index)
         m_transitionCombo->setCurrentIndex(idx);
     }
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 int SlideshowSettingsDialog::transitionDurationMs() const
 {
-    // UI is seconds; internal API stays milliseconds.
     return m_transitionMsSpin ? SlideshowClocks::secondsToMs(m_transitionMsSpin->value())
                               : 400;
 }
@@ -265,6 +403,7 @@ void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
     const double capSec = m_transitionMsSpin->maximum();
     m_transitionMsSpin->setValue(SlideshowClocks::msToSeconds(ms, capSec));
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 int SlideshowSettingsDialog::motionIndex() const
@@ -283,6 +422,7 @@ void SlideshowSettingsDialog::setMotionIndex(int index)
         m_motionCombo->setCurrentIndex(idx);
     }
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 double SlideshowSettingsDialog::panZoomFactor() const
@@ -298,6 +438,7 @@ void SlideshowSettingsDialog::setPanZoomFactor(double factor)
     m_blockEmit = true;
     m_panZoomFactorSpin->setValue(SlideshowMotionGeometry::clampPanZoomFactor(factor));
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 int SlideshowSettingsDialog::zoomIndex() const
@@ -316,6 +457,7 @@ void SlideshowSettingsDialog::setZoomIndex(int index)
         m_zoomCombo->setCurrentIndex(idx);
     }
     m_blockEmit = false;
+    updateResetButtons();
 }
 
 int SlideshowSettingsDialog::letterboxFillIndex() const
@@ -335,6 +477,7 @@ void SlideshowSettingsDialog::setLetterboxFillIndex(int index)
     }
     m_blockEmit = false;
     updateLetterboxControls();
+    updateResetButtons();
 }
 
 QColor SlideshowSettingsDialog::padColor() const
@@ -349,6 +492,7 @@ void SlideshowSettingsDialog::setPadColor(const QColor &color)
     }
     m_padColor = color;
     styleColorButton(m_padColorBtn, m_padColor);
+    updateResetButtons();
 }
 
 void SlideshowSettingsDialog::updateLetterboxControls()

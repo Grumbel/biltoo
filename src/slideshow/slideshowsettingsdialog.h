@@ -7,11 +7,15 @@
 #include <QDialog>
 #include <QColor>
 
+#include <functional>
+
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QSpinBox;
 class QPushButton;
+class QToolButton;
+class QWidget;
 
 /**
  * Mid-session slideshow controls. Changes apply immediately (no OK); the
@@ -60,6 +64,9 @@ signals:
 private:
     void emitChanged();
     void syncTransitionCap();
+    void updateResetButtons();
+    QWidget *wrapWithReset(QWidget *field, QToolButton **resetBtnOut,
+                           const std::function<void()> &resetFn);
 
     QDoubleSpinBox *m_intervalSpin = nullptr;
     QCheckBox *m_fullscreenCheck = nullptr;
@@ -71,6 +78,18 @@ private:
     QComboBox *m_zoomCombo = nullptr;
     QComboBox *m_letterboxCombo = nullptr;
     QPushButton *m_padColorBtn = nullptr;
+
+    QToolButton *m_resetIntervalBtn = nullptr;
+    QToolButton *m_resetFullscreenBtn = nullptr;
+    QToolButton *m_resetLoopBtn = nullptr;
+    QToolButton *m_resetTransitionBtn = nullptr;
+    QToolButton *m_resetTransitionMsBtn = nullptr;
+    QToolButton *m_resetMotionBtn = nullptr;
+    QToolButton *m_resetPanZoomFactorBtn = nullptr;
+    QToolButton *m_resetZoomBtn = nullptr;
+    QToolButton *m_resetLetterboxBtn = nullptr;
+    QToolButton *m_resetPadColorBtn = nullptr;
+
     QColor m_padColor{42, 42, 42};
     bool m_blockEmit = false;
 

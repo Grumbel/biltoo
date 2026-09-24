@@ -368,7 +368,11 @@ struct SlideshowSettings {
 
     static qreal clampPanZoomFactor(qreal factor)
     {
-        return qBound(1.02, factor, 1.5);
+        // No arbitrary UI ceiling — only reject non-finite / non-positive.
+        if (!qIsFinite(factor) || factor <= 0.0) {
+            return 1.12;
+        }
+        return factor;
     }
 
     /** @return true when the clamped pan-zoom factor changed. */

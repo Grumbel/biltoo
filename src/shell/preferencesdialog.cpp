@@ -35,6 +35,9 @@ namespace {
 // Defaults must match MainWindow::readSettings fallbacks.
 constexpr int kDefaultIntervalMs = 3000;
 constexpr bool kDefaultSlideshowFullscreen = true;
+constexpr bool kDefaultSlideshowLoop = true;
+constexpr int kDefaultSlideshowLetterbox = 0;
+const QColor kDefaultSlideshowPadColor(42, 42, 42);
 constexpr int kDefaultSlideshowTransition = 1; // Crossfade
 constexpr int kDefaultSlideshowTransitionMs = 400;
 constexpr int kDefaultSlideshowMotion = 0; // Off
@@ -99,7 +102,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                               setSlideshowFullscreen(kDefaultSlideshowFullscreen);
                               updateResetButtons();
                           }));
-    slideshowForm->addRow(QString(), m_slideshowLoopCheck);
+    slideshowForm->addRow(QString(),
+                          wrapWithReset(m_slideshowLoopCheck, &m_resetSlideshowLoopBtn, [this]() {
+                              setSlideshowLoop(kDefaultSlideshowLoop);
+                              updateResetButtons();
+                          }));
 
     m_slideshowTransitionCombo = new QComboBox(this);
     m_slideshowTransitionCombo->addItem(tr("None"), 0);
@@ -142,7 +149,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           }));
 
     m_panZoomFactorSpin = new QDoubleSpinBox(this);
-    m_panZoomFactorSpin->setRange(1.02, 1.40);
+    m_panZoomFactorSpin->setRange(0.01, 1000.0);
     m_panZoomFactorSpin->setSingleStep(0.01);
     m_panZoomFactorSpin->setDecimals(2);
     m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
@@ -179,7 +186,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "App background: Preferences canvas colour.\n"
            "Solid colour: dedicated pad colour.\n"
            "Zoom and blur: cover-scaled blurred copy of the current image."));
-    slideshowForm->addRow(tr("Letterbox fill:"), m_slideshowLetterboxCombo);
+    slideshowForm->addRow(tr("Letterbox fill:"),
+                          wrapWithReset(m_slideshowLetterboxCombo, &m_resetSlideshowLetterboxBtn, [this]() {
+                              setSlideshowLetterboxFillIndex(kDefaultSlideshowLetterbox);
+                              updateResetButtons();
+                          }));
 
     m_slideshowPadColorBtn = new QPushButton(this);
     m_slideshowPadColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
@@ -188,6 +199,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
         const QColor c = QColorDialog::getColor(m_slideshowPadColor, this, tr("Letterbox colour"));
         if (c.isValid()) {
             setSlideshowPadColor(c);
+            updateResetButtons();
         }
     });
     connect(m_slideshowLetterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -199,7 +211,11 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                 }
             });
     m_slideshowPadColorBtn->setEnabled(false);
-    slideshowForm->addRow(tr("Letterbox colour:"), m_slideshowPadColorBtn);
+    slideshowForm->addRow(tr("Letterbox colour:"),
+                          wrapWithReset(m_slideshowPadColorBtn, &m_resetSlideshowPadColorBtn, [this]() {
+                              setSlideshowPadColor(kDefaultSlideshowPadColor);
+                              updateResetButtons();
+                          }));
 
     auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
     slideshowGroup->setLayout(slideshowForm);
@@ -1291,6 +1307,10 @@ void PreferencesDialog::updateResetButtons()
     setOn(m_resetSlideshowMotionBtn, slideshowMotionIndex() != kDefaultSlideshowMotion);
     setOn(m_resetPanZoomFactorBtn,
          !qFuzzyCompare(panZoomFactor(), kDefaultPanZoomFactor));
+    setOn(m_resetSlideshowLoopBtn, slideshowLoop() != kDefaultSlideshowLoop);
+    setOn(m_resetSlideshowLetterboxBtn,
+         slideshowLetterboxFillIndex() != kDefaultSlideshowLetterbox);
+    setOn(m_resetSlideshowPadColorBtn, slideshowPadColor() != kDefaultSlideshowPadColor);
     setOn(m_resetSlideshowZoomBtn, slideshowZoomIndex() != kDefaultSlideshowZoom);
     setOn(m_resetSortBtn, sortModeIndex() != kDefaultSortIndex);
     setOn(m_resetWorkspaceBtn, startInWorkspaceMode() != kDefaultStartInWorkspace);

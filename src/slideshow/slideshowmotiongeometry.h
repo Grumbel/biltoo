@@ -94,10 +94,13 @@ inline QPointF clampBiasPoint(QPointF p)
     return p;
 }
 
-/** PanZoom end scale relative to zoom base (UI / path range). */
+/** PanZoom end scale relative to zoom base (must be finite and > 0). */
 inline qreal clampPanZoomFactor(qreal factor)
 {
-    return qBound(1.02, factor, 1.40);
+    if (!qIsFinite(factor) || factor <= 0.0) {
+        return 1.12; // default when invalid
+    }
+    return factor;
 }
 
 } // namespace SlideshowMotionGeometry

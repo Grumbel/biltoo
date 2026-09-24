@@ -9,6 +9,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QSize>
+#include <QtGlobal>
 
 /**
  * Pure slideshow atlas / sample-edge / framing policy.
@@ -66,7 +67,10 @@ qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh);
 /** Headroom multiplier for PanZoom atlas sample (past 1:1 cover). */
 inline qreal clampPanZoomHeadroom(qreal panZoomFactor)
 {
-    return qBound(1.05, panZoomFactor, 1.50);
+    if (!qIsFinite(panZoomFactor) || panZoomFactor <= 0.0) {
+        return 1.12;
+    }
+    return panZoomFactor;
 }
 
 } // namespace SlideshowAtlasPolicy

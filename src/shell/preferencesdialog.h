@@ -154,6 +154,9 @@ private:
     QDoubleSpinBox *m_panZoomFactorSpin = nullptr;
     QToolButton *m_resetSlideshowMotionBtn = nullptr;
     QToolButton *m_resetPanZoomFactorBtn = nullptr;
+    QToolButton *m_resetSlideshowLoopBtn = nullptr;
+    QToolButton *m_resetSlideshowLetterboxBtn = nullptr;
+    QToolButton *m_resetSlideshowPadColorBtn = nullptr;
     QComboBox *m_slideshowZoomCombo = nullptr;
     QToolButton *m_resetSlideshowZoomBtn = nullptr;
     QComboBox *m_slideshowLetterboxCombo = nullptr;
