@@ -2,11 +2,12 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2503.1-own-workspace-rebind** (base `7d823d8`).
+**Tip: biltoo-2504.1-own-gallery-focus** (base `7d823d8`).
 
 ### Ownership transfer
-- **rebindSession** on WorkspaceController (`workspace_paths.cpp`)
-- ImageView thin router; `hostValidateUniqueLiveSessionIds` for identity checks
+- **focusItem / focusSessionId / focusSessionPath / revealPath / revealSessionId**
+  on GalleryController (`gallerycontroller_focus.cpp`)
+- ImageView thin routers
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -16,9 +17,9 @@ QUndoStack, display pipeline, fitItem host orchestration
 ### Still on ImageView
 - `setWorkspacePaths` / `finishSetWorkspacePaths` (orchestration)
 - geometry undo command helpers
-- selection / transformTargets / focus / destroyCanvasItem
+- selection / transformTargets / primaryItem / targetItem / destroyCanvasItem
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2503.1-own-workspace-rebind-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2504.1-own-gallery-focus-7d823d8.bundle HEAD
 ```

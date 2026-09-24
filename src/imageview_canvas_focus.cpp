@@ -98,90 +98,28 @@ int ImageView::workspacePathOccurrenceCount(const QString &path) const
 
 void ImageView::focusGalleryItem(ImageItem *item)
 {
-    if (!item || !m_scene) {
-        return;
-    }
-    m_scene->clearSelection();
-    item->setSelected(true);
-    if (!isGalleryMode()) {
-        return;
-    }
-    // Open/TTFP: first index is often already in view after pack — ensureVisible
-    // on a large scene was hundreds of ms for no visual change.
-    bool needScroll = true;
-    if (viewport()) {
-        const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
-        if (vis.isValid() && item->sceneBoundingRect().intersects(vis)) {
-            needScroll = false;
-        }
-    }
-    if (needScroll) {
-        ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
-    }
-    // Keyboard focus: show filename in the HUD like mouse hover.
-    const QString path = item->path();
-    if (m_gallery.hoverPath() != path) {
-        m_gallery.setHoverPath(path);
-        if (viewport()) {
-            viewport()->update();
-        }
-    }
+    m_gallery.focusItem(item);
 }
 
 void ImageView::focusSessionId(SessionImageId sessionId)
 {
-    if (sessionId == kInvalidSessionImageId) {
-        return;
-    }
-    focusGalleryItem(findItemBySessionId(sessionId));
+    m_gallery.focusSessionId(sessionId);
 }
 
 void ImageView::focusSessionPath(const QString &path)
 {
-    if (path.isEmpty()) {
-        return;
-    }
-    // Before clearSelection so a selected duplicate wins over first-match.
-    focusGalleryItem(findItemForPath(path));
+    m_gallery.focusSessionPath(path);
 }
-
 
 void ImageView::revealGalleryPath(const QString &path)
 {
-    if (path.isEmpty() || !isGalleryMode()) {
-        return;
-    }
-    // Prefer the selected instance of this path when duplicates exist (LoadAdd).
-    ImageItem *item = findItemForPath(path);
-    if (!item) {
-        return;
-    }
-    // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
-    ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
-    if (m_gallery.hoverPath() != path) {
-        m_gallery.setHoverPath(path);
-        viewport()->update();
-    }
+    m_gallery.revealPath(path);
 }
 
 void ImageView::revealGallerySessionId(SessionImageId sessionId)
 {
-    if (sessionId == kInvalidSessionImageId || !isGalleryMode()) {
-        return;
-    }
-    ImageItem *item = findItemBySessionId(sessionId);
-    if (!item) {
-        return;
-    }
-    // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
-    ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
-    const QString path = item->path();
-    if (!path.isEmpty() && m_gallery.hoverPath() != path) {
-        m_gallery.setHoverPath(path);
-        viewport()->update();
-    }
+    m_gallery.revealSessionId(sessionId);
 }
-
 
 void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
 {

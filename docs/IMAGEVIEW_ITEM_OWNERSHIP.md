@@ -476,3 +476,7 @@ Product shell (minimal):
     SessionImageId / list-index refresh from session document); ImageView thin
     router. Host exposes hostValidateUniqueLiveSessionIds.
 
+46. **biltoo-2504:** GalleryController owns focus/reveal (focusItem,
+    focusSessionId/Path, revealPath/SessionId); ImageView thin routers for
+    MainWindow and Gallery internal callers.
+

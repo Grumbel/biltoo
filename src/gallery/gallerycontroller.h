@@ -86,6 +86,13 @@ public:
 
     void clearHoverPath() { m_hoverPath.clear(); }
 
+    /** Focus/reveal live gallery tiles (selection + ensureVisible + hover path). */
+    void focusItem(ImageItem *item);
+    void focusSessionId(SessionImageId sessionId);
+    void focusSessionPath(const QString &path);
+    void revealPath(const QString &path);
+    void revealSessionId(SessionImageId sessionId);
+
     /** Drop hover path and selection anchor (leave / wipe). */
     void clearChrome()
     {
