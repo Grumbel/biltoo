@@ -333,14 +333,14 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             const WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                setItemIntrinsicSize(item, lay);
+                m_displayPipeline.hostSetIntrinsicSize(item, lay);
             }
         }
     } else if (cropDraft && !path.isEmpty()) {
         const WorkspaceItemState orientOnly = SessionAppearance::withoutCrop(
             m_displayPipeline.wantAppearanceForItem(
                 item, resolveContentEditSessionId(item)));
-        applyContentLayoutSize(item, orientOnly);
+        m_displayPipeline.applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {
         {

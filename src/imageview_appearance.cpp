@@ -83,7 +83,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
             return;
         }
     }
-    rematerializeItemContent(item, *app);
+    m_displayPipeline.rematerializeItemContent(item, *app);
 }
 
 

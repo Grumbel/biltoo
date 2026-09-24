@@ -276,7 +276,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 // alone can be applied in place via the central content path.
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
-                    clearItemDecodedPixels(existing);
+                    m_displayPipeline.hostClearDecodedPixels(existing);
                     m_displayPipeline.galleryDecodeResetPath(path);
                     takePendingWorkspacePath(path);
 
@@ -291,7 +291,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                         m_displayPipeline.scheduleImageLoad(path, LoadAdd);
                     }
                 } else if (SessionAppearance::hasContentAppearance(app)) {
-                    rematerializeItemContent(existing, app);
+                    m_displayPipeline.rematerializeItemContent(existing, app);
                 }
             }
             continue;

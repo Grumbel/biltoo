@@ -114,9 +114,10 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3n. **Done:** Gallery LQIP intrinsic guard on `hostSetIntrinsicSize`; layout uses host path.
 3o. **Done:** pipeline no longer detours via ImageView for preview/rematerialize install.
 3p. **Done:** mode controllers call hostDisplayPipeline for clear/attach/rematerialize/intrinsic.
+3q. **Done:** ImageView TUs call m_displayPipeline directly (no self-forward hop).
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
-    bake host helpers (capture/undo).
+    bake host helpers (capture/undo); public thin forwards for external API.
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 

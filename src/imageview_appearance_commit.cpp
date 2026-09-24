@@ -67,7 +67,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             : (!item->previewImage().isNull() ? item->previewImage()
                                               : item->displayImage());
         if (!baked.isNull()) {
-            clearItemDecodedPixels(other);
+            m_displayPipeline.hostClearDecodedPixels(other);
             // Already-baked display from the editor. Attach via the same gate
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;
@@ -81,9 +81,9 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             const auto kind = !src.isNull()
                 ? SessionAppearance::PixelKind::FullSource
                 : SessionAppearance::PixelKind::SoftPreview;
-            attachDisplaySample(other, baked, want, kind);
+            m_displayPipeline.attachDisplaySample(other, baked, want, kind);
         } else if (sessionId != kInvalidSessionImageId) {
-            applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
+            m_displayPipeline.applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
         }
         {
             ItemComponents::Placement pl = other->placement();
@@ -330,7 +330,7 @@ int ImageView::resetContentAppearanceForTargets()
             }
             if (native.isValid() && native.width() > 1 && native.height() > 1
                 && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
-                setItemIntrinsicSize(item, native);
+                m_displayPipeline.hostSetIntrinsicSize(item, native);
             }
         }
 

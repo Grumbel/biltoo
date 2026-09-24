@@ -91,12 +91,12 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     CropSession::applyItemPlacementFromState(item, app, isImageMode());
     if (full.isNull()) {
-        rematerializeItemContent(item, app);
+        m_displayPipeline.rematerializeItemContent(item, app);
     } else if (!m_displayPipeline.tryRematerializeFromHost(item, app)) {
         m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
         if (!ContentXform::equal(itemAppliedContentXform(item),
                                  ContentXform::Value::fromState(app))) {
-            rematerializeItemContent(item, app);
+            m_displayPipeline.rematerializeItemContent(item, app);
         }
     }
     m_cropCtrl.fitImageOrUpdateWorkspace(item);
@@ -110,7 +110,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     }
     // Undo/redo after-image: pixels are already content-baked — attach only.
     if (!src.isNull()) {
-        attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
+        m_displayPipeline.attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
     } else {
         syncLiveContentMetaFromState(item, state);
     }
