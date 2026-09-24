@@ -44,16 +44,16 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     // Prefer stable session-image id appearance; path map is legacy only.
     //
     // Image mode LoadReplace: the sole canvas item is the current session
-    // image, so m_view->hostSessionId().currentIdValue() identifies it correctly.
+    // image, so m_host->hostSessionId().currentIdValue() identifies it correctly.
     //
     // Gallery / Workspace LoadAdd must not call this: each tile is bound to
-    // its own session id *after* creation. Applying m_view->hostSessionId().currentIdValue() here
+    // its own session id *after* creation. Applying m_host->hostSessionId().currentIdValue() here
     // would bake the navigated image's crop into every newly decoded tile.
-    if (m_view->hostSessionId().hasCurrentId()) {
-        SessionImageId curId = m_view->hostSessionId().currentIdValue();
+    if (m_host->hostSessionId().hasCurrentId()) {
+        SessionImageId curId = m_host->hostSessionId().currentIdValue();
         // Align id with path before any path-XDG seed (seed writes into ItemWorld
         // under sid — wrong pairing poisons contentBake for the other row).
-        if (SessionDocument *doc = m_view->sessionDocument()) {
+        if (SessionDocument *doc = m_host->sessionDocument()) {
             const int docIdx = doc->indexOfId(curId);
             if (docIdx >= 0 && !path.isEmpty() && doc->paths().at(docIdx) != path) {
                 const int byPath = doc->indexOfPathPreferId(path);
@@ -68,7 +68,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
             // Image underlay create: ItemWorld only — never path-XDG seed here.
             // Session open (seedSessionAppearancesFromPaths) and Gallery already
             // seed; installDisplayPixels also refuses XDG (ECS_GUI_BYPASSES #7).
-            if (m_view->itemWorld().hasDurableAppearance(curId)) {
+            if (m_host->itemWorld().hasDurableAppearance(curId)) {
                 return m_view->sessionAppearanceValue(curId);
             }
             // Bound with empty ItemWorld = full frame, no path fallback.
@@ -76,7 +76,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
         }
     }
     // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
+    if (const WorkspaceItemState *st = m_host->itemWorld().getPathState(path)) {
         return *st;
     }
     return {};
@@ -92,23 +92,23 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     // @p image is always host-raw (workers no longer bake). Size-first ctor;
     // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
     WorkspaceItemState app;
-    if (applyStoredSessionCrop && m_view->isImageMode()) {
+    if (applyStoredSessionCrop && m_host->isImageMode()) {
         // ItemWorld only (2205 — no path-XDG seed on Image underlay create).
-        if (m_view->hostSessionId().hasCurrentId()
-            || m_view->itemWorld().pathBook().contains(path)) {
+        if (m_host->hostSessionId().hasCurrentId()
+            || m_host->itemWorld().pathBook().contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
         // Match installDisplayPixels: placement-only durable row is not content
         // orient — layout must not transpose while paint stays identity.
-        const SessionImageId sidLayout = m_view->hostSessionId().currentIdValue();
+        const SessionImageId sidLayout = m_host->hostSessionId().currentIdValue();
         if (sidLayout != kInvalidSessionImageId) {
             app = SessionAppearance::orientAuthorityWant(
-                m_view->itemWorld().hasContentOrient(sidLayout), app);
+                m_host->itemWorld().hasContentOrient(sidLayout), app);
         }
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.
     QSize native = m_view->layoutSizeForPath(path, QImage());
-    if (m_view->hostSizeBook().isProvisional(path)
+    if (m_host->hostSizeBook().isProvisional(path)
         || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
         // Cold: 1×1 until sizeReady; soft install must not invent geometry.
         native = QSize(1, 1);
@@ -121,20 +121,20 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
 
     auto *item = new ImageItem(path, intrinsic);
     m_view->applyItemModeFlags(item);
-    m_view->canvasScene()->addItem(item);
-    m_view->liveItems().append(item);
+    m_host->canvasScene()->addItem(item);
+    m_host->liveItems().append(item);
     registerItemDisplaySurface(item);
 
     // @p image is host-raw. Sole materialize site is installDisplayPixels.
-    const SessionImageId sidEarly = m_view->isImageMode()
-        ? m_view->hostSessionId().currentIdValue()
+    const SessionImageId sidEarly = m_host->isImageMode()
+        ? m_host->hostSessionId().currentIdValue()
         : kInvalidSessionImageId;
     const ColorAdjustments storeGrade = (sidEarly != kInvalidSessionImageId)
-        ? m_view->itemWorld().color(sidEarly).grade
+        ? m_host->itemWorld().color(sidEarly).grade
         : app.colorAdjust;
     const bool wantBake = SessionAppearance::hasContentAppearance(app)
         || !storeGrade.isIdentity()
-        || (sidEarly != kInvalidSessionImageId && m_view->itemWorld().hasColor(sidEarly));
+        || (sidEarly != kInvalidSessionImageId && m_host->itemWorld().hasColor(sidEarly));
     if (wantBake) {
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
@@ -156,8 +156,8 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
             ? SessionAppearance::PixelKind::FullSource
             : SessionAppearance::PixelKind::SoftPreview;
-        const SessionImageId sid = m_view->isImageMode()
-            ? m_view->hostSessionId().currentIdValue()
+        const SessionImageId sid = m_host->isImageMode()
+            ? m_host->hostSessionId().currentIdValue()
             : item->sessionId();
         installDisplayPixels(item, image, kind, sid);
     }
@@ -172,7 +172,7 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = ViewTransform::pairCount(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
-        m_view->hostSeedBook().clearSeedAttempted(ids.at(i));
+        m_host->hostSeedBook().clearSeedAttempted(ids.at(i));
     }
     // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
     // appearance SQLite used to run O(n) on the GUI during open and freeze the
@@ -243,7 +243,7 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
     }
     // Never write path-keyed XDG orient into a SessionImageId that the document
     // binds to a different path (wrong id + seed = permanent contentBake leak).
-    if (SessionDocument *doc = m_view->sessionDocument()) {
+    if (SessionDocument *doc = m_host->sessionDocument()) {
         const int docIdx = doc->indexOfId(sid);
         if (docIdx >= 0 && doc->paths().at(docIdx) != path) {
             qCritical("seedSessionAppearanceFromState: refuse sid=%lld path=%s "
@@ -256,10 +256,10 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
     }
     // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
-    if (m_view->hostSeedBook().seedAttempted(sid)) {
+    if (m_host->hostSeedBook().seedAttempted(sid)) {
         return;
     }
-    m_view->hostSeedBook().markSeedAttempted(sid);
+    m_host->hostSeedBook().markSeedAttempted(sid);
     // Store loadContentAppearance is SQLite — never on the GUI.
     const QPointer<ImageView> guard(m_view);
     const SessionImageId sidCopy = sid;
@@ -286,7 +286,7 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
 void DisplayPipelineController::markAppearanceSeedAttempted(SessionImageId sid)
 {
     if (sid != kInvalidSessionImageId) {
-        m_view->hostSeedBook().markSeedAttempted(sid);
+        m_host->hostSeedBook().markSeedAttempted(sid);
     }
 }
 
@@ -299,8 +299,8 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     }
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
-    m_view->hostSeedBook().markSeedAttempted(sid);
-    if (m_view->itemWorld().hasDurableAppearance(sid)) {
+    m_host->hostSeedBook().markSeedAttempted(sid);
+    if (m_host->itemWorld().hasDurableAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
         if (SessionAppearance::hasContentAppearance(m_view->sessionAppearanceValue(sid))) {
@@ -315,7 +315,7 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     // Orient/grade only — never path-XDG crop (duplicates share a path).
     SessionAppearance::applyStoredContentAppearance(&seed, stored, true, false);
     // Upsert orient/grade only — must not clear attention or Placement.
-    m_view->itemWorld().mergeContentFromState(sid, seed);
+    m_host->itemWorld().mergeContentFromState(sid, seed);
 }
 
 
@@ -331,8 +331,8 @@ SessionImageId DisplayPipelineController::resolveItemSessionId(
     if (item->sessionId() != kInvalidSessionImageId) {
         return item->sessionId();
     }
-    if (m_view->isImageMode()) {
-        return m_view->hostSessionId().currentIdValue();
+    if (m_host->isImageMode()) {
+        return m_host->hostSessionId().currentIdValue();
     }
     return kInvalidSessionImageId;
 }
@@ -347,24 +347,24 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     }
     const SessionImageId id = resolveItemSessionId(item, sid);
     if (id != kInvalidSessionImageId) {
-        if (m_view->itemWorld().hasDurableAppearance(id)) {
+        if (m_host->itemWorld().hasDurableAppearance(id)) {
             want = m_view->sessionAppearanceValue(id);
         }
         // Gallery/Workspace: path XDG seed when id slot is empty (cold pack).
         // Image mode: never seed here — session open seeds; underlay install
         // zeros orient without contentBake (Workspace Placement vs Image orient).
-        if (!m_view->isImageMode()
+        if (!m_host->isImageMode()
             && !SessionAppearance::hasContentAppearance(want)
             && want.colorAdjust.isIdentity()
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-            if (m_view->itemWorld().hasDurableAppearance(id)) {
+            if (m_host->itemWorld().hasDurableAppearance(id)) {
                 want = m_view->sessionAppearanceValue(id);
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
+        if (const WorkspaceItemState *st = m_host->itemWorld().getPathState(item->path())) {
             want = *st;
         }
     }
@@ -376,27 +376,27 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     } else if (id != kInvalidSessionImageId) {
         // Fill empty DTO fields from ItemWorld sparse contentBake/crop.
         ContentXform::Value sparse;
-        if (m_view->itemWorld().hasContentBake(id)) {
-            const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
+        if (m_host->itemWorld().hasContentBake(id)) {
+            const ItemComponents::ContentBake bake = m_host->itemWorld().contentBake(id);
             sparse.hFlip = bake.hFlip;
             sparse.vFlip = bake.vFlip;
             sparse.quarterTurns = bake.quarterTurns;
         }
-        if (m_view->itemWorld().hasCrop(id)) {
-            const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
+        if (m_host->itemWorld().hasCrop(id)) {
+            const ItemComponents::Crop crop = m_host->itemWorld().crop(id);
             sparse.hasCrop = !crop.isEmpty();
             sparse.cropRect = crop.rect;
         }
         SessionAppearance::fillEmptyContentFlags(want, sparse);
         // Placement/color-only durable row is not content orient (2205–2211).
         want = SessionAppearance::orientAuthorityWant(
-            m_view->itemWorld().hasContentOrient(id), want);
+            m_host->itemWorld().hasContentOrient(id), want);
     }
     // ItemWorld Color is persistence authority for stored grade (sparse table;
     // sparse tables only). Prefer it over a
     // stale DTO field when both exist.
     if (id != kInvalidSessionImageId) {
-        want.colorAdjust = m_view->itemWorld().color(id).grade;
+        want.colorAdjust = m_host->itemWorld().color(id).grade;
     }
     // Live grade leads ItemWorld during slider drag; keep store grade when live
     // is still identity (cold open / path-change before seed install).
@@ -442,10 +442,10 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
     // Image-mode crop/flip targets the matching Workspace session slot.
     // If hostSessionId points at a different document path than this underlay,
     // resolve the id for the underlay path (do not leave unbound or bind wrong).
-    if (m_view->hostSessionId().hasCurrentId()) {
-        SessionImageId sid = m_view->hostSessionId().currentIdValue();
-        int listIdx = m_view->hostSessionId().currentIndex();
-        if (SessionDocument *doc = m_view->sessionDocument()) {
+    if (m_host->hostSessionId().hasCurrentId()) {
+        SessionImageId sid = m_host->hostSessionId().currentIdValue();
+        int listIdx = m_host->hostSessionId().currentIndex();
+        if (SessionDocument *doc = m_host->sessionDocument()) {
             const int docIdx = doc->indexOfId(sid);
             if (docIdx >= 0 && !item->path().isEmpty()
                 && doc->paths().at(docIdx) != item->path()) {
@@ -472,8 +472,8 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
         } else if (listIdx >= 0) {
             item->setSessionIndex(listIdx);
         }
-    } else if (m_view->hostSessionId().currentIndex() >= 0) {
-        item->setSessionIndex(m_view->hostSessionId().currentIndex());
+    } else if (m_host->hostSessionId().currentIndex() >= 0) {
+        item->setSessionIndex(m_host->hostSessionId().currentIndex());
     }
 }
 
@@ -520,7 +520,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     if (m_view->hostImageModeSoftProvider()) {
         bool ready = false;
         pixels = m_view->hostImageModeSoftProvider()(
-            path, m_view->hostSessionId().currentIdValue(), &ready);
+            path, m_host->hostSessionId().currentIdValue(), &ready);
         // ready=true would be content-baked override — discard (ECS #1/#2).
         if (!pixels.isNull() && !ready) {
             return pixels;
@@ -596,8 +596,8 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     // genuine session navigation. Project load / membership adds schedule
     // ImageView::LoadAdd with pending binds; seeding first would leave an unbound tile
     // (default placement, no flip/grade) and steal the first path's ImageView::LoadAdd.
-    if (!m_view->liveItems().isEmpty()
-        || !m_view->hostBindBook().isEmpty()
+    if (!m_host->liveItems().isEmpty()
+        || !m_host->hostBindBook().isEmpty()
         || loadGate().containsPendingWorkspacePath(path)) {
         return;
     }
@@ -608,18 +608,18 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     // Bind the navigated session image so the seed tile is never unbound.
     // LoadReplace on an empty multi-item canvas is session navigation, not an
     // ad-hoc path place — hostSessionId is the cursor identity.
-    if (m_view->hostSessionId().hasCurrentId()) {
-        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+    if (m_host->hostSessionId().hasCurrentId()) {
+        const SessionImageId sid = m_host->hostSessionId().currentIdValue();
         m_view->setItemSessionId(item, sid);
         if (m_view->sessionListIndex(item) < 0
-            && m_view->hostSessionId().currentIndex() >= 0) {
-            item->setSessionIndex(m_view->hostSessionId().currentIndex());
+            && m_host->hostSessionId().currentIndex() >= 0) {
+            item->setSessionIndex(m_host->hostSessionId().currentIndex());
         }
-        if (m_view->itemWorld().hasDurableAppearance(sid)) {
+        if (m_host->itemWorld().hasDurableAppearance(sid)) {
             m_view->applyState(item, m_view->sessionAppearanceValue(sid));
         }
-    } else if (m_view->hostSessionId().currentIndex() >= 0) {
-        item->setSessionIndex(m_view->hostSessionId().currentIndex());
+    } else if (m_host->hostSessionId().currentIndex() >= 0) {
+        item->setSessionIndex(m_host->hostSessionId().currentIndex());
     }
     item->setSelected(true);
     m_view->hostFraming().armFit();
@@ -664,7 +664,7 @@ QImage DisplayPipelineController::fullRasterForEdit(const QString &path) const
 
 int DisplayPipelineController::imageModeOnScreenNeedEdge() const
 {
-    if (!m_view->isImageMode()) {
+    if (!m_host->isImageMode()) {
         return 0;
     }
     const ImageItem *item = m_view->targetItem();
@@ -710,13 +710,13 @@ bool DisplayPipelineController::loadImage(const QString &path)
     if (m_view->hostTextLayer().showsRegions() || m_view->hostTextLayer().hasSearchQuery()) {
         m_view->refreshTextLayer();
     }
-    m_view->hostSessionId().clearLastLoadError();
+    m_host->hostSessionId().clearLastLoadError();
 
     if (m_view->isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.
-        if (m_view->liveItems().isEmpty()) {
+        if (m_host->liveItems().isEmpty()) {
             scheduleImageLoad(path, ImageView::LoadReplace);
         }
         emit m_view->statusChanged();
@@ -732,7 +732,7 @@ bool DisplayPipelineController::loadImage(const QString &path)
 
 void DisplayPipelineController::ensureImageFocusSurface()
 {
-    if (!m_view->isImageMode()) {
+    if (!m_host->isImageMode()) {
         if (imageFocusSurfaceRef() != DisplaySurface::kInvalidSurfaceId) {
             // Do not unbind item-owned surface; only clear the focus alias.
             imageFocusSurfaceRef() = DisplaySurface::kInvalidSurfaceId;
@@ -772,7 +772,7 @@ void DisplayPipelineController::syncImageFocusSurfaceState()
     }
     const QString path = item->path();
     const bool pending =
-        m_view->hostPathRaster() && !path.isEmpty() && m_view->hostPathRaster()->isClimbPending(path);
+        m_host->hostPathRaster() && !path.isEmpty() && m_host->hostPathRaster()->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
     if (m_view->hostCrop().session().isDraftSampleFrozen() && m_view->hostCrop().isCropDraftLockedPath(path)) {
         displaySurfaces().setFrozen(imageFocusSurfaceRef(), true);

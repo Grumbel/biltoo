@@ -43,7 +43,7 @@
 void DisplayPipelineController::finishLoadAddStatus(bool refreshGalleryWindow)
 {
     emit m_view->statusChanged();
-    if (refreshGalleryWindow && m_view->isGalleryMode()) {
+    if (refreshGalleryWindow && m_host->isGalleryMode()) {
         m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSettleMs);
     }
 }
@@ -76,19 +76,19 @@ void DisplayPipelineController::handleLoadAddDecodeFailure(const QString &path)
         && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
         ThumtooCache::scheduleProbe(path);
         // Soft state machine will request placeholder / higher steps.
-        m_view->hostSessionId().clearLastLoadError();
+        m_host->hostSessionId().clearLastLoadError();
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return;
     }
     qWarning("ImageView: decode failed for %s", qPrintable(path));
-    if (m_view->isGalleryMode()) {
+    if (m_host->isGalleryMode()) {
         GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
         st.failed = true;
         st.inflight = 0;
     }
-    m_view->hostSessionId().setLastLoadError(path);
+    m_host->hostSessionId().setLastLoadError(path);
     // Surface the error on any live placeholder for this path.
-    for (ImageItem *item : m_view->liveItems()) {
+    for (ImageItem *item : m_host->liveItems()) {
         if (item && item->path() == path && !item->hasDecodedPixels()) {
             item->setToolTip(m_view->tr("Failed to load:\n%1").arg(path));
         }
@@ -114,12 +114,12 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
     // Drop placeholders created in placeOrMoveImageAt already sit at scenePos;
     // re-assert hasScenePos binds so nothing later drifts them, and so a bind
     // still pairs with the pre-created tile.
-    for (ImageItem *item : m_view->liveItems()) {
+    for (ImageItem *item : m_host->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
-        for (int bi = 0; bi < m_view->hostBindBook().bindCount(); ++bi) {
-            const PendingSessionBind &b = m_view->hostBindBook().bindAt(bi);
+        for (int bi = 0; bi < m_host->hostBindBook().bindCount(); ++bi) {
+            const PendingSessionBind &b = m_host->hostBindBook().bindAt(bi);
             if (b.path != path) {
                 continue;
             }
@@ -134,7 +134,7 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
                     pl.pos = b.scenePos;
                     item->applyPlacement(pl);
                 }
-                if (m_view->isWorkspaceMode()) {
+                if (m_host->isWorkspaceMode()) {
                     item->setInteractive(true);
                     item->setScaleHandlesEnabled(true);
                 }
@@ -160,7 +160,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
     // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
     // Without this, have==wanted and the bind is never applied — placement,
     // content flips, and colour grade stay at defaults on that tile.
-    for (ImageItem *existing : m_view->liveItems()) {
+    for (ImageItem *existing : m_host->liveItems()) {
         if (!existing || existing->path() != path) {
             continue;
         }
@@ -168,7 +168,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
             continue;
         }
         PendingSessionBind bound;
-        if (!m_view->hostBindBook().takeBind(path, &bound)) {
+        if (!m_host->hostBindBook().takeBind(path, &bound)) {
             break;
         }
         if (bound.id != kInvalidSessionImageId) {
@@ -186,14 +186,14 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                              bound.id != kInvalidSessionImageId
                                  ? bound.id
                                  : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && m_view->itemWorld().hasDurableAppearance(bound.id)) {
+        if (bound.id != kInvalidSessionImageId && m_host->itemWorld().hasDurableAppearance(bound.id)) {
             m_view->applyState(existing, m_view->sessionAppearanceValue(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
         m_view->applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
-            if (m_view->hostBindBook().removeSelectId(bound.id)) {
+            if (m_host->hostBindBook().removeSelectId(bound.id)) {
                 existing->setSelected(true);
             }
         }
@@ -207,7 +207,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
     bool sizeChanged = false;
     int have = 0;
     const int incoming = ImageCache::longEdge(image);
-    for (ImageItem *existing : m_view->liveItems()) {
+    for (ImageItem *existing : m_host->liveItems()) {
         if (!existing || existing->path() != path) {
             continue;
         }
@@ -254,7 +254,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
             // Paste: select tiles as they finish decoding.
-            if (m_view->hostBindBook().removeSelectId(bound.id)) {
+            if (m_host->hostBindBook().removeSelectId(bound.id)) {
                 item->setSelected(true);
             }
         }
@@ -273,7 +273,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
             const PackOrderView pack = m_view->currentPackOrder();
             m_view->reorderItemsByPaths(pack.paths(), pack.ids());
         }
-        if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
+        if (!(m_host->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {
                 m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
             } else {
@@ -306,7 +306,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
         return;
     }
 
-    if (m_view->isImageMode()) {
+    if (m_host->isImageMode()) {
         // Fill stashed Gallery placeholders while user is in Image mode.
         fillStashedItemsForPath(path, image);
         emit m_view->statusChanged();
@@ -322,7 +322,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
 
     claimUnboundItemsForPendingBinds(path, image);
 
-    const int pendingBinds = m_view->hostBindBook().countBindsForPath(path);
+    const int pendingBinds = m_host->hostBindBook().countBindsForPath(path);
 
     bool sizeChanged = false;
     int have = fillLiveItemsWithDecodedPixels(path, image, &sizeChanged);
@@ -341,10 +341,10 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
 
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();
-    if (m_view->isGalleryMode()) {
+    if (m_host->isGalleryMode()) {
         m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSettleMs);
     }
-    if (m_view->isWorkspaceMode()) {
+    if (m_host->isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
     }
 }
@@ -378,14 +378,14 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
 
     // Slideshow owns the viewport via pure-phase buffers — never soft-install
     // or PreferCache-climb the underlay ImageItem while the show is running.
-    if (role == ImageView::LoadReplace && m_view->isImageMode() && m_view->hostSlideshow().hud().isProgressActive()) {
+    if (role == ImageView::LoadReplace && m_host->isImageMode() && m_view->hostSlideshow().hud().isProgressActive()) {
         biltooLoadDbg("PATH slideshow active skip image-mode load path=%s",
                       qPrintable(QFileInfo(path).fileName()));
         return;
     }
 
     // Image mode: swap best in-process soft/LQIP immediately (no IPC, no pool).
-    if (role == ImageView::LoadReplace && m_view->isImageMode()) {
+    if (role == ImageView::LoadReplace && m_host->isImageMode()) {
         installImageModePendingTile(path);
         // Rapid ←/→: stop here. No PreferCache, no classic decode, no escalate —
         // those race the next key and stall the GUI. Settle timer (MainWindow
@@ -404,7 +404,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
                 const QString pathCopy = path;
                 // One frame for soft paint, then PreferCache for the settled path.
                 QTimer::singleShot(16, m_view, [this, pathCopy, soft]() {
-                    if (!m_view->isImageMode() || m_view->hostImage().classicPath() != pathCopy) {
+                    if (!m_host->isImageMode() || m_view->hostImage().classicPath() != pathCopy) {
                         return;
                     }
                     if (m_view->hostSlideshow().hud().isNavHot()) {
@@ -497,7 +497,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     // soft/LQIP sample via queueImageLoaded so completeLoadReplace /
     // tryInstallImageModeSample can create or fill the item. Probe/tiles alone
     // left an empty Image view when ImageCache had no prior soft sample.
-    if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive()
+    if (m_host->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive()
         && !m_view->hostSlideshow().hud().isNavHot()
         && role == static_cast<int>(ImageView::LoadReplace)) {
         ThumtooCache::scheduleProbe(path);
@@ -541,7 +541,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     // Workspace permanently blank after mode switch (tip 2147). Soft preview
     // jobs only queue onImagePreviewLoaded — that path never creates items —
     // so always queueImageLoaded here (cache hit or soft worker).
-    if (role == static_cast<int>(ImageView::LoadRestore) && m_view->isWorkspaceMode()) {
+    if (role == static_cast<int>(ImageView::LoadRestore) && m_host->isWorkspaceMode()) {
         const QPointer<ImageView> guard(m_view);
         const int roleInt = static_cast<int>(role);
         const QImage cached = ImageCache::get(path);
@@ -570,7 +570,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     }
 
     // Gallery / Workspace: LQIP from ImageCache + tiles. Never SoftOnly job.
-    if (m_view->isGalleryMode() || m_view->isWorkspaceMode()) {
+    if (m_host->isGalleryMode() || m_host->isWorkspaceMode()) {
         ThumtooCache::scheduleProbe(path);
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()
@@ -578,7 +578,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
             const QPointer<ImageView> guard(m_view);
             queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
         }
-        if (m_view->isGalleryMode()) {
+        if (m_host->isGalleryMode()) {
             scheduleGalleryDecode(path);
         }
         tickPrimaryTileLod(12);
@@ -610,8 +610,8 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
 void DisplayPipelineController::galleryDecodeResetPath(const QString &path)
 {
     m_view->hostGalleryDecodeBook().resetPath(path);
-    if (m_view->hostPathRaster() && !path.isEmpty()) {
-        m_view->hostPathRaster()->cancel(path);
+    if (m_host->hostPathRaster() && !path.isEmpty()) {
+        m_host->hostPathRaster()->cancel(path);
     }
 }
 
@@ -627,7 +627,7 @@ int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, boo
     // Collect edges for this path, then pure aggregate (LqipDisplayPolicy).
     QVarLengthArray<int, 8> edges;
     QVarLengthArray<bool, 8> decoded;
-    for (ImageItem *item : m_view->liveItems()) {
+    for (ImageItem *item : m_host->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
@@ -649,14 +649,14 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("scheduleGalleryDecode");
-    if (!m_view->isGalleryMode() || path.isEmpty()) {
+    if (!m_host->isGalleryMode() || path.isEmpty()) {
         return false;
     }
     // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
     // Size is ground truth: never install samples or schedule tiles before a
     // definitive native size (or explicit probe failure).
     {
-        const ImageSizeBook &book = m_view->hostSizeBook();
+        const ImageSizeBook &book = m_host->hostSizeBook();
         if (book.isFailed(path)) {
             return false;
         }
@@ -668,7 +668,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     bool anyTileWanted = false;
     bool needLqip = false;
-    for (ImageItem *ii : m_view->liveItems()) {
+    for (ImageItem *ii : m_host->liveItems()) {
         if (!ii || ii->path() != path) {
             continue;
         }
@@ -682,7 +682,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     bool didWork = false;
     if (needLqip) {
-        for (ImageItem *ii : m_view->liveItems()) {
+        for (ImageItem *ii : m_host->liveItems()) {
             if (!ii || ii->path() != path) {
                 continue;
             }
@@ -698,7 +698,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     if (anyTileWanted && !m_view->hostGallerySizeResolve().active()) {
         // Size must be known for tile requests.
-        if (!m_view->hostSizeBook().hasDefinitive(path)
+        if (!m_host->hostSizeBook().hasDefinitive(path)
             && !ThumtooCache::cachedSize(path).isValid()) {
             // Visible cell without size — one probe, not a full-session batch.
             ThumtooCache::scheduleProbe(path);
@@ -733,7 +733,7 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
         if (generation != loadGate().generation() || path != m_view->hostImage().classicPath()) {
             return;
         }
-        if (m_view->isImageMode()) {
+        if (m_host->isImageMode()) {
             // Same install + climb policy as completeImageView::LoadReplace / ladderReady.
             (void)tryInstallImageModeSample(path, image);
             return;
@@ -745,26 +745,26 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
 
     // Gallery: underlay only from ImageCache (SizeReply). Soft PreferCache
     // deliveries must not climb cells.
-    if (m_view->isGalleryMode()) {
-        for (ImageItem *item : m_view->liveItems()) {
+    if (m_host->isGalleryMode()) {
+        for (ImageItem *item : m_host->liveItems()) {
             if (!item || item->path() != path) {
                 continue;
             }
             tryInstallGalleryUnderlay(item);
         }
-        if (m_view->viewport()) {
-            m_view->viewport()->update();
+        if (m_host->viewportWidget()) {
+            m_host->viewportWidget()->update();
         }
         return;
     }
 
     // Workspace: DisplaySurface::decide per item.
-    for (ImageItem *item : m_view->liveItems()) {
+    for (ImageItem *item : m_host->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
         const bool climbPending =
-            m_view->hostPathRaster() && m_view->hostPathRaster()->isClimbPending(path);
+            m_host->hostPathRaster() && m_host->hostPathRaster()->isClimbPending(path);
         syncItemDisplaySurface(item, incoming, climbPending);
         DisplaySurface::State ds =
             displaySurfaceStateForItem(item, incoming, climbPending);
@@ -780,10 +780,10 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
                 : PathRasterService::ClimbPolicy::SoftDisplay;
         (void)applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol);
     }
-    if (m_view->viewport()) {
-        m_view->viewport()->update();
+    if (m_host->viewportWidget()) {
+        m_host->viewportWidget()->update();
     }
-    if (m_view->isWorkspaceMode()) {
+    if (m_host->isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
     }
 }
@@ -801,7 +801,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     // Gallery/Image created free-form tiles on the packed canvas and/or ate
     // pending states so Gallery populate looked missing tiles that belong to
     // the session list.
-    if (!m_view->isWorkspaceMode()) {
+    if (!m_host->isWorkspaceMode()) {
         return;
     }
     WorkspaceItemState state;
@@ -819,7 +819,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         m_view->setItemSessionId(item, state.sessionId);
-        if (m_view->itemWorld().hasDurableAppearance(state.sessionId)) {
+        if (m_host->itemWorld().hasDurableAppearance(state.sessionId)) {
             app = m_view->sessionAppearanceValue(state.sessionId);
             // Keep placement from the snapshot (pose + display flips + shear).
             ItemComponents::applyPlacementToState(
@@ -837,17 +837,17 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     {
         const SessionImageId sid = resolveItemSessionId(item, state.sessionId);
         if (sid != kInvalidSessionImageId) {
-            app.colorAdjust = m_view->itemWorld().color(sid).grade;
+            app.colorAdjust = m_host->itemWorld().color(sid).grade;
         }
         if (SessionAppearance::hasContentAppearance(app)
             || !app.colorAdjust.isIdentity()
-            || (sid != kInvalidSessionImageId && m_view->itemWorld().hasColor(sid))) {
+            || (sid != kInvalidSessionImageId && m_host->itemWorld().hasColor(sid))) {
             rematerializeItemContent(item, app);
         }
     }
     m_view->applyState(item, app);
     if (!m_view->hostLayout().isFreeForm()
-        && !(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
+        && !(m_host->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
         m_view->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
     }
     emit m_view->statusChanged();

@@ -181,6 +181,40 @@ surfaces **share** pipeline + ItemWorld rather than forking the façade.
    bake remains session-global.
 5. **Do not** reintroduce ImageView pixel mutator friendship or parallel install paths.
 
+### Topology (target)
+
+```
+SessionShell (MainWindow region or thin owner)
+  ├── ItemWorld              (shared, durable appearance)
+  ├── SessionDocument        (shared, id book)
+  ├── DisplayPipelineController (shared; installs by SessionImageId + active host)
+  ├── ImageView left         (scene, liveItems, framing, input, paint)
+  └── ImageView right        (scene, liveItems, framing, input, paint)
+```
+
+Each surface implements `DisplayPipelineHost`. Pipeline dual-critical paths use
+`host()` (Stage 0); long-tail still uses `view()` until Stage 1 migrates the rest
+onto the host surface. Content bake remains session-global (ItemWorld); framing
+and sticky pan stay per-surface.
+
+### Stage 0 (landed — biltoo-2449)
+
+- `DisplayPipelineHost` — virtual surface for dual-critical state:
+  ItemWorld, liveItems, canvasScene, mode queries, SessionDocument,
+  hostSessionId / hostSizeBook / hostPathRaster / hostBindBook / hostSeedBook,
+  logicalSizeForPath, viewportWidget.
+- `ImageView` implements `DisplayPipelineHost` (public).
+- `DisplayPipelineController` holds `m_host` + `m_view`; Stage 0 call sites use
+  `m_host->…` for the dual-critical surface above.
+
+### Stage 1 (next code)
+
+- Grow `DisplayPipelineHost` (slideshow, crop, gallery controllers, framing
+  helpers, status signals) until `m_view` is only needed for QObject lifetime
+  or is removed.
+- Decide active-host switching (which surface receives install for a given
+  SessionImageId when two panes show different ids).
+
 ### Residual on single ImageView (ok to keep)
 
 - `applyInteractiveColorGrade` live-grade + filmstrip emit (view policy / signals)
@@ -193,3 +227,4 @@ surfaces **share** pipeline + ItemWorld rather than forking the façade.
 - [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md)
 - [TILE_LOD.md](TILE_LOD.md) / [TILE_LOAD_COORDINATOR.md](TILE_LOAD_COORDINATOR.md)
 - [RELEASE_0.2.0.md](RELEASE_0.2.0.md) §4.8 (0.3 dual ImageView depends on this)
+- `src/display/displaypipelinehost.h`
