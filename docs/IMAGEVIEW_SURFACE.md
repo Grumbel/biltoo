@@ -38,3 +38,25 @@ Status **formatting** is pure `HudModel` (`formatMultiItemStatusLine`,
 
 - `docs/MODE_OWNERSHIP.md`, `docs/IMAGEVIEW_ITEM_OWNERSHIP.md` (if present)
 - `TODO.md` for current tip / open work
+
+
+## Peel plateau (2026-09)
+
+Pure-forward public API peels are **done**. Remaining `ImageView::*` single-line
+forwards are almost all:
+
+1. **DisplayPipelineHost** overrides (must stay until the host interface shrinks), or
+2. **Private** routers used only inside the ImageView translation units.
+
+Do **not** delete host-surface methods “because they only call `m_image`.”
+That caused link failures (framing, reorder, sticky pan, edge zones).
+
+### Productive next work (not pure peels)
+
+| Work | Notes |
+|------|--------|
+| Host interface reduction | Stage plan with DisplayPipelineController; remove virtuals first |
+| Status tests | `hudmodel_test` covers pure formatters |
+| capture/freeze helpers | Optional shared freeze policy — many controller callers |
+| Characterization | Prefer `hostX()` / `itemWorld()` in new tests |
+

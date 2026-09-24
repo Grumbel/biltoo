@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2602.1-peel-transform-workspace-api**.
-Latest tip: **biltoo-2602** (+ thumtoo-338). Peel transform/zoom/workspace mutators off ImageView public API.
+Latest agent handoff: **TODO.md** + [docs/IMAGEVIEW_SURFACE.md](docs/IMAGEVIEW_SURFACE.md).
+Latest tip: **biltoo-2624** — ImageView peel plateau (pure forwards done; host surface stays).
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
