@@ -348,6 +348,17 @@ QSize resolveContentLayoutSize(const QSize &logical, const QSize &bookKnown,
                                const WorkspaceItemState *pathState);
 
 /**
+ * Soft-preview materialize from bound/path/XDG appearance sources.
+ * ImageView::imageWithSessionAppearance gathers ItemWorld state and calls this.
+ */
+QImage softImageWithAppearanceSources(const QImage &src, SessionImageId sid,
+                                      const QString &path,
+                                      const WorkspaceItemState *boundApp,
+                                      const WorkspaceItemState *pathState,
+                                      bool hasSparseColor,
+                                      const ColorAdjustments &sparseGrade);
+
+/**
  * Unbound path may load XDG content appearance for layout when allowStore and
  * no content yet. Bound SessionImageId never uses path XDG.
  */

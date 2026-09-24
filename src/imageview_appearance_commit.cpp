@@ -69,49 +69,9 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
 
 void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId)
 {
-    if (fromId == kInvalidSessionImageId || toId == kInvalidSessionImageId
-        || fromId == toId) {
-        return;
-    }
-    // Prefer the session store; fall back to a live donor tile so drop-duplicate
-    // from a graded filmstrip row still carries crop / bakes / colour grade.
-    WorkspaceItemState src;
-    if (m_itemWorld.hasDurableAppearance(fromId)) {
-        src = sessionAppearanceValue(fromId);
-    } else {
-        ImageItem *donor = findItemBySessionId(fromId);
-        if (!donor && isImageMode()) {
-            donor = primaryItem();
-            if (donor && donor->sessionId() != fromId) {
-                donor = nullptr;
-            }
-        }
-        if (!donor) {
-            return;
-        }
-        src = freezeItemAppearance(donor);
-    }
-    const WorkspaceItemState dst =
-        SessionAppearance::appearanceCopyWithIdentityPose(src, toId);
-    m_itemWorld.setAppearance(toId, dst);
-
-    ImageItem *donor = findItemBySessionId(fromId);
-    if (!donor && isImageMode()) {
-        donor = primaryItem();
-        if (donor && donor->sessionId() != fromId) {
-            donor = nullptr;
-        }
-    }
-    if (donor) {
-        const QImage appearance = sessionAppearanceImage(donor);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(toId, dst.path, appearance);
-            if (dst.hasCrop) {
-                emit sessionCropApplied(toId, dst.path, appearance, /*hasCrop=*/true);
-            }
-        }
-    }
+    m_image.copySessionAppearance(fromId, toId);
 }
+
 
 
 

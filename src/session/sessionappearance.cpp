@@ -705,6 +705,51 @@ QSize resolveContentLayoutSize(const QSize &logical, const QSize &bookKnown,
     return layoutSizeOrNative(native, want);
 }
 
+QImage softImageWithAppearanceSources(const QImage &src, SessionImageId sid,
+                                      const QString &path,
+                                      const WorkspaceItemState *boundApp,
+                                      const WorkspaceItemState *pathState,
+                                      bool hasSparseColor,
+                                      const ColorAdjustments &sparseGrade)
+{
+    if (src.isNull()) {
+        return {};
+    }
+    const WorkspaceItemState *app = boundApp;
+    WorkspaceItemState fallback;
+    // Unbound only: path map + path XDG. Bound content is ItemWorld sparse only
+    // (matches Image underlay / contentLayoutSize — no path XDG for bound ids).
+    if ((!app || !hasContentAppearance(*app))
+        && sid == kInvalidSessionImageId && !path.isEmpty()) {
+        if (pathState) {
+            fallback = *pathState;
+            app = &fallback;
+        }
+        if ((!app || !hasContentAppearance(*app))) {
+            ThumtooCache::StoredContentAppearance stored;
+            if (ThumtooCache::loadContentAppearance(path, &stored)
+                && stored.hasOrientContent()) {
+                fallback = {};
+                fallback.path = path;
+                applyStoredContentAppearance(&fallback, stored, false);
+                app = &fallback;
+            }
+        }
+    }
+    WorkspaceItemState paint;
+    if (!assembleSoftPaintState(
+            &paint, app, sid, hasSparseColor,
+            hasSparseColor ? sparseGrade : ColorAdjustments{})) {
+        return src;
+    }
+    // Single pipeline — SoftPreview scales crop into soft pixel space
+    // (materializeDisplay contract). Never strip crop.
+    const QImage out = materializeDisplay(
+        src, paint, PixelKind::SoftPreview);
+    return out.isNull() ? src : out;
+}
+
+
 
 bool shouldAugmentFromPathStore(bool allowStoreAppearance,
                                 bool hasContentAlready,

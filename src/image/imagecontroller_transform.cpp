@@ -216,3 +216,49 @@ void ImageController::renderForPrint(QPainter *painter, const QRectF &pageRect) 
     painter->drawImage(target, img);
     painter->restore();
 }
+
+void ImageController::copySessionAppearance(SessionImageId fromId, SessionImageId toId)
+{
+    if (fromId == kInvalidSessionImageId || toId == kInvalidSessionImageId
+        || fromId == toId || !m_view) {
+        return;
+    }
+    // Prefer the session store; fall back to a live donor tile so drop-duplicate
+    // from a graded filmstrip row still carries crop / bakes / colour grade.
+    WorkspaceItemState src;
+    if (m_view->itemWorld().hasDurableAppearance(fromId)) {
+        src = m_view->sessionAppearanceValue(fromId);
+    } else {
+        ImageItem *donor = m_view->findItemBySessionId(fromId);
+        if (!donor && m_view->isImageMode()) {
+            donor = m_view->primaryItem();
+            if (donor && donor->sessionId() != fromId) {
+                donor = nullptr;
+            }
+        }
+        if (!donor) {
+            return;
+        }
+        src = m_view->freezeItemAppearance(donor);
+    }
+    const WorkspaceItemState dst =
+        SessionAppearance::appearanceCopyWithIdentityPose(src, toId);
+    m_view->itemWorld().setAppearance(toId, dst);
+
+    ImageItem *donor = m_view->findItemBySessionId(fromId);
+    if (!donor && m_view->isImageMode()) {
+        donor = m_view->primaryItem();
+        if (donor && donor->sessionId() != fromId) {
+            donor = nullptr;
+        }
+    }
+    if (donor) {
+        const QImage appearance = m_view->hostSessionAppearanceImage(donor);
+        if (!appearance.isNull()) {
+            emit m_view->sessionAppearanceChanged(toId, dst.path, appearance);
+            if (dst.hasCrop) {
+                emit m_view->sessionCropApplied(toId, dst.path, appearance, /*hasCrop=*/true);
+            }
+        }
+    }
+}

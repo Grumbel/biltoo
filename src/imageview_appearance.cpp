@@ -287,48 +287,23 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
 QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId sid,
                                              const QString &path) const
 {
-    if (src.isNull()) {
-        return {};
-    }
-    const WorkspaceItemState *app = nullptr;
-    WorkspaceItemState fallback;
+    const WorkspaceItemState *boundApp = nullptr;
+    WorkspaceItemState boundFallback;
     if (sid != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(sid)) {
-        fallback = sessionAppearanceValue(sid);
-        app = &fallback;
+        boundFallback = sessionAppearanceValue(sid);
+        boundApp = &boundFallback;
     }
-    // Unbound only: path map + path XDG. Bound content is ItemWorld sparse only
-    // (matches Image underlay / contentLayoutSize — no path XDG for bound ids).
-    if ((!app || !SessionAppearance::hasContentAppearance(*app))
-        && sid == kInvalidSessionImageId && !path.isEmpty()) {
-        if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
-            fallback = *st;
-            app = &fallback;
-        }
-        if ((!app || !SessionAppearance::hasContentAppearance(*app))) {
-            ThumtooCache::StoredContentAppearance stored;
-            if (ThumtooCache::loadContentAppearance(path, &stored)
-                && stored.hasOrientContent()) {
-                fallback = {};
-                fallback.path = path;
-                SessionAppearance::applyStoredContentAppearance(&fallback, stored, false);
-                app = &fallback;
-            }
-        }
+    const WorkspaceItemState *pathState = nullptr;
+    if (sid == kInvalidSessionImageId && !path.isEmpty()) {
+        pathState = m_itemWorld.getPathState(path);
     }
-    WorkspaceItemState paint;
     const bool hasSparseColor =
         sid != kInvalidSessionImageId && m_itemWorld.hasColor(sid);
-    if (!SessionAppearance::assembleSoftPaintState(
-            &paint, app, sid, hasSparseColor,
-            hasSparseColor ? m_itemWorld.color(sid).grade : ColorAdjustments{})) {
-        return src;
-    }
-    // Single pipeline — SoftPreview scales crop into soft pixel space
-    // (SessionAppearance::materializeDisplay contract). Never strip crop.
-    const QImage out = SessionAppearance::materializeDisplay(
-        src, paint, SessionAppearance::PixelKind::SoftPreview);
-    return out.isNull() ? src : out;
+    return SessionAppearance::softImageWithAppearanceSources(
+        src, sid, path, boundApp, pathState, hasSparseColor,
+        hasSparseColor ? m_itemWorld.color(sid).grade : ColorAdjustments{});
 }
+
 
 
 bool ImageView::hasSessionAppearance(SessionImageId id) const

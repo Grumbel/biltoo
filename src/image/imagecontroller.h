@@ -90,6 +90,12 @@ public:
     int resetContentAppearanceForTargets();
     /** Image-mode high-res print of primary/target into @p pageRect. */
     void renderForPrint(QPainter *painter, const QRectF &pageRect) const;
+    /**
+     * Copy content appearance from @p fromId to @p toId (store or live donor).
+     * ImageView public API is a thin router.
+     */
+    void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
+
 
 
     /** Image-mode framing / sticky pan (per-view; dual-safe). */

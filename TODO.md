@@ -2,20 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2589.1-layout-size-print** (base `7d823d8`).
+**Tip: biltoo-2590.1-copy-appearance-soft** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::resolveContentLayoutSize** — pure layout size policy
-  (ImageView gathers host sizes/state only)
-- **WorkspaceController::renderForPrint** — page guide / content high-res print
-- **ImageController::renderForPrint** — Image-mode high-res print
-- ImageView::renderForPrint routes by mode; scene fallback stays on shell
-- paintHighResExportItems public on host ops (print/export)
+- **ImageController::copySessionAppearance** — store/live-donor content copy
+- **SessionAppearance::softImageWithAppearanceSources** — pure soft materialize
+- ImageView::imageWithSessionAppearance gathers ItemWorld state only
+- ImageView::copySessionAppearance is a thin router
 
 ### Prior
+**2589.1** SessionAppearance layout size; mode controllers own print  
 **2588.1** ImageController owns resetContentAppearanceForTargets  
-**2587.1** Workspace owns addImageForSession + placeOrMoveImageAt  
-**2586.1** Workspace owns LoadAdd footprint + placement
+**2587.1** Workspace owns addImageForSession + placeOrMoveImageAt
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -37,5 +35,5 @@ status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2589.1-layout-size-print-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2590.1-copy-appearance-soft-7d823d8.bundle HEAD
 ```
