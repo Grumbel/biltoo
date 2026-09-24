@@ -331,6 +331,15 @@ ImageView::ImageView(QWidget *parent)
             m_displayPipeline->scheduleTileLodAfterInteraction(32);
         }
     });
+    // AsNeeded bars appear/hide when range becomes non-zero (Qt internal
+    // rangeChanged → _q_showOrHideScrollBars). No public "bar shown" signal;
+    // this is the supported hook to keep the scene centre stable.
+    connect(horizontalScrollBar(), &QScrollBar::rangeChanged, this, [this](int, int) {
+        m_gallery.onScrollBarRangeChanged();
+    });
+    connect(verticalScrollBar(), &QScrollBar::rangeChanged, this, [this](int, int) {
+        m_gallery.onScrollBarRangeChanged();
+    });
 
     // Recover Gallery tiles that received soft pixels but never repainted
     // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).

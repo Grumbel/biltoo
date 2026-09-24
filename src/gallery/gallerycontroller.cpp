@@ -36,6 +36,7 @@
 #include <QAbstractScrollArea>
 #include <QStyle>
 #include <QTimer>
+#include <QPointer>
 #include <QObject>
 #include <QUndoStack>
 #include <QSet>
@@ -1260,6 +1261,39 @@ void GalleryController::onViewResized()
             scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
         }
     }
+}
+
+void GalleryController::onScrollBarRangeChanged()
+{
+    // Qt has no "scrollbar appeared" signal. QAbstractScrollArea connects
+    // rangeChanged → _q_showOrHideScrollBars (QueuedConnection). Capture the
+    // scene centre now; re-centre after the queued layout pass so content does
+    // not shift when AsNeeded bars eat viewport pixels.
+    // See also: https://stackoverflow.com/questions/38254367
+    if (!m_view || !m_view->isGalleryMode() || m_layoutApply.active()
+        || m_barRangeGuard) {
+        return;
+    }
+    if (m_view->viewport()) {
+        m_barRangeKeepCenter =
+            m_view->mapToScene(m_view->viewport()->rect().center());
+        m_barRangeHaveCenter = true;
+    }
+    QPointer<ImageView> guard(m_view);
+    QTimer::singleShot(0, m_view, [this, guard]() {
+        ImageView *view = guard.data();
+        if (!view || !view->isGalleryMode() || m_layoutApply.active()) {
+            return;
+        }
+        m_barRangeGuard = true;
+        if (m_haveViewCenter) {
+            reassertViewport();
+        } else if (m_barRangeHaveCenter) {
+            view->centerOn(m_barRangeKeepCenter);
+        }
+        m_barRangeGuard = false;
+        m_barRangeHaveCenter = false;
+    });
 }
 
 void GalleryController::onViewportLeave()

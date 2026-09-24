@@ -132,6 +132,12 @@ public:
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     /** Viewport resized in Gallery: re-arm decode window (no pack). */
     void onViewResized();
+    /**
+     * QScrollBar::rangeChanged — Qt shows/hides AsNeeded bars from this signal
+     * (no public "bar appeared" API). Preserve the scene point under the
+     * viewport centre after the viewport shrinks/grows.
+     */
+    void onScrollBarRangeChanged();
     /** Pointer left the viewport: clear hover path. */
     void onViewportLeave();
     /** Session content appearance changed: debounce pack for aspect/crop. */
@@ -264,6 +270,12 @@ private:
     /** Client size last used for pack measure (detect 0×0 → real resize). */
     int m_lastPackClientW = 0;
     int m_lastPackClientH = 0;
+
+    /** Guard re-entrancy from scroll-bar rangeChanged → centerOn. */
+    bool m_barRangeGuard = false;
+    /** Scene centre captured when a bar range first changes (pre-layout). */
+    QPointF m_barRangeKeepCenter;
+    bool m_barRangeHaveCenter = false;
 
     int m_scrollH = 0;
     int m_scrollV = 0;
