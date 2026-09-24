@@ -223,6 +223,8 @@ public:
      * before viewport overlays.
      */
     void paintPageGuideOutline(QPainter *painter, const QRectF &exposed) const;
+    /** White paper sheet under images (drawBackground). */
+    void paintPageGuidePaper(QPainter *painter, const QRectF &exposed) const;
     static qreal pageGuidePxPerMm();
 
     /** Page-guide resize drag + hover cursor. */

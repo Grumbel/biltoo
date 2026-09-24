@@ -361,3 +361,21 @@ void WorkspaceController::paintPageGuideOutline(QPainter *painter, const QRectF 
     painter->restore();
 }
 
+void WorkspaceController::paintPageGuidePaper(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view || !m_view->isWorkspaceMode()) {
+        return;
+    }
+    if (!m_pageGuide.isVisible()) {
+        return;
+    }
+    const QRectF page = pageGuideSceneRect();
+    if (!page.intersects(exposed)) {
+        return;
+    }
+    painter->save();
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(Qt::white);
+    painter->drawRect(page);
+    painter->restore();
+}

@@ -63,6 +63,10 @@ public:
      * paintViewportOverlays.
      */
     void paintForeground(QPainter *painter, const QRectF &rect);
+    /** Canvas materials (checker / tile / content blur). */
+    void paintCanvasBackground(QPainter *painter, const QRectF &rect, qreal viewScale);
+    /** Full drawBackground: canvas + gallery placeholders + page paper. */
+    void paintBackground(QPainter *painter, const QRectF &rect, qreal viewScale);
 
 private:
     ImageView *m_view = nullptr;
