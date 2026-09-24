@@ -163,11 +163,11 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
         || !PagePath::isPageRef(m_image.classicPath())) {
         return false;
     }
-    if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
-        const bool hadShow = m_textLayer.showsRegions();
-        m_textLayer.setShowRegions(true);
+    if (!m_textCtrl.session().hasLayerRegions() || m_textCtrl.session().layerPathRef() != m_image.classicPath()) {
+        const bool hadShow = m_textCtrl.session().showsRegions();
+        m_textCtrl.session().setShowRegions(true);
         refreshTextLayer();
-        m_textLayer.setShowRegions(hadShow);
+        m_textCtrl.session().setShowRegions(hadShow);
     }
     int page = 0;
     QString uri;

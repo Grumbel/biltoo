@@ -366,3 +366,6 @@ Product shell (minimal):
 17. **biltoo-2475:** ZoomRegionGesture (Z-key / Workspace Zoom tool) owned by
     ImageController; ImageView thin arm/cancel/try* routers.
 
+18. **biltoo-2476:** TextLayerController owns TextLayerSession + text/link
+    search, rubber-band, hit-test, and paint helpers; ImageView thin routers.
+

@@ -218,6 +218,7 @@ set(BILTOO_LIB_SOURCES
   src/hud/hudgeometry.h
   src/text/textsearchpolicy.h
   src/text/textsearchpolicy.cpp
+  src/text/textlayercontroller.cpp
   src/view/canvaspatterngeometry.h
   src/gallery/galleryrelayoutsuppress.h
   src/gallery/layoutapplyguard.h

@@ -170,17 +170,12 @@
     void paintEmptySessionInvite(QPainter &painter);
     void paintHudPanels(QPainter &painter);
     void paintSlideshowSeekbar(QPainter &painter);
-    void recomputeTextSearchMatches();
-    void finishTextRubberBand();
-    [[nodiscard]] bool pageYUpForTextLayer() const;
     /**
      * Map a page text/link region into the primary item's current image-pixel
      * space (after session content flip / quarter-turn bake). Empty if the
      * layer or item is unavailable.
      */
-    [[nodiscard]] QRectF textRegionImageRect(const ThumtooCache::TextRegion &region) const;
     /** Map viewport rubber rect → image-pixel rect on primary item. */
-    [[nodiscard]] QRectF textRubberBandImageRect() const;
     /** Hit-test link region under view pos; sets page/uri outs. */
     [[nodiscard]] bool hitTextLinkAt(const QPoint &viewPos, int *pageOut,
                                     QString *uriOut) const;

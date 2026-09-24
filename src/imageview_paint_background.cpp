@@ -221,22 +221,22 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
 
     // Text search highlights + optional region outlines (Image mode page docs).
-    if (isImageMode() && m_textLayer.hasRegions()
-        && (m_textLayer.showsRegions() || m_textLayer.hasSearchMatches())) {
+    if (isImageMode() && m_textCtrl.session().hasRegions()
+        && (m_textCtrl.session().showsRegions() || m_textCtrl.session().hasSearchMatches())) {
         if (ImageItem *item = primaryItem()) {
             const QSize sz = item->imageSize();
-            if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBoundsValid()) {
+            if (sz.width() > 0 && sz.height() > 0 && m_textCtrl.session().pageBoundsValid()) {
                 painter->save();
                 // Search hits: filled yellow first (under outlines / selection).
-                if (m_textLayer.hasSearchMatches()) {
+                if (m_textCtrl.session().hasSearchMatches()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(255, 220, 40, 110));
-                    for (int idxMatch : m_textLayer.searchMatchesRef()) {
-                        if (idxMatch < 0 || idxMatch >= m_textLayer.regionCount()) {
+                    for (int idxMatch : m_textCtrl.session().searchMatchesRef()) {
+                        if (idxMatch < 0 || idxMatch >= m_textCtrl.session().regionCount()) {
                             continue;
                         }
-                        const auto &r = m_textLayer.regionAt(idxMatch);
-                        const QRectF img = textRegionImageRect(r);
+                        const auto &r = m_textCtrl.session().regionAt(idxMatch);
+                        const QRectF img = m_textCtrl.regionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }
@@ -245,15 +245,15 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                     }
                 }
                 // Rubber-band text selection (cyan).
-                if (m_textLayer.hasSelection()) {
+                if (m_textCtrl.session().hasSelection()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(60, 160, 255, 100));
-                    for (int idxSel : m_textLayer.selectedRegionsRef()) {
-                        if (idxSel < 0 || idxSel >= m_textLayer.regionCount()) {
+                    for (int idxSel : m_textCtrl.session().selectedRegionsRef()) {
+                        if (idxSel < 0 || idxSel >= m_textCtrl.session().regionCount()) {
                             continue;
                         }
-                        const auto &r = m_textLayer.regionAt(idxSel);
-                        const QRectF img = textRegionImageRect(r);
+                        const auto &r = m_textCtrl.session().regionAt(idxSel);
+                        const QRectF img = m_textCtrl.regionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }
@@ -261,10 +261,10 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                         painter->drawPolygon(item->mapToScene(local));
                     }
                 }
-                if (m_textLayer.showsRegions()) {
+                if (m_textCtrl.session().showsRegions()) {
                     painter->setBrush(Qt::NoBrush);
-                    for (const ThumtooCache::TextRegion &r : m_textLayer.regions()) {
-                        const QRectF img = textRegionImageRect(r);
+                    for (const ThumtooCache::TextRegion &r : m_textCtrl.session().regions()) {
+                        const QRectF img = m_textCtrl.regionImageRect(r);
                         if (img.isEmpty()) {
                             continue;
                         }

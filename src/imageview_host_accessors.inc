@@ -90,8 +90,8 @@
     AttentionController &hostAttention() { return m_attentionCtrl; }
     const AttentionController &hostAttention() const { return m_attentionCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */
-    TextLayerSession &hostTextLayer() override { return m_textLayer; }
-    const TextLayerSession &hostTextLayer() const override { return m_textLayer; }
+    TextLayerSession &hostTextLayer() override { return m_textCtrl.session(); }
+    const TextLayerSession &hostTextLayer() const override { return m_textCtrl.session(); }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const override { return m_imageModeSoftProvider; }
 

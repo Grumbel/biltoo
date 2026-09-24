@@ -78,14 +78,14 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && !m_textLayer.isRubberbanding()
+    if (isImageMode() && !m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && !m_textCtrl.session().isRubberbanding()
         && !m_chrome.isPanning() && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(m_image.classicPath())) {
-        if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
+        if (!m_textCtrl.session().hasLayerRegions() || m_textCtrl.session().layerPathRef() != m_image.classicPath()) {
             const ThumtooCache::PageTextLayer cached =
                 ThumtooCache::cachedPageTextLayer(m_image.classicPath());
             if (!cached.regions.isEmpty()) {
-                m_textLayer.setLayerContent(cached, m_image.classicPath());
+                m_textCtrl.session().setLayerContent(cached, m_image.classicPath());
             }
         }
         int page = 0;
@@ -105,11 +105,11 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
         } else if (hostHoverEdge() == EdgeZone::None) {
             setCursor(m_chrome.isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
-        if (m_textLayer.setLinkHoverTip(tip)) {
+        if (m_textCtrl.session().setLinkHoverTip(tip)) {
             emit statusChanged();
         }
-    } else if (m_textLayer.hasLinkHoverTip() && event->buttons() == Qt::NoButton) {
-        m_textLayer.clearLinkHoverTip();
+    } else if (m_textCtrl.session().hasLinkHoverTip() && event->buttons() == Qt::NoButton) {
+        m_textCtrl.session().clearLinkHoverTip();
         emit statusChanged();
     }
 }

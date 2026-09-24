@@ -86,6 +86,8 @@
     WorkspaceController m_workspace;
     /** Image-mode collaborator (enter transition). */
     ImageController m_image;
+    /** Page text / link overlay (search, rubber-band). */
+    TextLayerController m_textCtrl;
     /**
      * Phase 6 Tier 5a / Dual Stage 2c.1: display pipeline.
      * Default: owned unique_ptr. Dual pane: secondary host binds external via
@@ -139,7 +141,7 @@
     SessionNavFlags m_sessionNav;
     /** Last mouse position in viewport coords (gallery hover + scroll). */
     CanvasBackground m_canvasBg;
-    TextLayerSession m_textLayer;
+    // TextLayerSession: owned by TextLayerController (m_textCtrl).
     HudAppearance m_hudPrefs;
     SessionIdentity m_sessionId;
     HudFlash m_hudFlash;
