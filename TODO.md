@@ -2,18 +2,20 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2467.1-own-image-mode-framing** (base `7d823d8`).
+**Tip: biltoo-2468.1-own-image-size-coordinator** (base `7d823d8`).
 
 ### Ownership transfer
 - **2464–2466:** Workspace group / page-guide / chrome + ItemInteract
-- **2467:** Image-mode framing + sticky pan capture/restore → `ImageController`
-  (`imagecontroller_framing.cpp`). ImageView keeps thin host forwards + zoom chrome.
+- **2467:** Image-mode framing → ImageController
+- **2468:** ImageSizeBook + probe/remember policy → `ImageSizeCoordinator`
+  (`item/imagesizecoordinator.*`). GallerySizeResolve host + applyProbedImageSize
+  stay on ImageView (canvas apply).
 
 ### Next
-- size-book coordinator (optional)
+- GallerySizeResolveHost → GalleryController (optional)
 - Dual PreferCache coordination (optional)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2467.1-own-image-mode-framing-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2468.1-own-image-size-coordinator-7d823d8.bundle HEAD
 ```

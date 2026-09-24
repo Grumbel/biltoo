@@ -56,6 +56,7 @@
 
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
+    , m_size(this)
     , m_gallery(this)
     , m_slideshow(this)
     , m_cropCtrl(this)
@@ -70,7 +71,7 @@ ImageView::ImageView(QWidget *parent)
     // Phase 7 Stage 0: path/size books are owned here; appearance binds later
     // from MainWindow (SessionDocument).
     m_itemWorld.bindPathBook(&m_pathStateBook);
-    m_itemWorld.bindSizeBook(&m_sizeBook);
+    m_itemWorld.bindSizeBook(&m_size.book());
 
     // PackOrderOverlay defaults to FollowDocument; match former empty book
     // (Explicit empty) so pack stays blank until pathOrderSetOrder / append.
@@ -150,11 +151,11 @@ ImageView::ImageView(QWidget *parent)
                 if (path.isEmpty()) {
                     return;
                 }
-                m_sizeBook.clearProbeScheduled(path);
+                m_size.book().clearProbeScheduled(path);
                 const bool valid = size.isValid() && size.width() > 0 && size.height() > 0;
                 if (valid) {
                     // Prefer a size already learned from a full decode.
-                    if (m_sizeBook.hasDefinitive(path)) {
+                    if (m_size.book().hasDefinitive(path)) {
                         // Still try LQIP if tiles are blank (probe may have written LQIP).
                     } else {
                         rememberImageSize(path, size);

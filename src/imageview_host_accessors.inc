@@ -18,7 +18,7 @@
     const SessionBindBook &hostBindBook() const override { return m_bindBook; }
     /**
      * Dual ImageView: secondary hosts that bindSharedItemWorld must use the
-     * shared world's size book (primary-owned). Local m_sizeBook stays empty
+     * shared world's size book (primary-owned). Local m_size.book() stays empty
      * otherwise layout stays 1×1 and the compare pane paints blank.
      */
     ImageSizeBook &hostSizeBook() override
@@ -26,14 +26,14 @@
         if (m_sharedItemWorld && m_sharedItemWorld->hasSizeBookBound()) {
             return m_sharedItemWorld->sizeBook();
         }
-        return m_sizeBook;
+        return m_size.book();
     }
     const ImageSizeBook &hostSizeBook() const override
     {
         if (m_sharedItemWorld && m_sharedItemWorld->hasSizeBookBound()) {
             return m_sharedItemWorld->sizeBook();
         }
-        return m_sizeBook;
+        return m_size.book();
     }
     ViewFraming &hostFraming() override { return m_framing; }
     const ViewFraming &hostFraming() const override { return m_framing; }

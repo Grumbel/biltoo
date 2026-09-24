@@ -110,7 +110,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     if (!path.isEmpty() && !liveSessionCrop && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
-            && !m_sizeBook.isProvisional(path)) {
+            && !m_size.book().isProvisional(path)) {
             const SessionImageId sid = resolveContentEditSessionId(item);
             const WorkspaceItemState want = m_displayPipeline->wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);

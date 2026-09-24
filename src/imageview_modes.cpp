@@ -65,7 +65,7 @@ void ImageView::invalidateSessionLoads()
     m_slideshow.phase().bumpToAtlasRebuildGeneration();
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
-    m_sizeBook.clear();
+    m_size.book().clear();
     m_gallerySizeResolve.cancel();
     // Drop host size-probe FIFO + bump generation so previous-session Store
     // size callbacks cannot emit sizeReady or refill ImageCache after clear.
@@ -242,7 +242,7 @@ void ImageView::clearWorkspace()
     m_bindBook.clear();
     m_pendingAppearance.clear();
     m_displayPipeline->galleryDecodeResetAll();
-    m_sizeBook.clear();
+    m_size.book().clear();
     m_galleryDecodeBook.setDeferPopulate(false);
     m_gallerySizeResolve.cancel();
     ImageCache::clear();

@@ -17,7 +17,7 @@
      */
     QSize imageSizeForPath(const QString &path);
     /**
-     * Cache-only pass before Gallery pack: fill m_sizeBook from
+     * Cache-only pass before Gallery pack: fill size book from
      * ThumtooCache::cachedSize and ImageCache from LQIP when present.
      * Does not schedule ladder encode or source I/O.
      */
@@ -26,7 +26,7 @@
     // --- GallerySizeResolveHost -------------------------------------------------
     bool hasDefinitiveHostSize(const QString &path) const override
     {
-        return m_sizeBook.hasDefinitive(path);
+        return m_size.book().hasDefinitive(path);
     }
     void adoptResolvedSize(const QString &path, const QSize &size) override;
     void adoptSizeProbeFailed(const QString &path) override;
@@ -149,7 +149,7 @@
      * Path → native pixel size + provisional / probe-scheduled sets.
      * Dimensions are a property of the file; safe to key by path (not id).
      */
-    ImageSizeBook m_sizeBook;
+    ImageSizeCoordinator m_size;
     /** Centre HUD progress (expand / size resolve / sort). */
     CentreProgress m_centreProgress;
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */

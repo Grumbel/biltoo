@@ -323,7 +323,7 @@ int ImageView::resetContentAppearanceForTargets()
         {
             QSize native = ThumtooCache::cachedSize(path);
             if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-                const QSize known = m_sizeBook.known(path);
+                const QSize known = m_size.book().known(path);
                 if (!known.isEmpty()) {
                     native = known;
                 }

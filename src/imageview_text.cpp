@@ -223,7 +223,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     const QString path = m_image.classicPath();
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
-        const QSize known = m_sizeBook.known(path);
+        const QSize known = m_size.book().known(path);
         if (!known.isEmpty()) {
             sourceSize = known;
         }

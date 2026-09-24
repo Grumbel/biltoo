@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Image size book, probes, and GallerySizeResolve host methods.
+// GallerySizeResolve host + applyProbedImageSize. Book/probe: ImageSizeCoordinator.
 
 #include "imageview.h"
 #include "content/contentxform.h"
@@ -27,109 +27,13 @@
 #include <algorithm>
 
 
-void ImageView::rememberImageSize(const QString &path, const QSize &size)
-{
-    GUI_BUDGET("ImageView::rememberImageSize");
-    // HARD RULE lives in ImageSizeBook::noteDefinitive (SIZE.md identity).
-    if (!m_sizeBook.noteDefinitive(path, size)) {
-        return;
-    }
-    ThumtooCache::noteCachedSize(path, size);
-}
-
-void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
-{
-    if (path.isEmpty() || image.isNull()) {
-        return;
-    }
-    // Durable index is authoritative when present (no revalidate on GUI).
-    if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-        isPositiveSize(cached)) {
-        rememberImageSize(path, cached);
-        return;
-    }
-    // Already have a definitive logical size — leave samples alone.
-    if (m_sizeBook.hasDefinitive(path)) {
-        return;
-    }
-    // Ladder / soft samples are not native identity. Probe for the real size;
-    // do not write sample dimensions into the logical map.
-    const int edge = qMax(image.width(), image.height());
-    if (edge <= ThumtooCache::kImageLadderEdge) {
-        scheduleImageSizeProbe(path);
-        return;
-    }
-    // Larger than the image ladder max — treat as full native decode.
-    rememberImageSize(path, image.size());
-}
-
-
-QSize ImageView::imageSizeForPath(const QString &path)
-{
-    if (path.isEmpty()) {
-        return ImageSizeBook::standInNeutral();
-    }
-    const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known)) {
-        if (!m_sizeBook.contains(path)) {
-            rememberImageSize(path, known); // install thumtoo hit into map
-        }
-        // Do not treat provisional stand-ins as known geometry for Gallery.
-        if (isGalleryMode() && m_sizeBook.isProvisional(path)) {
-            scheduleImageSizeProbe(path);
-            return {};
-        }
-        return known;
-    }
-    // Gallery size-first: never install 1000² / square stand-ins into the book.
-    // Probe only; ordered pack waits for definitive size or explicit failure.
-    if (isGalleryMode()) {
-        scheduleImageSizeProbe(path);
-        return {};
-    }
-    // Archives / multipage / embedded PDF: async probe; neutral stand-in.
-    scheduleImageSizeProbe(path);
-    const bool compound = ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
-        || PagePath::isPdfImageRef(path);
-    // Square is only a last resort for compound refs until soft aspect or probe.
-    const QSize standIn = ImageSizeBook::standInForCompoundPath(compound);
-    m_sizeBook.markProvisional(path, standIn);
-    return standIn;
-}
-
-QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
-{
-    // File-native size only (map / thumtoo) — not content-oriented layout.
-    // Prefer contentLayoutSize(path, sessionId) for placeholder / pack cells.
-    // previewHint is display-only; using it for aspect made layout jump when LQIP
-    // (wrong aspect / tiny box) was replaced by the size probe.
-    Q_UNUSED(previewHint);
-    const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known) && !m_sizeBook.isProvisional(path)) {
-        return known;
-    }
-    if (!path.isEmpty()) {
-        scheduleImageSizeProbe(path);
-    }
-    // Provisional or definitive entry already in the book (layout needs a size).
-    const QSize bookSize = m_sizeBook.known(path);
-    if (!bookSize.isEmpty() && !m_sizeBook.isProvisional(path)) {
-        return bookSize;
-    }
-    if (isGalleryMode()) {
-        scheduleImageSizeProbe(path);
-        return {};
-    }
-    return imageSizeForPath(path);
-}
-
 QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId,
                                    bool allowStoreAppearance) const
 {
     // Ground truth: native × ItemWorld content ops (same as filmstrip provider).
     QSize native = logicalSizeForPath(path);
     if (!(native.width() > 1 && native.height() > 1)) {
-        native = m_sizeBook.known(path);
+        native = m_size.book().known(path);
     }
     if (!(native.width() > 1 && native.height() > 1)) {
         // Trigger probe on non-const path via const_cast schedule is awkward;
@@ -174,78 +78,6 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     return native;
 }
 
-
-void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
-{
-    ASSERT_GUI_THREAD();
-    GUI_BUDGET("ImageView::primeGalleryGeometryFromCache");
-    // Expect warmSessionOpenMemos to have filled size memo + ImageCache LQIP.
-    for (const QString &path : paths) {
-        if (path.isEmpty()) {
-            continue;
-        }
-        if (!m_sizeBook.hasDefinitive(path)) {
-            if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-                isPositiveSize(cached)) {
-                rememberImageSize(path, cached);
-            }
-        }
-        // LQIP placeholder already in ImageCache from warmSessionOpenMemos.
-        Q_UNUSED(ImageCache::has(path));
-    }
-}
-
-void ImageView::scheduleImageSizeProbe(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    if (m_sizeBook.isProbeScheduled(path)) {
-        return;
-    }
-    // Definitive size already known — provisional stand-ins must still probe.
-    if (m_sizeBook.hasDefinitive(path)) {
-        return;
-    }
-    // Never isUnsupported on the GUI (Store get_meta). scheduleProbe / worker
-    // skips unsupported locators.
-    // Prefer thumtoo: scheduleProbe only; Bridge::sizeReady applies the size.
-    // No thread-pool Qt/vips/extract size read when the durable client is up.
-    if (ThumtooCache::isAvailable()) {
-        m_sizeBook.markProbeScheduled(path);
-        ThumtooCache::scheduleProbe(path);
-        return;
-    }
-    // Builds without thumtoo: native size probe on a worker.
-    m_sizeBook.markProbeScheduled(path);
-    const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path]() {
-        QSize s = ImageLoader::probeSize(path);
-        if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-            s = ImageSizeBook::standInNeutral();
-        }
-        if (!guard) {
-            return;
-        }
-        ImageView *view = guard.data();
-        if (!view) {
-            return;
-        }
-        QMetaObject::invokeMethod(view, [guard, path, s]() {
-            ImageView *const host = guard.data();
-            if (!host) {
-                return;
-            }
-            host->m_sizeBook.clearProbeScheduled(path);
-            // Prefer a size already learned from a full decode — not provisional.
-            if (host->m_sizeBook.hasDefinitive(path)) {
-                return;
-            }
-            host->rememberImageSize(path, s);
-            host->applyProbedImageSize(path, s);
-        }, Qt::QueuedConnection);
-    });
-}
 
 void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 {
@@ -342,9 +174,9 @@ void ImageView::adoptSizeProbeFailed(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    m_sizeBook.markFailed(path);
+    m_size.book().markFailed(path);
     // Apply error-cell layout so ordered pack can place this row.
-    if (const QSize native = m_sizeBook.contains(path)
+    if (const QSize native = m_size.book().contains(path)
             ? logicalSizeForPath(path)
             : QSize(256, 256);
         isPositiveSize(native)) {
@@ -495,32 +327,45 @@ void ImageView::clearCentreProgress()
 
 // --- Logical size (was imageview_view.cpp) ---
 
+
+// --- Size book / probe: ImageSizeCoordinator (thin forwards) ---
+
+void ImageView::rememberImageSize(const QString &path, const QSize &size)
+{
+    m_size.rememberImageSize(path, size);
+}
+
+void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
+{
+    m_size.rememberSizeFromDecode(path, image);
+}
+
+QSize ImageView::imageSizeForPath(const QString &path)
+{
+    return m_size.imageSizeForPath(path);
+}
+
+QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
+{
+    return m_size.layoutSizeForPath(path, previewHint);
+}
+
+void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
+{
+    m_size.primeGalleryGeometryFromCache(paths);
+}
+
+void ImageView::scheduleImageSizeProbe(const QString &path)
+{
+    m_size.scheduleImageSizeProbe(path);
+}
+
 QSize ImageView::logicalSizeForPath(const QString &path) const
 {
-    if (path.isEmpty()) {
-        return {};
-    }
-    const QSize known = m_sizeBook.known(path);
-    if (!known.isEmpty()) {
-        return known;
-    }
-    const QSize cached = ThumtooCache::cachedSize(path);
-    if (isPositiveSize(cached)) {
-        return cached;
-    }
-    return {};
+    return m_size.logicalSizeForPath(path);
 }
 
 QSize ImageView::ensureLogicalSizeForPath(const QString &path)
 {
-    if (path.isEmpty()) {
-        return {};
-    }
-    const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known) && !m_sizeBook.isProvisional(path)) {
-        return known;
-    }
-    // imageSizeForPath may schedule a probe and/or install thumtoo cache.
-    return imageSizeForPath(path);
+    return m_size.ensureLogicalSizeForPath(path);
 }
-

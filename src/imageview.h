@@ -31,6 +31,7 @@
 #include "gallery/galleryrelayoutsuppress.h"
 #include "gallery/layoutapplyguard.h"
 #include "item/imagesizebook.h"
+#include "item/imagesizecoordinator.h"
 #include "item/pathitemstatebook.h"
 #include "item/pendingitemappearancebook.h"
 #include "slideshow/slideshowtypes.h"
@@ -228,7 +229,7 @@ public:
     void applyToolDragMode();
     /**
      * Logical image size for @a path (never soft-raster dimensions).
-     * Lookup only: m_sizeBook, then thumtoo cache. Empty if unknown.
+     * Lookup only: size book, then thumtoo cache. Empty if unknown.
      * Slideshow and Image-mode framing share this.
      */
     QSize logicalSizeForPath(const QString &path) const override;

@@ -219,6 +219,8 @@ set(BILTOO_LIB_SOURCES
   src/gallery/galleryrelayoutsuppress.h
   src/gallery/layoutapplyguard.h
   src/item/imagesizebook.h
+  src/item/imagesizecoordinator.cpp
+  src/item/imagesizecoordinator.h
   src/item/pathitemstatebook.h
   src/item/pendingitemappearancebook.h
   src/slideshow/slideshowtypes.h
