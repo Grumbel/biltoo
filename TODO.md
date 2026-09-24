@@ -2,14 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2480.1-own-gallery-layout-debounce-timer** (base `7d823d8`).
+**Tip: biltoo-2480.2-fix-text-recompute-decl** (base `7d823d8`).
 
-### Ownership transfer
-- **Layout debounce QTimer** on GalleryController (parented to ImageView)
-- `requestDebouncedPack` / `stopLayoutDebounceTimer` on GalleryController
-- ImageView: thin `requestDebouncedGalleryPack` / `stopDeferredPacking`
+### Fix
+- Drop ImageView::recomputeTextSearchMatches thin router (declaration was
+  removed with TextLayerController ownership; method lives only on controller)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2480.1-own-gallery-layout-debounce-timer-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2480.2-fix-text-recompute-decl-7d823d8.bundle HEAD
 ```

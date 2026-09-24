@@ -34,11 +34,6 @@ void ImageView::setTextSearchFuzzy(bool on)
     m_textCtrl.setSearchFuzzy(on);
 }
 
-void ImageView::recomputeTextSearchMatches()
-{
-    m_textCtrl.recomputeSearchMatches();
-}
-
 int ImageView::setTextSearchQuery(const QString &query)
 {
     return m_textCtrl.setSearchQuery(query);

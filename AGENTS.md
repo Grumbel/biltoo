@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2480.1-own-gallery-layout-debounce-timer**.
-Latest tip: **biltoo-2480** (+ thumtoo-338). Own: gallery layout-debounce QTimer on GalleryController.
+Latest agent handoff: **TODO.md → biltoo-2480.2-fix-text-recompute-decl**.
+Latest tip: **biltoo-2480.2** (+ thumtoo-338). Fix: drop undeclared recomputeTextSearchMatches router.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
