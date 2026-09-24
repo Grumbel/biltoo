@@ -543,3 +543,7 @@ Product shell (minimal):
     WorkspaceController owns placeSessionIdsOnCanvas and removeCanvasSessionIds;
     ImageView thin routers.
 
+63. **biltoo-2521:** Fix ViewModeFlags (int mode; ImageView::ViewMode is nested).
+    WorkspaceController owns removeWorkspaceSessionId and helpers
+    (collect/destroy session-id items, prune binds/path order, restore viewport).
+

@@ -3,8 +3,9 @@
 
 #include "view/viewmodeflags.h"
 #include "imageitem.h"
+#include "imageview.h"
 
-void ViewModeFlags::applyToItem(ImageItem *item, ViewMode mode)
+void ViewModeFlags::applyToItem(ImageItem *item, int mode)
 {
     if (!item) {
         return;
@@ -13,10 +14,11 @@ void ViewModeFlags::applyToItem(ImageItem *item, ViewMode mode)
     //   Workspace → movable + handles
     //   Gallery   → selectable only (open on click), no chrome
     //   Image     → static, no selection chrome
-    if (mode == ViewMode::Workspace) {
+    const auto vm = static_cast<ImageView::ViewMode>(mode);
+    if (vm == ImageView::ViewMode::Workspace) {
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
-    } else if (mode == ViewMode::Gallery) {
+    } else if (vm == ImageView::ViewMode::Gallery) {
         item->setGallerySelectable(true);
         item->setScaleHandlesEnabled(false);
     } else {

@@ -21,6 +21,10 @@
 #include <QGraphicsScene>
 #include <QHash>
 #include <QUndoStack>
+#include "session/packorderview.h"
+#include "session/sessionbindbook.h"
+#include <QScrollBar>
+#include <QWidget>
 
 void WorkspaceController::clearInteractionState()
 {
@@ -151,4 +155,168 @@ bool WorkspaceController::validateUniqueLiveSessionIds(const char *context) cons
     checkList(stashedItems(), "workspace-stash");
     checkList(m_view->hostGallery().stashedItems(), "gallery-stash");
     return ok;
+}
+
+QList<ImageItem *> WorkspaceController::collectItemsForSessionId(SessionImageId sessionId) const
+{
+    QList<ImageItem *> doomed;
+    auto collect = [&](const QList<ImageItem *> &list) {
+        for (ImageItem *item : list) {
+            if (item && item->sessionId() == sessionId && !doomed.contains(item)) {
+                doomed.append(item);
+            }
+        }
+    };
+    collect(m_view->liveItems());
+    collect(stashedItems());
+    collect(m_view->hostGallery().stashedItems());
+    return doomed;
+}
+
+QStringList WorkspaceController::destroySessionIdItems(const QList<ImageItem *> &doomed)
+{
+    QStringList removedPaths;
+    for (ImageItem *item : doomed) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        removedPaths.append(path);
+        // Drop in-flight decodes so a late LoadAdd cannot create a tile or
+        // call applyLayout after this session image is gone.
+        m_view->hostDisplayPipeline().loadGate().removePendingWorkspacePath(path);
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
+        m_view->hostDisplayPipeline().loadGate().removePendingScenePos(path);
+        // destroyCanvasItem clears selection anchor / drag pointers and
+        // removes from live and both stashes (safe if already only in one).
+        // persistState=false: caller already removeAppearance for this id —
+        // rememberItemState would setAppearance and undo the delete.
+        destroyCanvasItem(item, false);
+    }
+    return removedPaths;
+}
+
+void WorkspaceController::prunePendingBindsAndSavedForSessionId(SessionImageId sessionId)
+{
+    m_view->hostBindBook().removeBindsForSessionId(sessionId);
+    for (int i = savedItems().size() - 1; i >= 0; --i) {
+        if (savedItems().at(i).sessionId == sessionId) {
+            savedItems().removeAt(i);
+        }
+    }
+}
+
+void WorkspaceController::prunePathOrdersAfterSessionRemove(const QStringList &removedPaths)
+{
+    if (removedPaths.isEmpty()) {
+        return;
+    }
+    // Rebuild path/id order aligned with remaining tiles (IDENTITY: id first).
+    QStringList prunedPaths;
+    QVector<SessionImageId> prunedIds;
+    prunedPaths.reserve(m_view->liveItems().size());
+    prunedIds.reserve(m_view->liveItems().size());
+    QSet<SessionImageId> seenIds;
+    QHash<QString, int> unboundBudget;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            if (seenIds.contains(sid)) {
+                continue;
+            }
+            seenIds.insert(sid);
+            prunedPaths.append(item->path());
+            prunedIds.append(sid);
+        } else {
+            unboundBudget[item->path()] += 1;
+        }
+    }
+    // Preserve prior order for unbound path slots still live.
+    const PackOrderView pack = m_view->currentPackOrder();
+    for (int i = 0; i < pack.size(); ++i) {
+        const QString path = pack.pathAt(i);
+        const SessionImageId sid = pack.idAt(i);
+        if (sid != kInvalidSessionImageId) {
+            continue; // already taken from live bound tiles
+        }
+        if (unboundBudget.value(path) > 0) {
+            prunedPaths.append(path);
+            prunedIds.append(kInvalidSessionImageId);
+            unboundBudget[path] -= 1;
+        }
+    }
+    m_view->pathOrderSetOrder(prunedPaths, prunedIds);
+}
+
+void WorkspaceController::restoreViewportAfterSessionRemove(
+    bool gallery, const QRectF &keptSceneRect, const QPointF &keptCenter,
+    int scrollH, int scrollV)
+{
+    // Gallery: repack so deleted tiles do not leave empty holes. Preserve the
+    // pre-delete viewport centre afterward (same idea as return-from-Image).
+    if (gallery) {
+        QGraphicsScene *scene = m_view->canvasScene();
+        if (scene) {
+            if (!m_view->liveItems().isEmpty()) {
+                m_view->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
+            } else if (keptSceneRect.isValid()) {
+                scene->setSceneRect(keptSceneRect);
+            }
+            if (!keptCenter.isNull()) {
+                m_view->centerOn(keptCenter);
+            }
+            if (QScrollBar *h = m_view->horizontalScrollBar()) {
+                h->setValue(scrollH);
+            }
+            if (QScrollBar *v = m_view->verticalScrollBar()) {
+                v->setValue(scrollV);
+            }
+            m_view->hostGallery().setViewportSnapshot(keptCenter, scrollH, scrollV);
+        }
+    } else if (m_view->isWorkspaceMode()) {
+        updateSceneRect();
+    }
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}
+
+void WorkspaceController::removeWorkspaceSessionId(SessionImageId sessionId)
+{
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    m_view->itemWorld().removeAppearance(sessionId);
+
+    // Capture view before any item is destroyed — Qt may shrink sceneRect
+    // while removeItem runs, which zeroes scrollbar ranges mid-loop.
+    const bool gallery = m_view->isGalleryMode();
+    QGraphicsScene *scene = m_view->canvasScene();
+    QRectF keptSceneRect = (scene && gallery) ? scene->sceneRect() : QRectF();
+    if (gallery && scene && !keptSceneRect.isValid()) {
+        keptSceneRect = scene->itemsBoundingRect();
+        if (keptSceneRect.isValid()) {
+            keptSceneRect.adjust(-64, -64, 64, 64);
+        }
+    }
+    const QPointF keptCenter = gallery
+        ? m_view->mapToScene(m_view->viewport()->rect().center())
+        : QPointF();
+    const int scrollH = m_view->horizontalScrollBar()
+        ? m_view->horizontalScrollBar()->value() : 0;
+    const int scrollV = m_view->verticalScrollBar()
+        ? m_view->verticalScrollBar()->value() : 0;
+
+    // Collect first — destroyCanvasItem mutates live / stashes.
+    const QList<ImageItem *> doomed = collectItemsForSessionId(sessionId);
+    const QStringList removedPaths = destroySessionIdItems(doomed);
+    prunePendingBindsAndSavedForSessionId(sessionId);
+    prunePathOrdersAfterSessionRemove(removedPaths);
+    restoreViewportAfterSessionRemove(gallery, keptSceneRect, keptCenter, scrollH, scrollV);
+
+    emit m_view->statusChanged();
+    emit m_view->workspacePathsChanged();
 }

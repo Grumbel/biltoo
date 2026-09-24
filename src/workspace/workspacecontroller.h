@@ -144,6 +144,13 @@ public:
     void placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
                                const QStringList &paths,
                                const QList<int> &sessionIndices);
+    void removeWorkspaceSessionId(SessionImageId sessionId);
+    void prunePendingBindsAndSavedForSessionId(SessionImageId sessionId);
+    void prunePathOrdersAfterSessionRemove(const QStringList &removedPaths);
+    void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
+                                          const QPointF &keptCenter, int scrollH, int scrollV);
+    QList<ImageItem *> collectItemsForSessionId(SessionImageId sessionId) const;
+    QStringList destroySessionIdItems(const QList<ImageItem *> &doomed);
     /** Teardown live/stash tile (pipeline bags, scene, undo). */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
     void clearInteractionState();

@@ -211,7 +211,7 @@ void ImageView::setViewMode(ViewMode mode)
 
 void ImageView::applyItemModeFlags(ImageItem *item)
 {
-    ViewModeFlags::applyToItem(item, m_viewMode);
+    ViewModeFlags::applyToItem(item, static_cast<int>(m_viewMode));
 }
 
 void ImageView::setLayoutMode(LayoutMode mode)

@@ -205,40 +205,11 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
 
 QList<ImageItem *> ImageView::collectItemsForSessionId(SessionImageId sessionId) const
 {
-    QList<ImageItem *> doomed;
-    auto collect = [&](const QList<ImageItem *> &list) {
-        for (ImageItem *item : list) {
-            if (item && item->sessionId() == sessionId && !doomed.contains(item)) {
-                doomed.append(item);
-            }
-        }
-    };
-    collect(m_items);
-    collect(m_workspace.stashedItems());
-    collect(m_gallery.stashedItems());
-    return doomed;
+    return m_workspace.collectItemsForSessionId(sessionId);
 }
-
 
 QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
 {
-    QStringList removedPaths;
-    for (ImageItem *item : doomed) {
-        if (!item) {
-            continue;
-        }
-        const QString path = item->path();
-        removedPaths.append(path);
-        // Drop in-flight decodes so a late LoadAdd cannot create a tile or
-        // call applyLayout after this session image is gone.
-        m_displayPipeline->loadGate().removePendingWorkspacePath(path);
-        m_displayPipeline->galleryDecodeResetPath(path);
-        m_displayPipeline->loadGate().removePendingScenePos(path);
-        // destroyCanvasItem clears selection anchor / drag pointers and
-        // removes from m_items and both stashes (safe if already only in one).
-        // persistState=false: caller already removeAppearance for this id —
-        // rememberItemState would setAppearance and undo the delete.
-        destroyCanvasItem(item, false);
-    }
-    return removedPaths;
+    return m_workspace.destroySessionIdItems(doomed);
 }
+

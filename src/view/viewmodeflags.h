@@ -4,17 +4,17 @@
 #ifndef VIEWMODEFLAGS_H
 #define VIEWMODEFLAGS_H
 
-#include "imageview_types.h"
-
 class ImageItem;
 
 /**
  * Pure mode → ImageItem interact/selectable flags.
- * ImageView applyItemModeFlags is a thin host wrapper over this policy.
+ * @p mode is ImageView::ViewMode (Image=0, Gallery, Workspace) without
+ * including ImageView.h in this leaf header.
+ * ImageView::applyItemModeFlags is a thin host wrapper over this policy.
  */
 namespace ViewModeFlags {
 
-void applyToItem(ImageItem *item, ViewMode mode);
+void applyToItem(ImageItem *item, int mode);
 
 } // namespace ViewModeFlags
 
