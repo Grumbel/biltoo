@@ -55,7 +55,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // Letterbox composite fills the viewport during slideshow; edge chevrons
     // and HUD must paint after it or they are covered.
     paintSlideshowLetterboxComposite(painter);
-    paintEmptySessionInvite(painter);
+    m_shell.paintEmptySessionInvite(painter);
 
     if (!m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && hostHoverEdge() != EdgeZone::None && isImageMode()
         && (m_image.sessionNav().isImageModeNavEnabled() || hostHoverEdge() == EdgeZone::GalleryReturn)) {
@@ -291,67 +291,6 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
 
 // --- HUD / empty invite (was imageview_hud_paint.cpp) ---
 
-void ImageView::paintEmptySessionInvite(QPainter &painter)
-{
-    // Empty session: invite the user to open or drop images.
-    // Suppress while progress is active (expand / size resolve / tile load).
-    if (m_items.isEmpty() && !m_image.hasClassicPath() && !m_cropCtrl.session().active()
-        && m_hud.centreProgress().titleRef().isEmpty() && !hostGallerySizeResolve().active()) {
-        painter.save();
-        painter.setRenderHint(QPainter::TextAntialiasing, true);
-        QFont titleFont = font();
-        titleFont.setPointSize(HudGeometry::clampTitlePointSize(titleFont.pointSize()));
-        titleFont.setBold(true);
-        QFont hintFont = font();
-        hintFont.setPointSize(HudGeometry::clampHintPointSize(hintFont.pointSize()));
-        const QString title = isWorkspaceMode()
-            ? tr("Drop images here")
-            : tr("Drop images here or open a file");
-        const QString hint = isWorkspaceMode()
-            ? tr("Drag files or filmstrip thumbnails onto the canvas to place images")
-            : tr("File → Open…  ·  Ctrl+O  ·  drag and drop");
-        const QFontMetrics titleFm(titleFont);
-        const QFontMetrics hintFm(hintFont);
-        const int gap = 8;
-        const int totalH = titleFm.height() + gap + hintFm.height();
-        const int cy = viewport()->height() / 2 - totalH / 2;
-        painter.setFont(titleFont);
-        painter.setPen(QColor(220, 220, 220, 230));
-        painter.drawText(QRect(0, cy, viewport()->width(), titleFm.height()),
-                         Qt::AlignHCenter | Qt::AlignVCenter, title);
-        painter.setFont(hintFont);
-        painter.setPen(QColor(180, 180, 180, 200));
-        painter.drawText(QRect(0, cy + titleFm.height() + gap, viewport()->width(),
-                               hintFm.height()),
-                         Qt::AlignHCenter | Qt::AlignVCenter, hint);
-
-        // Edge-zone captions (Image mode uses these corners once a session is open).
-        if (isImageMode() || (!isWorkspaceMode() && !isGalleryMode())) {
-            QFont edgeFont = font();
-            edgeFont.setPointSize(HudGeometry::clampEdgePointSize(edgeFont.pointSize()));
-            painter.setFont(edgeFont);
-            painter.setPen(QColor(160, 160, 160, 180));
-            const QFontMetrics efm(edgeFont);
-            const int em = 16;
-            const int vw = viewport()->width();
-            const int vh = viewport()->height();
-            const QString prevLabel = tr("← Previous");
-            const QString nextLabel = tr("Next →");
-            const QString backLabel = tr("↑ Back to Gallery / Workspace");
-            painter.drawText(QRect(em, vh / 2 - efm.height() / 2, efm.horizontalAdvance(prevLabel) + 8,
-                                   efm.height()),
-                             Qt::AlignLeft | Qt::AlignVCenter, prevLabel);
-            const int nextW = efm.horizontalAdvance(nextLabel) + 8;
-            painter.drawText(QRect(vw - em - nextW, vh / 2 - efm.height() / 2, nextW, efm.height()),
-                             Qt::AlignRight | Qt::AlignVCenter, nextLabel);
-            const int backW = efm.horizontalAdvance(backLabel) + 8;
-            painter.drawText(QRect((vw - backW) / 2, em, backW, efm.height()),
-                             Qt::AlignHCenter | Qt::AlignTop, backLabel);
-        }
-        painter.restore();
-    }
-
-}
 
 
 void ImageView::paintHudPanels(QPainter &painter)

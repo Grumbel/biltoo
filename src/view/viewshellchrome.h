@@ -45,6 +45,9 @@ public:
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
 
+    /** Empty-canvas open/drop invite + edge-zone captions (viewport device pixels). */
+    void paintEmptySessionInvite(QPainter &painter) const;
+
 private:
     ImageView *m_view = nullptr;
     ViewportChrome m_viewport;

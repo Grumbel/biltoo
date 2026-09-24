@@ -159,7 +159,6 @@
     void paintTextRubberBandOverlay(QPainter &painter);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */
     void paintSlideshowLetterboxComposite(QPainter &painter);
-    void paintEmptySessionInvite(QPainter &painter);
     void paintHudPanels(QPainter &painter);
     void paintSlideshowSeekbar(QPainter &painter);
     /**

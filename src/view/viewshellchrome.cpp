@@ -5,6 +5,13 @@
 
 #include "view/viewshellchrome.h"
 #include "imageview.h"
+#include "hud/hudgeometry.h"
+#include <QRect>
+#include <QColor>
+#include <QCoreApplication>
+#include <QFontMetrics>
+#include <QFont>
+#include <QPainter>
 #include <cstdlib>
 #include <cstdio>
 #include <QStringList>
@@ -222,4 +229,75 @@ void ViewShellChrome::dropEvent(QDropEvent *event)
     emit m_view->filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos,
                               /*hasScenePos=*/true, sessionIds, internalPaths);
     event->acceptProposedAction();
+}
+
+void ViewShellChrome::paintEmptySessionInvite(QPainter &painter) const
+{
+    if (!m_view) {
+        return;
+    }
+    // Empty session: invite the user to open or drop images.
+    // Suppress while progress is active (expand / size resolve / tile load).
+    if (!(m_view->liveItems().isEmpty() && !m_view->hostImage().hasClassicPath()
+          && !m_view->hostCrop().session().active()
+          && m_view->hostCentreProgress().titleRef().isEmpty()
+          && !m_view->hostGallerySizeResolve().active())) {
+        return;
+    }
+    painter.save();
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+    QFont titleFont = m_view->font();
+    titleFont.setPointSize(HudGeometry::clampTitlePointSize(titleFont.pointSize()));
+    titleFont.setBold(true);
+    QFont hintFont = m_view->font();
+    hintFont.setPointSize(HudGeometry::clampHintPointSize(hintFont.pointSize()));
+    const QString title = m_view->isWorkspaceMode()
+        ? QCoreApplication::translate("ImageView", "Drop images here")
+        : QCoreApplication::translate("ImageView", "Drop images here or open a file");
+    const QString hint = m_view->isWorkspaceMode()
+        ? QCoreApplication::translate(
+              "ImageView",
+              "Drag files or filmstrip thumbnails onto the canvas to place images")
+        : QCoreApplication::translate(
+              "ImageView", "File → Open…  ·  Ctrl+O  ·  drag and drop");
+    const QFontMetrics titleFm(titleFont);
+    const QFontMetrics hintFm(hintFont);
+    const int gap = 8;
+    const int totalH = titleFm.height() + gap + hintFm.height();
+    QWidget *vp = m_view->viewport();
+    const int vw = vp ? vp->width() : 0;
+    const int vh = vp ? vp->height() : 0;
+    const int cy = vh / 2 - totalH / 2;
+    painter.setFont(titleFont);
+    painter.setPen(QColor(220, 220, 220, 230));
+    painter.drawText(QRect(0, cy, vw, titleFm.height()),
+                     Qt::AlignHCenter | Qt::AlignVCenter, title);
+    painter.setFont(hintFont);
+    painter.setPen(QColor(180, 180, 180, 200));
+    painter.drawText(QRect(0, cy + titleFm.height() + gap, vw, hintFm.height()),
+                     Qt::AlignHCenter | Qt::AlignVCenter, hint);
+
+    // Edge-zone captions (Image mode uses these corners once a session is open).
+    if (m_view->isImageMode() || (!m_view->isWorkspaceMode() && !m_view->isGalleryMode())) {
+        QFont edgeFont = m_view->font();
+        edgeFont.setPointSize(HudGeometry::clampEdgePointSize(edgeFont.pointSize()));
+        painter.setFont(edgeFont);
+        painter.setPen(QColor(160, 160, 160, 180));
+        const QFontMetrics efm(edgeFont);
+        const int em = 16;
+        const QString prevLabel = QCoreApplication::translate("ImageView", "← Previous");
+        const QString nextLabel = QCoreApplication::translate("ImageView", "Next →");
+        const QString backLabel =
+            QCoreApplication::translate("ImageView", "↑ Back to Gallery / Workspace");
+        painter.drawText(QRect(em, vh / 2 - efm.height() / 2,
+                               efm.horizontalAdvance(prevLabel) + 8, efm.height()),
+                         Qt::AlignLeft | Qt::AlignVCenter, prevLabel);
+        const int nextW = efm.horizontalAdvance(nextLabel) + 8;
+        painter.drawText(QRect(vw - em - nextW, vh / 2 - efm.height() / 2, nextW, efm.height()),
+                         Qt::AlignRight | Qt::AlignVCenter, nextLabel);
+        const int backW = efm.horizontalAdvance(backLabel) + 8;
+        painter.drawText(QRect((vw - backW) / 2, em, backW, efm.height()),
+                         Qt::AlignHCenter | Qt::AlignTop, backLabel);
+    }
+    painter.restore();
 }

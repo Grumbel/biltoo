@@ -2,12 +2,12 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2546.1-own-gallery-selection-frame-paint** (base `7d823d8`).
+**Tip: biltoo-2547.1-own-empty-session-invite-paint** (base `7d823d8`).
 
 ### Ownership transfer
-- **GalleryController::paintSelectionFrames** — Gallery selection rings in scene
-  space (drawForeground); skips interactive Workspace items
-- ImageView drawForeground dispatches; drop private paintGallerySelectionFrames
+- **ViewShellChrome::paintEmptySessionInvite** — empty-canvas open/drop invite +
+  edge-zone captions in viewport device pixels
+- ImageView::paintViewportOverlays dispatches; drop private paintEmptySessionInvite
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -16,14 +16,14 @@ QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-freezeItemAppearance / paint orchestration (HUD, slideshow, empty invite)
+freezeItemAppearance / paintHudPanels / slideshow paint orchestration
 
 ### Next thinning candidates
 - freezeItemAppearance residual
-- paintEmptySessionInvite / paintHudPanels residual
+- paintHudPanels residual
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2546.1-own-gallery-selection-frame-paint-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2547.1-own-empty-session-invite-paint-7d823d8.bundle HEAD
 ```
