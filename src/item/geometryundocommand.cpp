@@ -76,6 +76,26 @@ void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
         new ImageViewTransformGeometryCommand(this, item, before, after, text));
 }
 
+void ImageView::pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
+                                      const ItemComponents::Placement &after, const QString &text)
+{
+    if (!item) {
+        return;
+    }
+    if (ItemComponents::placementNearlyEqual(before, after)) {
+        return;
+    }
+    // Single geometry undo path (persist + Placement command).
+    pushItemGeometryCommand(text, item, before, after);
+    emit statusChanged();
+}
+
+void ImageView::hostPushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
+                                          const ItemComponents::Placement &after, const QString &text)
+{
+    pushItemTransformUndo(item, before, after, text);
+}
+
 void ImageView::pushItemContentCommand(const QString &text, ImageItem *item,
                                        const QImage &beforeSrc, const QImage &afterSrc,
                                        const WorkspaceItemState &before,

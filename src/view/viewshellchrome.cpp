@@ -253,6 +253,28 @@ void ViewShellChrome::dropEvent(QDropEvent *event)
     event->acceptProposedAction();
 }
 
+bool ViewShellChrome::handleViewportEvent(QEvent *event)
+{
+    if (!event) {
+        return false;
+    }
+    // Viewport is a QOpenGLWidget; it receives drag/drop when acceptDrops is
+    // set on it. Forward to the view shell so scene mapping runs here.
+    switch (event->type()) {
+    case QEvent::DragEnter:
+        dragEnterEvent(static_cast<QDragEnterEvent *>(event));
+        return true;
+    case QEvent::DragMove:
+        dragMoveEvent(static_cast<QDragMoveEvent *>(event));
+        return true;
+    case QEvent::Drop:
+        dropEvent(static_cast<QDropEvent *>(event));
+        return true;
+    default:
+        return false;
+    }
+}
+
 void ViewShellChrome::paintEmptySessionInvite(QPainter &painter) const
 {
     if (!m_view) {

@@ -2,17 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2580.1-image-sticky-pan-zoom** (base `7d823d8`).
+**Tip: biltoo-2581.1-viewport-event-transform-undo** (base `7d823d8`).
 
 ### Ownership transfer
-- **ImageController::maybeCaptureStickyPanOnLeave** — Image leave sticky pan/zoom before underlay destroy
-- **ImageController::setStickyZoomEnabled / releaseStickyZoom** — framing + view signals
-- ImageView `setViewMode` sticky block is one call; sticky zoom APIs are thin routers
+- **ViewShellChrome::handleViewportEvent** — DragEnter/Move/Drop from QOpenGLWidget viewport
+- **pushItemTransformUndo / hostPushItemTransformUndo** live next to geometry undo
+  (`item/geometryundocommand.cpp`); ImageView input TU is event routing only
+- Slimmed `imageview_input_events.cpp` (~161 → ~90 lines)
 
 ### Prior
+**2580.1** ImageController sticky pan leave + sticky zoom  
 **2579.1** HudChrome appearance mutators; ViewShellChrome centre progress  
-**2578.1** GalleryController owns pixel-mix / loading tile counts  
-**2577.1** HudModel pure status helpers; ViewShellChrome::restoreToolCursor
+**2578.1** GalleryController owns pixel-mix / loading tile counts
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -26,11 +27,11 @@ public thin routers (MainWindow API surface),
 status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Next thinning candidates
-- setViewMode body remains mode shell (crop/attention leave + detach + enter)
+- setViewMode body remains mode shell
 - public thin routers beyond materials (keep until dual/callers migrate)
 - slideshow coupling on setHudVisible (SlideshowController host)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2580.1-image-sticky-pan-zoom-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2581.1-viewport-event-transform-undo-7d823d8.bundle HEAD
 ```

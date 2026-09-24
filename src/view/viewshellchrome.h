@@ -52,6 +52,12 @@ public:
     void dragEnterEvent(QDragEnterEvent *event);
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
+    /**
+     * QOpenGLWidget viewport drag/drop: forward DragEnter/Move/Drop to the view
+     * shell handlers. @return true when the event type was handled (accepted flag
+     * is on the event). ImageView::viewportEvent is a thin router.
+     */
+    bool handleViewportEvent(QEvent *event);
 
     /** Empty-canvas open/drop invite + edge-zone captions (viewport device pixels). */
     void paintEmptySessionInvite(QPainter &painter) const;
