@@ -1127,7 +1127,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 const SessionImageId sid = m_view->hostSessionId().currentIdValue();
                 const QSize sz = m_view->contentLayoutSize(path, sid);
                 if (isPositiveSize(sz)) {
-                    item->setIntrinsicSize(sz);
+                    hostSetIntrinsicSize(item, sz);
                     m_view->syncImageModeSceneRect(item);
                 }
                 // Soft PreferCache encode is removed for Image underlay
@@ -1249,7 +1249,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         int didFit = 0;
         if (isPositiveSize(targetSize) && targetSize.width() > 1
             && !m_view->hostSizeBook().isProvisional(path)) {
-            item->setIntrinsicSize(targetSize);
+            hostSetIntrinsicSize(item, targetSize);
             const bool needFit =
                 sizeBefore.width() <= 1
                 || ContentXform::aspectChanged(sizeBefore, targetSize);
