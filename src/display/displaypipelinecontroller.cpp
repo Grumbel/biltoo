@@ -1679,8 +1679,8 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
     const QString path = item->path();
 
     // Display samples are always display-ready (materializeDisplay or host-raw
-    // identity). Never use setSourceImage here — it re-runs updateDisplayedPixmap
-    // and double-applies m_colorAdjust on Gallery/Workspace tiles.
+    // identity). Install via Ready/Preview only — the legacy setSourceImage path
+    // (geometry re-entry + updateDisplayedPixmap) was removed as dead code.
     if (kind == SessionAppearance::PixelKind::SoftPreview) {
         item->setPreviewImage(display);
     } else {

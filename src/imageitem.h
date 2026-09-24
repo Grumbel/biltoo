@@ -281,12 +281,11 @@ private:
     QPointF sceneToViewPx(const QPointF &scene) const;
 
     QString m_path;
-    // Tile session mutators — DisplayPipelineController only (Stage 2).
+    // Tile + pixel mutators — DisplayPipelineController only (sole friend).
     friend class DisplayPipelineController;
-    // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
     void setPath(const QString &path);
     void setIntrinsicSize(const QSize &size);
-    void setSourceImage(const QImage &image);
+    /** Display-ready full sample (no geometry re-entry). Preferred install path. */
     void setSourceImageReady(const QImage &image);
     void setPreviewImage(const QImage &preview);
     /** Clear display pixels; keeps applied ContentXform fingerprint. */

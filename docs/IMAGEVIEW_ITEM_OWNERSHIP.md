@@ -20,7 +20,7 @@ not being two copies of a 12k-line façade.
 | **`ImageView`** | `QGraphicsView` shell + public API. Host for mode switches, selection, and thin **sole-external** mutators into private `ImageItem` fields (friend). Must not grow new pixel/tile authority. |
 | **`DisplayPipelineController`** | Owns PreferCache climbs, **tile LOD bags** (Stage 2), `installDisplayPixels`, soft/full install. Friend of `ImageItem` for pixel/tile mutators. |
 | **`ImageController`** | Image-mode enter, classic path, session edge keys, reload. Does not install pixels directly — uses pipeline / view host. |
-| **`GalleryController` / `WorkspaceController`** | Mode enter/leave, stashes, pack/free-form. Gallery may set cell size via `GalleryLayout` friends. |
+| **`GalleryController` / `WorkspaceController`** | Mode enter/leave, stashes, pack/free-form. Cell size / intrinsic via ImageView hosts (`setItemIntrinsicSize`), not ImageItem friends. |
 | **`SlideshowController`** | Overlay path; reuses pipeline tile sessions (cover paint), must not create a parallel pixel store. |
 | **`ItemWorld`** | Durable sparse appearance (crop/orient/grade) keyed by `SessionImageId`. |
 | **`CropSession`** | Draft crop helpers only — no ImageItem friend; geometry via ImageView hosts. |
@@ -44,7 +44,8 @@ not being two copies of a 12k-line façade.
 | Clear display pixels | `ImageView::clearItemDecodedPixels` **or** pipeline (friend) during install/replace |
 | Intrinsic / layout size | `ImageView::setItemIntrinsicSize` **or** pipeline; samples must not define geometry (SIZE.md) |
 
-**Forbidden:** ad-hoc `item->setSourceImage*` / `clearDecodedPixels` outside the hosts above.
+**Forbidden:** ad-hoc `item->setSourceImageReady` / `setPreviewImage` / `clearDecodedPixels` outside the hosts above.
+**Removed:** `ImageItem::setSourceImage` (legacy geometry re-entry path); sole install mutators are Ready + Preview.
 
 ## Who owns tile LOD
 
@@ -69,9 +70,11 @@ ImageItem `tileLodBag()` asserts a pipeline-owned bag (Stage 2). Orphan static b
 ## ImageView is not a friend of ImageItem
 
 **Done (2417+):** `friend class ImageView` removed.
+**Done (2421+):** CropSession / GalleryController / GalleryLayout friends removed.
+**Done (2422):** dead `ImageItem::setSourceImage` removed — Ready + Preview only.
 
 1. Canvas host surface is **public** on `ImageItem` (pose, session bind, mode chrome, applied xform, colour).
-2. Pixel mutators stay **private**; only pipeline / crop / gallery friends.
+2. Pixel / path / tile mutators stay **private**; **sole friend** is `DisplayPipelineController`.
 3. ImageView reaches pixels only via `DisplayPipelineController::hostClearDecodedPixels` /
    `hostSetIntrinsicSize` / `hostSetPreviewImage` / `attachDisplaySample` / `installDisplayPixels`.
 
@@ -89,7 +92,9 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 2. **Done:** `attachDisplaySample` implementation on `DisplayPipelineController`; view one-line forward.
 3. **Done:** `friend class ImageView` removed; public host surface + pipeline pixel hosts.
 3b. **Done:** Drop CropSession / GalleryController / GalleryLayout friends; crop intrinsic via `setItemIntrinsicSize`.
-4. Dual ImageView shares pipeline + ItemWorld, not a forked façade.
+3c. **Done:** Remove dead `ImageItem::setSourceImage`; sole private install paths are `setSourceImageReady` + `setPreviewImage`.
+4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
+5. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book/rematerialize collaborator extractions.
 
 ## Related
 

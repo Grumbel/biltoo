@@ -150,26 +150,6 @@ void ImageItem::setIntrinsicSize(const QSize &size)
     update();
 }
 
-void ImageItem::setSourceImage(const QImage &image)
-{
-    // Legacy path may still carry item-level flip/grade; ready path is preferred
-    // for LoadReplace installs (appearance baked in the sample).
-    prepareGeometryChange();
-    m_source = image;
-    m_preview = QImage();
-    m_previewPixels = false;
-    if (!m_source.isNull()) {
-        setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
-        updateDisplayedPixmap();
-    } else {
-        setPixmap(QPixmap());
-        const QSize s = imageSize();
-        setOffset(-s.width() / 2.0, -s.height() / 2.0);
-    }
-    applyLocalTransform();
-    update();
-}
-
 void ImageItem::setSourceImageReady(const QImage &image)
 {
     // Display-ready sample: assign pixels + repaint only.
@@ -517,7 +497,7 @@ void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
     // Live grade only when the sample is still host-raw (no applied ContentXform
     // bake). Once materializeDisplay has graded pixels into m_source, re-running
     // updateDisplayedPixmap would double-apply (Gallery used to hit this via
-    // setSourceImage in attachDisplaySample).
+    // the legacy setSourceImage install path; Ready/Preview avoid that).
     if (!m_source.isNull() && !m_previewPixels && !m_hasAppliedContentXform) {
         updateDisplayedPixmap();
     }
