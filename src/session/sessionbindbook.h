@@ -5,6 +5,7 @@
 #define SESSIONBINDBOOK_H
 
 #include "imageview_types.h"
+#include "item/pendingitemappearancebook.h"
 
 #include <QList>
 #include <QPointF>
@@ -27,7 +28,8 @@ struct PendingSessionBind {
  * Session-scoped LoadAdd bind queue and select-on-create ids.
  *
  * Decode orchestration and canvas placement stay on ImageView; this bag owns
- * the pending lists that clear together on session wipe.
+ * the pending lists and collision-recovery appearance staging that clear
+ * together on session wipe.
  */
 class SessionBindBook {
 public:
@@ -35,6 +37,7 @@ public:
     {
         m_binds.clear();
         m_selectIds.clear();
+        m_pendingAppearance.clear();
     }
 
     bool hasBindForPath(const QString &path) const
@@ -120,9 +123,14 @@ public:
         return true;
     }
 
+    /** Collision-recovery content appearance staged until bind-on-create. */
+    PendingItemAppearanceBook &pendingAppearance() { return m_pendingAppearance; }
+    const PendingItemAppearanceBook &pendingAppearance() const { return m_pendingAppearance; }
+
 private:
     QList<PendingSessionBind> m_binds;
     QSet<SessionImageId> m_selectIds;
+    PendingItemAppearanceBook m_pendingAppearance;
 };
 
 #endif // SESSIONBINDBOOK_H

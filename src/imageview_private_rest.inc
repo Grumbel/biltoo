@@ -159,8 +159,7 @@
     // --- LoadAdd pending-bind helpers ---
 
     SessionBindBook m_bindBook;
-    /** Content appearance staged by Duplicate until bind-on-create. */
-    PendingItemAppearanceBook m_pendingAppearance;
+    // PendingItemAppearanceBook: owned by SessionBindBook (pendingAppearance).
     ViewportChrome m_chrome;
     // ZoomRegionGesture: owned by ImageController (m_image).
 

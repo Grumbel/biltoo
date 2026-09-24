@@ -308,7 +308,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
                 if (owner != copy) {
                     qCritical("duplicateSelected: SessionImageId %lld already on another tile — leave unbound",
                               static_cast<long long>(id));
-                    m_pendingAppearance.insert(copy, content);
+                    m_bindBook.pendingAppearance().insert(copy, content);
                 } else {
                     setItemSessionId(copy, id);
                 }
@@ -340,7 +340,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
             // PendingItemAppearanceBook may still recover appearance on bind.
             qCritical("duplicateSelected: no SessionImageId for copy path=%s — stage pending",
                       qPrintable(copy->path()));
-            m_pendingAppearance.insert(copy, content);
+            m_bindBook.pendingAppearance().insert(copy, content);
         }
         if (sessionIdx >= 0) {
             ++sessionIdx;

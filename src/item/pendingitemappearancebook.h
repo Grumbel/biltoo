@@ -15,7 +15,8 @@ class ImageItem;
  * create (id already owned by another live tile — corruption / race).
  * Normal Duplicate binds on create (biltoo-2109); this book is collision
  * recovery only (Duplicate / LoadAdd bind-on-create consumes staged rows).
- * Keys are live ImageItem pointers (GUI-only); cleared on session wipe.
+ * Keys are live ImageItem pointers (GUI-only); owned by SessionBindBook and
+ * cleared with the bind book on session wipe.
  */
 class PendingItemAppearanceBook
 {

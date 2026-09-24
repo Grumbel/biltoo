@@ -237,8 +237,7 @@ void ImageView::clearWorkspace()
     m_gallery.discardStash();
     m_workspace.savedItems().clear();
     m_displayPipeline->loadGate().clearPending();
-    m_bindBook.clear();
-    m_pendingAppearance.clear();
+    m_bindBook.clear(); // also clears pendingAppearance
     m_displayPipeline->galleryDecodeResetAll();
     m_size.book().clear();
     hostGalleryDecodeBook().setDeferPopulate(false);

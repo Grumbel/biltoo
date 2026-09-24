@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2483.1-own-hud-chrome** (base `7d823d8`).
+**Tip: biltoo-2484.1-own-pending-appearance-in-bind-book** (base `7d823d8`).
 
 ### Ownership transfer
-- **HudChrome** owns HudAppearance, HudFlash, flash QTimer
-- ImageView: thin flashHud / hostHudPrefs / hostHudFlash
+- **PendingItemAppearanceBook** nested in SessionBindBook
+- Session wipe: single `m_bindBook.clear()` clears binds + staged appearance
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2483.1-own-hud-chrome-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2484.1-own-pending-appearance-in-bind-book-7d823d8.bundle HEAD
 ```

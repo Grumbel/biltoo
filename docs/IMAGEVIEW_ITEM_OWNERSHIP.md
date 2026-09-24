@@ -390,3 +390,6 @@ Product shell (minimal):
 25. **biltoo-2483:** HudChrome owns HudAppearance + HudFlash + flash QTimer;
     ImageView thin flashHud / hostHud* forwards.
 
+26. **biltoo-2484:** PendingItemAppearanceBook owned by SessionBindBook
+    (clears with bind queue on session wipe).
+
