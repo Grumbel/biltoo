@@ -96,7 +96,7 @@ public:
 
 /** Issue/complete/pump until target_scale <= want or steps exhausted. */
 void climb_to_scale(tilelod::TileSession& session, FakeTileSource& src,
-                    tilelod::Viewport vp, int want_scale, int max_steps = 24)
+                    tilelod::Viewport vp, int want_scale, int max_steps = 48)
 {
   session.set_viewport(vp);
   for (int step = 0; step < max_steps; ++step) {
@@ -107,9 +107,15 @@ void climb_to_scale(tilelod::TileSession& session, FakeTileSource& src,
     }
     if (session.issue_requests(64) > 0) {
       src.complete_all_requested(static_cast<std::uint8_t>(40 + step));
-      session.pump();
-    } else if (session.target_scale() <= want_scale
-               && !session.request_scale_holding()) {
+    }
+    // Drain inbox: TileSession::pump caps at 16/call (GUI budget). A single
+    // pump left most keys InFlight so progressive climb never reached want.
+    int applied = 0;
+    while ((applied = session.pump()) > 0) {
+    }
+    if (session.issue_requests(64) == 0
+        && session.target_scale() <= want_scale
+        && !session.request_scale_holding()) {
       // Nothing to issue but not fully covered (failed cells) — stop.
       return;
     }

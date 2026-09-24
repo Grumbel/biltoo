@@ -1,24 +1,23 @@
 # TODO / agent handoff
 
-## Status (2026-09-23)
+## Status (2026-09-24)
 
-**Tip: biltoo-2411-masonry-fill-fit-avail** (base `d80d461`, includes 2403–2410).
+**Tip: biltoo-2412-tilelod-climb-drain-pump** (base `d80d461`, includes 2403–2411).
 
-### MasonryFill / MasonryRowsFill overshoot
-Per-column (or per-row) scale to equalize the long axis **widened** short
-columns past `availW` (rows past `availH`) — visible asymmetry / soft overshoot
-without always tripping a scrollbar.
+### tilelod_test failure (target_scale 1 != 0)
+`TileSession::pump` caps at 16 completions/call (GUI budget, 2409).
+`climb_to_scale` issued/completed a full batch then **pumped once**, leaving
+most keys `InFlight`. Progressive climb never reached scale 0 on a 4096²
+viewport (256 cells at scale 0).
 
-**Fix:** After equalization, `fitPackPosesToAvailWidth` / `…Height` applies a
-global uniform scale about the pack origin so content exactly matches the
-layout axis (bottoms / right edges stay aligned). Tests updated.
+**Fix:** Drain `pump()` until empty in `climb_to_scale`; raise max_steps to 48.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2411.1-masonry-fill-fit-avail-d80d461.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2412.1-tilelod-climb-drain-pump-d80d461.bundle HEAD
 ```
 
 **Next:** RC smoke; VERSION 0.2.0 + tag.
 
-## Prior — 2410
-Gallery pack measures with scrollbar gutters; PackViewportGuard in controller only.
+## Prior — 2411
+MasonryFill global fit to avail after column equalization.
