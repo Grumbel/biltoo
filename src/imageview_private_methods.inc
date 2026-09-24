@@ -115,6 +115,19 @@
     void flushColorAdjustCommit();
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
+    void rematerializeGalleryItemFromStore(ImageItem *item);
+    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
+    void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
+    void clearItemDecodedPixels(ImageItem *item);
+    void setItemPreviewImage(ImageItem *item, const QImage &preview);
+
+    // Pipeline forwards (private — controllers use hostDisplayPipeline).
+    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                        const WorkspaceItemState &want);
+    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
+    void attachDisplaySample(ImageItem *item, const QImage &display,
+                             const WorkspaceItemState &want,
+                             SessionAppearance::PixelKind kind);
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
 
     void appendThumtooDebugStatus(QString *text, ImageItem *item) const;

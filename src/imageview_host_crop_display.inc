@@ -15,8 +15,6 @@
 
     // --- Crop host extras (controller needs without friend) ---
     void cancelZoomRegion();
-    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
-                                        const WorkspaceItemState &want);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
@@ -25,10 +23,6 @@
     // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     ImageItem *primaryItem() const;
-    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
-    void attachDisplaySample(ImageItem *item, const QImage &display,
-                             const WorkspaceItemState &want,
-                             SessionAppearance::PixelKind kind);
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);

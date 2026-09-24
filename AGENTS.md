@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2436.1-imageview-tus-pipeline-direct**.
-Latest tip: **biltoo-2436** (+ thumtoo-338). Next: Phase 6 / Dual ImageView (0.3).
+Latest agent handoff: **TODO.md → biltoo-2437.1-tier0-privatize-pipeline-forwards**.
+Latest tip: **biltoo-2437** (+ thumtoo-338). Next: Phase 6 Tier 0 / Dual ImageView (0.3).
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

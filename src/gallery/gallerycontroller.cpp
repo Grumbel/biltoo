@@ -210,7 +210,7 @@ void GalleryController::restoreStashedItems()
             && item->hasDisplayPixels()) {
             continue;
         }
-        m_view->rematerializeGalleryItemFromStore(item);
+        m_view->hostDisplayPipeline().rematerializeGalleryItemFromStore(item);
         needContentPack = true;
     }
     {

@@ -275,7 +275,7 @@ void WorkspaceController::restoreStashedItems()
         }
         // Stash is presentation-only: drop applied fingerprint if ItemWorld
         // advanced while this tile was off-canvas (ECS_GUI_BYPASSES #6 / 2196).
-        m_view->clearStaleAppliedFingerprintIfNeeded(item);
+        m_view->hostDisplayPipeline().clearStaleAppliedFingerprintIfNeeded(item);
         // content ops require full on-disk host for crop / content
         // flips / quarter-turns. Stashed tiles often already hold baked crop
         // pixels (peer sync while in Image mode). Reloading only on size

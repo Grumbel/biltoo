@@ -548,12 +548,6 @@ public:
      */
     void clearLiveContentMeta(ImageItem *item);
     /**
-     * Mode-stash restore: if this tile still carries an applied fingerprint that
-     * no longer matches ItemWorld want, drop it so rematerialize uses the store
-     * only (ECS_GUI_BYPASSES #6). No-op when unbound, no durable row, or match.
-     */
-    void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
-    /**
      * Applied ContentXform fingerprint for @p item.
      * Prefer ItemWorld runtime table when bound (Stage 2 residual 2081);
      * fall back to ImageItem mirror (paint / unbound).
@@ -566,20 +560,10 @@ public:
      * mirror for paint / unbound. Durable grade is ItemWorld Color.
      */
     ColorAdjustments itemLiveColor(const ImageItem *item) const;
-    /**
-     * Clear display pixels on @p item (keeps applied ContentXform fingerprint).
-     * Sole external clear path — ImageItem::clearDecodedPixels is private.
-     */
-    void clearItemDecodedPixels(ImageItem *item);
     /** Host path for logical layout size (ImageItem::setIntrinsicSize is private). */
     void setItemIntrinsicSize(ImageItem *item, const QSize &size);
     void setItemSessionId(ImageItem *item, SessionImageId id);
     void setItemSessionIndex(ImageItem *item, int index);
-    /**
-     * Soft stand-in when install left no display pixels (Gallery soft path).
-     * Sole external setPreviewImage path.
-     */
-    void setItemPreviewImage(ImageItem *item, const QImage &preview);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */
@@ -595,12 +579,6 @@ public:
     /** Bake flip into pixels and session state. */
     void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
 
-    /**
-     * Rematerialize display from ImageCache / item host for @p want.
-     * Forwards to DisplayPipelineController (pixel/layout owner).
-     * Public for WorkspaceController leave→enter restore.
-     */
-    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
 
     /**
      * True when the primary transform target has non-identity content
