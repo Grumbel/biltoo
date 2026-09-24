@@ -1757,20 +1757,20 @@ void DisplayPipelineController::applyContentLayoutSize(ImageItem *item,
             const QRect c = SessionAppearance::scaleCropRect(
                 want.cropRect.normalized(), want.cropSourceSize, basis);
             if (c.width() > 1 && c.height() > 1) {
-                m_view->setItemIntrinsicSize(item, c.size());
+                hostSetIntrinsicSize(item, c.size());
             }
         } else if (ContentXform::swapsAspect(ContentXform::Value::fromState(want))) {
             // Orient-only with no usable native: transpose current box if odd turns.
             const QSize cur = item->imageSize();
             if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
-                m_view->setItemIntrinsicSize(item, QSize(cur.height(), cur.width()));
+                hostSetIntrinsicSize(item, QSize(cur.height(), cur.width()));
             }
         }
         return;
     }
     const QSize lay = ContentXform::layoutSize(fileNative, want);
     if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-        m_view->setItemIntrinsicSize(item, lay);
+        hostSetIntrinsicSize(item, lay);
     }
 }
 
@@ -2134,9 +2134,23 @@ void DisplayPipelineController::hostClearDecodedPixels(ImageItem *item)
 
 void DisplayPipelineController::hostSetIntrinsicSize(ImageItem *item, const QSize &size)
 {
-    if (item) {
-        item->setIntrinsicSize(size);
+    if (!item || !m_view) {
+        return;
     }
+    // Gallery: LQIP-scale boxes must not replace an already correct layout cell.
+    // Do NOT compare against file-native area — cropped layoutSize is often much
+    // smaller than native and must still apply.
+    if (m_view->isGalleryMode() && isPositiveSize(size)) {
+        const int newEdge = qMax(size.width(), size.height());
+        if (newEdge > 0 && newEdge <= DisplayQuality::kLqipMaxEdge) {
+            const QSize cur = item->imageSize();
+            if (isPositiveSize(cur)
+                && qMax(cur.width(), cur.height()) > DisplayQuality::kLqipMaxEdge * 2) {
+                return;
+            }
+        }
+    }
+    item->setIntrinsicSize(size);
 }
 
 void DisplayPipelineController::hostSetPreviewImage(ImageItem *item, const QImage &preview)

@@ -138,6 +138,7 @@ public:
                                       const QImage &display);
     /** Pixel host for ImageView (no longer a friend of ImageItem). */
     void hostClearDecodedPixels(ImageItem *item);
+    /** Includes Gallery LQIP guard — sole intrinsic writer path. */
     void hostSetIntrinsicSize(ImageItem *item, const QSize &size);
     void hostSetPreviewImage(ImageItem *item, const QImage &preview);
     /**

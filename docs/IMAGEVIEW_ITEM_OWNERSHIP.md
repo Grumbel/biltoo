@@ -44,7 +44,7 @@ not being two copies of a 12k-line façade.
 | Rematerialize (host → display) | `DisplayPipelineController::rematerializeItemContent` / `scheduleAsyncHostRematerialize` |
 | Soft preview only | `ImageView::setItemPreviewImage` → `setPreviewImage` |
 | Clear display pixels | `ImageView::clearItemDecodedPixels` **or** pipeline (friend) during install/replace |
-| Intrinsic / layout size | `ImageView::setItemIntrinsicSize` **or** pipeline; samples must not define geometry (SIZE.md) |
+| Intrinsic / layout size | `DisplayPipelineController::hostSetIntrinsicSize` (Gallery LQIP guard); ImageView forwards |
 
 **Forbidden:** ad-hoc `item->setSourceImageReady` / `setPreviewImage` / `clearDecodedPixels` outside the hosts above.
 **Removed:** `ImageItem::setSourceImage` (legacy geometry re-entry path); sole install mutators are Ready + Preview.
@@ -111,6 +111,7 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3l. **Done:** `clearStaleAppliedFingerprintIfNeeded` on pipeline (pairs with gallery rematerialize).
 3m. **Done:** `bakeItemRotate90` / `bakeItemFlip` orchestration on pipeline;
     ImageView host helpers for capture/crop-map/persist/undo; thin forwards.
+3n. **Done:** Gallery LQIP intrinsic guard on `hostSetIntrinsicSize`; layout uses host path.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
     bake host helpers (capture/undo) remain on view by design.

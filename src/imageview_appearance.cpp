@@ -208,22 +208,7 @@ void ImageView::clearItemDecodedPixels(ImageItem *item)
 
 void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
 {
-    if (!item) {
-        return;
-    }
-    // Gallery: LQIP-scale boxes must not replace an already correct layout cell.
-    // Do NOT compare against file-native area — cropped layoutSize is often much
-    // smaller than native and must still apply.
-    if (isGalleryMode() && isPositiveSize(size)) {
-        const int newEdge = qMax(size.width(), size.height());
-        if (newEdge > 0 && newEdge <= DisplayQuality::kLqipMaxEdge) {
-            const QSize cur = item->imageSize();
-            if (isPositiveSize(cur)
-                && qMax(cur.width(), cur.height()) > DisplayQuality::kLqipMaxEdge * 2) {
-                return;
-            }
-        }
-    }
+    // Gallery LQIP guard lives on DisplayPipelineController::hostSetIntrinsicSize.
     m_displayPipeline.hostSetIntrinsicSize(item, size);
 }
 
