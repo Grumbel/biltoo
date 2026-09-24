@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/workspacecontroller.h"
+#include <algorithm>
 #include "imageitem.h"
 #include "item/iteminteractsession.h"
 #include "imageview.h"
@@ -331,6 +332,44 @@ void WorkspaceController::paintGroupSelectionChrome(QPainter *painter, const QLi
     }
 
     painter->restore();
+}
+
+void WorkspaceController::paintViewportChrome(QPainter &painter) const
+{
+    if (!m_view || m_view->hostCrop().session().active() || !m_view->isWorkspaceMode()) {
+        return;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return;
+    }
+    QList<ImageItem *> selected;
+    for (QGraphicsItem *gi : scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            // Only paint chrome for items we still own (guards against a
+            // stale selection entry after destroyCanvasItem).
+            if (ii->isInteractive() && m_view->liveItems().contains(ii)
+                && ii->scene() == scene) {
+                selected.append(ii);
+            }
+        }
+    }
+    std::sort(selected.begin(), selected.end(),
+              [](ImageItem *a, ImageItem *b) {
+                  return a->placement().z < b->placement().z;
+              });
+    if (selected.size() == 1) {
+        selected.first()->paintInteractionChrome(&painter);
+    } else if (selected.size() > 1) {
+        // Multi-select: per-item outline only; group scale handles on the union.
+        for (ImageItem *item : selected) {
+            item->paintSelectionFrame(&painter);
+        }
+        paintGroupSelectionChrome(&painter, selected);
+    }
+    if (pageGuideSession().isInteractive()) {
+        paintPageGuideHandles(&painter);
+    }
 }
 
 bool WorkspaceController::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)

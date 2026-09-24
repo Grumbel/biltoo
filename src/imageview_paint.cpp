@@ -31,38 +31,6 @@
 #include "util/biltoo_logging.h"
 #include <QGraphicsItem>
 
-void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
-{
-    if (!m_cropCtrl.session().active() && isWorkspaceMode() && m_scene) {
-        QList<ImageItem *> selected;
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                // Only paint chrome for items we still own (guards against a
-                // stale selection entry after destroyCanvasItem).
-                if (ii->isInteractive() && m_items.contains(ii) && ii->scene() == m_scene) {
-                    selected.append(ii);
-                }
-            }
-        }
-        std::sort(selected.begin(), selected.end(),
-                  [](ImageItem *a, ImageItem *b) {
-                      return a->placement().z < b->placement().z;
-                  });
-        if (selected.size() == 1) {
-            selected.first()->paintInteractionChrome(&painter);
-        } else if (selected.size() > 1) {
-            // Multi-select: per-item outline only; group scale handles on the union.
-            for (ImageItem *item : selected) {
-                item->paintSelectionFrame(&painter);
-            }
-            m_workspace.paintGroupSelectionChrome(&painter, selected);
-        }
-        if (m_workspace.pageGuideSession().isInteractive()) {
-            m_workspace.paintPageGuideHandles(&painter);
-        }
-    }
-
-}
 
 void ImageView::paintViewportOverlays(QPainter &painter)
 {
@@ -82,7 +50,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     if (m_attentionCtrl.session().active()) {
         m_attentionCtrl.paintAttentionOverlay(painter);
     }
-    paintWorkspaceViewportChrome(painter);
+    m_workspace.paintViewportChrome(painter);
 
     // Letterbox composite fills the viewport during slideshow; edge chevrons
     // and HUD must paint after it or they are covered.

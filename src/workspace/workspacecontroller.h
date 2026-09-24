@@ -190,6 +190,12 @@ public:
     void endGroupScale();
     void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
 
+    /**
+     * Workspace selection / page-guide chrome in viewport device pixels.
+     * No-op when crop session is active or not in Workspace mode.
+     */
+    void paintViewportChrome(QPainter &painter) const;
+
     /** Group scale/rotate + single-item handle drag (move phase). */
     bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
     bool tryMouseReleaseGroupDrag(QMouseEvent *event);
