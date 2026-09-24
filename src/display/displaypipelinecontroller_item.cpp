@@ -10,6 +10,7 @@
 #include "display/tile_load_coordinator.h"
 
 #include "imageview.h"
+#include "text/textlayercontroller.h"
 #include "workspace/workspacecontroller.h"
 #include "gallery/gallerycontroller.h"
 #include "imageitem.h"
@@ -833,10 +834,10 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
 bool DisplayPipelineController::loadImage(const QString &path)
 {
     m_host->hostImage().setClassicPath(path);
-    m_host->clearTextSelection();
+    m_host->hostText().clearSelection();
     m_host->hostTextLayer().clearLinkHoverTip();
     if (m_host->hostTextLayer().showsRegions() || m_host->hostTextLayer().hasSearchQuery()) {
-        m_host->refreshTextLayer();
+        m_host->hostText().refresh();
     }
     m_host->hostSessionId().clearLastLoadError();
 

@@ -164,6 +164,8 @@ public:
 
     virtual TextLayerSession &hostTextLayer() = 0;
     virtual const TextLayerSession &hostTextLayer() const = 0;
+    virtual TextLayerController &hostText() = 0;
+    virtual const TextLayerController &hostText() const = 0;
     virtual WorkspaceController &hostWorkspace() = 0;
     virtual const WorkspaceController &hostWorkspace() const = 0;
     virtual TileNeighborPrefetch &hostTileNeighborPrefetch() = 0;
@@ -208,8 +210,6 @@ public:
     virtual void fitItem(ImageItem *item,
                          Qt::AspectRatioMode mode = Qt::KeepAspectRatio) = 0;
     virtual Qt::AspectRatioMode currentFitAspectMode() const = 0;
-    virtual void clearTextSelection() = 0;
-    virtual void refreshTextLayer() = 0;
     virtual bool isMultiItemMode() const = 0;
     virtual int itemCount() const = 0;
     virtual void prepareImageModeCanvas() = 0;

@@ -60,3 +60,9 @@ That caused link failures (framing, reorder, sticky pan, edge zones).
 | capture/freeze helpers | Optional shared freeze policy — many controller callers |
 | Characterization | Prefer `hostX()` / `itemWorld()` in new tests |
 
+
+## Host narrowing log
+
+| Tip | Change |
+|-----|--------|
+| 2625 | Removed `clearTextSelection` / `refreshTextLayer` from `DisplayPipelineHost`; pipeline uses `hostText().clearSelection()` / `hostText().refresh()`. Added `hostText()` virtuals. |

@@ -3,12 +3,10 @@
 
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
-    void clearTextSelection() override;
     bool matchesLoadGeneration(quint64 gen) const
     {
         return m_displayPipeline->loadGate().accepts(gen);
     }
-    void refreshTextLayer() override;
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange) override;
     void syncImageModeSceneRect(ImageItem *item) override;
     void captureStickyPanAnchor(ImageItem *item) override;

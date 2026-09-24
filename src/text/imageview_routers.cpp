@@ -8,10 +8,6 @@
 
 // --- from src/imageview_text.cpp ---
 
-void ImageView::refreshTextLayer()
-{
-    m_textCtrl.refresh();
-}
 
 bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriOut) const
 {
@@ -23,9 +19,5 @@ QString ImageView::selectedText() const
     return m_textCtrl.selectedText();
 }
 
-void ImageView::clearTextSelection()
-{
-    m_textCtrl.clearSelection();
-}
 
 
