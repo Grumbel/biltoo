@@ -5,6 +5,16 @@
 
 #include "view/viewshellchrome.h"
 #include "imageview.h"
+#include <cstdlib>
+#include <cstdio>
+#include <QStringList>
+#include <QUrl>
+#include <QWidget>
+#include <QCursor>
+#include <QMimeData>
+#include <QDropEvent>
+#include <QDragMoveEvent>
+#include <QDragEnterEvent>
 #include <QPoint>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -135,4 +145,81 @@ void ViewShellChrome::onLeave()
         m_viewport.clearMouseInfo();
         emit m_view->mouseInfoChanged(m_viewport.currentMouseInfo());
     }
+}
+
+namespace {
+
+bool mimeAcceptsPaths(const QMimeData *mime)
+{
+    return mime
+        && (mime->hasUrls()
+            || mime->hasFormat(QStringLiteral("application/x-biltoo-paths")));
+}
+
+} // namespace
+
+void ViewShellChrome::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (mimeAcceptsPaths(event->mimeData())) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ViewShellChrome::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (mimeAcceptsPaths(event->mimeData())) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ViewShellChrome::dropEvent(QDropEvent *event)
+{
+    if (!m_view || !event->mimeData()) {
+        if (event) {
+            event->ignore();
+        }
+        return;
+    }
+    const QByteArray pathBytes =
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-paths"));
+    const bool hasInternal = !pathBytes.isEmpty();
+    if (!event->mimeData()->hasUrls() && !hasInternal) {
+        event->ignore();
+        return;
+    }
+    // Prefer global→viewport→scene. Drop events may land on the view or the
+    // OpenGL viewport child; widget-local position() is then wrong for mapToScene.
+    // QDropEvent has no portable globalPosition() here — use the cursor.
+    QWidget *vp = m_view->viewport();
+    const QPoint viewPos = vp ? vp->mapFromGlobal(QCursor::pos()) : event->position().toPoint();
+    const QPointF scenePos = m_view->mapToScene(viewPos);
+    QList<qint64> sessionIds;
+    const QByteArray idBytes =
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-session-ids"));
+    if (!idBytes.isEmpty()) {
+        for (const QByteArray &tok : idBytes.split(',')) {
+            bool ok = false;
+            const qint64 v = tok.trimmed().toLongLong(&ok);
+            sessionIds.append(ok ? v : 0);
+        }
+    }
+    QStringList internalPaths;
+    if (hasInternal) {
+        internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        std::fprintf(stderr,
+                     "biltoo/drop: ImageView::dropEvent viewPos=(%d,%d) scene=(%.1f,%.1f) "
+                     "mode=W%d G%d\n",
+                     viewPos.x(), viewPos.y(), scenePos.x(), scenePos.y(),
+                     m_view->isWorkspaceMode() ? 1 : 0, m_view->isGalleryMode() ? 1 : 0);
+    }
+    emit m_view->filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos,
+                              /*hasScenePos=*/true, sessionIds, internalPaths);
+    event->acceptProposedAction();
 }

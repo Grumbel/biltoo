@@ -10,6 +10,9 @@
 class ImageView;
 class QMouseEvent;
 class QPoint;
+class QDragEnterEvent;
+class QDragMoveEvent;
+class QDropEvent;
 
 /**
  * Shell view chrome: transient viewport pointer state + canvas materials +
@@ -36,6 +39,11 @@ public:
     void updateMouseInfo(const QPoint &viewPos);
     /** Pointer left the viewport: clear transient mouse info. */
     void onLeave();
+
+    /** External / internal path drag-drop (accept + filesDropped emit). */
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dragMoveEvent(QDragMoveEvent *event);
+    void dropEvent(QDropEvent *event);
 
 private:
     ImageView *m_view = nullptr;

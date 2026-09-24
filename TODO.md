@@ -2,14 +2,12 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2532.1-own-viewport-leave-mouseinfo** (base `7d823d8`).
+**Tip: biltoo-2533.1-own-drag-drop** (base `7d823d8`).
 
 ### Ownership transfer
-- **ViewShellChrome::updateMouseInfo / onLeave** — hit-test mouse info + clear on leave
-- **ImageController::onViewportLeave** — clear edge hover
-- **GalleryController::onViewportLeave** — clear hover path
-- **SlideshowController::onViewportLeave** — hide seekbar when not dragging
-- ImageView::leaveEvent is dispatch; updateMouseInfo remains thin host API (Crop)
+- **ViewShellChrome** owns dragEnter / dragMove / drop (mime accept + filesDropped emit)
+- ImageView overrides remain thin QGraphicsView routers; viewportEvent still forwards
+  OpenGL viewport drops to the view
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -18,15 +16,14 @@ QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-appearance load/apply / paint / status composition / drag-drop shell
+appearance load/apply / paint / status composition
 
 ### Next thinning candidates
 - appearance apply/commit residual
 - status text composition (HudModel already pure)
-- drag-drop shell
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2532.1-own-viewport-leave-mouseinfo-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2533.1-own-drag-drop-7d823d8.bundle HEAD
 ```
