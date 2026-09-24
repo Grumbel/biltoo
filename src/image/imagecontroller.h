@@ -11,6 +11,8 @@
 #include "view/viewframing.h"
 #include "color/coloradjustcommit.h"
 #include "session/sessionappearance.h"
+#include "item/itemcomponents.h"
+#include "color/coloradjust.h"
 #include <QSize>
 
 class ImageView;
@@ -114,6 +116,14 @@ public:
     void rememberItemState(ImageItem *item);
     /** Re-emit filmstrip signals + mode-specific post (gallery pack / scene / framing). */
     void propagateSessionAppearanceToViews(ImageItem *item);
+    void applyState(ImageItem *item, const WorkspaceItemState &state);
+    void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
+    void syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade, bool rebuildDisplay);
+    void clearLiveContentMeta(ImageItem *item);
+    void persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl);
+    void commitItemSessionEdit(ImageItem *item);
+    bool targetHasContentAppearance() const;
+
 
 
 

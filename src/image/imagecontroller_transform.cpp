@@ -13,6 +13,7 @@
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "item/itemcomponents.h"
+#include "content/contentxform.h"
 #include "color/coloradjust.h"
 #include <QDebug>
 
@@ -464,4 +465,135 @@ void ImageController::propagateSessionAppearanceToViews(ImageItem *item)
     } else if (m_view->isImageMode()) {
         onContentAppearancePropagated(item);
     }
+}
+
+void ImageController::applyState(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Stage 2: pose is Placement; content pixels stay on install paths only.
+    item->applyPlacement(ItemComponents::placementFromState(state));
+}
+
+void ImageController::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Applied fingerprint is presentation-local on the ImageItem only.
+    // Never dual-write ItemWorld applied residual (outlived mode leave and
+    // overrode sparse contentBake on Image underlay — CONTENTXFORM_AUTHORITY).
+    const ContentXform::Value x = ContentXform::Value::fromState(state);
+    item->setAppliedContentXform(x);
+}
+
+void ImageController::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
+                                             bool rebuildDisplay)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    if (rebuildDisplay) {
+        item->setColorAdjustments(grade);
+    } else {
+        item->setColorAdjustmentsRecord(grade);
+    }
+    const SessionImageId sid = item->sessionId();
+    // Stage 2 residual: host-side live grade lag table when bound (paint keeps
+    // item mirror). Distinct from durable ItemWorld Color.
+    if (sid != kInvalidSessionImageId) {
+        m_view->itemWorld().setLiveColorLag(sid, grade);
+    }
+    // When an applied ContentXform fingerprint is present, keep its colorAdjust
+    // field coherent so paint / tile LOD prefer Value.colorAdjust.
+    if (item->hasAppliedContentXform()) {
+        ContentXform::Value x = item->tileContentXform();
+        x.colorAdjust = grade;
+        item->setAppliedContentXform(x);
+    }
+}
+
+void ImageController::clearLiveContentMeta(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Identity: drop applied ContentXform fingerprint (item + ItemWorld when bound).
+    item->clearAppliedContentXform();
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        m_view->itemWorld().clearAppliedContentXform(sid);
+    }
+}
+
+void ImageController::persistGeometrySessionState(ImageItem *item,
+                                                  const ItemComponents::Placement &pl)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Pose-only: sparse Placement when bound; path-book pose when unbound.
+    // Do not setAppearance the full DTO (would re-sync content/color).
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        m_view->itemWorld().setPlacement(sid, pl);
+        return;
+    }
+    if (item->path().isEmpty()) {
+        return;
+    }
+    WorkspaceItemState s;
+    if (const WorkspaceItemState *prev = m_view->itemWorld().getPathState(item->path())) {
+        s = *prev;
+    }
+    ItemComponents::applyPlacementToState(s, pl);
+    s.path = item->path();
+    m_view->itemWorld().setPathState(item->path(), s);
+}
+
+void ImageController::commitItemSessionEdit(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Bound session id: persistSessionAppearanceSlot is the single setAppearance
+    // + durable write. rememberItemState would re-write sparse tables again.
+    // Unbound: path-map still needs rememberItemState (Workspace/Gallery/Image).
+    if (item->sessionId() == kInvalidSessionImageId) {
+        rememberItemState(item);
+    }
+    persistSessionAppearanceSlot(item);
+    m_view->hostWorkspace().validateUniqueLiveSessionIds("commitItemSessionEdit");
+    m_view->hostDisplayPipeline().syncSessionEditPeers(item);
+    m_view->hostWorkspace().updateSavedAppearanceFromItem(item);
+    // All modes / widgets that depend on content aspect or appearance pixels.
+    propagateSessionAppearanceToViews(item);
+    emit m_view->statusChanged();
+}
+
+bool ImageController::targetHasContentAppearance() const
+{
+    if (!m_view) {
+        return false;
+    }
+    for (ImageItem *item : m_view->transformTargets()) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
+        if (SessionAppearance::itemShowsContentEdit(
+                sid,
+                m_view->itemWorld().hasContentEditComponents(sid),
+                m_view->itemWorld().hasDurableAppearance(sid),
+                sid != kInvalidSessionImageId
+                    && SessionAppearance::hasContentAppearance(
+                           m_view->sessionAppearanceValue(sid)),
+                SessionAppearance::liveItemHasContentMods(
+                    m_view->itemAppliedContentXform(item)),
+                ThumtooCache::hasContentAppearance(item->path()))) {
+            return true;
+        }
+    }
+    return false;
 }

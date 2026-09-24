@@ -59,63 +59,28 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
 
 void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
 {
-    if (!item) {
-        return;
-    }
-    // Stage 2: pose is Placement; content pixels stay on install paths only.
-    item->applyPlacement(ItemComponents::placementFromState(state));
+    m_image.applyState(item, state);
 }
+
 
 void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state)
 {
-    if (!item) {
-        return;
-    }
-    // Applied fingerprint is presentation-local on the ImageItem only.
-    // Never dual-write ItemWorld applied residual (outlived mode leave and
-    // overrode sparse contentBake on Image underlay — CONTENTXFORM_AUTHORITY).
-    const ContentXform::Value x = ContentXform::Value::fromState(state);
-    item->setAppliedContentXform(x);
+    m_image.syncLiveContentMetaFromState(item, state);
 }
+
 
 void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
                                        bool rebuildDisplay)
 {
-    if (!item) {
-        return;
-    }
-    if (rebuildDisplay) {
-        item->setColorAdjustments(grade);
-    } else {
-        item->setColorAdjustmentsRecord(grade);
-    }
-    const SessionImageId sid = item->sessionId();
-    // Stage 2 residual: host-side live grade lag table when bound (paint keeps
-    // item mirror). Distinct from durable ItemWorld Color.
-    if (sid != kInvalidSessionImageId) {
-        m_itemWorld.setLiveColorLag(sid, grade);
-    }
-    // When an applied ContentXform fingerprint is present, keep its colorAdjust
-    // field coherent so paint / tile LOD prefer Value.colorAdjust.
-    if (item->hasAppliedContentXform()) {
-        ContentXform::Value x = item->tileContentXform();
-        x.colorAdjust = grade;
-        item->setAppliedContentXform(x);
-    }
+    m_image.syncLiveColorFromState(item, grade, rebuildDisplay);
 }
+
 
 void ImageView::clearLiveContentMeta(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    // Identity: drop applied ContentXform fingerprint (item + ItemWorld when bound).
-    item->clearAppliedContentXform();
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId) {
-        m_itemWorld.clearAppliedContentXform(sid);
-    }
+    m_image.clearLiveContentMeta(item);
 }
+
 
 bool ImageView::itemHasAppliedContentXform(const ImageItem *item) const
 {
@@ -168,24 +133,9 @@ void ImageView::setItemSessionIndex(ImageItem *item, int index)
 
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
-    if (!item) {
-        return;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId) {
-        // Pose-only; sparse Placement table (Stage 4b).
-        m_itemWorld.setPlacement(sid, pl);
-        return;
-    }
-    if (!item->path().isEmpty()) {
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
-            s = *prev;
-        }
-        ItemComponents::applyPlacementToState(s, pl);
-        m_itemWorld.setPathState(item->path(), s);
-    }
+    m_image.persistGeometrySessionState(item, pl);
 }
+
 
 void ImageView::applyGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
@@ -193,8 +143,9 @@ void ImageView::applyGeometrySessionState(ImageItem *item, const ItemComponents:
         return;
     }
     item->applyPlacement(pl);
-    persistGeometrySessionState(item, pl);
+    m_image.persistGeometrySessionState(item, pl);
 }
+
 
 
 void ImageView::rememberItemState(ImageItem *item)

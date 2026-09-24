@@ -18,23 +18,9 @@
 
 void ImageView::commitItemSessionEdit(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    // Bound session id: persistSessionAppearanceSlot is the single setAppearance
-    // + durable write. rememberItemState would re-write sparse tables again.
-    // Unbound: path-map still needs rememberItemState (Workspace/Gallery/Image).
-    if (item->sessionId() == kInvalidSessionImageId) {
-        rememberItemState(item);
-    }
-    persistSessionAppearanceSlot(item);
-    validateUniqueLiveSessionIds("commitItemSessionEdit");
-    m_displayPipeline->syncSessionEditPeers(item);
-    m_workspace.updateSavedAppearanceFromItem(item);
-    // All modes / widgets that depend on content aspect or appearance pixels.
-    propagateSessionAppearanceToViews(item);
-    emit statusChanged();
+    m_image.commitItemSessionEdit(item);
 }
+
 
 
 void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
@@ -59,30 +45,9 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
 
 bool ImageView::targetHasContentAppearance() const
 {
-    const QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        return false;
-    }
-    for (const ImageItem *item : targets) {
-        if (!item) {
-            continue;
-        }
-        const SessionImageId sid = resolveContentEditSessionId(item);
-        const bool hasDurable = sid != kInvalidSessionImageId
-            && m_itemWorld.hasDurableAppearance(sid);
-        if (SessionAppearance::itemShowsContentEdit(
-                sid,
-                sid != kInvalidSessionImageId && m_itemWorld.hasContentEditComponents(sid),
-                hasDurable,
-                hasDurable && SessionAppearance::hasContentAppearance(
-                                  sessionAppearanceValue(sid)),
-                SessionAppearance::liveItemHasContentMods(itemAppliedContentXform(item)),
-                ThumtooCache::hasContentAppearance(item->path()))) {
-            return true;
-        }
-    }
-    return false;
+    return m_image.targetHasContentAppearance();
 }
+
 
 
 int ImageView::resetContentAppearanceForTargets()

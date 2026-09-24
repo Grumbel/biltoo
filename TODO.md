@@ -2,38 +2,36 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2598.1-bind-take-stub** (base `7d823d8`).
+**Tip: biltoo-2599.1-live-meta-commit** (base `7d823d8`).
 
-### Ownership transfer + fix
-- **WorkspaceController::takePendingSessionBindForNewItem** / **purgeSatisfiedPendingBinds**
-- ImageView session-bind routers are thin
-- **tests/thumtoocache_appearance_stub.cpp** — link stub for unit tests that compile
-  sessionappearance.cpp without the full thumtoo host (fixes packorderoverlay
-  undefined refs for load/save/clear content appearance)
+### Ownership transfer
+- **ImageController** owns:
+  - `applyState` / `syncLiveContentMetaFromState` / `syncLiveColorFromState`
+  - `clearLiveContentMeta`
+  - `persistGeometrySessionState`
+  - `commitItemSessionEdit` (persist + peer sync + propagate + status)
+  - `targetHasContentAppearance`
+- ImageView methods are thin routers
 
 ### Prior
+**2598.1** Workspace owns pending bind take; test appearance stub  
 **2597.1** ImageController owns rememberItemState + appearance propagate  
-**2596.1** Pipeline owns high-res export paint + content bounds  
-**2595.1** ImageController owns setItemSessionId + persistSessionAppearanceSlot
+**2596.1** Pipeline owns high-res export paint + content bounds
 
-### Residual on ImageView (intentional)
-ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
-ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
-QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
-setViewMode / setActiveMode mode shell (leave/enter orchestration),
-applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freezeItemAppearance host residual (SessionAppearance durable path),
-renderExportImage (canvas bg + pipeline paint orchestration),
-drawBackground / drawForeground / paintEvent / input one-line QGraphicsView overrides,
-public thin routers (MainWindow API surface),
-status host orchestration; setHudVisible still syncs slideshow timer
+### Residual on ImageView (intentional host / shell)
+- **setViewMode** mode shell (leave/enter orchestration) — keep on ImageView
+- **captureState** / **freezeItemAppearance** / **contentLayoutSize** — host gather for SessionAppearance pure helpers
+- **statusText** / **hudFileName** — host gather for HudModel pure helpers
+- **renderExportImage** — canvas bg + pipeline paint orchestration
+- **pendingDecodeCount** — sum of mode controllers
+- QGraphicsView overrides, public MainWindow API surface, member bags
 
 ### Next thinning candidates
-- setViewMode body remains mode shell
-- freezeItemAppearance (already mostly SessionAppearance)
-- slideshow coupling on setHudVisible
+- statusText* / hudFileName further pure assembly on HudModel
+- freezeItemAppearance already thin
+- setViewMode remains intentional mode shell
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2598.1-bind-take-stub-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2599.1-live-meta-commit-7d823d8.bundle HEAD
 ```
