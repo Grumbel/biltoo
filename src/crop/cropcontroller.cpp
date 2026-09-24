@@ -581,8 +581,8 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
                                    item->hasDecodedPixels(), sample.hadPriorCrop,
                                    ImageCache::longEdge(full));
         m_view->clearItemDecodedPixels(item);
+        // attachDisplaySample applies layout via pipeline applyContentLayoutSize.
         m_view->attachDisplaySample(item, sample.display, contentOnly, sample.kind);
-        m_view->applyContentLayoutSize(item, contentOnly);
         m_view->syncLiveContentMetaFromState(item, contentOnly);
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),

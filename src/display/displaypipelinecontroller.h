@@ -80,6 +80,12 @@ public:
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
+    /**
+     * Intrinsic = ContentXform::layoutSize(file-native, want) — never sample dims.
+     * Sole layout writer after pixel install (attachDisplaySample calls this).
+     * ImageView::applyContentLayoutSize forwards here for crop/bake callers.
+     */
+    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &wantIn);
     /** Pixel host for ImageView (no longer a friend of ImageItem). */
     void hostClearDecodedPixels(ImageItem *item);
     void hostSetIntrinsicSize(ImageItem *item, const QSize &size);

@@ -1689,7 +1689,7 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
 
     // Layout: ONE rule — ContentXform::layoutSize(fileNative, want) via view host.
     // Soft/full sample pixels never define intrinsic (SIZE.md / CONTENT_PIPELINE).
-    m_view->applyContentLayoutSize(item, want);
+    applyContentLayoutSize(item, want);
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")
         || (want.hasCrop && item->imageSize().width() <= 1)) {
         const QSize isz = item->imageSize();
@@ -1712,6 +1712,66 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
     }
 }
 
+
+
+void DisplayPipelineController::applyContentLayoutSize(ImageItem *item,
+                                                       const WorkspaceItemState &wantIn)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Placement/color-only durable rows are not content orient (2205–2211).
+    // layoutOrientAuthorityWant also keeps orient when *want* already specifies
+    // turns/flips/crop — bakeItemRotate90 applies layout *before* setContentBake,
+    // so hasContentOrient is still false on the first 90° and must not strip.
+    WorkspaceItemState want = wantIn;
+    {
+        const SessionImageId sid = resolveItemSessionId(item);
+        if (sid != kInvalidSessionImageId) {
+            want = SessionAppearance::layoutOrientAuthorityWant(
+                m_view->itemWorld().hasContentOrient(sid), want);
+        }
+    }
+    // Intrinsic is always ContentXform layout of file-native size — never sample
+    // pixel dimensions. Using displayImage().size() for crops shrank Workspace
+    // tiles to soft resolution (and stretched wrong pixels on re-crop).
+    //
+    // Provisional sizes still get orient/crop layout: a 90° content turn must
+    // transpose the box even before the durable probe lands (filmstrip→Workspace
+    // drop was leaving unrotated intrinsic + oriented pixels → clipped tile).
+    const QString path = item->path();
+    QSize fileNative = m_view->logicalSizeForPath(path);
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1 || fileNative.height() <= 1) {
+        // Gallery: never invent intrinsic from samples/crop before definitive size.
+        if (m_view->isGalleryMode() && !m_view->hostSizeBook().hasDefinitive(path)
+            && !m_view->hostSizeBook().isFailed(path)) {
+            return;
+        }
+        // Fall back: crop rect in recorded source space, or orient-only current.
+        if (want.hasCrop && !want.cropRect.isEmpty()) {
+            const QSize basis = (want.cropSourceSize.isValid()
+                                && want.cropSourceSize.width() > 1)
+                                   ? want.cropSourceSize
+                                   : item->imageSize();
+            const QRect c = SessionAppearance::scaleCropRect(
+                want.cropRect.normalized(), want.cropSourceSize, basis);
+            if (c.width() > 1 && c.height() > 1) {
+                m_view->setItemIntrinsicSize(item, c.size());
+            }
+        } else if (ContentXform::swapsAspect(ContentXform::Value::fromState(want))) {
+            // Orient-only with no usable native: transpose current box if odd turns.
+            const QSize cur = item->imageSize();
+            if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
+                m_view->setItemIntrinsicSize(item, QSize(cur.height(), cur.width()));
+            }
+        }
+        return;
+    }
+    const QSize lay = ContentXform::layoutSize(fileNative, want);
+    if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+        m_view->setItemIntrinsicSize(item, lay);
+    }
+}
 
 void DisplayPipelineController::hostClearDecodedPixels(ImageItem *item)
 {
