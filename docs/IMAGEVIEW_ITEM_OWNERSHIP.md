@@ -533,3 +533,6 @@ Product shell (minimal):
     pushItemGeometryCommand / pushItemContentCommand). ImageView keeps the
     host API; imageview_transform_actions.cpp is thin transform routers only.
 
+60. **biltoo-2518:** ImageController owns fitItem (crop-draft layout rules +
+    Image-mode scale normalize + fitInView + scene rect); ImageView thin router.
+

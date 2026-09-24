@@ -80,6 +80,8 @@ public:
     void captureStickyPanAnchor(ImageItem *item);
     void restoreStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
+    /** Fit item in view (Image-mode layout + crop-draft rules). */
+    void fitItem(ImageItem *item, Qt::AspectRatioMode mode);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item,
                                               const QSize &before,
                                               const QSize &after);

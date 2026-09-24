@@ -116,3 +116,8 @@
         primeGalleryGeometryFromCache(paths);
     }
 
+    SessionImageId hostResolveContentEditSessionId(const ImageItem *item) const
+    {
+        return resolveContentEditSessionId(item);
+    }
+

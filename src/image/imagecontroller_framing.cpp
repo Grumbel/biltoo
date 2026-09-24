@@ -18,6 +18,10 @@
 #include <QTimer>
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
+#include "crop/cropsession.h"
+#include "crop/cropcontroller.h"
+#include "display/displaypipelinecontroller.h"
+#include "item/imagesizebook.h"
 
 
 /** True when intrinsic size is large enough that fitInView will not explode. */
@@ -248,3 +252,76 @@ void ImageController::syncImageModeSceneRect(ImageItem *item)
     }
 }
 
+
+void ImageController::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
+{
+    if (!item) {
+        return;
+    }
+    // docs/CROP_MODE.md: during crop draft, never layoutSize(file, want-with-crop).
+    // DOMAIN.md ownership (Image mode):
+    //   View matrix owns framing (fit / zoom / pan).
+    //   Object keeps rotation and flips; this helper must never clear them.
+    //   Object scale is normalized to 1 so residual Workspace scale does not
+    //   fight the view transform when showing a single image.
+    // Logical size owns geometry — soft display pixels must not define fit.
+    //
+    // Exception: a session crop bake (materializeDisplay) sets intrinsic to the
+    // crop pixel size. Forcing full-file logicalSizeForPath here immediately
+    // after Apply stretched the crop into the pre-crop box.
+    //
+    // Content ±90° turns: never force file-native size. After rotate, fitItem
+    // used to reset intrinsic to unoriented native and paint stretched oriented
+    // pixels into the old contentRect.
+    const QString path = item->path();
+    // Critical: crop session stays active through applyCropCommit → fitItem, *after*
+    // the crop bake is attached. Treating any session.active() as draft forced
+    // orient-only layout on top of crop pixels → stretch into the pre-crop
+    // contentRect. Only pure draft (no applied crop, no session crop on the
+    // item) is draft geometry.
+    // Draft enter clears live session crop while ItemWorld still holds durable
+    // crop until Apply. isDraftLayoutGeometry must use the live flag only
+    // Applied ContentXform: ItemWorld when bound (itemAppliedContentXform).
+    const ContentXform::Value liveCx = m_view->itemAppliedContentXform(item);
+    const bool liveSessionCrop = liveCx.hasCrop;
+    const bool cropDraft = CropSession::isDraftLayoutGeometry(
+        m_view->hostCrop().session().active(),
+        m_view->itemHasAppliedContentXform(item) && liveCx.hasCrop,
+        liveSessionCrop);
+    if (!path.isEmpty() && !liveSessionCrop && !cropDraft) {
+        const QSize fileNative = m_view->ensureLogicalSizeForPath(path);
+        if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
+            && !m_view->hostSizeBook().isProvisional(path)) {
+            const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
+            const WorkspaceItemState want =
+                m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
+            const QSize lay = ContentXform::layoutSize(fileNative, want);
+            if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                m_view->hostDisplayPipeline().hostSetIntrinsicSize(item, lay);
+            }
+        }
+    } else if (cropDraft && !path.isEmpty()) {
+        const WorkspaceItemState orientOnly = SessionAppearance::withoutCrop(
+            m_view->hostDisplayPipeline().wantAppearanceForItem(
+                item, m_view->hostResolveContentEditSessionId(item)));
+        m_view->hostDisplayPipeline().applyContentLayoutSize(item, orientOnly);
+    }
+    if (m_view->isImageMode() || m_view->liveItems().size() == 1) {
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            if (m_view->isImageMode()) {
+                pl.pos = QPointF(0, 0);
+            }
+            item->applyPlacement(pl);
+        }
+        m_view->resetTransform();
+        m_view->fitInView(item, mode);
+        // fitInView alone does not tighten sceneRect — a prior Workspace/Gallery
+        // or provisional rect would leave free/asymmetric pan after resize fit.
+        m_view->syncImageModeSceneRect(item);
+        return;
+    }
+    m_view->fitInView(item, mode);
+}
