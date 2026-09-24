@@ -339,7 +339,14 @@ bool CropController::applyCropCommit(ImageItem *item)
             m_view->clearItemDecodedPixels(item);
             // Geometry before pixels: empty item with crop intrinsic, then bake.
             m_view->applyContentLayoutSize(item, st);
-            CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
+            {
+                const QSize isz = CropSession::ensureApplyIntrinsicSize(
+                    item, cropW, cropH, path);
+                if (isz.isValid() && (item->imageSize().width() <= 1
+                                      || item->imageSize().height() <= 1)) {
+                    m_view->setItemIntrinsicSize(item, isz);
+                }
+            }
             m_view->attachDisplaySample(item, baked.display, st,
                                 CropSession::applyPixelKind(baked.multiMp));
             session().restoreEnterScale(item);

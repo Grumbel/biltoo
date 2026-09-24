@@ -23,7 +23,7 @@ not being two copies of a 12k-line façade.
 | **`GalleryController` / `WorkspaceController`** | Mode enter/leave, stashes, pack/free-form. Gallery may set cell size via `GalleryLayout` friends. |
 | **`SlideshowController`** | Overlay path; reuses pipeline tile sessions (cover paint), must not create a parallel pixel store. |
 | **`ItemWorld`** | Durable sparse appearance (crop/orient/grade) keyed by `SessionImageId`. |
-| **`CropSession`** | Draft crop sample; friend for draft-locked install. |
+| **`CropSession`** | Draft crop helpers only — no ImageItem friend; geometry via ImageView hosts. |
 
 ## Who may create / destroy `ImageItem*`
 
@@ -38,7 +38,7 @@ not being two copies of a 12k-line façade.
 
 | Path | API |
 |------|-----|
-| Primary install | `DisplayPipelineController::installDisplayPixels` |
+| Primary install | `DisplayPipelineController::installDisplayPixels` (sole ImageItem friend for pixels) |
 | Attach already-materialized sample | `DisplayPipelineController::attachDisplaySample` (sole place that calls `setPreviewImage` / `setSourceImageReady`); `ImageView::attachDisplaySample` forwards |
 | Soft preview only | `ImageView::setItemPreviewImage` → `setPreviewImage` |
 | Clear display pixels | `ImageView::clearItemDecodedPixels` **or** pipeline (friend) during install/replace |
@@ -88,6 +88,7 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 1. **Done:** graph written; ImageView clear/intrinsic via host wrappers.
 2. **Done:** `attachDisplaySample` implementation on `DisplayPipelineController`; view one-line forward.
 3. **Done:** `friend class ImageView` removed; public host surface + pipeline pixel hosts.
+3b. **Done:** Drop CropSession / GalleryController / GalleryLayout friends; crop intrinsic via `setItemIntrinsicSize`.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade.
 
 ## Related

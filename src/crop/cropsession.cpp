@@ -451,6 +451,8 @@ void CropSession::applyCommitPlacementRotation(ImageItem *item) const
 QSize CropSession::ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal cropH,
                                             const QString &pathForLog)
 {
+    // Does not write the item — caller applies via ImageView::setItemIntrinsicSize
+    // (CropSession is not a pixel/geometry mutator friend).
     if (!item) {
         return {};
     }
@@ -459,7 +461,6 @@ QSize CropSession::ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal 
         qCritical("applyCropCommit: layoutSize after crop is %dx%d (draft %gx%g path=%s)",
                   isz.width(), isz.height(), cropW, cropH, qPrintable(pathForLog));
         isz = ContentXform::roundedSizeAtLeast1(cropW, cropH);
-        item->setIntrinsicSize(isz);
     }
     return isz;
 }

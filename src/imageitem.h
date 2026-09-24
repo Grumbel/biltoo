@@ -29,10 +29,9 @@
  * Owns display pixels, applied ContentXform fingerprint, and live placement
  * (pose). Durable content lives in ItemWorld sparse tables —
  * ImageView::sessionAppearanceValue is the store-read path. All mutators are
- * private for pixels (friends: DisplayPipelineController, CropSession,
- * GalleryController, GalleryLayout helpers). Canvas host surface (pose,
- * session, mode chrome) is public. Readers, interaction handlers, and paint
- * chrome remain on the public API.
+ * private for pixels (friend: DisplayPipelineController only). Canvas host
+ * surface (pose, session, mode chrome) is public. Crop/Gallery use host
+ * surface or ImageView/pipeline hosts — not ImageItem friends.
  *
  * Ownership graph (who may create, install pixels, own tile bags):
  *   docs/IMAGEVIEW_ITEM_OWNERSHIP.md
@@ -284,10 +283,6 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
-    friend class CropSession;
-    friend class GalleryController;
-    friend void GalleryLayout::setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
-    friend void GalleryLayout::applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl);
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
     void setPath(const QString &path);
     void setIntrinsicSize(const QSize &size);
