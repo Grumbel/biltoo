@@ -1896,6 +1896,39 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
 
 
 
+
+void DisplayPipelineController::reinstallModePixelsAfterIdentityReset(
+    ImageItem *item, SessionImageId sid)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    const QString path = item->path();
+    if (path.isEmpty()) {
+        hostClearDecodedPixels(item);
+        return;
+    }
+    // Gallery → soft ladder; Image/Workspace → full on-disk decode.
+    // Always drop pixels first so SoftPreview is not ignored while FullSource remains.
+    if (m_view->isGalleryMode()) {
+        galleryDecodeResetPath(path);
+        hostClearDecodedPixels(item);
+        const int softEdge = ThumtooCache::kGalleryLadderEdge;
+        QImage soft = ImageLoader::loadThumbnail(path, softEdge);
+        if (!soft.isNull()) {
+            installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview, sid);
+        }
+        // else: decode window will refill after soft state reset
+    } else {
+        const QImage full = fullRasterForEdit(path);
+        if (!full.isNull()) {
+            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        } else {
+            hostClearDecodedPixels(item);
+        }
+    }
+}
+
 bool DisplayPipelineController::installInteractiveSoftPreview(
     ImageItem *item, const WorkspaceItemState &want)
 {

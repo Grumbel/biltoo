@@ -11,7 +11,6 @@
 #include "host/thumtoocache.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"
-#include "host/imageloader.h"
 
 void ImageView::syncSessionEditPeers(ImageItem *item)
 {
@@ -347,26 +346,8 @@ int ImageView::resetContentAppearanceForTargets()
         // full source is present, so identity soft would never replace the
         // oriented pixels — Gallery + filmstrip stayed flipped while Image mode
         // (FullSource install) looked correct. Always drop pixels first.
-        if (isGalleryMode()) {
-            m_displayPipeline.galleryDecodeResetPath(path);
-            clearItemDecodedPixels(item);
-            const int softEdge = ThumtooCache::kGalleryLadderEdge;
-            QImage soft = ImageLoader::loadThumbnail(path, softEdge);
-            if (!soft.isNull()) {
-                // Identity appearance: SoftPreview install without content bake.
-                m_displayPipeline.installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
-                                     sid);
-            }
-            // else: decode window will refill after soft state reset
-        } else {
-            const QImage full = m_displayPipeline.fullRasterForEdit(path);
-            if (!full.isNull()) {
-                m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
-                                     sid);
-            } else {
-                clearItemDecodedPixels(item);
-            }
-        }
+        // Mode-appropriate identity pixels — pipeline owns soft vs full install.
+        m_displayPipeline.reinstallModePixelsAfterIdentityReset(item, sid);
 
         if (isImageMode() && m_framing.isFitMode()) {
             fitItem(item, currentFitAspectMode());

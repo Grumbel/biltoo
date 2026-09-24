@@ -103,6 +103,11 @@ public:
      */
     bool installInteractiveSoftPreview(ImageItem *item, const WorkspaceItemState &want);
     /**
+     * After Reset Content Appearance: Gallery soft ladder stand-in, or
+     * Image/Workspace full raster. Drops existing pixels first when needed.
+     */
+    void reinstallModePixelsAfterIdentityReset(ImageItem *item, SessionImageId sid);
+    /**
      * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
      * Used by content bake (rotate/flip) for the pure GUI path.
      */
