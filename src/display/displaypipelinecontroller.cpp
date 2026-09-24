@@ -666,7 +666,7 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
         if (m_view->hostSlideshow().hud().isNavHot() && m_view->isImageMode()) {
             return false;
         }
-        m_view->scheduleAsyncHostRematerialize(
+        scheduleAsyncHostRematerialize(
             path, item->sessionId(),
             wantAppearanceForItem(item, item->sessionId()));
         // Intermediate Prefer host is baking async; keep Soft→Prefer→Full climb
@@ -724,7 +724,7 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
                           displaySurfaceStateForItem(
                               item, ImageCache::longEdge(host), false));
             if (again.type == AT::ScheduleAsyncMaterialize) {
-                m_view->scheduleAsyncHostRematerialize(
+                scheduleAsyncHostRematerialize(
                     path, item->sessionId(),
                     wantAppearanceForItem(item, item->sessionId()));
             } else if (again.type == AT::ScheduleClimb && m_view->hostPathRaster()
@@ -1032,14 +1032,14 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
         const int edge = ImageCache::longEdge(pixelsForDisplay);
         if (edge <= 0) {
             if (!navHot) {
-                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+                scheduleAsyncHostRematerialize(path, sid, appearance);
             }
             return;
         }
         if (edge > maxGui) {
             // Clamp failed oddly — still do not attach host under want.
             if (!navHot) {
-                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+                scheduleAsyncHostRematerialize(path, sid, appearance);
             }
             return;
         }
@@ -1047,7 +1047,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
             pixelsForDisplay, appearance, attachKind);
         if (display.isNull()) {
             if (!navHot) {
-                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+                scheduleAsyncHostRematerialize(path, sid, appearance);
             }
             return;
         }
@@ -1060,7 +1060,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     const QSize sizeBeforeAttach = item->imageSize();
     attachDisplaySample(item, display, appearance, attachKind);
     if (scheduleFullBake) {
-        m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+        scheduleAsyncHostRematerialize(path, sid, appearance);
     }
     // Soft→layout may change aspect; keep Image view scale continuous.
     if (m_view->isImageMode() && item == m_view->targetItem()
@@ -1770,6 +1770,208 @@ void DisplayPipelineController::applyContentLayoutSize(ImageItem *item,
     const QSize lay = ContentXform::layoutSize(fileNative, want);
     if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
         m_view->setItemIntrinsicSize(item, lay);
+    }
+}
+
+
+bool DisplayPipelineController::tryRematerializeFromHost(ImageItem *item,
+                                                         const WorkspaceItemState &want)
+{
+    if (!item || !m_view) {
+        return false;
+    }
+    if (m_view->hostCrop().isCropDraftLockedItem(item)) {
+        return false;
+    }
+    const QString path = item->path();
+    const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (host.isNull()) {
+        return false;
+    }
+    if (ContentXform::longEdge(host.size()) > ContentXform::kGuiMaterializeMaxEdge) {
+        return false;
+    }
+    // Prefer SoftPreview when the live item is soft-only so setPreviewImage
+    // accepts the sample (setPreviewImage ignores soft when full is present).
+    // If full is already shown, rematerialize as FullSource.
+    const auto kind = item->hasDecodedPixels()
+        ? SessionAppearance::PixelKind::FullSource
+        : SessionAppearance::PixelKind::SoftPreview;
+    const QImage display =
+        SessionAppearance::materializeDisplay(host, want, kind);
+    if (display.isNull()) {
+        return false;
+    }
+    attachDisplaySample(item, display, want, kind);
+    return true;
+}
+
+void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
+                                                         const WorkspaceItemState &want)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Crop draft owns the live sample — pure rematerialize must not soft↔full.
+    if (m_view->hostCrop().isCropDraftLockedItem(item)) {
+        return;
+    }
+    if (tryRematerializeFromHost(item, want)) {
+        return;
+    }
+    const QString path = item->path();
+    // Host must be unoriented. Never bake from preview/display — that double-applies
+    // crop when the tile already shows a soft crop (Gallery after Image crop).
+    QImage raw = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (raw.isNull() && item->hasDecodedPixels()
+        && !m_view->itemHasAppliedContentXform(item)) {
+        // FullSource without applied xform is still host-shaped (rare).
+        raw = item->sourceImage();
+    }
+    const SessionImageId sid = resolveItemSessionId(item);
+    if (raw.isNull()) {
+        // No unoriented host: schedule async; do not claim applied yet.
+        if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {
+            scheduleAsyncHostRematerialize(path, sid, want);
+        }
+        return;
+    }
+    const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+    int edge = ContentXform::longEdge(raw.size());
+    QImage host = raw;
+    SessionAppearance::PixelKind bakeKind = item->hasDecodedPixels()
+        ? SessionAppearance::PixelKind::FullSource
+        : SessionAppearance::PixelKind::SoftPreview;
+    bool scheduleFull = false;
+    if (edge > maxGui) {
+        // Soft stand-in now (crop/orient visible); full bake async.
+        host = ImageCache::clampToMaxEdge(raw, maxGui);
+        edge = ContentXform::longEdge(host.size());
+        bakeKind = SessionAppearance::PixelKind::SoftPreview;
+        scheduleFull = true;
+    }
+    if (edge <= 0 || edge > maxGui) {
+        scheduleAsyncHostRematerialize(path, sid, want);
+        return;
+    }
+    const QImage display = SessionAppearance::materializeDisplay(host, want, bakeKind);
+    if (display.isNull()) {
+        scheduleAsyncHostRematerialize(path, sid, want);
+        return;
+    }
+    if (bakeKind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
+        hostClearDecodedPixels(item);
+    }
+    attachDisplaySample(item, display, want, bakeKind);
+    if (scheduleFull) {
+        scheduleAsyncHostRematerialize(path, sid, want);
+    }
+}
+
+void DisplayPipelineController::scheduleAsyncHostRematerialize(
+    const QString &path, SessionImageId sid, const WorkspaceItemState &want)
+{
+    if (!m_view || path.isEmpty()) {
+        return;
+    }
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
+        return;
+    }
+    const QImage hostProbe = ImageCache::get(path);
+    if (hostProbe.isNull()) {
+        return;
+    }
+    if (ContentXform::longEdge(hostProbe.size())
+        <= ContentXform::kGuiMaterializeMaxEdge) {
+        return; // GUI path already handled by tryRematerializeFromHost
+    }
+    const quint64 gen = loadGate().generation();
+    QPointer<ImageView> guard(m_view);
+    const WorkspaceItemState wantCopy = want;
+    QThreadPool::globalInstance()->start([guard, path, sid, wantCopy, gen]() {
+        if (!guard) {
+            return;
+        }
+        const QImage host = ImageCache::get(path);
+        if (host.isNull()) {
+            return;
+        }
+        // Worker thread: multi-MP materialize is allowed.
+        const QImage display = SessionAppearance::materializeDisplay(
+            host, wantCopy, SessionAppearance::PixelKind::FullSource);
+        if (display.isNull()) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, path, sid, wantCopy, display, gen]() {
+            if (!guard || !guard->matchesLoadGeneration(gen)) {
+                return;
+            }
+            guard->hostDisplayPipeline().finishAsyncHostRematerialize(
+                path, sid, wantCopy, display);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void DisplayPipelineController::finishAsyncHostRematerialize(
+    const QString &path, SessionImageId sid, const WorkspaceItemState &want,
+    const QImage &display)
+{
+    ASSERT_GUI_THREAD();
+    if (!m_view || display.isNull() || path.isEmpty()) {
+        return;
+    }
+    // Crop draft owns the target item — do not reinstall over orient-only draft.
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
+        return;
+    }
+    ImageItem *item = nullptr;
+    for (ImageItem *it : m_view->liveItems()) {
+        if (!it || it->path() != path) {
+            continue;
+        }
+        if (sid != kInvalidSessionImageId && it->sessionId() != sid
+            && it->sessionId() != kInvalidSessionImageId) {
+            continue;
+        }
+        item = it;
+        break;
+    }
+    if (!item) {
+        return;
+    }
+    const ContentXform::Value wantX = ContentXform::Value::fromState(want);
+    // Discard stale worker result if the store moved on for this session id.
+    if (sid != kInvalidSessionImageId && m_view->itemWorld().hasDurableAppearance(sid)) {
+        const WorkspaceItemState cur = m_view->sessionAppearanceValue(sid);
+        if (!ContentXform::equal(ContentXform::Value::fromState(cur), wantX)) {
+            return;
+        }
+    }
+    // Already settled FullSource for this want at ≥ this resolution — skip.
+    if (item->hasDecodedPixels() && m_view->itemHasAppliedContentXform(item)
+        && ContentXform::equal(m_view->itemAppliedContentXform(item), wantX)
+        && !item->shouldUpgradeDisplayTo(ImageCache::longEdge(display))) {
+        return;
+    }
+    const QSize before = item->imageSize();
+    attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);
+    if (before != item->imageSize()) {
+        m_view->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+    }
+    if (m_view->isImageMode() && m_view->canvasScene() && m_view->liveItems().size() == 1) {
+        m_view->canvasScene()->setSceneRect(
+            item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+    if (m_view->isGalleryMode() && before != item->imageSize()) {
+        m_view->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+    }
+    if (m_view->isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
+    } else if (m_view->isImageMode()) {
+        driveImageFocusSurface();
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
     }
 }
 

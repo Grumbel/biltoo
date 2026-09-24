@@ -597,8 +597,8 @@ public:
 
     /**
      * Rematerialize display from ImageCache / item host for @p want.
-     * Soft stand-in + async full when multi-MP. Public for WorkspaceController
-     * leave→enter restore when fullRasterForEdit misses.
+     * Forwards to DisplayPipelineController (pixel/layout owner).
+     * Public for WorkspaceController leave→enter restore.
      */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
 

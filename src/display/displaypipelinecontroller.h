@@ -86,6 +86,22 @@ public:
      * ImageView::applyContentLayoutSize forwards here for crop/bake callers.
      */
     void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &wantIn);
+    /**
+     * Rematerialize display from ImageCache / item host for @p want.
+     * Soft stand-in + async full when multi-MP. ImageView::rematerializeItemContent
+     * and WorkspaceController call through this owner.
+     */
+    void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
+    /**
+     * Async full-host materialize when multi-MP exceeds GUI edge.
+     * ImageView::scheduleAsyncHostRematerialize forwards here.
+     */
+    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                        const WorkspaceItemState &want);
+    /** GUI-thread completion for scheduleAsyncHostRematerialize workers. */
+    void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                      const WorkspaceItemState &want,
+                                      const QImage &display);
     /** Pixel host for ImageView (no longer a friend of ImageItem). */
     void hostClearDecodedPixels(ImageItem *item);
     void hostSetIntrinsicSize(ImageItem *item, const QSize &size);
@@ -219,6 +235,8 @@ private:
     ImageItem *imageModeItemForPath(const QString &path) const;
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
+
+    bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
 
     /**
      * SessionImageId for materialize / layout: @p preferred if set, else

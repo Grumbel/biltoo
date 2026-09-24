@@ -41,6 +41,7 @@ not being two copies of a 12k-line façade.
 | Primary install | `DisplayPipelineController::installDisplayPixels` (sole ImageItem friend for pixels) |
 | Attach already-materialized sample | `DisplayPipelineController::attachDisplaySample` (sole place that calls `setPreviewImage` / `setSourceImageReady`); `ImageView::attachDisplaySample` forwards |
 | Content layout intrinsic | `DisplayPipelineController::applyContentLayoutSize` (file-native × want); called from attach and from bake/crop hosts |
+| Rematerialize (host → display) | `DisplayPipelineController::rematerializeItemContent` / `scheduleAsyncHostRematerialize` |
 | Soft preview only | `ImageView::setItemPreviewImage` → `setPreviewImage` |
 | Clear display pixels | `ImageView::clearItemDecodedPixels` **or** pipeline (friend) during install/replace |
 | Intrinsic / layout size | `ImageView::setItemIntrinsicSize` **or** pipeline; samples must not define geometry (SIZE.md) |
@@ -98,6 +99,8 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3c. **Done:** Remove dead `ImageItem::setSourceImage`; sole private install paths are `setSourceImageReady` + `setPreviewImage`.
 3d. **Done:** `applyContentLayoutSize` owned by `DisplayPipelineController`; ImageView one-line forward;
     redundant post-`attachDisplaySample` layout calls removed.
+3e. **Done:** `rematerializeItemContent` + async host rematerialize owned by pipeline;
+    ImageView forwards; tryRematerializeFromHost private on pipeline.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book/rematerialize collaborator extractions.
 
