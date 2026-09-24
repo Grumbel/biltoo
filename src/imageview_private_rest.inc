@@ -126,8 +126,7 @@
     bool m_preserveUndoOnDestroy = false;
 
 
-    /** Image-mode sticky pan / fit-fill (methods on ImageController; state on host for dual). */
-    ViewFraming m_framing;
+    // ViewFraming: owned by ImageController (m_image.framing()).
     /** Viewport pointer chrome + canvas materials. */
     ViewShellChrome m_shell;
     ViewMode m_viewMode = ViewMode::Image;

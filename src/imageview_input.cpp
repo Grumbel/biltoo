@@ -94,7 +94,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
     m_slideshow.cancelSlideshowMotion();
     releaseStickyZoom();
-    m_framing.releaseFit();
+    m_image.framing().releaseFit();
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
     // Workspace: keep sceneRect covering all free-form tiles after zoom so
@@ -147,7 +147,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
         }
         return;
     }
-    if (m_framing.isFitMode() && m_items.size() == 1) {
+    if (m_image.framing().isFitMode() && m_items.size() == 1) {
         fitItem(m_items.first(), currentFitAspectMode());
     }
 }

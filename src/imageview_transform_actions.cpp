@@ -115,7 +115,7 @@ void ImageView::flipHorizontal()
     }
     for (ImageItem *item : targets) {
         m_displayPipeline->bakeItemFlip(item, true, false);
-        if (m_framing.isFitMode() && isImageMode()) {
+        if (m_image.framing().isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
@@ -133,7 +133,7 @@ void ImageView::flipVertical()
     }
     for (ImageItem *item : targets) {
         m_displayPipeline->bakeItemFlip(item, false, true);
-        if (m_framing.isFitMode() && isImageMode()) {
+        if (m_image.framing().isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
@@ -157,9 +157,9 @@ void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
     m_displayPipeline->bakeItemRotate90(item, quarterTurns);
 
     if (isImageMode()) {
-        if (m_framing.isFitMode()) {
+        if (m_image.framing().isFitMode()) {
             fitItem(item, currentFitAspectMode());
-        } else if (m_framing.isFillMode()) {
+        } else if (m_image.framing().isFillMode()) {
             fitItem(item, Qt::KeepAspectRatioByExpanding);
         }
     }

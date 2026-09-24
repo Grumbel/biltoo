@@ -53,21 +53,21 @@ void ImageController::captureStickyPanAnchor(ImageItem *item)
     if (sx > 50.0) {
         return;
     }
-    m_view->hostFraming().clearStickyPan();
-    m_view->hostFraming().clearPreservedViewScale();
-    m_view->hostFraming().setPreservedViewScale(sx);
+    m_framing.clearStickyPan();
+    m_framing.clearPreservedViewScale();
+    m_framing.setPreservedViewScale(sx);
     const QRectF r = item->sceneBoundingRect();
     if (r.width() < 1.0 || r.height() < 1.0) {
         return;
     }
     const QPointF vc = m_view->mapToScene(m_view->viewport()->rect().center());
-    m_view->hostFraming().setStickyPanFromScene(vc, r);
+    m_framing.setStickyPanFromScene(vc, r);
 }
 
 
 void ImageController::restoreStickyPanAnchor(ImageItem *item)
 {
-    if (!m_view->hostFraming().hasStickyPan() || !item || !m_view->canvasScene() || !m_view->viewport()) {
+    if (!m_framing.hasStickyPan() || !item || !m_view->canvasScene() || !m_view->viewport()) {
         return;
     }
     if (!m_view->liveItems().contains(item) || item->scene() != m_view->canvasScene()) {
@@ -77,7 +77,7 @@ void ImageController::restoreStickyPanAnchor(ImageItem *item)
     if (r.width() < 1.0 || r.height() < 1.0) {
         return;
     }
-    m_view->centerOn(m_view->hostFraming().sceneFromStickyPan(r));
+    m_view->centerOn(m_framing.sceneFromStickyPan(r));
 }
 
 
@@ -93,18 +93,18 @@ void ImageController::applyImageModeFraming(ImageItem *item)
     if (!itemHasReliableFrameSize(item)) {
         return;
     }
-    if (m_view->hostFraming().isStickyZoomEnabled()) {
+    if (m_framing.isStickyZoomEnabled()) {
         // Fit: unique home pose (centred). Fill / 1:1: frame, then best-effort
         // restore viewport centre in image-normalized coords (prev/next compare).
         // Always restore *after* setSceneRect/refreshScrollBarGeometry — those
         // often reset QAbstractScrollArea scroll position.
-        switch (m_view->hostFraming().currentStickyZoomKind()) {
+        switch (m_framing.currentStickyZoomKind()) {
         case StickyZoomKind::Fill:
-            m_view->hostFraming().setFillMode();
+            m_framing.setFillMode();
             m_view->fitItem(item, Qt::KeepAspectRatioByExpanding);
             break;
         case StickyZoomKind::Actual:
-            m_view->hostFraming().clearFitFill();
+            m_framing.clearFitFill();
             {
                 ItemComponents::Placement pl = item->placement();
                 pl.scale = 1.0;
@@ -116,13 +116,13 @@ void ImageController::applyImageModeFraming(ImageItem *item)
             break;
         case StickyZoomKind::Fit:
         default:
-            m_view->hostFraming().setFitOnly();
+            m_framing.setFitOnly();
             m_view->fitItem(item, Qt::KeepAspectRatio);
             break;
         }
         syncImageModeSceneRect(item);
         m_view->refreshScrollBarGeometry();
-        if (!m_view->hostFraming().isStickyFit()) {
+        if (!m_framing.isStickyFit()) {
             restoreStickyPanAnchor(item);
             // Scroll ranges often settle after this returns — restore again.
             // QPointer so a destroy mid-navigation cancels the callback safely.
@@ -143,15 +143,15 @@ void ImageController::applyImageModeFraming(ImageItem *item)
     }
     // Non-sticky: keep the previous view scale + relative pan (prev/next at the
     // same zoom). Cold open with no prior capture still defaults to Fit.
-    if (m_view->hostFraming().hasPreservedViewScale()) {
-        const qreal sx = m_view->hostFraming().currentPreservedViewScale();
+    if (m_framing.hasPreservedViewScale()) {
+        const qreal sx = m_framing.currentPreservedViewScale();
         if (!qIsFinite(sx) || sx <= 1e-6 || sx > 50.0) {
-            m_view->hostFraming().clearPreservedViewScale();
-            m_view->hostFraming().setFitOnly();
+            m_framing.clearPreservedViewScale();
+            m_framing.setFitOnly();
             m_view->fitItem(item, Qt::KeepAspectRatio);
             return;
         }
-        m_view->hostFraming().clearFitFill();
+        m_framing.clearFitFill();
         {
             ItemComponents::Placement pl = item->placement();
             pl.scale = 1.0;
@@ -176,7 +176,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         });
         return;
     }
-    m_view->hostFraming().setFitOnly();
+    m_framing.setFitOnly();
     m_view->fitItem(item, Qt::KeepAspectRatio);
 }
 
@@ -199,7 +199,7 @@ void ImageController::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         } else if (!m_view->hostSlideshow().hud().isProgressActive()) {
             // Sticky or preserved free-zoom: full framing path. fitItem alone
             // would drop a leave/enter captured scale after a 1×1 placeholder.
-            if (m_view->hostFraming().isStickyZoomEnabled() || m_view->hostFraming().hasPreservedViewScale()) {
+            if (m_framing.isStickyZoomEnabled() || m_framing.hasPreservedViewScale()) {
                 applyImageModeFraming(item);
             } else {
                 m_view->fitItem(item, m_view->currentFitAspectMode());

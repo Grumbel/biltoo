@@ -19,7 +19,7 @@
 
 void ImageView::setStickyZoomEnabled(bool on)
 {
-    if (!m_framing.setStickyZoomEnabled(on)) {
+    if (!m_image.framing().setStickyZoomEnabled(on)) {
         return;
     }
     emit stickyZoomChanged();
@@ -29,7 +29,7 @@ void ImageView::setStickyZoomEnabled(bool on)
 
 void ImageView::releaseStickyZoom()
 {
-    if (!m_framing.setStickyZoomEnabled(false)) {
+    if (!m_image.framing().setStickyZoomEnabled(false)) {
         return;
     }
     emit stickyZoomChanged();
@@ -150,7 +150,7 @@ void ImageView::zoomViewBy(qreal factor)
     // resize still resets the view transform so tiles stay layout-correct
     // (AUDIT M4 — one policy: zoom works until next pack).
     releaseStickyZoom();
-    m_framing.clearFitFill();
+    m_image.framing().clearFitFill();
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
@@ -190,7 +190,7 @@ void ImageView::setWorkspaceDefaultViewScale()
     // zoom-out presses: each step is 1/1.25, so scale = (1/1.25)^4 ≈ 0.4096 (41%).
     constexpr qreal kStep = 1.25;
     const qreal s = 1.0 / (kStep * kStep * kStep * kStep);
-    m_framing.clearFitFill();
+    m_image.framing().clearFitFill();
     resetTransform();
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(s, s);
@@ -204,7 +204,7 @@ void ImageView::setWorkspaceDefaultViewScale()
 
 void ImageView::zoomReset()
 {
-    m_framing.clearFitFill();
+    m_image.framing().clearFitFill();
     if (isMultiItemMode()) {
         // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
         resetTransform();
@@ -247,7 +247,7 @@ void ImageView::refreshScrollBarGeometry()
 
 void ImageView::zoomFit()
 {
-    m_framing.setFitOnly();
+    m_image.framing().setFitOnly();
     if (isGalleryMode()) {
         // Fit the packed gallery into the viewport (whole pack). Sticky zoom
         // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
@@ -292,7 +292,7 @@ void ImageView::zoomFit()
 
 void ImageView::zoomFill()
 {
-    m_framing.setFillMode();
+    m_image.framing().setFillMode();
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
             const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);

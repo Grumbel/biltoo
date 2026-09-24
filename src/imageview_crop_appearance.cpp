@@ -133,7 +133,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
         ThumtooCache::clearContentAppearance(item->path());
     }
     if (isImageMode()) {
-        m_framing.armFit();
+        m_image.framing().armFit();
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();

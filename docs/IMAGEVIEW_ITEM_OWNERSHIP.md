@@ -419,7 +419,7 @@ Product shell (minimal):
 
     | Residual | Why it stays on ImageView |
     |----------|---------------------------|
-    | ViewFraming | Dual-pane host surface; methods on ImageController |
+    | ViewFraming | **Moved to ImageController (2493)**; hostFraming forwards |
     | ViewMode | Mode shell enum |
     | ViewShellChrome | Viewport + canvas materials (QGraphicsView shell) |
     | HudChrome | Cross-mode HUD overlay |
@@ -433,4 +433,7 @@ Product shell (minimal):
 
     Mode bags (Workspace / Gallery / Image / Text / Slideshow / Crop) and
     PathRasterService live on their controllers.
+
+35. **biltoo-2493:** ViewFraming owned by ImageController (per-view; dual-safe);
+    hostFraming forwards to m_image.framing().
 

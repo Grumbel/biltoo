@@ -349,7 +349,7 @@ int ImageView::resetContentAppearanceForTargets()
         // Mode-appropriate identity pixels — pipeline owns soft vs full install.
         m_displayPipeline->reinstallModePixelsAfterIdentityReset(item, sid);
 
-        if (isImageMode() && m_framing.isFitMode()) {
+        if (isImageMode() && m_image.framing().isFitMode()) {
             fitItem(item, currentFitAspectMode());
         }
 

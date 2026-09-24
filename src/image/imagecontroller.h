@@ -8,6 +8,7 @@
 #include "image/edgenavpolicy.h"
 #include "slideshow/zoomregiongesture.h"
 #include "session/sessionchrome.h"
+#include "view/viewframing.h"
 #include "color/coloradjustcommit.h"
 #include <QSize>
 
@@ -60,7 +61,10 @@ public:
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
 
-    // Image-mode framing / sticky pan (ViewFraming state remains on the host).
+    /** Image-mode framing / sticky pan (per-view; dual-safe). */
+    ViewFraming &framing() { return m_framing; }
+    const ViewFraming &framing() const { return m_framing; }
+
     void captureStickyPanAnchor(ImageItem *item);
     void restoreStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
@@ -94,6 +98,7 @@ private:
     void ensureColorAdjustCommitTimer();
 
     ImageView *m_view = nullptr;
+    ViewFraming m_framing;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
     ZoomRegionGesture m_zoomRegion;

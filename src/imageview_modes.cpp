@@ -280,7 +280,7 @@ void ImageView::prepareImageModeCanvas()
     }
     // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
     m_scene->setSceneRect(QRectF());
-    m_framing.setFitOnly();
+    m_image.framing().setFitOnly();
 }
 
 

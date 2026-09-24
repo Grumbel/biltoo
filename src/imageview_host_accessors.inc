@@ -41,8 +41,8 @@
         }
         return m_size.book();
     }
-    ViewFraming &hostFraming() override { return m_framing; }
-    const ViewFraming &hostFraming() const override { return m_framing; }
+    ViewFraming &hostFraming() override { return m_image.framing(); }
+    const ViewFraming &hostFraming() const override { return m_image.framing(); }
     ViewportChrome &hostChrome() { return m_shell.viewport(); }
     const ViewportChrome &hostChrome() const { return m_shell.viewport(); }
     SessionNavFlags &hostSessionNav() { return m_image.sessionNav(); }

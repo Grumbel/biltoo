@@ -118,7 +118,7 @@ int ImageView::pendingDecodeCount() const
 
 Qt::AspectRatioMode ImageView::currentFitAspectMode() const
 {
-    return m_framing.aspectMode();
+    return m_image.framing().aspectMode();
 }
 
 
