@@ -28,6 +28,11 @@ public:
     const TextLayerSession &session() const { return m_session; }
 
     void paintRubberBandOverlay(QPainter &painter);
+    /**
+     * Scene-space search hits, selection fill, and region/link outlines
+     * (Image mode). Called from drawForeground before viewport overlays.
+     */
+    void paintSceneOverlays(QPainter *painter) const;
     void setShowRegions(bool on);
     void refresh();
     void setSearchFuzzy(bool on);

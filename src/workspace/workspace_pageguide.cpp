@@ -330,3 +330,34 @@ bool WorkspaceController::tryMouseReleasePageGuide(QMouseEvent *event)
     event->accept();
     return true;
 }
+
+void WorkspaceController::paintPageGuideOutline(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view || !m_view->isWorkspaceMode()) {
+        return;
+    }
+    if (!m_pageGuide.isVisible()) {
+        return;
+    }
+    const QRectF page = pageGuideSceneRect();
+    if (!page.intersects(exposed)) {
+        return;
+    }
+    painter->save();
+    QPen pen(QColor(40, 100, 200, 220));
+    pen.setStyle(Qt::DashLine);
+    pen.setWidthF(0);
+    pen.setCosmetic(true);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(page);
+    QRectF margin = page.adjusted(page.width() * 0.05, page.height() * 0.05,
+                                  -page.width() * 0.05, -page.height() * 0.05);
+    QPen marginPen(QColor(40, 100, 200, 120));
+    marginPen.setStyle(Qt::DotLine);
+    marginPen.setCosmetic(true);
+    painter->setPen(marginPen);
+    painter->drawRect(margin);
+    painter->restore();
+}
+

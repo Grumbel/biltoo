@@ -489,3 +489,82 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
         emit m_view->statusChanged();
     }
 }
+
+void TextLayerController::paintSceneOverlays(QPainter *painter) const
+{
+    if (!painter || !m_view || !m_view->isImageMode()) {
+        return;
+    }
+    if (!m_session.hasRegions()
+        || !(m_session.showsRegions() || m_session.hasSearchMatches())) {
+        return;
+    }
+    ImageItem *item = m_view->primaryItem();
+    if (!item) {
+        return;
+    }
+    const QSize sz = item->imageSize();
+    if (sz.width() <= 0 || sz.height() <= 0 || !m_session.pageBoundsValid()) {
+        return;
+    }
+    painter->save();
+    // Search hits: filled yellow first (under outlines / selection).
+    if (m_session.hasSearchMatches()) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 220, 40, 110));
+        for (int idxMatch : m_session.searchMatchesRef()) {
+            if (idxMatch < 0 || idxMatch >= m_session.regionCount()) {
+                continue;
+            }
+            const auto &r = m_session.regionAt(idxMatch);
+            const QRectF img = regionImageRect(r);
+            if (img.isEmpty()) {
+                continue;
+            }
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+    // Rubber-band text selection (cyan).
+    if (m_session.hasSelection()) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(60, 160, 255, 100));
+        for (int idxSel : m_session.selectedRegionsRef()) {
+            if (idxSel < 0 || idxSel >= m_session.regionCount()) {
+                continue;
+            }
+            const auto &r = m_session.regionAt(idxSel);
+            const QRectF img = regionImageRect(r);
+            if (img.isEmpty()) {
+                continue;
+            }
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+    if (m_session.showsRegions()) {
+        painter->setBrush(Qt::NoBrush);
+        for (const ThumtooCache::TextRegion &r : m_session.regions()) {
+            const QRectF img = regionImageRect(r);
+            if (img.isEmpty()) {
+                continue;
+            }
+            const QRectF local = img.translated(item->offset());
+            const QPolygonF scenePoly = item->mapToScene(local);
+            if (r.role == ThumtooCache::TextRegion::Role::Link) {
+                QPen pen(QColor(40, 180, 80, 200));
+                pen.setCosmetic(true);
+                pen.setWidthF(0);
+                painter->setPen(pen);
+            } else {
+                QPen pen(QColor(220, 80, 40, 180));
+                pen.setCosmetic(true);
+                pen.setWidthF(0);
+                painter->setPen(pen);
+            }
+            painter->drawPolygon(scenePoly);
+        }
+    }
+    painter->restore();
+}
+

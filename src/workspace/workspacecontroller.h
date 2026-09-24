@@ -218,6 +218,11 @@ public:
                                       Qt::KeyboardModifiers mods) const;
     void endPageGuideResize();
     void paintPageGuideHandles(QPainter *painter) const;
+    /**
+     * Scene-space page outline + margin (Workspace). Called from drawForeground
+     * before viewport overlays.
+     */
+    void paintPageGuideOutline(QPainter *painter, const QRectF &exposed) const;
     static qreal pageGuidePxPerMm();
 
     /** Page-guide resize drag + hover cursor. */
