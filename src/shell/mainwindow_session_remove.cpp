@@ -109,7 +109,7 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         snap.id = m_session.idAt(idx);
         // Capture appearance before redo removes canvas object / store entry.
         if (m_imageView && snap.id != kInvalidSessionImageId
-            && m_imageView->hasSessionAppearance(snap.id)) {
+            && m_imageView->itemWorld().hasDurableAppearance(snap.id)) {
             snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
             snap.hasAppearance = true;
             snap.appearance.sessionId = snap.id;
@@ -288,7 +288,7 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
         const int idx = ViewTransform::clampInsertIndex(e.index, m_session.size());
         m_session.insert(idx, e.path, e.id);
         if (m_imageView && e.hasAppearance && e.id != kInvalidSessionImageId) {
-            m_imageView->setSessionAppearance(e.id, e.appearance);
+            m_imageView->itemWorld().setAppearance(e.id, e.appearance);
         }
     }
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());

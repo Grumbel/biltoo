@@ -556,7 +556,7 @@ void MainWindow::applyWorkspaceUncut(const QList<WorkspaceItemState> &items)
             continue;
         }
         // Ensure appearance (pose) is in the store for restore.
-        m_imageView->setSessionAppearance(s.sessionId, s);
+        m_imageView->itemWorld().setAppearance(s.sessionId, s);
         ids.append(s.sessionId);
         paths.append(s.path);
         indices.append(m_session.indexOfId(s.sessionId));
@@ -614,7 +614,7 @@ QVector<SessionImageId> MainWindow::applyWorkspacePaste(const QList<WorkspaceIte
         const SessionImageId id = allocSessionId();
         m_session.append(s.path, id);
         s.sessionId = id;
-        m_imageView->setSessionAppearance(id, s);
+        m_imageView->itemWorld().setAppearance(id, s);
         newIds.append(id);
         selectIds.append(id);
         indices.append(m_session.size() - 1);

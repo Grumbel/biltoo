@@ -203,7 +203,7 @@ MainWindow::MainWindow(QWidget *parent)
                     return want;
                 }
                 if (sid != kInvalidSessionImageId
-                    && m_imageView->hasSessionAppearance(sid)) {
+                    && m_imageView->itemWorld().hasDurableAppearance(sid)) {
                     want = m_imageView->sessionAppearanceValue(sid);
                 }
                 // Bound: ItemWorld only — no path XDG (matches Image underlay).
@@ -1463,7 +1463,7 @@ QList<SessionEntrySnapshot> MainWindow::sessionSelectionSnapshots() const
         snap.path = m_session.pathAt(idx);
         snap.id = m_session.idAt(idx);
         if (m_imageView && snap.id != kInvalidSessionImageId) {
-            if (m_imageView->hasSessionAppearance(snap.id)) {
+            if (m_imageView->itemWorld().hasDurableAppearance(snap.id)) {
                 snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
                 snap.hasAppearance = true;
             } else {
@@ -1556,7 +1556,7 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
             // Workspace pose already cleared in sessionSelectionSnapshots.
             // Path-XDG seed skips when hasContentAppearance is already set
             // (applyStoredContentAppearanceSeed); no private seed-book API needed.
-            m_imageView->setSessionAppearance(st.sessionId, st);
+            m_imageView->itemWorld().setAppearance(st.sessionId, st);
         }
     };
     installTransferredAppearance();

@@ -410,9 +410,6 @@ public:
      * Bound appearance for @p id (ItemWorld::appearanceValue — sparse-prefer).
      */
     WorkspaceItemState sessionAppearanceValue(SessionImageId id) const override;
-    bool hasSessionAppearance(SessionImageId id) const;
-    /** Restore appearance after session undo (store only; no canvas mutate). */
-    void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
 
 
     QString statusText() const;

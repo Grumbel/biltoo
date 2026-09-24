@@ -85,7 +85,7 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     const WorkspaceItemState *boundPtr = nullptr;
     bool hasBoundDurable = false;
     bool hasContentOrient = false;
-    if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
+    if (sessionId != kInvalidSessionImageId && itemWorld().hasDurableAppearance(sessionId)) {
         boundWant = sessionAppearanceValue(sessionId);
         boundPtr = &boundWant;
         hasBoundDurable = true;

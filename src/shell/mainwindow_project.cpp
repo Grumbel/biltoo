@@ -322,7 +322,7 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
         ProjectImage im;
         im.id = id;
         im.assetSha256 = sha;
-        if (m_imageView && m_imageView->hasSessionAppearance(id)) {
+        if (m_imageView && m_imageView->itemWorld().hasDurableAppearance(id)) {
             im.appearance = m_imageView->sessionAppearanceValue(id);
             im.hasAppearance = true;
         }
@@ -361,7 +361,7 @@ void MainWindow::installProjectAppearances(
         if (sid == kInvalidSessionImageId) {
             continue;
         }
-        m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
+        m_imageView->itemWorld().setAppearance(sid, appearanceByRow.at(i));
     }
 }
 
@@ -417,7 +417,7 @@ void MainWindow::enterProjectCanvasMode(
                 if (sid == kInvalidSessionImageId) {
                     continue;
                 }
-                m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
+                m_imageView->itemWorld().setAppearance(sid, appearanceByRow.at(i));
                 m_imageView->hostWorkspace().addImageForSession(paths.at(i), sid, i);
             }
             m_imageView->updateWorkspaceSceneRect();

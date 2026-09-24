@@ -179,23 +179,6 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
 }
 
 
-
-bool ImageView::hasSessionAppearance(SessionImageId id) const
-{
-    return id != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(id);
-}
-
-
-void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState &state)
-{
-    if (id == kInvalidSessionImageId) {
-        return;
-    }
-    // ItemWorld::setAppearance writes sparse Crop/ContentBake/Color/… tables.
-    m_itemWorld.setAppearance(id, state);
-}
-
-
 void ImageView::persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
                                                 const char *debugTag)
 {
@@ -246,7 +229,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     // Bound content starts from sessionAppearanceValue (single merge policy).
     const SessionImageId sid = resolveContentEditSessionId(item);
     const bool hasBoundDurable =
-        sid != kInvalidSessionImageId && hasSessionAppearance(sid);
+        sid != kInvalidSessionImageId && itemWorld().hasDurableAppearance(sid);
     WorkspaceItemState boundFallback;
     const WorkspaceItemState *boundPtr = nullptr;
     if (hasBoundDurable) {
@@ -297,7 +280,7 @@ WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
 WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
 {
     // Sparse-prefer merge lives on ItemWorld::appearanceValue (single facade policy).
-    return m_itemWorld.appearanceValue(id);
+    return itemWorld().appearanceValue(id);
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const

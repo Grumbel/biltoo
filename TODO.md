@@ -2,35 +2,27 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2609.1-restore-framing-host-overrides** (base `7d823d8`).
+**Tip: biltoo-2610.1-peel-session-appearance-itemworld** (base `7d823d8`).
 
 ### This tip
-Restored five **DisplayPipelineHost** thin overrides deleted by the transform
-peel (bodies lived on ImageController; host surface must stay on ImageView):
+- Peeled `hasSessionAppearance` / `setSessionAppearance` →
+  `itemWorld().hasDurableAppearance` / `itemWorld().setAppearance`.
+- **Bug fix:** those methods (and `sessionAppearanceValue`) used `m_itemWorld`
+  directly; dual-view secondary hosts must use `itemWorld()` (shared world).
 
-- `fitItem`
-- `captureStickyPanAnchor`
-- `applyImageModeFraming`
-- `preserveImageViewOnLogicalSizeChange`
-- `syncImageModeSceneRect`
+`sessionAppearanceValue` stays as DisplayPipelineHost override (now via
+`itemWorld().appearanceValue`).
 
-Audit: all 61 host pure virtuals now have ImageView cpp or inline bodies.
+### Series (2603–2610)
+Pure-forward peels + host-override restores + shared ItemWorld routing fix.
 
-### Rule going forward
-**Never delete an ImageView method that is a DisplayPipelineHost override**
-unless the virtual is removed from the host interface first. Pure-forward
-peels apply only to *non-host* public convenience API.
-
-### Wave C
-Mode shell dispatchers (`setViewMode` / `setLayoutMode` / `reload*`) stay —
-already thin.
-
-### Still open
-- statusText / hudFileName / loadingStatusHudLine gather
-- Shell query surface (itemPaths, selectedPaths, …)
-- Public-API size: header ~524 lines
+### Still on ImageView
+- Mode shell: setViewMode / setLayoutMode / reload*
+- Status gather: statusText / hudFileName / loadingStatusHudLine
+- Shell queries: itemPaths / selectedPaths / imageSize / pendingDecodeCount
+- Host surface + QGraphicsView
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2609.1-restore-framing-host-overrides-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2610.1-peel-session-appearance-itemworld-7d823d8.bundle HEAD
 ```
