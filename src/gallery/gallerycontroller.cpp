@@ -573,9 +573,17 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
         // this, a residual view override or null sceneRect limits scroll to the
         // live-window bounding box and the overview looks off-centre.
         if (m_virtualSceneBounds.isValid() && m_view->canvasScene()) {
+            int vpW = 0;
+            int vpH = 0;
+            if (QWidget *vp = m_view->viewport()) {
+                vpW = vp->width();
+                vpH = vp->height();
+            }
+            const QRectF scene = GalleryPackFit::expandPackSceneRectToViewport(
+                m_virtualSceneBounds, vpW, vpH);
             m_view->setSceneRect(QRectF());
-            if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
-                m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
+            if (m_view->canvasScene()->sceneRect() != scene) {
+                m_view->canvasScene()->setSceneRect(scene);
             }
         }
         // prepareCanvas zeroed scroll; re-apply leave camera now that sceneRect
@@ -1706,17 +1714,23 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     const GalleryLayout::Mode packMode =
         GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
     bounds = GalleryPackFit::clampSceneRectToPack(bounds, packMode, availW, availH, margin);
+    // Restore bar policy before final sceneRect so expansion uses the live
+    // viewport (not the AlwaysOn measure client).
+    packVp.restore();
+    if (m_pendingRestore || preserveView || m_haveViewCenter) {
+        m_view->refreshScrollBarGeometry();
+    }
+    int vpW = 0;
+    int vpH = 0;
+    if (QWidget *vp = m_view->viewport()) {
+        vpW = vp->width();
+        vpH = vp->height();
+    }
+    bounds = GalleryPackFit::expandPackSceneRectToViewport(bounds, vpW, vpH);
     // Scene is sole authority; drop any QGraphicsView-level override first.
     m_view->setSceneRect(QRectF());
     if (m_view->canvasScene()->sceneRect() != bounds) {
         m_view->canvasScene()->setSceneRect(bounds);
-    }
-    // Restore AsNeeded/Off only after sceneRect is clamped to the measured pack
-    // size. Still under hostLayoutApply so policy-driven resize does not repack.
-    packVp.restore();
-    // Policy toggle can leave AsNeeded bars with a stale range until forced.
-    if (m_pendingRestore || preserveView) {
-        m_view->refreshScrollBarGeometry();
     }
     m_view->hostFraming().armFit();
     // Progressive packs during the size gate fire every ~16–40ms. Emitting
@@ -2018,9 +2032,17 @@ void GalleryController::syncVirtualWindow()
     }
 
     if (m_view->canvasScene() && m_virtualSceneBounds.isValid()) {
+        int vpW = 0;
+        int vpH = 0;
+        if (QWidget *vp = m_view->viewport()) {
+            vpW = vp->width();
+            vpH = vp->height();
+        }
+        const QRectF scene = GalleryPackFit::expandPackSceneRectToViewport(
+            m_virtualSceneBounds, vpW, vpH);
         m_view->setSceneRect(QRectF());
-        if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
-            m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
+        if (m_view->canvasScene()->sceneRect() != scene) {
+            m_view->canvasScene()->setSceneRect(scene);
         }
     }
     if (needAnotherSlice) {

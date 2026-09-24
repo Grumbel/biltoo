@@ -141,6 +141,25 @@ inline QRectF clampSceneRectToPack(QRectF bounds, GalleryLayout::Mode mode,
 }
 
 /**
+ * When the pack is smaller than the live viewport (common after AlwaysOn
+ * measure + AlwaysOff/AsNeeded restore), expand sceneRect to at least the
+ * viewport size, centred on the pack. AlignCenter then fills the view instead
+ * of floating a gutter-shrunken pack (off-centre “scrollbar” margins).
+ * Gallery packs use identity view transform (scene ≈ pixels).
+ */
+inline QRectF expandPackSceneRectToViewport(QRectF packBounds, int viewportW,
+                                            int viewportH)
+{
+    if (!packBounds.isValid() || viewportW < 1 || viewportH < 1) {
+        return packBounds;
+    }
+    const QPointF c = packBounds.center();
+    const qreal w = qMax(packBounds.width(), qreal(viewportW));
+    const qreal h = qMax(packBounds.height(), qreal(viewportH));
+    return QRectF(c.x() - w * 0.5, c.y() - h * 0.5, w, h);
+}
+
+/**
  * Display size from pack layout size and placement scales (uniform when
  * @p scaleY ≤ 0). Pure — no ImageItem.
  */

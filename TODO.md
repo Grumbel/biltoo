@@ -2,15 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2635.1-gallery-align-center** (base `2c570d4`).
+**Tip: biltoo-2636.1-gallery-scene-expand-center** (base `b867c6e`).
 
-### This tip
-Revert Gallery QGraphicsView alignment to AlignCenter (was AlignLeft|AlignTop
-in 2630 to mask phantom scrollbar gutters). Zoom-out was pinning the pack to
-the top-left corner. Centring is correct; return-from-Image scroll is handled
-by 2634 scene-centre restore.
+### This tip — off-centre Gallery with AlignCenter again
+After restoring AlignCenter for zoom-out, a pack measured under AlwaysOn (or
+otherwise smaller than the live client) was floated by AlignCenter → phantom
+scrollbar margins / off-centre overview.
+
+Fix: after bar policy restore, expand sceneRect to at least the live viewport
+size, centred on the pack bounds. AlignCenter then fills the view; content
+stays geometrically centred. Zoom-out still uses AlignCenter.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2635.1-gallery-align-center-2c570d4.bundle HEAD
+git pull --ff-only …/biltoo-2636.1-gallery-scene-expand-center-b867c6e.bundle HEAD
 ```
