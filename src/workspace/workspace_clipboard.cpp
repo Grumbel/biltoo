@@ -57,7 +57,7 @@ void WorkspaceController::placeClipboardItems(const QList<WorkspaceItemState> &i
         }
         m_view->hostBindBook().addSelectId(sid);
         // Appearance (content + pose) must already be in the store under sid.
-        m_view->addImageForSession(st.path, sid, idx);
+        addImageForSession(st.path, sid, idx);
     }
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();

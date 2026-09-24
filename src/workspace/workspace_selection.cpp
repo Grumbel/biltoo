@@ -235,7 +235,7 @@ void WorkspaceController::placeSessionIdsOnCanvas(const QList<SessionImageId> &i
         }
         const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
         m_view->hostBindBook().addSelectId(sid);
-        m_view->addImageForSession(path, sid, idx);
+        addImageForSession(path, sid, idx);
     }
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();

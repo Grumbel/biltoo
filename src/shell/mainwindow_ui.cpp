@@ -213,7 +213,7 @@ void MainWindow::createActions()
         tr("Drag a rectangle to zoom into that area (one-shot; Esc cancels)"));
     connect(m_zoomRegionAct, &QAction::triggered, this, [this]() {
         if (m_imageView) {
-            m_imageView->armZoomRegion();
+            m_imageView->hostImage().armZoomRegion();
         }
     });
 

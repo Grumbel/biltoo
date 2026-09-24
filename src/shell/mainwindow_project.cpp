@@ -418,7 +418,7 @@ void MainWindow::enterProjectCanvasMode(
                     continue;
                 }
                 m_imageView->setSessionAppearance(sid, appearanceByRow.at(i));
-                m_imageView->addImageForSession(paths.at(i), sid, i);
+                m_imageView->hostWorkspace().addImageForSession(paths.at(i), sid, i);
             }
             m_imageView->updateWorkspaceSceneRect();
             syncThumbnailCanvasMembership();
@@ -428,7 +428,7 @@ void MainWindow::enterProjectCanvasMode(
             enterGalleryMode(initialGalleryLayoutForOpen());
         }
         if (m_imageView) {
-            m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+            m_imageView->hostWorkspace().setPaths(m_session.paths(), m_session.ids());
         }
     } else if (m_imageView && !m_session.paths().isEmpty()) {
         // Image-mode project: must be in Image mode before loadImage.

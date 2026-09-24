@@ -124,7 +124,7 @@ void CropController::applyCropAppearance(ImageItem *item, const QImage &src,
     }
     // Appearance persistence is commitItemSessionEdit → ItemWorld sparse tables (by id).
     // Do not write crop state into the path map for bound tiles.
-    m_view->commitItemSessionEdit(item);
+    m_view->hostImage().commitItemSessionEdit(item);
     // Undo back to identity: commit no longer writes identity (avoids wiping
     // good rows on noisy commits), so clear durable state explicitly.
     if (!SessionAppearance::hasContentAppearance(state)) {

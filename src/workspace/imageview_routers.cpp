@@ -15,37 +15,6 @@ QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &pat
     return m_workspace.collectDoomedItems(paths, sessionIds);
 }
 
-void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
-{
-    m_workspace.destroyDoomedItems(doomed);
-}
-
-void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
-                                        const QVector<SessionImageId> &sessionIds)
-{
-    m_workspace.finishPathsSet(haveIds, paths, sessionIds);
-}
-
-
-void ImageView::setWorkspacePaths(const QStringList &paths,
-                                  const QVector<SessionImageId> &sessionIds)
-{
-    m_workspace.setPaths(paths, sessionIds);
-}
-
-
-void ImageView::reorderItemsByPaths(const QStringList &paths,
-                                    const QVector<SessionImageId> &ids)
-{
-    m_workspace.reorderItemsByPaths(paths, ids);
-}
-
-void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
-                                       const QVector<SessionImageId> &sessionIds)
-{
-    m_workspace.rebindSession(sessionFiles, sessionIds);
-}
-
 bool ImageView::pathOnLiveCanvas(const QString &path) const
 {
     return m_workspace.pathOnLiveCanvas(path);
@@ -119,18 +88,6 @@ WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordin
 }
 
 // --- from src/imageview_canvas_place.cpp ---
-bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId,
-                                     int sessionIndex)
-{
-    return m_workspace.addImageForSession(path, sessionId, sessionIndex);
-}
-
-bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
-                                     SessionImageId sessionId, int sessionIndex)
-{
-    return m_workspace.placeOrMoveImageAt(path, scenePos, sessionId, sessionIndex);
-}
-
 // --- from src/imageview_session_bind.cpp ---
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {

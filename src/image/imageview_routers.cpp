@@ -9,31 +9,6 @@
 #include <QScrollBar>
 
 // --- from src/imageview_transform_actions.cpp ---
-void ImageView::flipHorizontal()
-{
-    m_image.flipHorizontal();
-}
-
-void ImageView::flipVertical()
-{
-    m_image.flipVertical();
-}
-
-void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
-{
-    m_image.rotateContentByQuarterTurns(item, quarterTurns);
-}
-
-void ImageView::rotateLeft()
-{
-    m_image.rotateLeft();
-}
-
-void ImageView::rotateRight()
-{
-    m_image.rotateRight();
-}
-
 void ImageView::raiseItem(ImageItem *item)
 {
     m_workspace.raiseItem(item);
@@ -119,13 +94,6 @@ bool ImageView::targetHasContentAppearance() const
 
 
 
-int ImageView::resetContentAppearanceForTargets()
-{
-    return m_image.resetContentAppearanceForTargets();
-}
-
-
-
 // --- from src/imageview_color_grade.cpp ---
 void ImageView::scheduleColorAdjustCommit(SessionImageId sid, const QString &path)
 {
@@ -144,26 +112,6 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
 
 
 // --- from imageview_framing_image.cpp ---
-void ImageView::setStickyZoomEnabled(bool on)
-{
-    m_image.setStickyZoomEnabled(on);
-}
-
-void ImageView::releaseStickyZoom()
-{
-    m_image.releaseStickyZoom();
-}
-
-void ImageView::cancelZoomRegion()
-{
-    m_image.cancelZoomRegion();
-}
-
-void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
-{
-    m_image.fitItem(item, mode);
-}
-
 void ImageView::ensureVisibleItem(ImageItem *item)
 {
     if (item) {
@@ -178,74 +126,8 @@ qreal ImageView::viewScale() const
     return ViewTransform::scaleFrom(transform());
 }
 
-void ImageView::zoomViewBy(qreal factor)
-{
-    m_image.zoomViewBy(factor);
-}
-
-void ImageView::zoomIn()
-{
-    m_image.zoomIn();
-}
-
-void ImageView::zoomOut()
-{
-    m_image.zoomOut();
-}
-
-void ImageView::setWorkspaceDefaultViewScale()
-{
-    m_image.setWorkspaceDefaultViewScale();
-}
-
-void ImageView::zoomReset()
-{
-    m_image.zoomReset();
-}
-
 void ImageView::refreshScrollBarGeometry()
 {
     m_shell.refreshScrollBarGeometry();
 }
 
-void ImageView::zoomFit()
-{
-    m_image.zoomFit();
-}
-
-void ImageView::zoomFill()
-{
-    m_image.zoomFill();
-}
-
-void ImageView::armZoomRegion()
-{
-    m_image.armZoomRegion();
-}
-
-void ImageView::captureStickyPanAnchor(ImageItem *item)
-{
-    m_image.captureStickyPanAnchor(item);
-}
-
-void ImageView::restoreStickyPanAnchor(ImageItem *item)
-{
-    m_image.restoreStickyPanAnchor(item);
-}
-
-void ImageView::applyImageModeFraming(ImageItem *item)
-{
-    m_image.applyImageModeFraming(item);
-}
-
-void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
-                                                     const QSize &before,
-                                                     const QSize &after)
-{
-    m_image.preserveImageViewOnLogicalSizeChange(item, before, after);
-}
-
-void ImageView::syncImageModeSceneRect(ImageItem *item)
-{
-    m_image.syncImageModeSceneRect(item);
-}

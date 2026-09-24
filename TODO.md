@@ -2,33 +2,39 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2601.1-façade-only-root** (base `7d823d8`).
+**Tip: biltoo-2602.1-peel-transform-workspace-api** (base `7d823d8`).
 
-### ImageView sorted into domain subdirectories
-Root `src/` now holds only the QGraphicsView façade:
+### Proper class split (not file moves)
+Co-locating `ImageView::` routers into domain dirs was **premature** —
+the class still owned the API surface. This tip starts **peeling** public
+methods off `ImageView` onto controllers that already own the bodies.
 
-- `imageview.h` / `imageview.cpp` — class, members, ctor/dtor, host includes
-- `imageitem*`, `imageview_types.h`, `main.cpp`
+### Peeled off ImageView public API → call controllers instead
 
-All former `imageview_*.cpp` method TUs live as `*/imageview_routers.cpp`:
+| Was `ImageView::` | Now call |
+|-------------------|----------|
+| flip / rotate / zoom / sticky / armZoomRegion | `hostImage().…` (`ImageController`) |
+| resetContentAppearanceForTargets | `hostImage().…` |
+| setWorkspacePaths / addImageForSession / placeOrMoveImageAt | `hostWorkspace().setPaths` / `…` |
+| setTool | `hostWorkspace().setTool` |
 
-| Domain | Contents |
-|--------|----------|
-| `image/` | transform, appearance commit, color grade, framing/zoom |
-| `crop/` | crop appearance routers |
-| `text/` | text layer routers |
-| `workspace/` | canvas, session bind/remove, pageguide, selection |
-| `view/` | paint, input, **setViewMode mode shell** |
-| `display/` | export, size book / contentLayoutSize |
-| `session/` | appearance + item_state host gather |
-| `hud/` | status / HUD routers |
-| `shell/` | public accessors (MainWindow API) |
+MainWindow + Gallery/Crop internal callers updated.
+`commitItemSessionEdit` stays on ImageView as `DisplayPipelineHost` override
+(routes to ImageController).
 
-### Prior
-**2600.1** Co-locate first batch of thin routers  
-**2599.1** ImageController live meta / commit  
+### Still on ImageView (next peel candidates)
+- setViewMode / setLayoutMode / reloadFromDisk (multi-mode shell)
+- HUD setters (slideshow coupling in afterChange)
+- statusText / appearance host gather
+- DisplayPipelineHost / dual-view host surface
+- QGraphicsView overrides
+
+### Root layout note
+`*/imageview_routers.cpp` remains temporary co-location of residual
+`ImageView::` methods until they leave the class entirely. Prefer peeling
+API + deleting methods over moving files.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2601.1-façade-only-root-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2602.1-peel-transform-workspace-api-7d823d8.bundle HEAD
 ```

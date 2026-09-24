@@ -105,7 +105,7 @@ void GalleryController::revealSessionId(SessionImageId sessionId)
 void GalleryController::enterGallery(LayoutMode packagedLayout)
 {
     // Sticky Fit/Fill/1:1 is Image-mode only.
-    m_view->releaseStickyZoom();
+    m_view->hostImage().releaseStickyZoom();
     if (packagedLayout == LayoutMode::FreeForm) {
         packagedLayout = LayoutMode::Masonry;
     }

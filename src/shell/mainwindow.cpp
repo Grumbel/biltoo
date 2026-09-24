@@ -617,7 +617,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         m_imageView->setItemSessionId(item, id);
         m_imageView->setItemSessionIndex(item, m_session.size() - 1);
         // Preserve current pixels as the new session image's appearance.
-        m_imageView->commitItemSessionEdit(item);
+        m_imageView->hostImage().commitItemSessionEdit(item);
         grew = true;
     }
     if (grew) {
@@ -641,13 +641,13 @@ void MainWindow::syncThumbnailCanvasMembership()
 
 void MainWindow::zoomIn()
 {
-    m_imageView->zoomIn();
+    m_imageView->hostImage().zoomIn();
     syncZoomModeChecks();
 }
 
 void MainWindow::zoomOut()
 {
-    m_imageView->zoomOut();
+    m_imageView->hostImage().zoomOut();
     syncZoomModeChecks();
 }
 
@@ -657,16 +657,16 @@ void MainWindow::zoomReset()
     if (m_imageView->isImageMode()) {
         if (m_imageView->hostFraming().isStickyZoomEnabled()
             && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Actual) {
-            m_imageView->releaseStickyZoom();
+            m_imageView->hostImage().releaseStickyZoom();
             syncZoomModeChecks();
             return;
         }
-        m_imageView->zoomReset();
+        m_imageView->hostImage().zoomReset();
         m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Actual);
-        m_imageView->setStickyZoomEnabled(true);
+        m_imageView->hostImage().setStickyZoomEnabled(true);
     } else {
-        m_imageView->releaseStickyZoom();
-        m_imageView->zoomReset();
+        m_imageView->hostImage().releaseStickyZoom();
+        m_imageView->hostImage().zoomReset();
     }
     syncZoomModeChecks();
 }
@@ -676,16 +676,16 @@ void MainWindow::zoomFit()
     if (m_imageView->isImageMode()) {
         if (m_imageView->hostFraming().isStickyZoomEnabled()
             && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Fit) {
-            m_imageView->releaseStickyZoom();
+            m_imageView->hostImage().releaseStickyZoom();
             syncZoomModeChecks();
             return;
         }
-        m_imageView->zoomFit();
+        m_imageView->hostImage().zoomFit();
         m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Fit);
-        m_imageView->setStickyZoomEnabled(true);
+        m_imageView->hostImage().setStickyZoomEnabled(true);
     } else {
-        m_imageView->releaseStickyZoom();
-        m_imageView->zoomFit();
+        m_imageView->hostImage().releaseStickyZoom();
+        m_imageView->hostImage().zoomFit();
     }
     syncZoomModeChecks();
 }
@@ -695,16 +695,16 @@ void MainWindow::zoomFill()
     if (m_imageView->isImageMode()) {
         if (m_imageView->hostFraming().isStickyZoomEnabled()
             && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Fill) {
-            m_imageView->releaseStickyZoom();
+            m_imageView->hostImage().releaseStickyZoom();
             syncZoomModeChecks();
             return;
         }
-        m_imageView->zoomFill();
+        m_imageView->hostImage().zoomFill();
         m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Fill);
-        m_imageView->setStickyZoomEnabled(true);
+        m_imageView->hostImage().setStickyZoomEnabled(true);
     } else {
-        m_imageView->releaseStickyZoom();
-        m_imageView->zoomFill();
+        m_imageView->hostImage().releaseStickyZoom();
+        m_imageView->hostImage().zoomFill();
     }
     syncZoomModeChecks();
 }
@@ -741,22 +741,22 @@ void MainWindow::toggleFullscreen()
 
 void MainWindow::rotateLeft()
 {
-    m_imageView->rotateLeft();
+    m_imageView->hostImage().rotateLeft();
 }
 
 void MainWindow::rotateRight()
 {
-    m_imageView->rotateRight();
+    m_imageView->hostImage().rotateRight();
 }
 
 void MainWindow::flipHorizontal()
 {
-    m_imageView->flipHorizontal();
+    m_imageView->hostImage().flipHorizontal();
 }
 
 void MainWindow::flipVertical()
 {
-    m_imageView->flipVertical();
+    m_imageView->hostImage().flipVertical();
 }
 
 void MainWindow::resetContentAppearance()
@@ -779,7 +779,7 @@ void MainWindow::resetContentAppearance()
     if (box.clickedButton() != resetBtn) {
         return;
     }
-    const int n = m_imageView->resetContentAppearanceForTargets();
+    const int n = m_imageView->hostImage().resetContentAppearanceForTargets();
     if (n > 0) {
         updateStatus();
         updateMetadataPanel();
@@ -1691,19 +1691,19 @@ void MainWindow::toggleWorkspaceMode()
 
 void MainWindow::setSelectTool()
 {
-    m_imageView->setTool(ImageView::Tool::Select);
+    m_imageView->hostWorkspace().setTool(ImageView::Tool::Select);
     m_selectToolAct->setChecked(true);
 }
 
 void MainWindow::setPanTool()
 {
-    m_imageView->setTool(ImageView::Tool::Pan);
+    m_imageView->hostWorkspace().setTool(ImageView::Tool::Pan);
     m_panToolAct->setChecked(true);
 }
 
 void MainWindow::setZoomTool()
 {
-    m_imageView->setTool(ImageView::Tool::Zoom);
+    m_imageView->hostWorkspace().setTool(ImageView::Tool::Zoom);
     if (m_zoomToolAct) {
         m_zoomToolAct->setChecked(true);
     }
@@ -3294,7 +3294,7 @@ void MainWindow::readSettings()
             settings.value(QStringLiteral("stickyZoomKind"), 0).toInt();
         m_imageView->hostFraming().setStickyZoomKind(
             static_cast<StickyZoomKind>(SlideshowClocks::clampZoomIndex(kind)));
-        m_imageView->setStickyZoomEnabled(sticky);
+        m_imageView->hostImage().setStickyZoomEnabled(sticky);
         syncZoomModeChecks();
     }
 
@@ -3784,7 +3784,7 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
             // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
             // Do NOT fan-out one SessionImageId onto every selected tile — that
             // currently selected tile and created duplicate SessionImageIds.
-            m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
+            m_imageView->hostWorkspace().placeOrMoveImageAt(img, pos, sid, slot);
         } else {
             if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
                 dbg && dbg[0] != '\0' && dbg[0] != '0') {
@@ -3793,7 +3793,7 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
                         "sid=%lld (appearance may restore old pose)\n",
                         qPrintable(img), static_cast<long long>(sid));
             }
-            m_imageView->addImageForSession(img, sid, slot);
+            m_imageView->hostWorkspace().addImageForSession(img, sid, slot);
         }
         ++i;
     }

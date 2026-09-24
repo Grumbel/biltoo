@@ -389,11 +389,6 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
 
 // --- Tool / nav shell (was imageview_view.cpp) ---
 
-void ImageView::setTool(Tool tool)
-{
-    m_workspace.setTool(tool);
-}
-
 void ImageView::setImageModeNavigationEnabled(bool on)
 {
     m_image.setImageModeNavigationEnabled(on);

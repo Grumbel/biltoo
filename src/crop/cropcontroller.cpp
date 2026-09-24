@@ -358,7 +358,7 @@ bool CropController::applyCropCommit(ImageItem *item)
             }
             relayoutAfterCropLeave(item);
         }
-        m_view->commitItemSessionEdit(item);
+        m_view->hostImage().commitItemSessionEdit(item);
         m_view->emitCropApplyAppearance(sid, path, item, baked.display, /*hasCrop=*/true);
         pushCropAppearanceUndo(item, CropFlash::undoCropText());
         flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
@@ -370,7 +370,7 @@ bool CropController::applyCropCommit(ImageItem *item)
         session().restoreEnterPlacementPose(item);
     }
     relayoutAfterCropLeave(item);
-    m_view->commitItemSessionEdit(item);
+    m_view->hostImage().commitItemSessionEdit(item);
     m_view->emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
                             /*hasCrop=*/false);
     if (session().shouldPushResetUndo(item->sourceImage().size())) {
@@ -454,7 +454,7 @@ bool CropController::enterCropModeFromUi()
         flashCropHud(CropFlash::noImage());
         return false;
     }
-    m_view->cancelZoomRegion();
+    m_view->hostImage().cancelZoomRegion();
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // session().active() stays false until after the first draft attach.
     {

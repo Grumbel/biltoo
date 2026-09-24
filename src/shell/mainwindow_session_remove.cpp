@@ -298,12 +298,12 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
     applyThumbnailVisibility();
 
     if (isGalleryMode() && m_imageView) {
-        m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+        m_imageView->hostWorkspace().setPaths(m_session.paths(), m_session.ids());
     } else if (isWorkspaceMode() && m_imageView) {
         // Re-add only the restored session rows; do not replace the whole canvas.
         for (const auto &e : sorted) {
             const int idx = m_session.indexOfId(e.id);
-            m_imageView->addImageForSession(e.path, e.id, idx >= 0 ? idx : e.index);
+            m_imageView->hostWorkspace().addImageForSession(e.path, e.id, idx >= 0 ? idx : e.index);
         }
         markWorkspaceDirty();
     } else if (!m_session.paths().isEmpty()) {

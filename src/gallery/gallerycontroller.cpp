@@ -629,7 +629,7 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
         return false;
     }
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
-    m_view->releaseStickyZoom();
+    m_view->hostImage().releaseStickyZoom();
     m_view->hostFraming().clearFitFill();
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     m_view->scale(factor, factor);

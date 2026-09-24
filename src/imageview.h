@@ -149,13 +149,12 @@ public:
      * Add (or select) the canvas instance bound to @p sessionId / @p sessionIndex.
      * SessionImageId is required — path alone is not identity (IDENTITY.md).
      */
-    bool addImageForSession(const QString &path, SessionImageId sessionId, int sessionIndex);
+
     /**
      * Workspace: place @p path at @p scenePos for @p sessionId. If that session
      * image is already on the canvas, move it; otherwise create a bound tile.
      */
-    bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
-                            SessionImageId sessionId, int sessionIndex);
+
     /**
      * Session list order for @p item. Prefers SessionDocument::indexOfId when
      * the item is bound; falls back to the cached ImageItem::sessionIndex().
@@ -349,8 +348,7 @@ public:
      * Path-only rebuild is removed — callers pass session ids so duplicate
      * paths stay distinct (IDENTITY.md).
      */
-    void setWorkspacePaths(const QStringList &paths,
-                           const QVector<SessionImageId> &sessionIds);
+
     /**
      * Reorder canvas items to match session/pack order. When @p ids align with
      * @p paths, prefer findItemBySessionId so duplicate paths stay distinct
@@ -388,18 +386,12 @@ public:
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
-    void setTool(Tool tool);
     Tool currentTool() const { return m_workspace.currentTool(); }
 
 
-    void zoomIn();
-    void zoomOut();
-    void zoomReset();
     /** View scale ≈41% (four ×0.8 zoom-out steps) for Workspace overview. */
     void setWorkspaceDefaultViewScale();
-    void zoomFit();
     /** Cover the viewport (may crop); uses KeepAspectRatioByExpanding. */
-    void zoomFill();
     /**
      * Sticky framing (Image mode only): Fit / Fill / 1:1 stay active across
      * Image-mode navigation until toggled off or free zoom (+/−, wheel, region)
@@ -407,23 +399,16 @@ public:
      * released when leaving Image mode.
      */
     // StickyZoomKind: viewframing.h
-    void setStickyZoomEnabled(bool on);
-    void releaseStickyZoom();
     /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
      * Esc cancels. Bound to Z from the main window.
      */
-    void armZoomRegion();
-    void rotateLeft();
-    void rotateRight();
     /**
      * Sole content ±90° path (Workspace chrome, toolbar, keyboard).
      * ContentXform bake (pipeline) + mode framing.
      * from UI code so chrome and shortcuts cannot diverge.
      */
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
-    void flipHorizontal();
-    void flipVertical();
     /** True when rotate/flip have at least one target (selection or sole image). */
     bool hasTransformTargets() const;
     /** True when crop is allowed: exactly one transform target (not multi-select). */
@@ -635,7 +620,6 @@ public:
      * targets: durable state, session store, and reload full on-disk pixels.
      * Does not touch Workspace placement. Returns number of items reset.
      */
-    int resetContentAppearanceForTargets();
 
     QString statusText() const;
     /** Basename of the current/target image for the bottom HUD. */

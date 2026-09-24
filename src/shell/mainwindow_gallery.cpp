@@ -24,7 +24,7 @@ void MainWindow::populateGalleryCanvas()
     // and leave an empty canvas after Workspace.
     m_imageView->hostGallerySizeResolve().cancel();
     m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
-    m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+    m_imageView->hostWorkspace().setPaths(m_session.paths(), m_session.ids());
     // Workspace→Gallery (and any cold enter) must never leave a blank canvas.
     // setWorkspacePaths may re-arm size-resolve + defer and return without
     // creating tiles. While the size gate is active, leave defer alone so

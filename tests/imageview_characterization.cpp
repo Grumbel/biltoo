@@ -575,7 +575,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     view.rememberImageSize(m_pathA, QSize(64, 48));
     view.rememberImageSize(m_pathB, QSize(80, 60));
 
-    view.setWorkspacePaths(doc.paths(), doc.ids());
+    view.hostWorkspace().setPaths(doc.paths(), doc.ids());
     {
         const PackOrderView pack = view.currentPackOrder();
         QCOMPARE(pack.size(), 2);
