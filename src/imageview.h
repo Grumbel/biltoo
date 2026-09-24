@@ -315,6 +315,8 @@ public:
     QObject *hostObject() override { return this; }
     void notifyStatusChanged() override { emit statusChanged(); }
     void notifyWorkspacePathsChanged() override { emit workspacePathsChanged(); }
+    /** Gallery size gate finished (GalleryController host path). */
+    void notifyGallerySizeResolveFinished() { emit gallerySizeResolveFinished(); }
     void setUpdatesEnabled(bool enabled) override { QGraphicsView::setUpdatesEnabled(enabled); }
     QString hostTr(const char *sourceText) const override { return tr(sourceText); }
     qreal devicePixelRatioF() const override { return QGraphicsView::devicePixelRatioF(); }
@@ -656,7 +658,6 @@ signals:
     void statusChanged();
     /** Packaged Gallery: all session size probes settled (or timed out). */
     void gallerySizeResolveFinished();
-    void notifyGallerySizeResolveFinished() { emit gallerySizeResolveFinished(); }
     void mouseInfoChanged(const ImageMouseInfo &info);
     /** Emitted when items are removed from the workspace (e.g. Delete key). */
     void workspacePathsChanged();
