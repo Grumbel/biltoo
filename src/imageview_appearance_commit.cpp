@@ -17,7 +17,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
-    // Strict identity: only a valid SessionImageId. Never m_sessionId.currentIdValue()
+    // Strict identity: only a valid SessionImageId. Never m_session.identity().currentIdValue()
     // fallback here — that would push this item's pixels onto another tile.
     const SessionImageId sessionId = item->sessionId();
     const QImage src = item->sourceImage();

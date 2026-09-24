@@ -103,7 +103,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             if (isImageMode()) {
                 ImageItem *item = primaryItem();
                 if (!item) {
-                    const SessionImageId sid = m_sessionId.currentIdValue();
+                    const SessionImageId sid = m_session.identity().currentIdValue();
                     if (sid != kInvalidSessionImageId) {
                         item = findItemBySessionId(sid);
                     }

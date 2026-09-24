@@ -22,13 +22,13 @@
 
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {
-    for (int bi = m_bindBook.bindCount() - 1; bi >= 0; --bi) {
-        const PendingSessionBind &b = m_bindBook.bindAt(bi);
+    for (int bi = m_session.bindBook().bindCount() - 1; bi >= 0; --bi) {
+        const PendingSessionBind &b = m_session.bindBook().bindAt(bi);
         if (b.path != path || b.id == kInvalidSessionImageId) {
             continue;
         }
         if (findItemBySessionId(b.id)) {
-            m_bindBook.removeBindAt(bi);
+            m_session.bindBook().removeBindAt(bi);
         }
     }
 }
@@ -123,21 +123,21 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
     if (!out || path.isEmpty() || !item) {
         return false;
     }
-    for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
-        if (m_bindBook.bindAt(bi).path != path) {
+    for (int bi = 0; bi < m_session.bindBook().bindCount(); ++bi) {
+        if (m_session.bindBook().bindAt(bi).path != path) {
             continue;
         }
-        const PendingSessionBind candidate = m_bindBook.bindAt(bi);
+        const PendingSessionBind candidate = m_session.bindBook().bindAt(bi);
         if (candidate.id != kInvalidSessionImageId) {
             if (ImageItem *owner = findItemBySessionId(candidate.id)) {
                 if (owner != item) {
-                    m_bindBook.removeBindAt(bi);
+                    m_session.bindBook().removeBindAt(bi);
                     --bi;
                     continue;
                 }
             }
         }
-        m_bindBook.takeBindAt(bi, out);
+        m_session.bindBook().takeBindAt(bi, out);
         if (out->id != kInvalidSessionImageId) {
             // List-order refresh + applied→ItemWorld migrate (2083/2084).
             setItemSessionId(item, out->id);

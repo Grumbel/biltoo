@@ -15,7 +15,7 @@
 /**
  * Owner of Gallery pack-order state on ImageView (Tier 4 residual).
  *
- * ImageView stores a PackOrderOverlay (`m_pathOrderOverlay`) instead of a bare
+ * ImageView stores a PackOrderOverlay (`m_session.pathOrder()`) instead of a bare
  * SessionPathOrder. Multiplicity, mode-leave clear, stash, and ad-hoc place
  * still need Explicit mode (possibly empty) so pack does not fall through to
  * SessionDocument membership alone.

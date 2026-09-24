@@ -64,7 +64,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         b.path = path;
         b.id = sessionId;
         b.index = sessionIndex;
-        m_bindBook.append(b);
+        m_session.bindBook().append(b);
         // Paste / membership must grow pathOrder so LoadAdd's wanted count
         // includes this session image. Without this, a path already on the
         // canvas left have==pathOrderCount and never created the new tile
@@ -137,7 +137,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     b.scenePos = scenePos;
     b.hasScenePos = true;
     if (sessionId != kInvalidSessionImageId || sessionIndex >= 0 || b.hasScenePos) {
-        m_bindBook.append(b);
+        m_session.bindBook().append(b);
     }
     // Membership order is id-aware: each place of a session image is a row.
     // Path alone cannot express "two tiles, same file".

@@ -19,7 +19,7 @@
 
 void ImageView::prunePendingBindsAndSavedForSessionId(SessionImageId sessionId)
 {
-    m_bindBook.removeBindsForSessionId(sessionId);
+    m_session.bindBook().removeBindsForSessionId(sessionId);
     for (int i = m_workspace.savedItems().size() - 1; i >= 0; --i) {
         if (m_workspace.savedItems().at(i).sessionId == sessionId) {
             m_workspace.savedItems().removeAt(i);
@@ -139,10 +139,10 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 
 void ImageView::setCurrentSessionId(SessionImageId id)
 {
-    if (m_sessionId.currentId == id) {
+    if (m_session.identity().currentId == id) {
         return;
     }
-    m_sessionId.setCurrentId(id);
+    m_session.identity().setCurrentId(id);
     // Attention marker is per SessionImageId — reload draft for the new image.
     if (m_attentionCtrl.session().active()) {
         m_attentionCtrl.session().clearDraft();
@@ -199,7 +199,7 @@ void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
     if (m_scene) {
         m_scene->clearSelection();
     }
-    m_bindBook.clearSelectIds();
+    m_session.bindBook().clearSelectIds();
     for (int i = 0; i < ids.size(); ++i) {
         const SessionImageId sid = ids.at(i);
         if (sid == kInvalidSessionImageId) {
@@ -213,7 +213,7 @@ void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
             continue; // already on canvas
         }
         const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
-        m_bindBook.addSelectId(sid);
+        m_session.bindBook().addSelectId(sid);
         addImageForSession(path, sid, idx);
     }
     emit statusChanged();

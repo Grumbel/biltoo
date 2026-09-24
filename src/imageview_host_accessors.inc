@@ -20,8 +20,8 @@
     GalleryDecodeBook &hostGalleryDecodeBook() override { return m_gallery.decodeBook(); }
     const GalleryDecodeBook &hostGalleryDecodeBook() const override { return m_gallery.decodeBook(); }
     /** Display pipeline host: pending session binds. */
-    SessionBindBook &hostBindBook() override { return m_bindBook; }
-    const SessionBindBook &hostBindBook() const override { return m_bindBook; }
+    SessionBindBook &hostBindBook() override { return m_session.bindBook(); }
+    const SessionBindBook &hostBindBook() const override { return m_session.bindBook(); }
     /**
      * Dual ImageView: secondary hosts that bindSharedItemWorld must use the
      * shared world's size book (primary-owned). Local m_size.book() stays empty
@@ -112,8 +112,8 @@
     }
     CanvasBackground &hostCanvasBg() { return m_shell.canvasBg(); }
     const CanvasBackground &hostCanvasBg() const { return m_shell.canvasBg(); }
-    SessionIdentity &hostSessionId() override { return m_sessionId; }
-    const SessionIdentity &hostSessionId() const override { return m_sessionId; }
+    SessionIdentity &hostSessionId() override { return m_session.identity(); }
+    const SessionIdentity &hostSessionId() const override { return m_session.identity(); }
     /**
      * First SessionImageId for @p path from the MainWindow SessionDocument when
      * bound (slideshow / identity). View path-order book is multiplicity only —

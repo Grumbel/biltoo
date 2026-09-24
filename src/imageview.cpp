@@ -75,7 +75,7 @@ ImageView::ImageView(QWidget *parent)
 
     // PackOrderOverlay defaults to FollowDocument; match former empty book
     // (Explicit empty) so pack stays blank until pathOrderSetOrder / append.
-    m_pathOrderOverlay.clearExplicit();
+    m_session.pathOrder().clearExplicit();
 
     m_scene = new QGraphicsScene(this);
     // BSP for viewport queries (items(rect) / hit-test). Gallery layout is not

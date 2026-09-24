@@ -308,7 +308,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
                 if (owner != copy) {
                     qCritical("duplicateSelected: SessionImageId %lld already on another tile — leave unbound",
                               static_cast<long long>(id));
-                    m_bindBook.pendingAppearance().insert(copy, content);
+                    m_session.bindBook().pendingAppearance().insert(copy, content);
                 } else {
                     setItemSessionId(copy, id);
                 }
@@ -340,7 +340,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
             // PendingItemAppearanceBook may still recover appearance on bind.
             qCritical("duplicateSelected: no SessionImageId for copy path=%s — stage pending",
                       qPrintable(copy->path()));
-            m_bindBook.pendingAppearance().insert(copy, content);
+            m_session.bindBook().pendingAppearance().insert(copy, content);
         }
         if (sessionIdx >= 0) {
             ++sessionIdx;
@@ -387,7 +387,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
     if (m_scene) {
         m_scene->clearSelection();
     }
-    m_bindBook.clearSelectIds();
+    m_session.bindBook().clearSelectIds();
     for (int i = 0; i < items.size(); ++i) {
         const WorkspaceItemState &st = items.at(i);
         const SessionImageId sid = newIds.at(i);
@@ -395,7 +395,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
         if (st.path.isEmpty() || sid == kInvalidSessionImageId) {
             continue;
         }
-        m_bindBook.addSelectId(sid);
+        m_session.bindBook().addSelectId(sid);
         // Appearance (content + pose) must already be in the store under sid.
         addImageForSession(st.path, sid, idx);
     }

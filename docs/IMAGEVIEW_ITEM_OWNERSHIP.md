@@ -408,3 +408,6 @@ Product shell (minimal):
 31. **biltoo-2489:** ViewShellChrome owns ViewportChrome + CanvasBackground;
     group-transform residual comment cleaned (already on WorkspaceController).
 
+32. **biltoo-2490:** SessionShell owns SessionIdentity, SessionBindBook, and
+    PackOrderOverlay; hostSessionId / hostBindBook / pathOrder* forward to m_session.
+

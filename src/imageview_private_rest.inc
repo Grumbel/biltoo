@@ -125,12 +125,7 @@
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     /** Session path list + parallel SessionImageId order (IDENTITY). */
-    /**
-     * Pack-order overlay (Tier 4 residual). Host setOrder may collapse to
-     * FollowDocument when aligned; clear stays Explicit empty. See
-     * packorderoverlay.h / PATH_ORDER.md.
-     */
-    PackOrderOverlay m_pathOrderOverlay;
+    // PackOrderOverlay: owned by SessionShell (m_session.pathOrder()).
 
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;
@@ -143,7 +138,7 @@
     // CanvasBackground: owned by ViewShellChrome (m_shell.canvasBg()).
     // TextLayerSession: owned by TextLayerController (m_textCtrl).
     HudChrome m_hud;
-    SessionIdentity m_sessionId;
+    // SessionIdentity: owned by SessionShell (m_session.identity()).
     // Edge hover: owned by ImageController (m_image).
     // Tool: owned by WorkspaceController (m_workspace).
     // LayoutPrefs: owned by GalleryController (hostLayout).
@@ -154,8 +149,8 @@
     // PathRasterService: owned by DisplayPipelineController (pathRaster()).
     // --- LoadAdd pending-bind helpers ---
 
-    SessionBindBook m_bindBook;
-    // PendingItemAppearanceBook: owned by SessionBindBook (pendingAppearance).
+    SessionShell m_session;
+    // SessionBindBook + PendingItemAppearanceBook: m_session.bindBook().
     // ViewportChrome: owned by ViewShellChrome (m_shell.viewport()).
     // ZoomRegionGesture: owned by ImageController (m_image).
 

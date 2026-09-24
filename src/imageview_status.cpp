@@ -125,8 +125,8 @@ QString ImageView::hudFileName() const
     if (m_items.isEmpty() && isMultiItemMode()) {
         return {};
     }
-    if (m_sessionId.hasLastLoadError()) {
-        return PagePath::displayName(m_sessionId.lastLoadErrorRef());
+    if (m_session.identity().hasLastLoadError()) {
+        return PagePath::displayName(m_session.identity().lastLoadErrorRef());
     }
     ImageItem *item = targetItem();
     if (!item) {
@@ -195,11 +195,11 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 
 QString ImageView::statusTextEmpty() const
 {
-    const QString errName = m_sessionId.hasLastLoadError()
-        ? PagePath::displayName(m_sessionId.lastLoadErrorRef())
+    const QString errName = m_session.identity().hasLastLoadError()
+        ? PagePath::displayName(m_session.identity().lastLoadErrorRef())
         : QString();
     return HudModel::emptyCanvasStatus(
-        m_sessionId.hasLastLoadError(), errName,
+        m_session.identity().hasLastLoadError(), errName,
         m_image.hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode());
 }
 

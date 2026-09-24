@@ -26,7 +26,7 @@
      */
     PackOrderView currentPackOrder() const override
     {
-        return m_pathOrderOverlay.resolve(m_sessionDoc);
+        return m_session.pathOrder().resolve(m_sessionDoc);
     }
     /**
      * Pack-order overlay mutators (not SessionDocument).
@@ -34,11 +34,11 @@
      * setOrder → Explicit then optional collapse when aligned with bound doc.
      * append is private (pathOrderAppendRow) — only ImageView place/add paths.
      */
-    void pathOrderClear() { m_pathOrderOverlay.clearExplicit(); }
+    void pathOrderClear() { m_session.pathOrder().clearExplicit(); }
     void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
-        m_pathOrderOverlay.setExplicit(paths, ids);
-        m_pathOrderOverlay.tryCollapseToFollowDocument(m_sessionDoc);
+        m_session.pathOrder().setExplicit(paths, ids);
+        m_session.pathOrder().tryCollapseToFollowDocument(m_sessionDoc);
     }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage()) override;
     void scheduleImageSizeProbe(const QString &path) override;

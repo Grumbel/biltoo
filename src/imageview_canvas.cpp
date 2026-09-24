@@ -284,7 +284,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     b.path = path;
                     b.id = sid;
                     b.index = i;
-                    m_bindBook.append(b);
+                    m_session.bindBook().append(b);
                     if (isGalleryMode()) {
                         m_displayPipeline->scheduleGalleryDecode(path);
                     } else {
@@ -303,7 +303,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             b.path = path;
             b.id = sid;
             b.index = i;
-            m_bindBook.append(b);
+            m_session.bindBook().append(b);
         }
 
         if (virtualize) {

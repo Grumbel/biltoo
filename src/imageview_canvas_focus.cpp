@@ -32,7 +32,7 @@ ImageItem *ImageView::primaryItem() const
     // Image mode: prefer the tile bound to the current SessionImageId so
     // duplicate paths do not resolve to the wrong live item via first-in-list.
     if (isImageMode()) {
-        const SessionImageId sid = m_sessionId.currentIdValue();
+        const SessionImageId sid = m_session.identity().currentIdValue();
         if (sid != kInvalidSessionImageId) {
             if (ImageItem *byId = findItemBySessionId(sid)) {
                 return byId;

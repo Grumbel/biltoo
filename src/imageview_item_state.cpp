@@ -140,7 +140,7 @@ SessionImageId ImageView::resolveContentEditSessionId(const ImageItem *item) con
     }
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
+        sid = m_session.identity().currentIdValue();
     }
     return sid;
 }

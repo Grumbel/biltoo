@@ -42,7 +42,7 @@
      */
     void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
     {
-        m_pathOrderOverlay.appendExplicitRow(path, id, m_sessionDoc);
+        m_session.pathOrder().appendExplicitRow(path, id, m_sessionDoc);
     }
 
     /** Stage 2: read live ImageItem pose into a Placement record. */
