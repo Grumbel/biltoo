@@ -88,3 +88,18 @@ void ImageView::syncImageModeSceneRect(ImageItem *item)
 {
     m_image.syncImageModeSceneRect(item);
 }
+
+ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
+{
+    return edgeZoneFromPolicy(m_image.edgeZoneAt(viewPos));
+}
+
+void ImageView::restoreStickyPanAnchor(ImageItem *item)
+{
+    m_image.restoreStickyPanAnchor(item);
+}
+
+void ImageView::cancelZoomRegion()
+{
+    m_image.cancelZoomRegion();
+}

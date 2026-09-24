@@ -2,17 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2614.1-fix-link-stub-edge-sticky** (base `7d823d8`).
+**Tip: biltoo-2615.1-restore-edgezone-sticky-cancelzoom** (base `7d823d8`).
 
 ### This tip
-Link / test fallout:
-- Remove `tests/thumtoocache_appearance_stub.cpp` from **biltoo_lib** sources
-  (duplicate symbols with real thumtoocache.cpp; stub stays on unit tests only)
-- `edgeZoneAt` → `hostImage().edgeZoneAt` + EdgeNavPolicy::Zone
-- `restoreStickyPanAnchor` → `hostImage().…` (framing lambdas + characterization)
-- `enterGallery` in characterization → `hostGallery().enterGallery`
+Restore thin ImageView bodies for host-surface declarations left without
+definitions after the transform peel:
+
+- `edgeZoneAt` → `m_image.edgeZoneAt` (+ EdgeZone policy map)
+- `restoreStickyPanAnchor` → `m_image.restoreStickyPanAnchor`
+- `cancelZoomRegion` → `m_image.cancelZoomRegion`
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2614.1-fix-link-stub-edge-sticky-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2615.1-restore-edgezone-sticky-cancelzoom-7d823d8.bundle HEAD
 ```
