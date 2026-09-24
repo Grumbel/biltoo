@@ -79,3 +79,43 @@ void HudChrome::runTimedPaint(const std::function<void()> &paint)
     paint();
     m_perf.notePaintUs(t.nsecsElapsed() / 1000);
 }
+
+void HudChrome::setVisible(bool on, const std::function<void()> &afterChange)
+{
+    if (!m_appearance.setVisible(on)) {
+        return;
+    }
+    if (afterChange) {
+        afterChange();
+    }
+}
+
+void HudChrome::setFontPointSize(int pt, const std::function<void()> &afterChange)
+{
+    if (!m_appearance.setFontPointSize(pt)) {
+        return;
+    }
+    if (afterChange) {
+        afterChange();
+    }
+}
+
+void HudChrome::setTextColor(const QColor &color, const std::function<void()> &afterChange)
+{
+    if (!m_appearance.setTextColor(color)) {
+        return;
+    }
+    if (afterChange) {
+        afterChange();
+    }
+}
+
+void HudChrome::setPanelColor(const QColor &color, const std::function<void()> &afterChange)
+{
+    if (!m_appearance.setPanelColor(color)) {
+        return;
+    }
+    if (afterChange) {
+        afterChange();
+    }
+}

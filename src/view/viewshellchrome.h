@@ -110,6 +110,13 @@ public:
     void setWorkspaceBackgroundShowDefault(bool on);
     void setViewBackground(const WorkspaceBackground &bg);
 
+    /**
+     * Centre progress HUD + viewport-update-mode policy (empty canvas / size-resolve
+     * need FullViewportUpdate so the panel paints). ImageView public API is thin.
+     */
+    void setCentreProgress(const QString &title, const QString &detail = QString());
+    void clearCentreProgress();
+
 private:
     /** After a material change: update viewport (and solid brush when primary changes). */
     void refreshViewportAfterMaterialChange(bool updateSolidBrush = false);

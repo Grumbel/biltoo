@@ -149,37 +149,12 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 
 void ImageView::setCentreProgress(const QString &title, const QString &detail)
 {
-    if (title.isEmpty()) {
-        clearCentreProgress();
-        return;
-    }
-    if (!m_hud.centreProgress().set(title, detail)) {
-        return;
-    }
-    // Empty scene needs FullViewportUpdate or the progress panel never paints.
-    // Size-resolve is interactive (corner HUD) but still needs reliable redraws
-    // while placeholders exist — BoundingRect alone can skip the HUD region.
-    // “Improving previews…” keeps BoundingRect (many tiles + frequent updates).
-    if (m_items.isEmpty() || hostGallerySizeResolve().active()) {
-        setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_shell.setCentreProgress(title, detail);
 }
 
 void ImageView::clearCentreProgress()
 {
-    if (!m_hud.centreProgress().active()) {
-        return;
-    }
-    m_hud.centreProgress().clear();
-    if (isGalleryMode() && !hostGallerySizeResolve().active()) {
-        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_shell.clearCentreProgress();
 }
 
 // --- Logical size (was imageview_view.cpp) ---

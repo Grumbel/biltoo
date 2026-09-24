@@ -1011,3 +1011,41 @@ void ViewShellChrome::setViewBackground(const WorkspaceBackground &bg)
     refreshViewportAfterMaterialChange();
 }
 
+
+void ViewShellChrome::setCentreProgress(const QString &title, const QString &detail)
+{
+    if (!m_view) {
+        return;
+    }
+    if (title.isEmpty()) {
+        clearCentreProgress();
+        return;
+    }
+    if (!m_view->hostCentreProgress().set(title, detail)) {
+        return;
+    }
+    // Empty scene needs FullViewportUpdate or the progress panel never paints.
+    // Size-resolve is interactive (corner HUD) but still needs reliable redraws
+    // while placeholders exist — BoundingRect alone can skip the HUD region.
+    // “Improving previews…” keeps BoundingRect (many tiles + frequent updates).
+    if (m_view->liveItems().isEmpty() || m_view->hostGallerySizeResolve().active()) {
+        m_view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void ViewShellChrome::clearCentreProgress()
+{
+    if (!m_view || !m_view->hostCentreProgress().active()) {
+        return;
+    }
+    m_view->hostCentreProgress().clear();
+    if (m_view->isGalleryMode() && !m_view->hostGallerySizeResolve().active()) {
+        m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}

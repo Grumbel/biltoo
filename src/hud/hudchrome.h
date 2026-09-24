@@ -67,6 +67,15 @@ public:
      */
     void runTimedPaint(const std::function<void()> &paint);
 
+    /**
+     * Appearance mutators. @p afterChange runs only when the value changed
+     * (typically viewport()->update()). ImageView public setters are thin routers.
+     */
+    void setVisible(bool on, const std::function<void()> &afterChange = {});
+    void setFontPointSize(int pt, const std::function<void()> &afterChange = {});
+    void setTextColor(const QColor &color, const std::function<void()> &afterChange = {});
+    void setPanelColor(const QColor &color, const std::function<void()> &afterChange = {});
+
 private:
     HudAppearance m_appearance;
     HudFlash m_flash;

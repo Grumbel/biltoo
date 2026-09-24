@@ -135,6 +135,8 @@
     const HudAppearance &hostHudPrefs() const { return m_hud.appearance(); }
     HudFlash &hostHudFlash() { return m_hud.flash(); }
     const HudFlash &hostHudFlash() const { return m_hud.flash(); }
+    CentreProgress &hostCentreProgress() { return m_hud.centreProgress(); }
+    const CentreProgress &hostCentreProgress() const { return m_hud.centreProgress(); }
     QTimer *hostHudFlashTimer() const { return m_hud.flashTimer(); }
     DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline->displaySurfaces(); }
     const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline->displaySurfaces(); }
