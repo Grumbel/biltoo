@@ -34,6 +34,7 @@
 
 #include <QScrollBar>
 #include <QAbstractScrollArea>
+#include <QStyle>
 #include <QTimer>
 #include <QObject>
 #include <QUndoStack>
@@ -59,70 +60,65 @@
 namespace {
 
 /**
- * Pack measure viewport: always reserve both scrollbar gutters (AlwaysOn).
- * Packing to the full client then letting AsNeeded bars appear shrinks the
- * viewport and shifts AlignCenter (layout for no bars → bars appear → off
- * centre). Measure with both gutters, then restore the real policy; if the
- * live client is larger (AlwaysOff / AsNeeded without bars), expand sceneRect
- * to the viewport after restore so AlignCenter does not float a small pack.
+ * Pack client size without toggling scrollbar policy (policy toggles resize the
+ * viewport mid-pack and fight AlignCenter).
+ *
+ * Qt: AlignCenter only applies while sceneRect fits in the viewport. Once a
+ * bar appears, scene > viewport and only scroll position matters — but the
+ * classic failure is packing to the *full* client, then a vertical bar eats
+ * width so sceneWidth > clientWidth and the view looks horizontally shifted.
+ *
+ * When AsNeeded/AlwaysOn can show a bar that is not yet taking space, reserve
+ * PM_ScrollBarExtent on that axis so the pack already fits the post-bar client.
+ * When the bar is already visible, viewport() is already reduced — do not
+ * double-subtract.
  */
-class PackViewportGuard
-{
-public:
-    explicit PackViewportGuard(QAbstractScrollArea *view)
-        : m_view(view)
-    {
-        if (!m_view) {
-            return;
-        }
-        m_savedH = m_view->horizontalScrollBarPolicy();
-        m_savedV = m_view->verticalScrollBarPolicy();
-        if (m_savedH != Qt::ScrollBarAlwaysOn
-            || m_savedV != Qt::ScrollBarAlwaysOn) {
-            m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-            m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-            m_forced = true;
-        }
-        // Measure only after AlwaysOn is applied so width/height exclude gutters.
-        if (QWidget *vp = m_view->viewport()) {
-            m_width = vp->width();
-            m_height = vp->height();
-        }
-    }
-
-    PackViewportGuard(const PackViewportGuard &) = delete;
-    PackViewportGuard &operator=(const PackViewportGuard &) = delete;
-
-    ~PackViewportGuard() { restore(); }
-
-    void restore()
-    {
-        if (!m_view) {
-            return;
-        }
-        if (m_forced) {
-            if (m_view->horizontalScrollBarPolicy() != m_savedH) {
-                m_view->setHorizontalScrollBarPolicy(m_savedH);
-            }
-            if (m_view->verticalScrollBarPolicy() != m_savedV) {
-                m_view->setVerticalScrollBarPolicy(m_savedV);
-            }
-        }
-        m_view = nullptr;
-        m_forced = false;
-    }
-
-    [[nodiscard]] int width() const { return m_width; }
-    [[nodiscard]] int height() const { return m_height; }
-
-private:
-    QAbstractScrollArea *m_view = nullptr;
-    Qt::ScrollBarPolicy m_savedH = Qt::ScrollBarAsNeeded;
-    Qt::ScrollBarPolicy m_savedV = Qt::ScrollBarAsNeeded;
-    int m_width = 0;
-    int m_height = 0;
-    bool m_forced = false;
+struct PackClientSize {
+    int width = 0;
+    int height = 0;
 };
+
+PackClientSize measurePackClient(QGraphicsView *view)
+{
+    PackClientSize out;
+    if (!view) {
+        return out;
+    }
+    QWidget *vp = view->viewport();
+    if (!vp) {
+        return out;
+    }
+    out.width = vp->width();
+    out.height = vp->height();
+    const int extent = view->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, view);
+    if (extent < 1) {
+        return out;
+    }
+    const auto hPol = view->horizontalScrollBarPolicy();
+    const auto vPol = view->verticalScrollBarPolicy();
+    QScrollBar *hBar = view->horizontalScrollBar();
+    QScrollBar *vBar = view->verticalScrollBar();
+    // isVisible can be false while the bar still reserves layout space under
+    // AlwaysOn; prefer width()/height() of the bar widget when parented.
+    const bool vTakesSpace = vBar && vBar->isVisibleTo(view) && vBar->width() > 0;
+    const bool hTakesSpace = hBar && hBar->isVisibleTo(view) && hBar->height() > 0;
+    // Vertical bar consumes width; horizontal bar consumes height.
+    if (!vTakesSpace
+        && (vPol == Qt::ScrollBarAsNeeded || vPol == Qt::ScrollBarAlwaysOn)) {
+        out.width -= extent;
+    }
+    if (!hTakesSpace
+        && (hPol == Qt::ScrollBarAsNeeded || hPol == Qt::ScrollBarAlwaysOn)) {
+        out.height -= extent;
+    }
+    if (out.width < 32) {
+        out.width = 32;
+    }
+    if (out.height < 32) {
+        out.height = 32;
+    }
+    return out;
+}
 
 } // namespace
 
@@ -570,23 +566,8 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
         // live-window bounding box and the overview looks off-centre.
         if (m_virtualSceneBounds.isValid() && m_view->canvasScene()) {
             m_view->setSceneRect(QRectF());
-            const auto hPol = m_view->horizontalScrollBarPolicy();
-            const auto vPol = m_view->verticalScrollBarPolicy();
-            const bool barsCanShow = (hPol != Qt::ScrollBarAlwaysOff
-                                      || vPol != Qt::ScrollBarAlwaysOff);
-            QRectF settled = m_virtualSceneBounds;
-            if (!barsCanShow) {
-                int vpW = 0;
-                int vpH = 0;
-                if (QWidget *vp = m_view->viewport()) {
-                    vpW = vp->width();
-                    vpH = vp->height();
-                }
-                settled = GalleryPackFit::expandPackSceneRectToViewport(
-                    m_virtualSceneBounds, vpW, vpH);
-            }
-            if (m_view->canvasScene()->sceneRect() != settled) {
-                m_view->canvasScene()->setSceneRect(settled);
+            if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
+                m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
             }
             m_view->refreshScrollBarGeometry();
         }
@@ -1262,11 +1243,20 @@ void GalleryController::scheduleDecodeWindowRefresh(int delayMs)
 
 void GalleryController::onViewResized()
 {
-    // Never repack from resize (session delete looked like auto-layout).
-    // Still refresh the decode window: open often packs at 0×0, soft arrives
-    // into ImageCache, and without this pulse cells stay blank until F5/relayout.
+    // Session delete used to look like auto-layout if every resize repacked.
+    // But open often packs while the viewport is still 0×0; without one follow-up
+    // pack the scene stays sized for a tiny client and AsNeeded bars then shift
+    // a full-size view. Only repack when growing out of an invalid measure.
     if (QWidget *vp = m_view->viewport()) {
-        if (vp->width() > 1 && vp->height() > 1) {
+        const int w = vp->width();
+        const int h = vp->height();
+        if (w > 1 && h > 1) {
+            if (m_lastPackClientW <= 1 || m_lastPackClientH <= 1) {
+                if (m_view->isGalleryMode() && !m_view->pathOrderIsEmpty()
+                    && !m_layout.isFreeForm() && !m_layoutApply.active()) {
+                    applyLayout(GalleryPackReason::EnterGallery);
+                }
+            }
             scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
         }
     }
@@ -1675,20 +1665,26 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     m_view->resetTransform();
-    // Do not origin-jump when returning from Image (leave camera still armed).
+    // Enter / explicit pack: top of the pack (not centerOn origin — that puts
+    // scene (0,0) at the viewport centre and looks vertically off-centre once
+    // a tall scene needs a scrollbar).
     if (!m_pendingRestore && !preserveView && !m_haveViewCenter) {
-        m_view->centerOn(0, 0);
+        if (m_view->horizontalScrollBar()) {
+            m_view->horizontalScrollBar()->setValue(0);
+        }
+        if (m_view->verticalScrollBar()) {
+            m_view->verticalScrollBar()->setValue(0);
+        }
     }
 
-    // Measure with both scrollbar gutters reserved (AlwaysOn). AsNeeded would
-    // pack to the full client, then one bar shrinks the viewport and the other
-    // axis overshoots — dual scrollbars. hostLayoutApply is active so policy
-    // changes do not re-enter pack via resizeEvent.
-    PackViewportGuard packVp(m_view);
+    // Reserve bar extents in the pack measure without toggling policy.
+    const PackClientSize packClient = measurePackClient(m_view);
+    m_lastPackClientW = packClient.width;
+    m_lastPackClientH = packClient.height;
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
-    const qreal availW = GalleryPackFit::packAvailAxis(packVp.width(), margin);
-    const qreal availH = GalleryPackFit::packAvailAxis(packVp.height(), margin);
+    const qreal availW = GalleryPackFit::packAvailAxis(packClient.width, margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(packClient.height, margin);
 
     GalleryLayout::Params params;
     params.margin = margin;
@@ -1719,30 +1715,11 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
     const QRectF packTight =
         GalleryPackFit::clampSceneRectToPack(bounds, packMode, availW, availH, margin);
-    // Restore real bar policy. Pack was measured with both gutters reserved.
-    // - AlwaysOff: expand sceneRect to the full client so AlignCenter does not
-    //   float a gutter-shrunken pack.
-    // - AsNeeded / AlwaysOn: keep the tight pack. Expanding to the no-bar client
-    //   then letting bars appear was the off-centre bug (layout full → bars →
-    //   shrink). When bars show, the viewport matches the AlwaysOn measure.
-    packVp.restore();
+    // Tight pack sceneRect only — width already reserved for a possible vertical
+    // bar so AsNeeded can show it without horizontal overflow.
     m_view->setSceneRect(QRectF());
-    const auto hPol = m_view->horizontalScrollBarPolicy();
-    const auto vPol = m_view->verticalScrollBarPolicy();
-    const bool barsCanShow = (hPol != Qt::ScrollBarAlwaysOff
-                              || vPol != Qt::ScrollBarAlwaysOff);
-    QRectF settled = packTight;
-    if (!barsCanShow) {
-        int vpW = 0;
-        int vpH = 0;
-        if (QWidget *vp = m_view->viewport()) {
-            vpW = vp->width();
-            vpH = vp->height();
-        }
-        settled = GalleryPackFit::expandPackSceneRectToViewport(packTight, vpW, vpH);
-    }
-    if (m_view->canvasScene()->sceneRect() != settled) {
-        m_view->canvasScene()->setSceneRect(settled);
+    if (m_view->canvasScene()->sceneRect() != packTight) {
+        m_view->canvasScene()->setSceneRect(packTight);
     }
     m_view->refreshScrollBarGeometry();
     m_view->hostFraming().armFit();
@@ -1864,13 +1841,13 @@ void GalleryController::rebuildVirtualPlan()
         return;
     }
 
-        // Same gutter reservation as applyLayout — virtual plan must not pack to a
-    // wider/taller client than live items (AsNeeded viewport without bars).
-    PackViewportGuard packVp(m_view);
+    // Same gutter reservation as applyLayout — virtual plan must not pack wider
+    // than the post-bar client.
+    const PackClientSize packClient = measurePackClient(m_view);
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
-    const int vpW = packVp.width() > 0 ? packVp.width() : 800;
-    const int vpH = packVp.height() > 0 ? packVp.height() : 600;
+    const int vpW = packClient.width > 0 ? packClient.width : 800;
+    const int vpH = packClient.height > 0 ? packClient.height : 600;
     const qreal availW = GalleryPackFit::packAvailAxis(vpW, margin);
     const qreal availH = GalleryPackFit::packAvailAxis(vpH, margin);
 
@@ -2046,23 +2023,8 @@ void GalleryController::syncVirtualWindow()
 
     if (m_view->canvasScene() && m_virtualSceneBounds.isValid()) {
         m_view->setSceneRect(QRectF());
-        const auto hPol = m_view->horizontalScrollBarPolicy();
-        const auto vPol = m_view->verticalScrollBarPolicy();
-        const bool barsCanShow = (hPol != Qt::ScrollBarAlwaysOff
-                                  || vPol != Qt::ScrollBarAlwaysOff);
-        QRectF settled = m_virtualSceneBounds;
-        if (!barsCanShow) {
-            int vpW = 0;
-            int vpH = 0;
-            if (QWidget *vp = m_view->viewport()) {
-                vpW = vp->width();
-                vpH = vp->height();
-            }
-            settled = GalleryPackFit::expandPackSceneRectToViewport(
-                m_virtualSceneBounds, vpW, vpH);
-        }
-        if (m_view->canvasScene()->sceneRect() != settled) {
-            m_view->canvasScene()->setSceneRect(settled);
+        if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
+            m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
         }
     }
     if (needAnotherSlice) {

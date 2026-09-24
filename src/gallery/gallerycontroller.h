@@ -261,6 +261,10 @@ private:
     QList<ImageItem *> m_stashedItems;
     PackOrderView m_stashedPackOrder;
 
+    /** Client size last used for pack measure (detect 0×0 → real resize). */
+    int m_lastPackClientW = 0;
+    int m_lastPackClientH = 0;
+
     int m_scrollH = 0;
     int m_scrollV = 0;
     bool m_haveScroll = false;

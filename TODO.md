@@ -2,19 +2,34 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2638.1-gallery-bars-preserve-center** (base `d69d58e`).
+**Tip: biltoo-2639.1-gallery-pack-extent-measure** (base `e69cffa`).
 
-### This tip — layout full → bars appear → off-centre
-Root: after AlwaysOn pack measure, sceneRect was expanded to the *no-bar*
-viewport, then AsNeeded bars appeared and shrank the client under AlignCenter.
-Also refreshScrollBarGeometry (Off↔AsNeeded toggle) shifted the view without
-preserving the scene centre.
+## Research (off-centre when scrollbars appear)
 
-- When bars can show (AsNeeded/AlwaysOn): keep tight pack sceneRect (no expand)
-- AlwaysOff only: expand to fill the client
-- refreshScrollBarGeometry: centerOn(mapToScene(viewport.center)) after toggle
+### Qt facts
+- `AlignCenter` only positions the scene while **sceneRect fits in the viewport**.
+- Once a scrollbar appears, scene > viewport and **only scroll position** matters.
+- Packing to the **full client width**, then a **vertical** bar eating ~extent px,
+  makes sceneWidth > clientWidth → horizontal overflow / dual-bar look / “off centre”.
+
+### What failed
+- Toggling AlwaysOn mid-pack resized the viewport under the pack and fought AlignCenter.
+- Expanding sceneRect to the no-bar client, then letting AsNeeded bars appear, recreated
+  the same shrink-after-layout failure.
+- Top-left alignment hid the symptom and broke zoom-out.
+
+### Intended design (this tip)
+1. **Never toggle scrollbar policy during pack.**
+2. **measurePackClient**: from live `viewport()` size, subtract `PM_ScrollBarExtent`
+   for any AsNeeded/AlwaysOn axis whose bar is **not already** taking space
+   (do not double-subtract when the bar is visible).
+3. Tight pack `sceneRect` only (no expand-to-viewport).
+4. Enter pack: scroll values 0 (top of pack), not `centerOn(0,0)`.
+5. `onViewResized`: if last pack was at ≤1×1 client, one `EnterGallery` repack
+   (open often packs at 0×0 and previously never corrected).
+6. `refreshScrollBarGeometry` still preserves scene centre across Off↔AsNeeded.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2638.1-gallery-bars-preserve-center-d69d58e.bundle HEAD
+git pull --ff-only …/biltoo-2639.1-gallery-pack-extent-measure-e69cffa.bundle HEAD
 ```
