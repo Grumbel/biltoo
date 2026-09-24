@@ -4,6 +4,11 @@
 #ifndef DUALIMAGESHELL_H
 #define DUALIMAGESHELL_H
 
+#include "imageview_types.h"
+
+#include <QString>
+#include <QStringList>
+#include <QVector>
 #include <QWidget>
 
 class ImageView;
@@ -12,14 +17,14 @@ class SessionDocument;
 class SessionSeedBook;
 
 /**
- * Dual ImageView Stage 2c.2 shell: one primary host (session owner) plus an
+ * Dual ImageView Stage 2c.2–2c.3 shell: primary host (session owner) plus an
  * optional secondary compare surface that shares ItemWorld + DisplayPipeline.
  *
  * MainWindow keeps talking to primary() for Gallery/Workspace/session chrome.
- * When dual is on, focus on either pane calls setActiveHost on the shared
- * pipeline so PreferCache / tile ticks target the focused surface.
+ * Focus → setActiveHost on the shared pipeline.
  *
- * Secondary is destroyed on disable (does not tear down the shared pipeline).
+ * Stage 2c.3: openOnSecondary + navigateSecondary (independent compare nav).
+ * Secondary is destroyed on disable without tearing down the shared pipeline.
  */
 class DualImageShell : public QWidget
 {
@@ -29,24 +34,38 @@ public:
 
     ImageView *primary() const { return m_primary; }
     ImageView *secondary() const { return m_secondary; }
-    /** Focused pane when dual; otherwise primary. */
     ImageView *activeView() const { return m_active ? m_active : m_primary; }
 
     bool isDualEnabled() const { return m_dual; }
+    bool isSecondaryActive() const
+    {
+        return m_dual && m_secondary && m_active == m_secondary;
+    }
 
-    /**
-     * Enable dual compare: create secondary, bind shared ItemWorld + pipeline,
-     * show splitter. @p sessionDoc / @p seedBook are bound on the secondary the
-     * same way MainWindow binds the primary.
-     */
+    SessionImageId secondarySessionId() const { return m_secondarySessionId; }
+    QString secondaryPath() const { return m_secondaryPath; }
+
     void setDualEnabled(bool on, SessionDocument *sessionDoc, SessionSeedBook *seedBook);
 
-    /** Record focus and switch pipeline active host (GUI thread). */
+    /**
+     * Load @p path / @p sid on the secondary surface (Image mode).
+     * Switches active host to secondary so the shared pipeline installs there.
+     */
+    void openOnSecondary(const QString &path, SessionImageId sid);
+
+    /**
+     * Session-relative navigation for the secondary pane only (wraps).
+     * @return true if a load was issued.
+     */
+    bool navigateSecondary(int delta, const QStringList &paths,
+                           const QVector<SessionImageId> &ids);
+
     void noteFocus(ImageView *view);
 
 signals:
     void dualEnabledChanged(bool on);
     void activeViewChanged(ImageView *view);
+    void secondarySessionChanged(SessionImageId id, const QString &path);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -60,6 +79,8 @@ private:
     ImageView *m_active = nullptr;
     QSplitter *m_splitter = nullptr;
     bool m_dual = false;
+    SessionImageId m_secondarySessionId = kInvalidSessionImageId;
+    QString m_secondaryPath;
 };
 
 #endif

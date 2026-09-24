@@ -295,9 +295,19 @@ Product shell (minimal):
 - Session navigation / filmstrip / Gallery still drive the **primary** only.
 - Secondary starts empty (compare load / lock-step nav is later product work).
 
+### Stage 2c.3 (landed — biltoo-2458)
+
+- `DualImageShell::openOnSecondary(path, sid)` — setActiveHost(secondary), classic
+  path + session id, `ImageController::enter` / `loadImage`.
+- `navigateSecondary(delta, paths, ids)` — independent compare nav (wraps).
+- Dual enable seeds secondary with the **next** session row (or same if n==1).
+- `goPrevious` / `goNext`: when secondary is focused, step secondary only;
+  primary session cursor (`m_currentIndex`) unchanged.
+- Secondary `navigatePrevious/NextRequested` connected to the same slots.
+
 ### Stage 2c (remaining)
 
-- Load a second SessionImageId into the secondary pane; lock-step or independent ←/→.
+- Optional lock-step ←/→ (both panes advance together).
 - PreferCache / focus surface rules when two panes show different SessionImageIds:
   - PreferCache climb targets the **active** host's primary/target item.
   - Inactive host may still paint already-installed samples; do not run a second

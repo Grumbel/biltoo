@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "shell/dualimageshell.h"
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
 #include <QtMath>
@@ -611,6 +612,11 @@ void MainWindow::goPrevious()
     if (m_session.paths().size() <= 1) {
         return;
     }
+    // Dual compare: when the secondary pane has focus, step its session only.
+    if (m_dualShell && m_dualShell->isSecondaryActive()) {
+        m_dualShell->navigateSecondary(-1, m_session.paths(), m_session.ids());
+        return;
+    }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
         idx = m_session.paths().size() - 1;
@@ -622,6 +628,10 @@ void MainWindow::goPrevious()
 void MainWindow::goNext()
 {
     if (m_session.paths().size() <= 1) {
+        return;
+    }
+    if (m_dualShell && m_dualShell->isSecondaryActive()) {
+        m_dualShell->navigateSecondary(+1, m_session.paths(), m_session.ids());
         return;
     }
     int idx = m_currentIndex + 1;

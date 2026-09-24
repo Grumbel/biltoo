@@ -4113,5 +4113,27 @@ void MainWindow::setDualCompareEnabled(bool on)
     if (m_dualCompareAct) {
         m_dualCompareAct->setChecked(m_dualShell->isDualEnabled());
     }
+    if (!on || !m_dualShell->isDualEnabled()) {
+        return;
+    }
+    // Secondary key/edge nav uses the same goPrevious/goNext slots; those
+    // route to navigateSecondary when the secondary pane is active.
+    if (ImageView *sec = m_dualShell->secondary()) {
+        connect(sec, &ImageView::navigatePreviousRequested, this, &MainWindow::goPrevious,
+                Qt::UniqueConnection);
+        connect(sec, &ImageView::navigateNextRequested, this, &MainWindow::goNext,
+                Qt::UniqueConnection);
+    }
+    if (m_session.isEmpty()) {
+        return;
+    }
+    // Stage 2c.3: seed secondary with the next session row (wrap; same if n==1).
+    const int n = m_session.size();
+    int seed = m_currentIndex;
+    if (seed < 0 || seed >= n) {
+        seed = 0;
+    }
+    const int other = (n > 1) ? (seed + 1) % n : seed;
+    m_dualShell->openOnSecondary(m_session.paths().at(other), sessionIdAt(other));
 }
 

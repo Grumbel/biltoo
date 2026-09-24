@@ -54,7 +54,6 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
         m_secondary->bindSessionSeedBook(seedBook);
     }
 
-    // Share durable appearance + single pipeline (primary remains owner).
     m_secondary->bindSharedItemWorld(&m_primary->itemWorld());
     m_secondary->bindSharedDisplayPipeline(&m_primary->hostDisplayPipeline());
 
@@ -75,6 +74,8 @@ void DualImageShell::destroySecondary()
     m_secondary->removeEventFilter(this);
     m_secondary->deleteLater();
     m_secondary = nullptr;
+    m_secondarySessionId = kInvalidSessionImageId;
+    m_secondaryPath.clear();
 }
 
 void DualImageShell::setDualEnabled(bool on, SessionDocument *sessionDoc, SessionSeedBook *seedBook)
@@ -88,7 +89,6 @@ void DualImageShell::setDualEnabled(bool on, SessionDocument *sessionDoc, Sessio
         ensureSecondary(sessionDoc, seedBook);
         if (m_secondary) {
             m_secondary->show();
-            // Balanced split for first open.
             const int w = qMax(200, width());
             m_splitter->setSizes({w / 2, w / 2});
         }
@@ -103,6 +103,66 @@ void DualImageShell::setDualEnabled(bool on, SessionDocument *sessionDoc, Sessio
     emit dualEnabledChanged(m_dual);
 }
 
+void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
+{
+    ASSERT_GUI_THREAD();
+    if (!m_dual || !m_secondary || path.isEmpty()) {
+        return;
+    }
+
+    noteFocus(m_secondary);
+
+    m_secondary->hostImage().setClassicPath(path);
+    m_secondary->setCurrentSessionId(sid);
+    m_secondarySessionId = sid;
+    m_secondaryPath = path;
+
+    if (!m_secondary->isImageMode()) {
+        m_secondary->hostImage().enter();
+    } else {
+        m_secondary->hostDisplayPipeline().loadImage(path);
+    }
+
+    emit secondarySessionChanged(sid, path);
+}
+
+bool DualImageShell::navigateSecondary(int delta, const QStringList &paths,
+                                       const QVector<SessionImageId> &ids)
+{
+    ASSERT_GUI_THREAD();
+    if (!m_dual || !m_secondary || paths.isEmpty() || delta == 0) {
+        return false;
+    }
+    const int n = paths.size();
+    int idx = -1;
+    if (m_secondarySessionId != kInvalidSessionImageId && ids.size() == n) {
+        for (int i = 0; i < n; ++i) {
+            if (ids.at(i) == m_secondarySessionId) {
+                idx = i;
+                break;
+            }
+        }
+    }
+    if (idx < 0 && !m_secondaryPath.isEmpty()) {
+        idx = paths.indexOf(m_secondaryPath);
+    }
+    if (idx < 0) {
+        idx = 0;
+    }
+    int next = idx + delta;
+    while (next < 0) {
+        next += n;
+    }
+    while (next >= n) {
+        next -= n;
+    }
+    const QString path = paths.at(next);
+    const SessionImageId sid =
+        (ids.size() == n) ? ids.at(next) : kInvalidSessionImageId;
+    openOnSecondary(path, sid);
+    return true;
+}
+
 void DualImageShell::noteFocus(ImageView *view)
 {
     if (!view || (view != m_primary && view != m_secondary)) {
@@ -112,7 +172,6 @@ void DualImageShell::noteFocus(ImageView *view)
         return;
     }
     m_active = view;
-    // Shared pipeline: PreferCache / tile coordinator follow the focused host.
     view->hostDisplayPipeline().setActiveHost(view);
     emit activeViewChanged(view);
 }
