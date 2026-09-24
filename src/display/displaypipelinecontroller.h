@@ -74,7 +74,7 @@ public:
     /**
      * Attach an already-materialized display sample (soft or full-ready).
      * Sole pipeline owner for setPreviewImage / setSourceImageReady + layout
-     * sync. ImageView::attachDisplaySample forwards here.
+     * sync. Sole attach entry for already-materialized samples.
      * @see docs/IMAGEVIEW_ITEM_OWNERSHIP.md
      */
     void attachDisplaySample(ImageItem *item, const QImage &display,
@@ -83,13 +83,13 @@ public:
     /**
      * Intrinsic = ContentXform::layoutSize(file-native, want) — never sample dims.
      * Sole layout writer after pixel install (attachDisplaySample calls this).
-     * ImageView::applyContentLayoutSize forwards here for crop/bake callers.
+     * Crop/bake and attach paths call this for file-native × want layout.
      */
     void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &wantIn);
     /**
      * Rematerialize display from ImageCache / item host for @p want.
-     * Soft stand-in + async full when multi-MP. ImageView::rematerializeItemContent
-     * and WorkspaceController call through this owner.
+     * Soft stand-in + async full when multi-MP. Workspace/crop/color paths
+     * call this owner directly.
      */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     /**
@@ -128,7 +128,7 @@ public:
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     /**
      * Async full-host materialize when multi-MP exceeds GUI edge.
-     * ImageView::scheduleAsyncHostRematerialize forwards here.
+     * Multi-MP full bake from ImageCache host.
      */
     void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                         const WorkspaceItemState &want);
