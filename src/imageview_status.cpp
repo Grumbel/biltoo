@@ -33,14 +33,7 @@ void ImageView::setHudVisible(bool on)
     if (!m_hud.appearance().setVisible(on)) {
         return;
     }
-    // Progress line only paints with the pinned HUD; drive the timer accordingly.
-    if (m_slideshow.progressTimer()) {
-        if (on && m_slideshow.hud().isProgressActive() && m_slideshow.hud().hasProgressInterval()) {
-            m_slideshow.progressTimer()->start();
-        } else {
-            m_slideshow.progressTimer()->stop();
-        }
-    }
+    m_slideshow.syncProgressTimerWithHud(on);
     viewport()->update();
 }
 
@@ -96,23 +89,7 @@ QString ImageView::loadingStatusHudLine() const
             }
         }
     }
-    QStringList extra;
-    if (blank > 0) {
-        extra << tr("%1 blank").arg(blank);
-    }
-    if (weak > 0) {
-        extra << tr("%1 quick preview").arg(weak);
-    }
-    if (core.isEmpty() && extra.isEmpty()) {
-        return {};
-    }
-    if (core.isEmpty()) {
-        return tr("Loading · %1").arg(extra.join(QStringLiteral(" · ")));
-    }
-    if (extra.isEmpty()) {
-        return core;
-    }
-    return core + QStringLiteral(" · ") + extra.join(QStringLiteral(" · "));
+    return HudModel::loadingLineWithGalleryExtras(core, blank, weak);
 }
 
 QString ImageView::hudFileName() const
@@ -348,19 +325,7 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
     }
     {
         const ItemComponents::Placement pl = item->placement();
-        if (qAbs(pl.rotation) > 0.5) {
-            text += tr(" · Rot %1°").arg(qRound(pl.rotation));
-        }
-        if (pl.hFlip || pl.vFlip) {
-            QStringList flips;
-            if (pl.hFlip) {
-                flips << tr("H");
-            }
-            if (pl.vFlip) {
-                flips << tr("V");
-            }
-            text += tr(" · Flip %1").arg(flips.join(QLatin1Char('+')));
-        }
+        text += HudModel::placementFlipRotationSuffix(pl.rotation, pl.hFlip, pl.vFlip);
     }
     if (targetHasContentAppearance()) {
         text += tr(" · Edited");

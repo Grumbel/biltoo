@@ -7,6 +7,7 @@
 #include "display/displayedgepolicy.h"
 
 #include <QString>
+#include <QtGlobal>
 
 /**
  * Pure HUD / status-bar formatting (Phase 6 Tier 3).
@@ -42,6 +43,18 @@ QString emptyCanvasStatus(bool hasLoadError, const QString &loadErrorDisplayName
 
 /** Multi-item mode header: mode · N images · Zoom Z%. */
 QString multiItemHeader(bool galleryMode, int itemCount, int zoomPercent);
+
+/**
+ * Combine ThumtooCache loading core with Gallery blank/weak tile counts.
+ * Empty when both core and counts are empty.
+ */
+QString loadingLineWithGalleryExtras(const QString &core, int blankTiles, int weakTiles);
+
+/**
+ * Optional " · Rot N°" / " · Flip H+V" suffix from free-placement pose.
+ * Empty when near-zero rotation and no flips.
+ */
+QString placementFlipRotationSuffix(qreal rotationDegrees, bool hFlip, bool vFlip);
 
 } // namespace HudModel
 

@@ -523,6 +523,19 @@ void SlideshowController::onViewportLeave()
     }
 }
 
+void SlideshowController::syncProgressTimerWithHud(bool hudVisible)
+{
+    // Progress line only paints with the pinned HUD; drive the timer accordingly.
+    if (!progressTimer()) {
+        return;
+    }
+    if (hudVisible && hud().isProgressActive() && hud().hasProgressInterval()) {
+        progressTimer()->start();
+    } else {
+        progressTimer()->stop();
+    }
+}
+
 
 void SlideshowController::restoreImageFramingAfterSlideshow()
 {

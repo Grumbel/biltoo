@@ -97,6 +97,8 @@ public:
     void onViewResizedDuringDwell();
     /** Pointer left the viewport: hide seekbar when not dragging. */
     void onViewportLeave();
+    /** Pinned HUD visibility drives the slideshow progress timer. */
+    void syncProgressTimerWithHud(bool hudVisible);
     void restoreImageFramingAfterSlideshow();
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();

@@ -7,6 +7,8 @@
 #include "display/displayedgepolicy.h"
 
 #include <QCoreApplication>
+#include <QStringList>
+#include <QtMath>
 
 namespace HudModel {
 namespace {
@@ -108,6 +110,46 @@ QString multiItemHeader(bool galleryMode, int itemCount, int zoomPercent)
         .arg(modeLabel)
         .arg(itemCount)
         .arg(zoomPercent);
+}
+
+QString loadingLineWithGalleryExtras(const QString &core, int blankTiles, int weakTiles)
+{
+    QStringList extra;
+    if (blankTiles > 0) {
+        extra << tr("%1 blank").arg(blankTiles);
+    }
+    if (weakTiles > 0) {
+        extra << tr("%1 quick preview").arg(weakTiles);
+    }
+    if (core.isEmpty() && extra.isEmpty()) {
+        return {};
+    }
+    if (core.isEmpty()) {
+        return tr("Loading · %1").arg(extra.join(QStringLiteral(" · ")));
+    }
+    if (extra.isEmpty()) {
+        return core;
+    }
+    return core + QStringLiteral(" · ") + extra.join(QStringLiteral(" · "));
+}
+
+QString placementFlipRotationSuffix(qreal rotationDegrees, bool hFlip, bool vFlip)
+{
+    QString text;
+    if (qAbs(rotationDegrees) > 0.5) {
+        text += tr(" · Rot %1°").arg(qRound(rotationDegrees));
+    }
+    if (hFlip || vFlip) {
+        QStringList flips;
+        if (hFlip) {
+            flips << tr("H");
+        }
+        if (vFlip) {
+            flips << tr("V");
+        }
+        text += tr(" · Flip %1").arg(flips.join(QLatin1Char('+')));
+    }
+    return text;
 }
 
 } // namespace HudModel
