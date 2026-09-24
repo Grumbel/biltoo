@@ -57,10 +57,9 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     m_slideshow.paintLetterboxComposite(painter);
     m_shell.paintEmptySessionInvite(painter);
 
-    if (!m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && hostHoverEdge() != EdgeZone::None && isImageMode()
-        && (m_image.sessionNav().isImageModeNavEnabled() || hostHoverEdge() == EdgeZone::GalleryReturn)) {
-        drawEdgeAffordances(painter);
-    }
+    // Edge chevrons: ImageController owns zone policy + paint (crop/attention
+    // suppress inside drawEdgeAffordances, same as edgeZoneAt).
+    m_image.drawEdgeAffordances(painter);
 
     m_shell.paintHudPanels(painter);
     m_slideshow.paintSeekbar(painter);

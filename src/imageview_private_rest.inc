@@ -69,7 +69,6 @@
     bool setHoverEdge(EdgeZone zone);
     void clearHoverEdge() { m_image.clearHoverEdge(); }
     void updateHoverEdge(const QPoint &viewPos) { m_image.updateHoverEdge(viewPos); }
-    void drawEdgeAffordances(QPainter &painter) { m_image.drawEdgeAffordances(painter); }
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);

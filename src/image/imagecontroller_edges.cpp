@@ -86,6 +86,10 @@ void ImageController::drawEdgeAffordances(QPainter &painter) const
     if (m_hoverEdge == EdgeNavPolicy::Zone::None || !m_view->isImageMode()) {
         return;
     }
+    // Match edgeZoneAt: no chevrons while crop/attention owns the viewport.
+    if (m_view->hostCrop().session().active() || m_view->hostAttention().session().active()) {
+        return;
+    }
     if (m_hoverEdge != EdgeNavPolicy::Zone::GalleryReturn
         && !sessionNav().isImageModeNavEnabled()) {
         return;
