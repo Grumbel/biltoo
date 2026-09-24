@@ -464,3 +464,7 @@ Product shell (minimal):
     destroy and defaultStateForPath (`workspace_paths.cpp`); ImageView private
     thin wrappers for setWorkspacePaths / session bind.
 
+43. **biltoo-2501:** WorkspaceController owns duplicateSelected (Workspace +
+    Gallery; mode-specific placement); ImageView thin router. Host exposes
+    hostSessionAppearanceImage for filmstrip/session appearance samples.
+

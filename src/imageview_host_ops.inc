@@ -87,3 +87,10 @@
                                 const WorkspaceItemState &after) override;
 
     void refreshScrollBarGeometry();
+
+    /** Controller host: filmstrip/session appearance sample for a live item. */
+    QImage hostSessionAppearanceImage(const ImageItem *item) const
+    {
+        return sessionAppearanceImage(item);
+    }
+

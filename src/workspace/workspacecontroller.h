@@ -114,6 +114,9 @@ public:
     void destroyDoomedItems(const QList<ImageItem *> &doomed);
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
 
+    /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */
+    void duplicateSelected(const QVector<SessionImageId> &newIds, int firstSessionIndex);
+
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);
     bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);

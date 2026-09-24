@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2500.1-own-workspace-path-membership**.
-Latest tip: **biltoo-2500** (+ thumtoo-338). Own: Workspace path membership.
+Latest agent handoff: **TODO.md → biltoo-2501.1-own-workspace-duplicate**.
+Latest tip: **biltoo-2501** (+ thumtoo-338). Own: Workspace duplicate selection.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
