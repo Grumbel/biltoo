@@ -164,9 +164,7 @@ void ImageView::applyModeFlagsToLiveItems()
 
 void ImageView::applyToolDragMode()
 {
-    setDragMode(ToolPolicy::workspaceRubberBand(m_workspace.currentTool())
-                    ? QGraphicsView::RubberBandDrag
-                    : QGraphicsView::NoDrag);
+    m_workspace.applyToolDragMode();
 }
 
 

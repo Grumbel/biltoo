@@ -437,3 +437,6 @@ Product shell (minimal):
 35. **biltoo-2493:** ViewFraming owned by ImageController (per-view; dual-safe);
     hostFraming forwards to m_image.framing().
 
+36. **biltoo-2494:** WorkspaceController::applyToolDragMode owns Select
+    rubber-band drag-mode sync (pairs with tool ownership 2477).
+

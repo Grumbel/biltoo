@@ -79,6 +79,8 @@ public:
     /** Workspace / shell tool (Select / Pan / Zoom). */
     Tool currentTool() const { return m_tool; }
     void setTool(Tool tool);
+    /** Sync QGraphicsView drag mode with current tool (Workspace Select rubber-band). */
+    void applyToolDragMode();
 
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);

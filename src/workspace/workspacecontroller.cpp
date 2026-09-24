@@ -399,7 +399,7 @@ void WorkspaceController::enter(int previousMode)
 {
     const auto previous = static_cast<ImageView::ViewMode>(previousMode);
     m_view->setActiveMode(ImageView::ViewMode::Workspace, LayoutMode::FreeForm);
-    m_view->applyToolDragMode();
+    applyToolDragMode();
     bool keepViewTransform = false;
 
     // Cross-mode return: prefer live pointer stash (fast, no re-decode) when
@@ -861,11 +861,14 @@ void WorkspaceController::setTool(Tool tool)
     }
     m_tool = tool;
     m_view->setCursor(ToolPolicy::cursorFor(m_tool));
-    // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
-    // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
     if (m_view->isWorkspaceMode()) {
-        m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
-                                ? QGraphicsView::RubberBandDrag
-                                : QGraphicsView::NoDrag);
+        applyToolDragMode();
     }
+}
+
+void WorkspaceController::applyToolDragMode()
+{
+    m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+                            ? QGraphicsView::RubberBandDrag
+                            : QGraphicsView::NoDrag);
 }
