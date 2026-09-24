@@ -25,6 +25,7 @@
 
 #include <QGraphicsScene>
 #include <QPainter>
+#include <QBrush>
 #include <QScrollBar>
 #include <QTimer>
 #include <QPointer>
@@ -2598,4 +2599,21 @@ int SlideshowController::pendingQualityWorkCount() const
         }
     }
     return n;
+}
+
+QColor SlideshowController::padColorForPaint() const
+{
+    if (settings().isSolidLetterbox() && settings().padColorRef().isValid()) {
+        return settings().padColorRef();
+    }
+    if (m_view) {
+        if (m_view->hostCanvasBg().primaryColor().isValid()) {
+            return m_view->hostCanvasBg().primaryColor();
+        }
+        const QBrush b = m_view->backgroundBrush();
+        if (b.style() != Qt::NoBrush && b.color().isValid()) {
+            return b.color();
+        }
+    }
+    return settings().padColorRef().isValid() ? settings().padColorRef() : QColor(42, 42, 42);
 }

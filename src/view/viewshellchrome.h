@@ -123,6 +123,12 @@ public:
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
 
+    /**
+     * Content-edit mark chrome on all live tiles + scene/viewport refresh.
+     * ImageView public setter is a thin router.
+     */
+    void setContentEditMarksVisible(bool on);
+
 private:
     /** After a material change: update viewport (and solid brush when primary changes). */
     void refreshViewportAfterMaterialChange(bool updateSolidBrush = false);

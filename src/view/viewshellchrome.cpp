@@ -1071,3 +1071,22 @@ void ViewShellChrome::clearCentreProgress()
         m_view->viewport()->update();
     }
 }
+
+void ViewShellChrome::setContentEditMarksVisible(bool on)
+{
+    if (!m_view) {
+        return;
+    }
+    ImageItem::setContentEditMarksVisible(on);
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        for (ImageItem *it : m_view->liveItems()) {
+            if (it) {
+                it->update();
+            }
+        }
+        scene->update();
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}

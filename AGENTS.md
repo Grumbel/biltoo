@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2582.1-pending-decode-mode-counts**.
-Latest tip: **biltoo-2582** (+ thumtoo-338). Mode controllers own pending-decode path counts.
+Latest agent handoff: **TODO.md → biltoo-2583.1-fix-hostcentre-progress-dup**.
+Latest tip: **biltoo-2583** (+ thumtoo-338). Fix hostCentreProgress dup; pad colour + edit marks on chrome.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

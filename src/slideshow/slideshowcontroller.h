@@ -104,6 +104,11 @@ public:
      * plus soft current-slide still below target edge (pendingDecodeCount).
      */
     int pendingQualityWorkCount() const;
+    /**
+     * Effective letterbox pad colour: solid slideshow pad, else canvas primary,
+     * else view background brush, else settings default / dark grey.
+     */
+    QColor padColorForPaint() const;
     void restoreImageFramingAfterSlideshow();
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();

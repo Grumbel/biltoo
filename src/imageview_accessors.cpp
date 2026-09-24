@@ -147,34 +147,12 @@ QStringList ImageView::selectedPaths() const
 
 QColor ImageView::slideshowPadColor() const
 {
-    if (m_slideshow.settings().isSolidLetterbox()
-        && m_slideshow.settings().padColorRef().isValid()) {
-        return m_slideshow.settings().padColorRef();
-    }
-    if (m_shell.canvasBg().primaryColor().isValid()) {
-        return m_shell.canvasBg().primaryColor();
-    }
-    const QBrush b = backgroundBrush();
-    if (b.style() != Qt::NoBrush && b.color().isValid()) {
-        return b.color();
-    }
-    return m_slideshow.settings().padColorRef().isValid() ? m_slideshow.settings().padColorRef() : QColor(42, 42, 42);
+    return m_slideshow.padColorForPaint();
 }
 
 void ImageView::setContentEditMarksVisible(bool on)
 {
-    ImageItem::setContentEditMarksVisible(on);
-    if (m_scene) {
-        for (ImageItem *it : m_items) {
-            if (it) {
-                it->update();
-            }
-        }
-        m_scene->update();
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_shell.setContentEditMarksVisible(on);
 }
 
 bool ImageView::contentEditMarksVisible() const
