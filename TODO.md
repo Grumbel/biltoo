@@ -2,20 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2637.1-gallery-pack-always-gutter** (base `a4d3856`).
+**Tip: biltoo-2638.1-gallery-bars-preserve-center** (base `d69d58e`).
 
-### This tip — layout for no bars → bars appear → off-centre
-Pack measured the full client (AlwaysOff / no gutter reserve). AsNeeded bars
-then appeared, viewport shrank, AlignCenter shifted.
+### This tip — layout full → bars appear → off-centre
+Root: after AlwaysOn pack measure, sceneRect was expanded to the *no-bar*
+viewport, then AsNeeded bars appeared and shrank the client under AlignCenter.
+Also refreshScrollBarGeometry (Off↔AsNeeded toggle) shifted the view without
+preserving the scene centre.
 
-- PackViewportGuard always forces AlwaysOn for measure (both gutters)
-- Measure width/height only after AlwaysOn is applied
-- After policy restore: two-pass sceneRect expand + refreshScrollBarGeometry
-  so a post-set bar spawn resizes and re-centres the sceneRect
-
-Keeps AlignCenter for zoom-out.
+- When bars can show (AsNeeded/AlwaysOn): keep tight pack sceneRect (no expand)
+- AlwaysOff only: expand to fill the client
+- refreshScrollBarGeometry: centerOn(mapToScene(viewport.center)) after toggle
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2637.1-gallery-pack-always-gutter-a4d3856.bundle HEAD
+git pull --ff-only …/biltoo-2638.1-gallery-bars-preserve-center-d69d58e.bundle HEAD
 ```

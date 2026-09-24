@@ -763,6 +763,14 @@ void ViewShellChrome::refreshScrollBarGeometry()
     // fitInView / sceneRect changes can leave AsNeeded bars with a stale range
     // until policy is toggled. Re-apply the current policies to force
     // QAbstractScrollArea to recompute visibility (public API only).
+    // Preserve the scene point under the viewport centre: Off→AsNeeded can
+    // spawn bars, shrink the viewport, and shift AlignCenter otherwise.
+    QPointF keepCenter;
+    bool haveCenter = false;
+    if (m_view->viewport()) {
+        keepCenter = m_view->mapToScene(m_view->viewport()->rect().center());
+        haveCenter = true;
+    }
     const auto h = m_view->horizontalScrollBarPolicy();
     const auto v = m_view->verticalScrollBarPolicy();
     if (h == Qt::ScrollBarAsNeeded || v == Qt::ScrollBarAsNeeded) {
@@ -770,6 +778,9 @@ void ViewShellChrome::refreshScrollBarGeometry()
         m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         m_view->setHorizontalScrollBarPolicy(h);
         m_view->setVerticalScrollBarPolicy(v);
+    }
+    if (haveCenter) {
+        m_view->centerOn(keepCenter);
     }
 }
 
