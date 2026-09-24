@@ -1,17 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// High-resolution export / native size helpers.
-// Blocking display + high-res paint: DisplayPipelineController.
+// ImageView thin routers co-located with display/ ownership.
 
 #include "imageview.h"
 #include "imageitem.h"
 #include "view/viewtransform.h"
-
 #include <QPainter>
 #include <QImage>
 #include <QTransform>
 
+// --- from src/imageview_export.cpp ---
 QSizeF ImageView::nativeSize(const ImageItem *item)
 {
     if (!item) {
@@ -74,3 +73,4 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
     m_displayPipeline->paintHighResExportItems(&painter, sourceSceneRect, fitted);
     return img;
 }
+

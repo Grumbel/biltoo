@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Page text / link regions — thin ImageView routers to TextLayerController.
+// ImageView thin routers co-located with text/ ownership.
 
 #include "imageview.h"
 #include "text/textsearchpolicy.h"
 
-#include <QMouseEvent>
-
+// --- from src/imageview_text.cpp ---
 void ImageView::setShowTextRegions(bool on)
 {
     m_textCtrl.setShowRegions(on);
@@ -62,4 +61,5 @@ bool ImageView::copySelectedText()
 {
     return m_textCtrl.copySelectedText();
 }
+
 

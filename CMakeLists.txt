@@ -174,17 +174,11 @@ set(BILTOO_LIB_SOURCES
   src/item/geometryundocommand.cpp
   src/image/imagecontroller.h
   src/imageview_modes.cpp
-  src/imageview_canvas.cpp
-  src/imageview_canvas_focus.cpp
-  src/imageview_canvas_place.cpp
-  src/imageview_selection.cpp
-  src/imageview_session_bind.cpp
-  src/imageview_session_remove.cpp
-  src/imageview_appearance.cpp
-  src/imageview_color_grade.cpp
-  src/imageview_crop_appearance.cpp
-  src/imageview_appearance_commit.cpp
-  src/imageview_item_state.cpp
+  src/workspace/imageview_routers.cpp
+            src/imageview_appearance.cpp
+  src/image/imageview_routers.cpp
+  src/crop/imageview_routers.cpp
+    src/imageview_item_state.cpp
   src/crop/cropgeometry.cpp
   src/crop/cropgeometry.h
   src/crop/cropsession.cpp
@@ -271,14 +265,9 @@ set(BILTOO_LIB_SOURCES
   src/display/tile_load_coordinator.cpp
   src/imageview_framing_image.cpp
   src/imageview_status.cpp
-  src/imageview_transform_actions.cpp
-  src/imageview_input.cpp
-  src/imageview_input_events.cpp
-  src/imageview_paint.cpp
-  src/imageview_paint_background.cpp
-  src/imageview_text.cpp
-  src/imageview_pageguide.cpp
-  src/imageview_export.cpp
+    src/view/imageview_routers.cpp
+        src/text/imageview_routers.cpp
+    src/display/imageview_routers.cpp
   src/imageview.h
   src/imageview_types.h
   src/session/sessionappearance.cpp

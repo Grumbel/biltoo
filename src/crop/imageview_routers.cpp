@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Crop appearance store/restore/apply — thin routers to CropController.
+// ImageView thin routers co-located with crop/ ownership.
 
 #include "imageview.h"
 
+// --- from src/imageview_crop_appearance.cpp ---
 void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
                                     const WorkspaceItemState &s)
 {
@@ -34,3 +35,4 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
 {
     m_cropCtrl.emitCropApplyAppearance(sid, path, item, preferredDisplay, hasCrop);
 }
+

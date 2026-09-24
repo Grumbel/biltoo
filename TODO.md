@@ -2,36 +2,31 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2599.1-live-meta-commit** (base `7d823d8`).
+**Tip: biltoo-2600.1-domain-routers** (base `7d823d8`).
 
-### Ownership transfer
-- **ImageController** owns:
-  - `applyState` / `syncLiveContentMetaFromState` / `syncLiveColorFromState`
-  - `clearLiveContentMeta`
-  - `persistGeometrySessionState`
-  - `commitItemSessionEdit` (persist + peer sync + propagate + status)
-  - `targetHasContentAppearance`
-- ImageView methods are thin routers
+### Co-locate thin ImageView routers into domain subdirectories
+Per SRC_LAYOUT: ownership transfer first, then routers live next to owners.
+
+| Domain TU | Routers from (removed root files) |
+|-----------|-----------------------------------|
+| `image/imageview_routers.cpp` | transform_actions, appearance_commit, color_grade |
+| `crop/imageview_routers.cpp` | crop_appearance |
+| `text/imageview_routers.cpp` | text |
+| `workspace/imageview_routers.cpp` | canvas*, session_bind/remove, pageguide, selection |
+| `view/imageview_routers.cpp` | paint*, input* |
+| `display/imageview_routers.cpp` | export |
+
+### Root façade residual (host / shell — intentional)
+- `imageview.cpp` / `.h` — QGraphicsView shell + member bags
+- `imageview_modes.cpp` — setViewMode mode shell
+- `imageview_appearance.cpp` / `_item_state.cpp` — appearance host gather
+- `imageview_status.cpp` / `_accessors.cpp` / `_size_book.cpp` / `_framing_image.cpp`
 
 ### Prior
-**2598.1** Workspace owns pending bind take; test appearance stub  
-**2597.1** ImageController owns rememberItemState + appearance propagate  
-**2596.1** Pipeline owns high-res export paint + content bounds
-
-### Residual on ImageView (intentional host / shell)
-- **setViewMode** mode shell (leave/enter orchestration) — keep on ImageView
-- **captureState** / **freezeItemAppearance** / **contentLayoutSize** — host gather for SessionAppearance pure helpers
-- **statusText** / **hudFileName** — host gather for HudModel pure helpers
-- **renderExportImage** — canvas bg + pipeline paint orchestration
-- **pendingDecodeCount** — sum of mode controllers
-- QGraphicsView overrides, public MainWindow API surface, member bags
-
-### Next thinning candidates
-- statusText* / hudFileName further pure assembly on HudModel
-- freezeItemAppearance already thin
-- setViewMode remains intentional mode shell
+**2599.1** ImageController owns live meta, geometry persist, session commit  
+**2598.1** Workspace owns pending bind take; test appearance stub
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2599.1-live-meta-commit-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2600.1-domain-routers-7d823d8.bundle HEAD
 ```
