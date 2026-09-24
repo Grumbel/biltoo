@@ -297,7 +297,7 @@ void DisplayPipelineController::installImageModeSampleInPlace(ImageItem *item, c
     if (!item || image.isNull()) {
         return;
     }
-    // Same rules as every other attach: accept → materialize → m_view->attachDisplaySample.
+    // Same rules as every other attach: accept → materialize → attachDisplaySample.
     installDisplayPixels(item, image, kind, resolveItemSessionId(item));
     m_view->hostSessionId().clearLastLoadError();
     m_view->rememberSizeFromDecode(path, image);
@@ -987,7 +987,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
 
     // Host cache is unoriented. Every ladder/decode sample that enters here is
     // host-raw (Gallery, Image, Workspace). Display-ready stash soft never
-    // enters this function — pendingTile attaches it via m_view->attachDisplaySample.
+    // enters this function — pendingTile attaches it via attachDisplaySample.
     //
     // Invariant: for session-bound tiles, attach only materializeDisplay(host,
     // store want). Never attach host under a content want. Never set applied

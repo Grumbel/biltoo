@@ -113,9 +113,10 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
     ImageView host helpers for capture/crop-map/persist/undo; thin forwards.
 3n. **Done:** Gallery LQIP intrinsic guard on `hostSetIntrinsicSize`; layout uses host path.
 3o. **Done:** pipeline no longer detours via ImageView for preview/rematerialize install.
+3p. **Done:** mode controllers call hostDisplayPipeline for clear/attach/rematerialize/intrinsic.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
-    bake host helpers (capture/undo); controllers still clear via ImageView host.
+    bake host helpers (capture/undo).
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 

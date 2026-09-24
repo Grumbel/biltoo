@@ -234,7 +234,7 @@ void ImageController::hardReloadFromDisk()
         m_view->hostDisplayPipeline().galleryDecodeResetPath(p);
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         m_view->takePendingWorkspacePath(p);
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         ImageCache::remove(p);
         for (int edge : ThumtooCache::kLadderEdges) {
             ThumtooCache::forgetPixelsSettled(p, edge);

@@ -336,18 +336,18 @@ bool CropController::applyCropCommit(ImageItem *item)
             ViewportUpdateHold paintHold(m_view->viewport());
             // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
             // stretches full into the crop box and filmstrip gets img=full.
-            m_view->clearItemDecodedPixels(item);
+            m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
             // Geometry before pixels: empty item with crop intrinsic, then bake.
-            m_view->applyContentLayoutSize(item, st);
+            m_view->hostDisplayPipeline().applyContentLayoutSize(item, st);
             {
                 const QSize isz = CropSession::ensureApplyIntrinsicSize(
                     item, cropW, cropH, path);
                 if (isz.isValid() && (item->imageSize().width() <= 1
                                       || item->imageSize().height() <= 1)) {
-                    m_view->setItemIntrinsicSize(item, isz);
+                    m_view->hostDisplayPipeline().hostSetIntrinsicSize(item, isz);
                 }
             }
-            m_view->attachDisplaySample(item, baked.display, st,
+            m_view->hostDisplayPipeline().attachDisplaySample(item, baked.display, st,
                                 CropSession::applyPixelKind(baked.multiMp));
             session().restoreEnterScale(item);
             alignItemCenterToScene(item, cropSceneCenter);
@@ -427,7 +427,7 @@ void CropController::leaveCropModeInternal(bool apply)
     }
     // Apply may have queued a full bake while freeze was still on.
     if (pendingFull && !pendingPath.isEmpty()) {
-        m_view->scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+        m_view->hostDisplayPipeline().scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
     }
 }
 
@@ -572,7 +572,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         CropSession::clearItemFreePlacementForDraft(item);
         m_view->syncLiveContentMetaFromState(item, contentOnly);
         m_view->syncLiveColorFromState(item, contentOnly.colorAdjust);
-        m_view->applyContentLayoutSize(item, contentOnly);
+        m_view->hostDisplayPipeline().applyContentLayoutSize(item, contentOnly);
         session().markShowingFullImage();
         CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
     } else {
@@ -580,9 +580,9 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
                                    item->hasDecodedPixels(), sample.hadPriorCrop,
                                    ImageCache::longEdge(full));
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         // attachDisplaySample applies layout via pipeline applyContentLayoutSize.
-        m_view->attachDisplaySample(item, sample.display, contentOnly, sample.kind);
+        m_view->hostDisplayPipeline().attachDisplaySample(item, sample.display, contentOnly, sample.kind);
         m_view->syncLiveContentMetaFromState(item, contentOnly);
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),

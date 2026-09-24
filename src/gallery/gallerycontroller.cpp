@@ -2120,7 +2120,7 @@ void GalleryController::reloadFromDisk(bool relayout)
             m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         m_view->takePendingWorkspacePath(path);
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
@@ -2164,7 +2164,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
         ++itemCount;
         m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
         m_view->takePendingWorkspacePath(path);
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);

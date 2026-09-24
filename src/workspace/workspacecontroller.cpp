@@ -295,13 +295,13 @@ void WorkspaceController::restoreStashedItems()
                 // No full host: rematerialize from ImageCache soft/host (stand-in
                 // + async). Do not chrome-only on multi-MP — cannot
                 // bake crop on the GUI and must not claim applied == want.
-                m_view->rematerializeItemContent(item, app);
+                m_view->hostDisplayPipeline().rematerializeItemContent(item, app);
             }
         } else {
             // Grade-only (or content already on soft): rematerialize so multi-MP
             // still gets grade via soft stand-in + async. A chrome-only path
             // alone leaves multi-MP grade as chrome-only without a bake.
-            m_view->rematerializeItemContent(item, app);
+            m_view->hostDisplayPipeline().rematerializeItemContent(item, app);
         }
     }
     m_view->hostFraming().clearFitFill();
@@ -750,7 +750,7 @@ void WorkspaceController::reloadFromDisk()
             m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         m_view->takePendingWorkspacePath(path);
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
@@ -791,7 +791,7 @@ void WorkspaceController::hardReloadFromDisk()
         ++itemCount;
         m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
         m_view->takePendingWorkspacePath(path);
-        m_view->clearItemDecodedPixels(item);
+        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);

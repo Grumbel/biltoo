@@ -306,7 +306,7 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
                 logical = lay;
             }
         }
-        m_view->setItemIntrinsicSize(item, logical);
+        m_view->hostDisplayPipeline().hostSetIntrinsicSize(item, logical);
     }
     // Provisional / unknown: leave intrinsic alone — LQIP/soft must not set geometry.
     const QRectF content = item->contentRect();
