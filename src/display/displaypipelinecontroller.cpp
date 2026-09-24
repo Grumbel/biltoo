@@ -1,3 +1,7 @@
+#include <QPainter>
+#include <QTransform>
+#include <QGraphicsScene>
+#include <algorithm>
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -2422,4 +2426,76 @@ void DisplayPipelineController::applyProbedImageSize(const QString &path, const 
             m_host->viewportWidget()->update();
         }
     }
+}
+
+
+void DisplayPipelineController::paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
+                                                        const QRectF &targetRect) const
+{
+    if (!m_host || !painter || !sourceScene.isValid() || !targetRect.isValid()) {
+        return;
+    }
+    QList<ImageItem *> ordered = m_host->liveItems();
+    std::sort(ordered.begin(), ordered.end(), [](ImageItem *a, ImageItem *b) {
+        if (!a) {
+            return false;
+        }
+        if (!b) {
+            return true;
+        }
+        return a->zValue() < b->zValue();
+    });
+
+    QTransform sceneToPixel;
+    sceneToPixel.translate(targetRect.left(), targetRect.top());
+    sceneToPixel.scale(targetRect.width() / sourceScene.width(),
+                       targetRect.height() / sourceScene.height());
+    sceneToPixel.translate(-sourceScene.left(), -sourceScene.top());
+
+    for (ImageItem *item : ordered) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QRectF sceneR = item->contentSceneRect();
+        if (!sceneR.isValid() || sceneR.isEmpty() || !sceneR.intersects(sourceScene)) {
+            continue;
+        }
+        const QImage display = blockingExportDisplayForItem(item);
+        if (display.isNull()) {
+            continue;
+        }
+        painter->save();
+        painter->setOpacity(item->opacity());
+        painter->setTransform(sceneToPixel * item->sceneTransform());
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawImage(item->contentRect(), display);
+        painter->restore();
+    }
+}
+
+QRectF DisplayPipelineController::contentExportBounds() const
+{
+    if (!m_host) {
+        return {};
+    }
+    QRectF bounds;
+    for (ImageItem *item : m_host->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        const QRectF r = item->contentSceneRect();
+        if (!r.isValid() || r.isEmpty()) {
+            continue;
+        }
+        bounds = bounds.isValid() ? bounds.united(r) : r;
+    }
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        if (QGraphicsScene *scene = m_host->canvasScene()) {
+            bounds = scene->itemsBoundingRect();
+        }
+    }
+    if (bounds.isValid() && !bounds.isEmpty()) {
+        bounds.adjust(-4, -4, 4, 4);
+    }
+    return bounds;
 }

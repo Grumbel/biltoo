@@ -14,11 +14,15 @@
 
 #include <QTimer>
 #include <QString>
+#include <QImage>
+#include <QRectF>
+#include <QSize>
 
 #include <memory>
 #include <unordered_map>
 
 class ImageItem;
+class QPainter;
 class TileLoadCoordinator;
 
 /**
@@ -245,6 +249,14 @@ public:
      * atlas). ImageView::applyProbedImageSize is a thin router.
      */
     void applyProbedImageSize(const QString &path, const QSize &size);
+    /**
+     * High-res materialize of live tiles into @p targetRect (z-ordered).
+     * ImageView::paintHighResExportItems is a thin router.
+     */
+    void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
+                                 const QRectF &targetRect) const;
+    /** Scene bounds of live image tiles (no chrome), with a small margin. */
+    QRectF contentExportBounds() const;
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
     bool loadImage(const QString &path);
 
