@@ -115,7 +115,6 @@
     void flushColorAdjustCommit();
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
-    void restoreStickyPanAnchor(ImageItem *item);
     bool sessionIdMatchesPath(SessionImageId id, const QString &path) const;
 
 

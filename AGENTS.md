@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2445.1-dual-imageview-prereqs**.
-Latest tip: **biltoo-2445** (+ thumtoo-338). Phase 5 done; Dual ImageView prereqs documented.
+Latest agent handoff: **TODO.md → biltoo-2446.1-restore-sticky-pan-public**.
+Latest tip: **biltoo-2446** (+ thumtoo-338). restoreStickyPanAnchor public for tests/host.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

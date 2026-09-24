@@ -117,7 +117,7 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3q. **Done:** ImageView TUs call m_displayPipeline directly (no self-forward hop).
 3r. **Done:** Phase 6 Tier 0 — privatize pipeline-forward host methods (2437).
 3s. **Done:** `setItemIntrinsicSize` private; all writers use `hostSetIntrinsicSize` (2438).
-3t. **Done:** Tier 0 privatize `sessionIdMatchesPath`, `restoreStickyPanAnchor` (imageview-only).
+3t. **Done:** Tier 0 privatize `sessionIdMatchesPath`. `restoreStickyPanAnchor` remains public host (paired with capture; characterization).
 3u. **Done:** `bakeItemFlip` private; chrome/toolbar call pipeline bakeItemFlip.
 3v. **Done:** drop ImageView::bakeItemRotate90 forward; rotateContent uses pipeline only.
 3w. **Done:** drop ImageView bake TU; pipeline sole bake entry.

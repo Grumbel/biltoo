@@ -12,6 +12,7 @@
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
     void captureStickyPanAnchor(ImageItem *item);
+    void restoreStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
     /** View-local pack multiplicity (never SessionDocument — pathOrderClear). */
     int pathOrderOccurrences(const QString &path) const
