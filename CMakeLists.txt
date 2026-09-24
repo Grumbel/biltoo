@@ -267,7 +267,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview.h
   src/imageview_types.h
   src/session/sessionappearance.cpp
-  tests/thumtoocache_appearance_stub.cpp
   src/session/sessionseedbook.cpp
   src/content/contentxform.cpp
   src/session/sessionappearance.h

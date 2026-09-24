@@ -566,7 +566,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(!view.hostFraming().isStickyZoomEnabled());
 
     // Gallery before setWorkspacePaths (Image mode rejects path placement).
-    view.enterGallery(LayoutMode::Grid);
+    view.hostGallery().enterGallery(LayoutMode::Grid);
     QVERIFY(view.isGalleryMode());
 
     // Prime definitive sizes so GallerySizeResolve does not defer populate.
@@ -674,7 +674,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
             QCOMPARE(view.hostFraming().currentPreservedViewScale(), fitScale);
         }
         // restore must not crash; centres on captured pan when available.
-        view.restoreStickyPanAnchor(focusItem);
+        view.hostImage().restoreStickyPanAnchor(focusItem);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
 
         // Framing handoff across session ids (prev/next style without async Image load).
@@ -696,13 +696,13 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         if (view.hostFraming().hasPreservedViewScale()) {
             QCOMPARE(view.hostFraming().currentPreservedViewScale(), otherFitScale);
         }
-        view.restoreStickyPanAnchor(otherItem);
+        view.hostImage().restoreStickyPanAnchor(otherItem);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
 
         // Switch capture back to focus id (navigate-like framing continuity).
         view.fitItem(focusItem, Qt::KeepAspectRatio);
         view.captureStickyPanAnchor(focusItem);
-        view.restoreStickyPanAnchor(focusItem);
+        view.hostImage().restoreStickyPanAnchor(focusItem);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
     }
 
@@ -749,7 +749,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QVERIFY(!view.itemWorld().hasCrop(other));
         view.fitItem(imgOther, Qt::KeepAspectRatio);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
-        view.restoreStickyPanAnchor(imgOther);
+        view.hostImage().restoreStickyPanAnchor(imgOther);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
 
         // Focus durable ItemWorld components survived Image-mode navigate (id-keyed).

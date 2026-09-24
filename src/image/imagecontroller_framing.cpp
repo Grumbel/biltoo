@@ -175,7 +175,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
                     return;
                 }
                 if (ImageItem *cur = view->targetItem()) {
-                    view->restoreStickyPanAnchor(cur);
+                    view->hostImage().restoreStickyPanAnchor(cur);
                 }
             });
         }
@@ -211,7 +211,7 @@ void ImageController::applyImageModeFraming(ImageItem *item)
                 return;
             }
             if (ImageItem *cur = view->targetItem()) {
-                view->restoreStickyPanAnchor(cur);
+                view->hostImage().restoreStickyPanAnchor(cur);
             }
         });
         return;

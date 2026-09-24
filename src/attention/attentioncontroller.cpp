@@ -3,6 +3,7 @@
 
 #include "attention/attentioncontroller.h"
 #include "imageview.h"
+#include "image/edgenavpolicy.h"
 
 #include "attention/attentiongeometry.h"
 #include "imageitem.h"
@@ -349,7 +350,7 @@ void AttentionController::paintAttentionOverlay(QPainter &painter)
 bool AttentionController::tryMousePressAttention(QMouseEvent *event)
 {
     if (!session().active() || event->button() != Qt::LeftButton || !m_view->isImageMode()
-        || m_view->edgeZoneAt(event->pos()) != ImageView::EdgeZone::None) {
+        || m_view->hostImage().edgeZoneAt(event->pos()) != EdgeNavPolicy::Zone::None) {
         return false;
     }
     ImageItem *item = m_view->targetItem();
