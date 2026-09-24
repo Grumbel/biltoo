@@ -2309,3 +2309,32 @@ bool SlideshowController::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
     }
     return true;
 }
+
+void SlideshowController::ensureProgressTimer()
+{
+    if (m_slideshowProgressTimer) {
+        return;
+    }
+    m_slideshowProgressTimer = new QTimer(m_view);
+    m_slideshowProgressTimer->setInterval(SlideshowProgressHud::kProgressTickMs);
+    QObject::connect(m_slideshowProgressTimer, &QTimer::timeout, m_view, [this]() {
+        if (hud().isProgressActive()) {
+            m_view->hostDisplayPipeline().tickPrimaryTileLod(8);
+            slideshowPhaseSurfaceTick();
+            if (m_view->viewport()) {
+                m_view->viewport()->update();
+            }
+        } else if (m_view->hostHudPrefs().isVisible() && hud().hasProgressInterval()) {
+            if (m_view->viewport()) {
+                m_view->viewport()->update();
+            }
+        }
+    });
+}
+
+void SlideshowController::stopProgressTimer()
+{
+    if (m_slideshowProgressTimer) {
+        m_slideshowProgressTimer->stop();
+    }
+}

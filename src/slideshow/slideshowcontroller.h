@@ -66,6 +66,9 @@ public:
 
     QTimer *&progressTimer() { return m_slideshowProgressTimer; }
     QTimer *progressTimer() const { return m_slideshowProgressTimer; }
+    /** Create progress tick timer parented to the ImageView shell. */
+    void ensureProgressTimer();
+    void stopProgressTimer();
 
     QElapsedTimer &lastCenterClick() { return m_lastSlideshowCenterClick; }
     const QElapsedTimer &lastCenterClick() const { return m_lastSlideshowCenterClick; }

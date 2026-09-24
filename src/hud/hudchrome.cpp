@@ -5,8 +5,6 @@
 
 #include <QObject>
 #include <QTimer>
-#include <QWidget>
-#include <functional>
 
 void HudChrome::ensureFlashTimer(QObject *parentShell, const std::function<void()> &onTimeout)
 {
@@ -29,14 +27,15 @@ void HudChrome::stopFlashTimer()
     }
 }
 
-void HudChrome::showFlash(const QString &action, const QString &detail, QWidget *viewport)
+void HudChrome::showFlash(const QString &action, const QString &detail,
+                          const std::function<void()> &afterShow)
 {
     m_flash.show(action, detail);
     if (m_flashTimer) {
         m_flashTimer->start(HudFlash::kActionFlashMs);
     }
-    if (viewport) {
-        viewport->update();
+    if (afterShow) {
+        afterShow();
     }
 }
 

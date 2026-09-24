@@ -273,23 +273,8 @@ ImageView::ImageView(QWidget *parent)
         }
     });
 
-    m_slideshow.progressTimer() = new QTimer(this);
-    m_slideshow.progressTimer()->setInterval(SlideshowProgressHud::kProgressTickMs); // ~30 Hz
-    connect(m_slideshow.progressTimer(), &QTimer::timeout, this, [this]() {
-        if (m_slideshow.hud().isProgressActive()) {
-            // Pump shared path tiles for phase slides (paint uses TileLodController).
-            m_displayPipeline->tickPrimaryTileLod(8);
-            // Phase transition surfaces (was on the Gallery decode watchdog).
-            m_slideshow.slideshowPhaseSurfaceTick();
-            if (viewport()) {
-                viewport()->update();
-            }
-        } else if (m_hud.appearance().isVisible() && m_slideshow.hud().hasProgressInterval()) {
-            if (viewport()) {
-                viewport()->update();
-            }
-        }
-    });
+    // Slideshow progress QTimer: owned by SlideshowController (parented to this).
+    m_slideshow.ensureProgressTimer();
 
     setRenderHint(QPainter::SmoothPixmapTransform, true);
     // OpenGL viewport — overlays must use drawForeground (see paintEvent).
@@ -380,9 +365,7 @@ ImageView::~ImageView()
     }
 
     m_hud.stopFlashTimer();
-    if (m_slideshow.progressTimer()) {
-        m_slideshow.progressTimer()->stop();
-    }
+    m_slideshow.stopProgressTimer();
     m_gallery.stopLayoutDebounceTimer();
 
     // Scene clear emits selectionChanged; our handler calls viewport()->update().

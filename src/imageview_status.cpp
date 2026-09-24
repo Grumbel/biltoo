@@ -70,7 +70,11 @@ void ImageView::setHudPanelColor(const QColor &color)
 
 void ImageView::flashHud(const QString &action, const QString &detail)
 {
-    m_hud.showFlash(action, detail, viewport());
+    m_hud.showFlash(action, detail, [this]() {
+        if (viewport()) {
+            viewport()->update();
+        }
+    });
 }
 
 QString ImageView::loadingStatusHudLine() const

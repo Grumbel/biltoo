@@ -11,7 +11,6 @@
 
 class QObject;
 class QTimer;
-class QWidget;
 
 /**
  * Shell HUD chrome: pinned appearance prefs + transient action flash +
@@ -37,8 +36,12 @@ public:
 
     void stopFlashTimer();
 
-    /** Show action flash, arm timer, optional viewport update. */
-    void showFlash(const QString &action, const QString &detail, QWidget *viewport);
+    /**
+     * Show action flash and arm the timer.
+     * @p afterShow runs immediately (typically viewport()->update()).
+     */
+    void showFlash(const QString &action, const QString &detail,
+                   const std::function<void()> &afterShow = {});
 
     /**
      * Coalesce rapid statusChanged / soft-climb updates.

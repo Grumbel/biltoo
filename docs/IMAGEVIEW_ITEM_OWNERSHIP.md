@@ -396,3 +396,6 @@ Product shell (minimal):
 27. **biltoo-2485:** Status-refresh coalesce QTimer owned by HudChrome
     (parented to ImageView); Gallery keeps its own scheduleStatusRefresh timer.
 
+28. **biltoo-2485.2 / 2486:** HudChrome drops QWidget include (callback update);
+    SlideshowController owns progress QTimer (parented to ImageView).
+
