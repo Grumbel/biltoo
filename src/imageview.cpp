@@ -56,7 +56,6 @@
 
 ImageView::ImageView(QWidget *parent)
     : QGraphicsView(parent)
-    , m_size(this)
     , m_gallery(this)
     , m_slideshow(this)
     , m_cropCtrl(this)
@@ -65,6 +64,7 @@ ImageView::ImageView(QWidget *parent)
     , m_image(this)
     , m_ownedPipeline(std::make_unique<DisplayPipelineController>(this))
     , m_displayPipeline(m_ownedPipeline.get())
+    , m_size(this)
     , m_tileNeighborPrefetch(this, this)
 {
     // Phase 7 Stage 0: path/size books are owned here; appearance binds later

@@ -2,18 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2474.1-own-image-edge-nav** (base `7d823d8`).
+**Tip: biltoo-2474.2-fix-sizeresolve-qpointer** (base `7d823d8`).
 
-### Ownership transfer
-- Image-mode **edge hover** + **drawEdgeAffordances** on `ImageController`
-- State: `EdgeNavPolicy::Zone m_hoverEdge`
-- ImageView keeps public `EdgeZone` enum + thin host bridges
-- `hostSessionNav()` added for controller access to SessionNavFlags
+### Fix compile after 2474
+- `gallerycontroller_sizeresolve.cpp`: `#include <QPointer>` (incomplete type on QPointer<ImageView>)
+- ImageView ctor: init-list order matches declaration (`m_gallery` before `m_size`)
 
 ### Stack
-2471 Workspace input · 2471.2 moc · 2472 DecodeBook · 2473 layout · **2474 edge nav**
+2471–2474 ownership · **2474.2** compile fix
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2474.1-own-image-edge-nav-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2474.2-fix-sizeresolve-qpointer-7d823d8.bundle HEAD
 ```

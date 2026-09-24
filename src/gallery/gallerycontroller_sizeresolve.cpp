@@ -13,6 +13,7 @@
 #include "gallery/gallerylayout.h"
 
 #include <QTimer>
+#include <QPointer>
 #include <QGraphicsView>
 
 bool GalleryController::hasDefinitiveHostSize(const QString &path) const
