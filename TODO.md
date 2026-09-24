@@ -2,34 +2,32 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2452.1-display-pipeline-host-stage2a** (base `7d823d8`).
+**Tip: biltoo-2453.1-pipeline-host-only-no-view** (base `7d823d8`).
 
 ### Ownership refactor status
 - **Phase 5 pixel/layout/bake: CLOSED**
-- **Dual ImageView Stage 0–2a: LANDED** — pipeline decoupled from ImageView* for async/tiles
+- **Dual ImageView Stage 0–2b: LANDED** — pipeline bound only to DisplayPipelineHost
 
-### Stage 2a summary
-- Jobs: `QPointer<QObject> life` + `DisplayPipelineController*` (no ImageView QPointer)
-- TileLoadCoordinator: pipeline-bound; host via `pipe->host()`
-- Timers / singleShot: `hostObject()` parent
-- Worker lambdas: `life` + `pipe` (no hostDisplayPipeline hop)
-- `m_view` only for ctor / `view()` API
+### Stage 2b summary
+- Dropped `m_view` / `view()` from DisplayPipelineController
+- Ctor: `DisplayPipelineController(DisplayPipelineHost *host)`
+- ImageView constructs with `this` (is the host)
 
 ### Verification (static)
 | Check | Result |
 |-------|--------|
 | ImageItem friends | sole DisplayPipelineController |
 | Pixel mutators outside pipeline | none |
-| Pipeline `m_view->` (non-comment) | **0** |
+| Pipeline `m_view` / `view()` | **removed** |
 | `QPointer<ImageView>` in display/ | **0** |
-| Host pure virtuals | ~105 (+ viewTransform) |
+| Host pure virtuals | ~105 |
 | Runtime / nix build | not run |
 
 ### Next
-- Stage 2b: active-host switching; dual-pane shell; optional drop view()
+- Stage 2c: dual-pane shell + active host / shared ItemWorld
 - Optional: paint/input Host extraction
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2452.1-display-pipeline-host-stage2a-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2453.1-pipeline-host-only-no-view-7d823d8.bundle HEAD
 ```

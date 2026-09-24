@@ -43,9 +43,8 @@
 #include <QObject>
 
 
-DisplayPipelineController::DisplayPipelineController(ImageView *view)
-    : m_host(view)
-    , m_view(view)
+DisplayPipelineController::DisplayPipelineController(DisplayPipelineHost *host)
+    : m_host(host)
 {
 }
 

@@ -17,7 +17,6 @@
 #include <memory>
 #include <unordered_map>
 
-class ImageView;
 class ImageItem;
 class TileLoadCoordinator;
 
@@ -30,19 +29,17 @@ class TileLoadCoordinator;
  * _load.cpp (schedule/LoadAdd/gallery), _item.cpp (create/seed/want/frame).
  * SIZE.md soft-vs-logical rules stay with ImageSizeBook.
  *
- * Dual ImageView Stage 0: dual-critical session/canvas state is reached via
- * DisplayPipelineHost (m_host). Long-tail view APIs still use view() until
- * Stage 1 migrates them onto the host surface.
+ * Dual ImageView: bound to DisplayPipelineHost only (no ImageView*).
+ * Async lifetime via hostObject(); Stage 2b drops concrete view().
  */
 class DisplayPipelineController
 {
 public:
 
-    explicit DisplayPipelineController(ImageView *view);
+    explicit DisplayPipelineController(DisplayPipelineHost *host);
     ~DisplayPipelineController();
 
     DisplayPipelineHost *host() const { return m_host; }
-    ImageView *view() const { return m_view; }
 
     SessionLoadGate &loadGate() { return m_loadGate; }
     const SessionLoadGate &loadGate() const { return m_loadGate; }
@@ -286,8 +283,7 @@ private:
         const ImageItem *item,
         SessionImageId preferred = kInvalidSessionImageId) const;
 
-    DisplayPipelineHost *m_host = nullptr; // not owned; Stage 0 dual-critical surface
-    ImageView *m_view = nullptr; // not owned; ctor/view() only — async uses hostObject()
+    DisplayPipelineHost *m_host = nullptr; // not owned
     SessionLoadGate m_loadGate;
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;

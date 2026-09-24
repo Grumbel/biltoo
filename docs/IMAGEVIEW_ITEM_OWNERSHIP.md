@@ -242,11 +242,17 @@ and sticky pan stay per-surface.
   directly (no `hostDisplayPipeline()` hop).
 - `m_view` retained only for ctor/`view()` API.
 
-### Stage 2b (next)
+### Stage 2b (landed — biltoo-2453)
 
-- Active-host switching when two panes bind different SessionImageIds.
-- Optional: drop `m_view` / `view()` once no external callers.
-- Product dual-pane shell.
+- Removed `ImageView *m_view` and `view()` from DisplayPipelineController.
+- Constructor is `DisplayPipelineController(DisplayPipelineHost *host)` only.
+- ImageView still constructs the pipeline with `this` (implements host).
+
+### Stage 2c (next)
+
+- Active-host / dual-pane product shell (two hosts sharing ItemWorld + optional
+  shared or per-surface pipeline).
+- PreferCache / focus surface rules when two panes show different SessionImageIds.
 
 ### Residual on single ImageView (ok to keep)
 
