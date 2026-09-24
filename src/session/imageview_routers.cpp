@@ -10,6 +10,7 @@
 #include "item/itemcomponents.h"
 #include "content/contentxform.h"
 #include "color/coloradjust.h"
+#include "item/selectiongeometry.h"
 
 // --- from imageview_appearance.cpp ---
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
