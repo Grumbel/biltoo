@@ -137,10 +137,10 @@
 
 
     ViewFraming m_framing;
+    ViewShellChrome m_shell;
     ViewMode m_viewMode = ViewMode::Image;
     // SessionNavFlags: owned by ImageController (m_image).
-    /** Last mouse position in viewport coords (gallery hover + scroll). */
-    CanvasBackground m_canvasBg;
+    // CanvasBackground: owned by ViewShellChrome (m_shell.canvasBg()).
     // TextLayerSession: owned by TextLayerController (m_textCtrl).
     HudChrome m_hud;
     SessionIdentity m_sessionId;
@@ -156,11 +156,11 @@
 
     SessionBindBook m_bindBook;
     // PendingItemAppearanceBook: owned by SessionBindBook (pendingAppearance).
-    ViewportChrome m_chrome;
+    // ViewportChrome: owned by ViewShellChrome (m_shell.viewport()).
     // ZoomRegionGesture: owned by ImageController (m_image).
 
 
-    /** Multi-select group scale/rotate gesture (Workspace). */
+    // Group transform session: owned by WorkspaceController.
 
     // LayoutApplyGuard: owned by GalleryController.
     // GalleryRelayoutSuppress: owned by GalleryController.

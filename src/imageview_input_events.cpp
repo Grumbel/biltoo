@@ -79,7 +79,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
     if (isImageMode() && !m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && !m_textCtrl.session().isRubberbanding()
-        && !m_chrome.isPanning() && event->buttons() == Qt::NoButton
+        && !m_shell.viewport().isPanning() && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(m_image.classicPath())) {
         if (!m_textCtrl.session().hasLayerRegions() || m_textCtrl.session().layerPathRef() != m_image.classicPath()) {
             const ThumtooCache::PageTextLayer cached =
@@ -103,7 +103,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
                 tip = tr("Link");
             }
         } else if (hostHoverEdge() == EdgeZone::None) {
-            setCursor(m_chrome.isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
+            setCursor(m_shell.viewport().isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
         if (m_textCtrl.session().setLinkHoverTip(tip)) {
             emit statusChanged();
@@ -115,17 +115,17 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 }
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
 {
-    if (!m_chrome.isPanning()) {
+    if (!m_shell.viewport().isPanning()) {
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
     if (m_slideshow.dwell().isMotionActive()) {
-        m_chrome.endPan();
+        m_shell.viewport().endPan();
         event->accept();
         return true;
     }
-    const QPoint delta = m_chrome.panDeltaFrom(event->pos());
-    m_chrome.updatePanPos(event->pos());
+    const QPoint delta = m_shell.viewport().panDeltaFrom(event->pos());
+    m_shell.viewport().updatePanPos(event->pos());
     // Grow the free-form sceneRect with the view so middle-drag is never
     // clamped against a stale zero-range scrollbar.
     if (isWorkspaceMode()) {
@@ -168,9 +168,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         updateHoverEdge(event->pos());
     }
 
-    m_chrome.setHoverViewPos(event->pos());
+    m_shell.viewport().setHoverViewPos(event->pos());
     m_slideshow.updateMouseMoveSlideshowSeek(event);
-    m_gallery.updateGalleryHoverAt(m_chrome.hoverViewPos());
+    m_gallery.updateGalleryHoverAt(m_shell.viewport().hoverViewPos());
     m_workspace.updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);
@@ -206,11 +206,11 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 
 bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 {
-    if (!m_chrome.isPanning()
+    if (!m_shell.viewport().isPanning()
         || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
         return false;
     }
-    m_chrome.endPan();
+    m_shell.viewport().endPan();
     restoreToolCursor();
     m_displayPipeline->tickPrimaryTileLod(8);
     event->accept();
@@ -432,9 +432,9 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ImageView::leaveEvent(QEvent *event)
 {
-    if (m_chrome.hasMouseInfo()) {
-        m_chrome.clearMouseInfo();
-        emit mouseInfoChanged(m_chrome.currentMouseInfo());
+    if (m_shell.viewport().hasMouseInfo()) {
+        m_shell.viewport().clearMouseInfo();
+        emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
     }
     if (hostHoverEdge() != EdgeZone::None) {
         clearHoverEdge();

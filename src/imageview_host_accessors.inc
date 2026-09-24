@@ -43,8 +43,8 @@
     }
     ViewFraming &hostFraming() override { return m_framing; }
     const ViewFraming &hostFraming() const override { return m_framing; }
-    ViewportChrome &hostChrome() { return m_chrome; }
-    const ViewportChrome &hostChrome() const { return m_chrome; }
+    ViewportChrome &hostChrome() { return m_shell.viewport(); }
+    const ViewportChrome &hostChrome() const { return m_shell.viewport(); }
     SessionNavFlags &hostSessionNav() { return m_image.sessionNav(); }
     const SessionNavFlags &hostSessionNav() const { return m_image.sessionNav(); }
     /** Print page-guide session (Workspace overlay). */
@@ -110,8 +110,8 @@
         Q_ASSERT(m_seedBook);
         return *m_seedBook;
     }
-    CanvasBackground &hostCanvasBg() { return m_canvasBg; }
-    const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
+    CanvasBackground &hostCanvasBg() { return m_shell.canvasBg(); }
+    const CanvasBackground &hostCanvasBg() const { return m_shell.canvasBg(); }
     SessionIdentity &hostSessionId() override { return m_sessionId; }
     const SessionIdentity &hostSessionId() const override { return m_sessionId; }
     /**

@@ -405,3 +405,6 @@ Product shell (minimal):
 30. **biltoo-2488:** CentreProgress owned by HudChrome; drop unused ImageView
     gallery decode constants (limits live in GalleryDecode).
 
+31. **biltoo-2489:** ViewShellChrome owns ViewportChrome + CanvasBackground;
+    group-transform residual comment cleaned (already on WorkspaceController).
+

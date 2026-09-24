@@ -186,8 +186,8 @@ QColor ImageView::slideshowPadColor() const
         && m_slideshow.settings().padColorRef().isValid()) {
         return m_slideshow.settings().padColorRef();
     }
-    if (m_canvasBg.primaryColor().isValid()) {
-        return m_canvasBg.primaryColor();
+    if (m_shell.canvasBg().primaryColor().isValid()) {
+        return m_shell.canvasBg().primaryColor();
     }
     const QBrush b = backgroundBrush();
     if (b.style() != Qt::NoBrush && b.color().isValid()) {

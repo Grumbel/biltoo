@@ -82,8 +82,8 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         }
     }
 
-    if (m_chrome.setMouseInfo(info)) {
-        emit mouseInfoChanged(m_chrome.currentMouseInfo());
+    if (m_shell.viewport().setMouseInfo(info)) {
+        emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
     }
 }
 void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
@@ -184,20 +184,20 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
     if (!m_slideshow.dwell().isMotionActive()
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
-                && ((isImageMode() && m_chrome.isImageModeLeftDragPan())
+                && ((isImageMode() && m_shell.viewport().isImageModeLeftDragPan())
                     || (isWorkspaceMode() && m_workspace.currentTool() == Tool::Pan)
                     || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
                     || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
               && event->button() == Qt::LeftButton)) {
-            m_chrome.beginPan(event->pos());
+            m_shell.viewport().beginPan(event->pos());
             setCursor(Qt::ClosedHandCursor);
             event->accept();
             return true;
         }
     }
     if (event->button() == Qt::MiddleButton && !m_slideshow.dwell().isMotionActive()) {
-        m_chrome.beginPan(event->pos());
+        m_shell.viewport().beginPan(event->pos());
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return true;

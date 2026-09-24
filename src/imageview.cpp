@@ -286,7 +286,7 @@ ImageView::ImageView(QWidget *parent)
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    setBackgroundBrush(QBrush(m_canvasBg.primaryColor()));
+    setBackgroundBrush(QBrush(m_shell.canvasBg().primaryColor()));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
     // QGraphicsView delivers moves via the viewport — both need tracking or
@@ -303,8 +303,8 @@ ImageView::ImageView(QWidget *parent)
 
     // Scrolling moves tiles under a stationary cursor — refresh gallery HUD path.
     auto refreshHover = [this]() {
-        if (isGalleryMode() && m_chrome.hasHoverViewPos()) {
-            m_gallery.updateGalleryHoverAt(m_chrome.hoverViewPos());
+        if (isGalleryMode() && m_shell.viewport().hasHoverViewPos()) {
+            m_gallery.updateGalleryHoverAt(m_shell.viewport().hoverViewPos());
         }
     };
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
@@ -317,7 +317,7 @@ ImageView::ImageView(QWidget *parent)
             ? GalleryDecode::kDecodeWindowSettleMs
             : GalleryDecode::kDecodeWindowImageMs);
         // Hand pan ticks on a separate coalesced path; skip double work here.
-        if (!m_chrome.isPanning() && !isGalleryMode()) {
+        if (!m_shell.viewport().isPanning() && !isGalleryMode()) {
             m_displayPipeline->scheduleTileLodAfterInteraction(32);
         }
     });
@@ -326,7 +326,7 @@ ImageView::ImageView(QWidget *parent)
         m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
             ? GalleryDecode::kDecodeWindowSettleMs
             : GalleryDecode::kDecodeWindowImageMs);
-        if (!m_chrome.isPanning() && !isGalleryMode()) {
+        if (!m_shell.viewport().isPanning() && !isGalleryMode()) {
             m_displayPipeline->scheduleTileLodAfterInteraction(32);
         }
     });
