@@ -84,6 +84,9 @@ QString labeledStatusSuffix(const QString &label);
 /** " · Edited" when content appearance is non-identity. */
 QString editedStatusSuffix(bool edited);
 
+/** Display name with optional " · modified" content-edit mark. */
+QString fileNameWithModifiedSuffix(const QString &displayName, bool modified);
+
 } // namespace HudModel
 
 #endif // HUDMODEL_H

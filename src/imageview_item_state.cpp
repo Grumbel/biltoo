@@ -186,13 +186,12 @@ int ImageView::sessionListIndex(const ImageItem *item) const
         return -1;
     }
     // Document order is authoritative when the item is bound.
-    if (m_sessionDoc && item->sessionId() != kInvalidSessionImageId) {
-        const int i = m_sessionDoc->indexOfId(item->sessionId());
-        if (i >= 0) {
-            return i;
-        }
-    }
-    return item->sessionIndex();
+    const bool bound = item->sessionId() != kInvalidSessionImageId;
+    const int docIdx = (bound && m_sessionDoc)
+        ? m_sessionDoc->indexOfId(item->sessionId())
+        : -1;
+    return SessionAppearance::preferSessionListIndex(
+        docIdx, item->sessionIndex(), bound);
 }
 
 

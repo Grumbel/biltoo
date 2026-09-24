@@ -241,4 +241,16 @@ QString editedStatusSuffix(bool edited)
     return tr(" · Edited");
 }
 
+
+QString fileNameWithModifiedSuffix(const QString &displayName, bool modified)
+{
+    if (displayName.isEmpty()) {
+        return {};
+    }
+    if (modified) {
+        return displayName + tr(" · modified");
+    }
+    return displayName;
+}
+
 } // namespace HudModel

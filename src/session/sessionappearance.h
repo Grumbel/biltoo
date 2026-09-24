@@ -373,6 +373,19 @@ enum class CropRestoreSource {
                                                   bool liveAppliedHasCrop,
                                                   bool hasPathState);
 
+/**
+ * Document order when bound and index known; else item cached sessionIndex.
+ */
+[[nodiscard]] inline int preferSessionListIndex(int documentIndex,
+                                                int itemCachedIndex,
+                                                bool bound)
+{
+    if (bound && documentIndex >= 0) {
+        return documentIndex;
+    }
+    return itemCachedIndex;
+}
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

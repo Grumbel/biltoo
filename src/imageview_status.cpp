@@ -110,11 +110,8 @@ QString ImageView::hudFileName() const
         item = primaryItem();
     }
     if (item) {
-        QString name = PagePath::displayName(item->path());
-        if (targetHasContentAppearance()) {
-            name += tr(" · modified");
-        }
-        return name;
+        return HudModel::fileNameWithModifiedSuffix(
+            PagePath::displayName(item->path()), targetHasContentAppearance());
     }
     if (m_image.hasClassicPath() && isImageMode()) {
         return PagePath::displayName(m_image.classicPath());

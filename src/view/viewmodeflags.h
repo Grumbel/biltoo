@@ -16,6 +16,18 @@ namespace ViewModeFlags {
 
 void applyToItem(ImageItem *item, int mode);
 
+/**
+ * Image leave: capture sticky pan/zoom before destroying the underlay so free
+ * zoom survives Gallery/Workspace round-trips. @p previousMode is ViewMode
+ * (Image=0, Gallery, Workspace).
+ */
+[[nodiscard]] inline bool shouldCaptureStickyPanOnLeave(int previousMode,
+                                                        bool hasLiveItems)
+{
+    // ImageView::ViewMode::Image == 0
+    return previousMode == 0 && hasLiveItems;
+}
+
 } // namespace ViewModeFlags
 
 #endif // VIEWMODEFLAGS_H

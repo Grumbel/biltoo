@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2569.1-own-crop-restore-gallery-enter**.
-Latest tip: **biltoo-2569** (+ thumtoo-338). Own crop restore source + gallery enter layout.
+Latest agent handoff: **TODO.md → biltoo-2570.1-own-mode-leave-hud-index-pure**.
+Latest tip: **biltoo-2570** (+ thumtoo-338). Own mode-leave sticky + HUD index pure.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

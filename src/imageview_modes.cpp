@@ -155,7 +155,8 @@ void ImageView::setViewMode(ViewMode mode)
     // Workspace/Gallery.
     // Image leave: capture view scale/pan *before* destroying the underlay so
     // free zoom (and sticky pan) survive Gallery/Workspace round-trips.
-    if (previous == ViewMode::Image && !m_items.isEmpty()) {
+    if (ViewModeFlags::shouldCaptureStickyPanOnLeave(
+            static_cast<int>(previous), !m_items.isEmpty())) {
         if (ImageItem *cur = targetItem()) {
             captureStickyPanAnchor(cur);
         } else {
