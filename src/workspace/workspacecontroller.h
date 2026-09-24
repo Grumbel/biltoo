@@ -119,6 +119,9 @@ public:
     /** Refresh live tile SessionImageId / list-index from session document. */
     void rebindSession(const QStringList &sessionFiles,
                        const QVector<SessionImageId> &sessionIds);
+    /** Post path membership: reorder, rebind, gallery pack/decode pulse. */
+    void finishPathsSet(bool haveIds, const QStringList &paths,
+                        const QVector<SessionImageId> &sessionIds);
     int pathOccurrenceCount(const QString &path) const;
     bool pathOnLiveCanvas(const QString &path) const;
     void selectAllCanvasItems();

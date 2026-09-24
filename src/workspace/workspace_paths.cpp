@@ -18,6 +18,7 @@
 #include <QWidget>
 #include <QStringList>
 #include <QVector>
+#include "util/ttfp_trace.h"
 
 QList<ImageItem *> WorkspaceController::collectDoomedItems(
     const QStringList &paths, const QVector<SessionImageId> &sessionIds) const
@@ -367,4 +368,69 @@ void WorkspaceController::selectAllCanvasItems()
     }
     emit m_view->canvasSelectionChanged();
     emit m_view->statusChanged();
+}
+
+void WorkspaceController::finishPathsSet(bool haveIds, const QStringList &paths,
+                                         const QVector<SessionImageId> &sessionIds)
+{
+    TtfpTrace::mark("finishSetWorkspacePaths");
+    // Keep canvas order aligned with session/sort order (not async load order).
+    const PackOrderView pack = m_view->currentPackOrder();
+    reorderItemsByPaths(pack.paths(), pack.ids());
+
+    if (haveIds) {
+        rebindSession(paths, sessionIds);
+    }
+
+    // Workspace: seed a selection if empty. Gallery must not steal focus to
+    // "last item" on layout switch / path refresh (preserves multi-select).
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (m_view->isWorkspaceMode() && scene && scene->selectedItems().isEmpty()
+        && !m_view->liveItems().isEmpty()) {
+        m_view->liveItems().last()->setSelected(true);
+    }
+
+    GalleryController &gallery = m_view->hostGallery();
+    if (m_view->isGalleryMode() && m_view->hostGallerySizeResolve().active()) {
+        // Pack deferred until sizes settle. Keep items hidden so provisional
+        // geometry is never painted (cold-open layout glitch).
+        if (m_view->liveItems().isEmpty() && !paths.isEmpty()
+            && !m_view->hostGalleryDecodeBook().isDeferPopulate()) {
+            gallery.ensurePlaceholders();
+        }
+        for (ImageItem *item : m_view->liveItems()) {
+            if (item) {
+                item->setVisible(false);
+            }
+        }
+        // No decode window until finishGallerySizeResolve packs + shows items.
+    } else if (m_view->isGalleryMode() && m_view->liveItems().isEmpty() && !paths.isEmpty()) {
+        // Non-fill path should have created items; recover if not.
+        // Chunked ensure packs once when the last pulse finishes.
+        if (!gallery.ensurePlaceholders() && !m_view->liveItems().isEmpty()) {
+            gallery.applyLayout(GalleryPackReason::EnterGallery);
+            gallery.updateDecodeWindow();
+        }
+    } else if (m_view->isGalleryMode() && !m_view->liveItems().isEmpty()) {
+        gallery.applyLayout(GalleryPackReason::EnterGallery);
+        TtfpTrace::mark("after_applyLayout");
+        // Synchronous pass1/pass2 so warm ImageCache installs before first paint.
+        // (Deferred-only left cells blank until an explicit relayout.)
+        gallery.updateDecodeWindow();
+        TtfpTrace::mark("after_updateGalleryDecodeWindow");
+        // Viewport often still 0×0 / dock settling; soft jobs land a few ms later.
+        // Pulse decode window again so ladderReady installs are not the only path.
+        ImageView *view = m_view;
+        for (int delay : {0, 50, 200}) {
+            QTimer::singleShot(delay, view, [view]() {
+                if (view->isGalleryMode() && !view->liveItems().isEmpty()) {
+                    view->hostGallery().updateDecodeWindow();
+                }
+            });
+        }
+    }
+
+    m_view->hostValidateUniqueLiveSessionIds("setWorkspacePaths");
+    emit m_view->statusChanged();
+    emit m_view->workspacePathsChanged();
 }

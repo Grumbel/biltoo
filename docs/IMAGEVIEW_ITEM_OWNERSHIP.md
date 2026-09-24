@@ -497,3 +497,7 @@ Product shell (minimal):
     stash/live lists, scene remove, undo clear, scene rect); ImageView thin
     host router. Host exposes hostRememberItemState / hostPreserveUndoOnDestroy.
 
+51. **biltoo-2509:** WorkspaceController owns finishPathsSet (reorder, rebind,
+    workspace seed selection, gallery pack/decode pulse); ImageView thin
+    private router used by setWorkspacePaths.
+
