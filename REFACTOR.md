@@ -440,10 +440,18 @@ Phase 5 controller extraction (Gallery / Workspace / Image / crop collaborators)
 is complete for the current design. Remaining `imageview_*.cpp` slices are an
 intentional façade, not unfinished layout.
 
-**0.3.0 (planned):** further ownership transfer — paint/overlay, input router,
-session bind/remove + size book, rematerialize/bake host — same Host +
-collaborator pattern. Tracked in [TODO.md](TODO.md) § Backlog (0.3.0). Do not
-re-run domain subdirectory moves for these files without ownership transfer.
+**Pixel / layout / content-bake ownership (IMAGEVIEW_ITEM_OWNERSHIP.md):** complete
+through biltoo-2446. Sole `ImageItem` pixel friend is `DisplayPipelineController`;
+ImageView bake/rematerialize forward TUs removed; mode controllers use
+`hostDisplayPipeline()`. Phase 6 Tier 0 exit criteria met (~693-line header,
+~217 public methods). Characterization requires `restoreStickyPanAnchor` public
+(paired with capture).
+
+**0.3.0 (planned):** Dual ImageView (two focused surfaces sharing pipeline +
+ItemWorld) — see IMAGEVIEW_ITEM_OWNERSHIP.md § Dual ImageView prerequisites.
+Optional further Host extraction (paint/overlay, input router) same Host +
+collaborator pattern. Do not re-run domain subdirectory moves without ownership
+transfer.
 
 Optional anytime: split `imageitem_interaction.cpp` into focused TUs if
 interaction work resumes.

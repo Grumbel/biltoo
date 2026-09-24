@@ -2,20 +2,25 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2446.1-restore-sticky-pan-public** (base `d80d461`).
+**Tip: biltoo-2447.1-ownership-closed-refactor-pointer** (base `d80d461`).
 
-### Fix
-- **`restoreStickyPanAnchor` public host again** (paired with `captureStickyPanAnchor`)
-- Characterization tests call both; privatize in 2439 broke the test build
+### Ownership refactor status
+- **Phase 5 pixel/layout/bake ownership: CLOSED**
+- **Phase 6 Tier 0 exit: MET** (`imageview.h` ~693 lines, ~217 public)
+- Fix 2446: `restoreStickyPanAnchor` public (characterization)
+- No privatized methods referenced from `tests/` (scan clean)
 
-### Phase 5 ownership — still complete
-- Sole friend: DisplayPipelineController
-- No ImageView pixel forward TUs
+### Verification (static)
+- Friend: only DisplayPipelineController
+- Pixel mutators only in displaypipelinecontroller.cpp
+- No imageview_bake.cpp / imageview_rematerialize.cpp
+- Characterization view.* calls: no private overlap
 
-### Next
-- Dual ImageView (0.3) / optional Tier 0 polish
+### Next (product)
+- Dual ImageView (0.3) — shared pipeline + ItemWorld
+- Optional: further Host extraction (paint/input) per REFACTOR.md
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2446.1-restore-sticky-pan-public-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2447.1-ownership-closed-refactor-pointer-d80d461.bundle HEAD
 ```
