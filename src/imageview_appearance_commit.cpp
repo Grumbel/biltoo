@@ -223,8 +223,7 @@ bool ImageView::targetHasContentAppearance() const
         const SessionImageId sid = resolveContentEditSessionId(item);
         // Bound: ItemWorld sparse tables are authority (Crop / ContentBake / Color).
         if (sid != kInvalidSessionImageId) {
-            if (m_itemWorld.hasCrop(sid) || m_itemWorld.hasContentBake(sid)
-                || m_itemWorld.hasColor(sid)) {
+            if (m_itemWorld.hasContentEditComponents(sid)) {
                 return true;
             }
             if (m_itemWorld.hasDurableAppearance(sid)
@@ -313,7 +312,7 @@ int ImageView::resetContentAppearanceForTargets()
         m_displayPipeline->reinstallModePixelsAfterIdentityReset(item, sid);
 
         if (isImageMode() && m_image.framing().isFitMode()) {
-            fitItem(item, currentFitAspectMode());
+            m_image.fitItem(item, currentFitAspectMode());
         }
 
         // Filmstrip: emit current *display* pixels (soft in Gallery, full in Image).
@@ -327,9 +326,7 @@ int ImageView::resetContentAppearanceForTargets()
         ++n;
     }
     if (n > 0 && isGalleryMode()) {
-        m_gallery.applyLayout(GalleryPackReason::ContentChange);
-        // Soft state was reset; kick the ladder for visible tiles.
-        m_gallery.updateDecodeWindow();
+        m_gallery.onContentAppearanceReset();
     }
     if (n > 0) {
         emit statusChanged();

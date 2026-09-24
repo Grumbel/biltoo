@@ -136,6 +136,8 @@ public:
     void onViewportLeave();
     /** Session content appearance changed: debounce pack for aspect/crop. */
     void onContentAppearancePropagated();
+    /** After Reset Content Appearance: immediate pack + soft ladder kick. */
+    void onContentAppearanceReset();
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();

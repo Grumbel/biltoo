@@ -1235,6 +1235,13 @@ void GalleryController::onContentAppearancePropagated()
     requestDebouncedPack(GalleryPackReason::ContentChange);
 }
 
+void GalleryController::onContentAppearanceReset()
+{
+    applyLayout(GalleryPackReason::ContentChange);
+    // Soft state was reset; kick the ladder for visible tiles.
+    updateDecodeWindow();
+}
+
 
 // --- Gallery decode window body (Tier 5 residual) ---
 

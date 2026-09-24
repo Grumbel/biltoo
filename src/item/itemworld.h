@@ -62,6 +62,18 @@ public:
     }
 
     /**
+     * True when content-edit sparse tables have a row (crop / bake / colour).
+     * Excludes attention and free-placement pose.
+     */
+    bool hasContentEditComponents(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return false;
+        }
+        return hasCrop(id) || hasContentBake(id) || hasColor(id);
+    }
+
+    /**
      * True when any persistent sparse table has a row for @p id.
      */
     bool hasDurableAppearance(SessionImageId id) const
@@ -69,7 +81,7 @@ public:
         if (id == kInvalidSessionImageId) {
             return false;
         }
-        return hasCrop(id) || hasContentBake(id) || hasColor(id)
+        return hasContentEditComponents(id)
             || hasAttention(id) || hasPlacement(id);
     }
 
