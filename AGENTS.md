@@ -16,7 +16,7 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2433.1-intrinsic-lqip-pipeline**.
+Latest agent handoff: **TODO.md → biltoo-2433.2-intrinsic-host-only**.
 Latest tip: **biltoo-2433** (+ thumtoo-338). Next: Phase 6 / Dual ImageView (0.3).
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
