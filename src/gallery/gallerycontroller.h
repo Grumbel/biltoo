@@ -128,6 +128,8 @@ public:
     void scheduleStatusRefresh(int delayMs = 100);
     /** Debounced viewport LQIP/tile decode window (scroll). */
     void scheduleDecodeWindowRefresh(int delayMs = 48);
+    /** Viewport resized in Gallery: re-arm decode window (no pack). */
+    void onViewResized();
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();

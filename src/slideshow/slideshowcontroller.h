@@ -93,6 +93,8 @@ public:
     void setSlideshowMotionPaused(bool paused);
     void setSlideshowPausedHud(bool on);
     void cancelSlideshowMotion();
+    /** Viewport resized while dwell motion is active. */
+    void onViewResizedDuringDwell();
     void restoreImageFramingAfterSlideshow();
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();

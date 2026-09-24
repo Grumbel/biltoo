@@ -2,15 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2528.1-own-wheel-zoom** (base `7d823d8`).
+**Tip: biltoo-2529.1-own-view-resized** (base `7d823d8`).
 
 ### Ownership transfer
-- **ImageController::wheelZoomAboutCursor** — wheel zoom about cursor (Image / free-form
-  Workspace after Gallery wheel tries). ImageView::wheelEvent is dispatch only.
-
-### Prior in this stack (2522–2527)
-- Transform reset; attention session; gallery open/focus; text link+hover; Ctrl+A
-- zoomIn/Out; colour grade; angleAt; ensureVisible; session-nav enable
+- **ImageController::onViewResized** — Image-mode quality climb + sticky fit
+- **GalleryController::onViewResized** — decode-window re-arm (no pack)
+- **SlideshowController::onViewResizedDuringDwell** — atlas/zoom-blur invalidate
+- ImageView::resizeEvent is mode dispatch only (Workspace still uses pipeline climb)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -24,10 +22,10 @@ appearance load/apply / paint / status composition / pan shell
 ### Next thinning candidates
 - appearance apply/commit residual
 - status text composition (HudModel already pure)
-- pan shell (ViewportChrome bag; multi-mode)
+- pan shell (ViewportChrome; multi-mode)
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2528.1-own-wheel-zoom-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2529.1-own-view-resized-7d823d8.bundle HEAD
 ```

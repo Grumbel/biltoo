@@ -38,6 +38,8 @@ public:
 
     /** Enter Image mode from any previous mode (stash already handled by onLeave). */
     void enter();
+    /** Viewport resized in Image mode: quality climb + sticky fit. */
+    void onViewResized();
 
     QString classicPath() const { return m_classicPath; }
     bool hasClassicPath() const { return !m_classicPath.isEmpty(); }

@@ -502,6 +502,17 @@ void SlideshowController::cancelSlideshowMotion()
     }
 }
 
+void SlideshowController::onViewResizedDuringDwell()
+{
+    // Dwell cover owns framing — never refit the underlay over it.
+    // Invalidate atlas viewport keys so the next tick rebuilds at new size.
+    dwell().invalidateAtlasViewport();
+    zoomBlur().clearUnderlays();
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
 
 void SlideshowController::restoreImageFramingAfterSlideshow()
 {

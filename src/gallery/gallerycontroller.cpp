@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "gallery/gallerycontroller.h"
+#include <QWidget>
+#include "gallery/gallerydecodesm.h"
 #include <memory>
 #include <QFileInfo>
 #include "host/thumtoocache.h"
@@ -1178,6 +1180,18 @@ void GalleryController::scheduleDecodeWindowRefresh(int delayMs)
     // Restart with the requested delay (climb uses short; scroll may use longer).
     m_decodeScrollTimer->setInterval(ViewTransform::nonNegMs(delayMs));
     m_decodeScrollTimer->start();
+}
+
+void GalleryController::onViewResized()
+{
+    // Never repack from resize (session delete looked like auto-layout).
+    // Still refresh the decode window: open often packs at 0×0, soft arrives
+    // into ImageCache, and without this pulse cells stay blank until F5/relayout.
+    if (QWidget *vp = m_view->viewport()) {
+        if (vp->width() > 1 && vp->height() > 1) {
+            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
+        }
+    }
 }
 
 

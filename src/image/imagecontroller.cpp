@@ -3,6 +3,7 @@
 
 #include "util/biltoo_thread.h"
 #include "image/imagecontroller.h"
+#include "display/displaypipelinecontroller.h"
 #include "image/edgenavpolicy.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"
@@ -339,4 +340,12 @@ void ImageController::clearSceneKeepingStashes()
         delete gi;
     }
     scene->blockSignals(false);
+}
+
+void ImageController::onViewResized()
+{
+    m_view->hostDisplayPipeline().maybeClimbImageModePixelsForView();
+    if (m_framing.isFitMode() && m_view->liveItems().size() == 1) {
+        fitItem(m_view->liveItems().first(), m_view->currentFitAspectMode());
+    }
 }

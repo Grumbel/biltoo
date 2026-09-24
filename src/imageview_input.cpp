@@ -99,33 +99,23 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (hostLayoutApply().active()) {
         return;
     }
-    if (isImageMode() && !m_slideshow.hud().isProgressActive()) {
-        m_displayPipeline->maybeClimbImageModePixelsForView();
-    } else if (isWorkspaceMode()) {
-        m_displayPipeline->ensureWorkspaceQualityClimb();
-    }
-    // Gallery: never repack from resize (session delete looked like auto-layout).
-    // Still refresh the decode window: open often packs at 0×0, soft arrives
-    // into ImageCache, and without this pulse cells stay blank until F5/relayout.
     if (isGalleryMode()) {
-        if (viewport() && viewport()->width() > 1 && viewport()->height() > 1) {
-            m_gallery.scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
-        }
+        m_gallery.onViewResized();
         return;
     }
-    // Dwell cover owns framing — never refit the underlay over it.
-    // Invalidate atlas viewport keys so the next tick rebuilds at new size.
+    if (isWorkspaceMode()) {
+        m_displayPipeline->ensureWorkspaceQualityClimb();
+        return;
+    }
+    // Image mode
+    if (m_slideshow.hud().isProgressActive()) {
+        return;
+    }
     if (m_slideshow.dwell().isMotionActive()) {
-        m_slideshow.dwell().invalidateAtlasViewport();
-        m_slideshow.zoomBlur().clearUnderlays();
-        if (viewport()) {
-            viewport()->update();
-        }
+        m_slideshow.onViewResizedDuringDwell();
         return;
     }
-    if (m_image.framing().isFitMode() && m_items.size() == 1) {
-        fitItem(m_items.first(), currentFitAspectMode());
-    }
+    m_image.onViewResized();
 }
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 {
