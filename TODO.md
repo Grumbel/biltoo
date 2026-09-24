@@ -2,18 +2,22 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2463.1-fix-dual-timer-null-warnings** (base `7d823d8`).
+**Tip: biltoo-2464.1-own-workspace-group-transform** (base `7d823d8`).
 
-### Fix
-- Quiet `-Wnull-dereference` in DualImageShell open retry lambda (QPointer
-  → raw pointer after null check).
+### Ownership transfer (real)
+- **Group scale/rotate** session + behaviour moved from ImageView façade to
+  `WorkspaceController` (`workspace_group.cpp`).
+- `GroupTransformSession m_groupXform` lives on the controller.
+- ImageView keeps input routing only (`tryMouseMove/ReleaseGroup*`).
 
-### Prior dual tips still in stack
-- 2462: Ctrl+Shift+2, software secondary viewport, soft seed
-- 2461: per-surface pipeline
-- 2460: shared size book
+### Dual (prior stack)
+- Dual compare works (per-surface pipeline, software secondary viewport).
+
+### Next ownership cuts
+- Page guide (ImageView → WorkspaceController) same pattern
+- Optional: drop residual try* hop when input router is extracted
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2463.1-fix-dual-timer-null-warnings-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2464.1-own-workspace-group-transform-7d823d8.bundle HEAD
 ```

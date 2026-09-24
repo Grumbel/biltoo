@@ -433,8 +433,8 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
                 return;
             }
         } else if (selected.size() > 1) {
-            const int gh = groupHandleAt(event->pos(), selected);
-            if (gh >= 0 && beginGroupScale(gh, selected)) {
+            const int gh = m_workspace.groupHandleAt(event->pos(), selected);
+            if (gh >= 0 && m_workspace.beginGroupScale(gh, selected)) {
                 event->accept();
                 return;
             }

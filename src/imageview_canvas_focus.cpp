@@ -210,8 +210,8 @@ void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
         m_gallery.setSelectionAnchor(nullptr);
     }
     // Group scale holds raw pointers — drop before delete or BSP paint UAF.
-    if (m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag() || m_groupXform.hasDragItems()) {
-        m_groupXform.endDrag();
+    if (m_workspace.groupSession().isScaleDrag() || m_workspace.groupSession().isRotateDrag() || m_workspace.groupSession().hasDragItems()) {
+        m_workspace.groupSession().endDrag();
     }
     // Also drop from gallery stash so discardStashedGallery cannot double-free.
     m_gallery.stashedItems().removeAll(item);

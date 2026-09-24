@@ -104,12 +104,6 @@
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;
-    void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
-    int groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const;
-    bool beginGroupScale(int handle, const QList<ImageItem *> &items);
-    void updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    void endGroupScale();
-    void updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
 
@@ -216,7 +210,6 @@
     ItemInteractSession m_itemInteract;
 
     /** Multi-select group scale/rotate gesture (Workspace). */
-    GroupTransformSession m_groupXform;
 
     LayoutApplyGuard m_layoutApply;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */

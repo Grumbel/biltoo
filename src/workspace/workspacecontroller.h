@@ -13,17 +13,20 @@
 #include <QPointF>
 #include <QString>
 #include <QTransform>
+#include "workspace/grouptransformsession.h"
 
 class ImageView;
 class ImageItem;
 class QMouseEvent;
 class QKeyEvent;
+class QPainter;
 
 /**
  * Workspace-mode collaborator for ImageView.
  *
  * Owns free-form placement snapshot state, the durable Workspace snapshot,
- * and the live tile stash used while Image mode is active.
+ * the live tile stash used while Image mode is active, and multi-select
+ * group scale/rotate (GroupTransformSession + chrome).
  * ImageView remains the QGraphicsView shell and public API surface.
  */
 class WorkspaceController
@@ -63,6 +66,19 @@ public:
     void reloadFromDisk();
     void hardReloadFromDisk();
 
+
+    // Multi-select group scale/rotate (owns GroupTransformSession).
+    GroupTransformSession &groupSession() { return m_groupXform; }
+    const GroupTransformSession &groupSession() const { return m_groupXform; }
+    void clearGroupTransform() { m_groupXform.clear(); }
+
+    int groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const;
+    bool beginGroupScale(int handle, const QList<ImageItem *> &items);
+    void updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    void endGroupScale();
+    void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
+
 private:
 
     // Free-form restore helper (no external callers)
@@ -78,6 +94,8 @@ private:
     QTransform m_savedViewTransform;
     QPointF m_savedViewCenter;
     bool m_hasSavedView = false;
+
+    GroupTransformSession m_groupXform;
 
     /** Free-form pose while Gallery layout temporarily packs tiles. */
     QHash<SessionImageId, ItemComponents::Placement> m_freeFormById;

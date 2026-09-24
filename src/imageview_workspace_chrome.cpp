@@ -34,9 +34,9 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
     }
     if (selected.size() > 1) {
         // Multi-select: group frame only (no per-item handles).
-        const int gh = groupHandleAt(event->pos(), selected);
-        if (gh >= 0 && beginGroupScale(gh, selected)) {
-            m_groupXform.setPressScenePos(mapToScene(event->pos()));
+        const int gh = m_workspace.groupHandleAt(event->pos(), selected);
+        if (gh >= 0 && m_workspace.beginGroupScale(gh, selected)) {
+            m_workspace.groupSession().setPressScenePos(mapToScene(event->pos()));
             event->accept();
             return true;
         }
@@ -128,7 +128,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.isHandleDragging()
-        && !m_groupXform.isScaleDrag() && !m_groupXform.isRotateDrag() && !m_chrome.isPanning()) {
+        && !m_workspace.groupSession().isScaleDrag() && !m_workspace.groupSession().isRotateDrag() && !m_chrome.isPanning()) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -146,8 +146,8 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                     item->setHoverHandle(ImageItem::Handle::None);
                 }
             }
-            const int gh = groupHandleAt(event->pos(), candidates);
-            const bool groupHoverChanged = m_groupXform.setHoverHandle(gh);
+            const int gh = m_workspace.groupHandleAt(event->pos(), candidates);
+            const bool groupHoverChanged = m_workspace.groupSession().setHoverHandle(gh);
             if (groupHoverChanged) {
                 viewport()->update();
             }
@@ -186,8 +186,8 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
         } else {
-            if (m_groupXform.hasHoverHandle()) {
-                m_groupXform.clearHover();
+            if (m_workspace.groupSession().hasHoverHandle()) {
+                m_workspace.groupSession().clearHover();
                 viewport()->update();
             }
             ImageItem *hoverOwner = nullptr;

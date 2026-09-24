@@ -171,7 +171,7 @@ void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
             for (ImageItem *item : selected) {
                 item->paintSelectionFrame(&painter);
             }
-            paintGroupSelectionChrome(&painter, selected);
+            m_workspace.paintGroupSelectionChrome(&painter, selected);
         }
         if (m_pageGuide.isInteractive()) {
             paintPageGuideHandles(&painter);

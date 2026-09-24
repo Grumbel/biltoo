@@ -132,6 +132,8 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
     `rotateContentByQuarterTurns` public (chrome + framing after pipeline bake).
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
+7. **biltoo-2464:** Workspace multi-select group scale/rotate owned by
+   `WorkspaceController` (`workspace_group.cpp`); ImageView is input router only.
 
 
 ## Phase 5 completion (biltoo-2443+)

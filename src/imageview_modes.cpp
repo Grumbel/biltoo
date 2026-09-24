@@ -178,7 +178,7 @@ void ImageView::applyToolDragMode()
 void ImageView::clearInteractionState()
 {
     m_itemInteract.clear();
-    m_groupXform.clear();
+    m_workspace.clearGroupTransform();
     m_gallery.clearChrome();
 }
 
