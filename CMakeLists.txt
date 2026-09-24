@@ -276,7 +276,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_text.cpp
   src/imageview_pageguide.cpp
   src/imageview_export.cpp
-  src/imageview_group.cpp
   src/imageview.h
   src/imageview_types.h
   src/session/sessionappearance.cpp
