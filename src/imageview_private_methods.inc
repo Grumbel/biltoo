@@ -154,7 +154,6 @@
     void paintEvent(QPaintEvent *event) override;
     void paintViewportOverlays(QPainter &painter);
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
-    void paintTextRubberBandOverlay(QPainter &painter);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */
     /**
      * Map a page text/link region into the primary item's current image-pixel

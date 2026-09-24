@@ -6,13 +6,7 @@
 #include "imageview.h"
 #include "text/textsearchpolicy.h"
 
-#include <QPainter>
 #include <QMouseEvent>
-
-void ImageView::paintTextRubberBandOverlay(QPainter &painter)
-{
-    m_textCtrl.paintRubberBandOverlay(painter);
-}
 
 void ImageView::setShowTextRegions(bool on)
 {

@@ -34,7 +34,8 @@
 
 void ImageView::paintViewportOverlays(QPainter &painter)
 {
-    paintTextRubberBandOverlay(painter);
+    // Text rubber-band: TextLayerController owns paint.
+    m_textCtrl.paintRubberBandOverlay(painter);
 
     // Viewport-device-pixel overlays (handles, HUD, slideshow cover). Called from
     // drawForeground with an identity transform so this works on both the
