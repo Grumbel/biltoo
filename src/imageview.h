@@ -624,6 +624,8 @@ public:
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
     void setTargetColorAdjustments(const ColorAdjustments &adj);
+    /** Flush deferred durable grade commit (timer + ImageController bag). */
+    void flushColorAdjustCommit();
 
 
     /**

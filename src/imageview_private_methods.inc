@@ -130,9 +130,7 @@
     void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
 
     /** After slider idle: durable save, filmstrip, full rematerialize if needed. */
-    void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
 
-    void flushColorAdjustCommit();
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
     bool sessionIdMatchesPath(SessionImageId id, const QString &path) const;
@@ -162,6 +160,7 @@
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void paintViewportOverlays(QPainter &painter);
+    void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     void paintTextRubberBandOverlay(QPainter &painter);
     void paintWorkspaceViewportChrome(QPainter &painter);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */

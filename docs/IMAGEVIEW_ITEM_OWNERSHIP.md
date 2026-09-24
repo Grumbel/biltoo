@@ -381,3 +381,6 @@ Product shell (minimal):
 22. **biltoo-2480:** Gallery layout-debounce QTimer owned by GalleryController
     (parented to ImageView shell); completes 2473 residual.
 
+23. **biltoo-2481:** Colour-adjust commit QTimer owned by ImageController
+    (parented to ImageView); completes 2479 residual.
+

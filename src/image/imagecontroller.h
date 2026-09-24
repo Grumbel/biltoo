@@ -16,6 +16,7 @@ class ImageItem;
 class QKeyEvent;
 class QMouseEvent;
 class QPainter;
+class QTimer;
 class QPoint;
 
 /**
@@ -82,17 +83,23 @@ public:
     SessionNavFlags &sessionNav() { return m_sessionNav; }
     const SessionNavFlags &sessionNav() const { return m_sessionNav; }
 
-    /** Pending durable colour-grade commit target (timer stays on ImageView). */
+    /** Pending durable colour-grade commit target + debounce timer. */
     ColorAdjustCommit &colorAdjustCommit() { return m_colorAdjustCommit; }
     const ColorAdjustCommit &colorAdjustCommit() const { return m_colorAdjustCommit; }
+    /** Arm debounce; timeout calls ImageView::flushColorAdjustCommit. */
+    void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
+    void stopColorAdjustCommitTimer();
 
 private:
+    void ensureColorAdjustCommitTimer();
+
     ImageView *m_view = nullptr;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
     ZoomRegionGesture m_zoomRegion;
     SessionNavFlags m_sessionNav;
     ColorAdjustCommit m_colorAdjustCommit;
+    QTimer *m_colorAdjustCommitTimer = nullptr;
 };
 
 #endif // IMAGECONTROLLER_H

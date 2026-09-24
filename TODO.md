@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2480.2-fix-text-recompute-decl** (base `7d823d8`).
+**Tip: biltoo-2481.1-own-color-adjust-commit-timer** (base `7d823d8`).
 
-### Fix
-- Drop ImageView::recomputeTextSearchMatches thin router (declaration was
-  removed with TextLayerController ownership; method lives only on controller)
+### Ownership transfer
+- **Colour-adjust commit QTimer** on ImageController (parented to ImageView)
+- `scheduleColorAdjustCommit` arms controller timer; flush stays on ImageView
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2480.2-fix-text-recompute-decl-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2481.1-own-color-adjust-commit-timer-7d823d8.bundle HEAD
 ```

@@ -267,13 +267,7 @@ ImageView::ImageView(QWidget *parent)
     m_hudFlashTimer = new QTimer(this);
     m_hudFlashTimer->setSingleShot(true);
     // Layout debounce QTimer: owned by GalleryController (parented to this).
-    // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
-    m_colorAdjustCommitTimer = new QTimer(this);
-    m_colorAdjustCommitTimer->setSingleShot(true);
-    m_colorAdjustCommitTimer->setInterval(ColorAdjustCommit::kIntervalMs);
-    connect(m_colorAdjustCommitTimer, &QTimer::timeout, this, [this]() {
-        flushColorAdjustCommit();
-    });
+    // Colour-adjust commit QTimer: owned by ImageController (parented to this).
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlash.clear();
         viewport()->update();

@@ -58,12 +58,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
 
 void ImageView::scheduleColorAdjustCommit(SessionImageId sid, const QString &path)
 {
-    m_image.colorAdjustCommit().schedule(sid, path);
-    if (m_colorAdjustCommitTimer) {
-        m_colorAdjustCommitTimer->start();
-    } else {
-        flushColorAdjustCommit();
-    }
+    m_image.scheduleColorAdjustCommit(sid, path);
 }
 
 
