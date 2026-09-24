@@ -144,6 +144,8 @@ public:
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
     void clearInteractionState();
     void clearLiveCanvas();
+    void clearWorkspace();
+    bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
 
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */

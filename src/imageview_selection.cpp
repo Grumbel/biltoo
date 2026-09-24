@@ -47,41 +47,7 @@ bool ImageView::hasSingleCropTarget() const
 
 bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 {
-    // Uniqueness is per list. The same SessionImageId on a *live* Image-mode
-    // item and a *stashed* Gallery/Workspace tile is intentional (open-from-
-    // Gallery keeps the packed tile in the stash while Image edits that id).
-    bool ok = true;
-    auto checkList = [&](const QList<ImageItem *> &list, const char *where) {
-        // Store paths (not item pointers) so the diagnostic never dereferences
-        // a hash miss under -Wnull-dereference.
-        QHash<SessionImageId, QString> seenPath;
-        for (const ImageItem *item : list) {
-            if (!item) {
-                continue;
-            }
-            const SessionImageId sid = item->sessionId();
-            if (sid == kInvalidSessionImageId) {
-                continue;
-            }
-            const auto it = seenPath.constFind(sid);
-            if (it != seenPath.cend()) {
-                const QString pathB = item->path();
-                qCritical("ImageView: duplicate SessionImageId %lld within %s (%s) path=%s vs %s",
-                          static_cast<long long>(sid),
-                          where,
-                          context ? context : "validate",
-                          qPrintable(it.value()),
-                          qPrintable(pathB));
-                ok = false;
-            } else {
-                seenPath.insert(sid, item->path());
-            }
-        }
-    };
-    checkList(m_items, "live");
-    checkList(m_workspace.stashedItems(), "workspace-stash");
-    checkList(m_gallery.stashedItems(), "gallery-stash");
-    return ok;
+    return m_workspace.validateUniqueLiveSessionIds(context);
 }
 
 

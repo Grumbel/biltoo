@@ -510,3 +510,6 @@ Product shell (minimal):
     ImageView thin routers. clearWorkspace remains shell orchestration on
     ImageView.
 
+54. **biltoo-2512:** WorkspaceController owns clearWorkspace (full session wipe)
+    and validateUniqueLiveSessionIds; ImageView thin routers.
+

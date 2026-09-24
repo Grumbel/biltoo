@@ -183,41 +183,9 @@ void ImageView::clearLiveCanvas()
 
 void ImageView::clearWorkspace()
 {
-    // Full session/canvas wipe including mode stashes and the durable
-    // Workspace snapshot so a subsequent enter() does not resurrect the
-    // previous arrangement (project load, session replace).
-    clearLiveCanvas();
-    m_workspace.discardStash();
-    m_gallery.discardStash();
-    m_workspace.savedItems().clear();
-    m_displayPipeline->loadGate().clearPending();
-    m_session.bindBook().clear(); // also clears pendingAppearance
-    m_displayPipeline->galleryDecodeResetAll();
-    m_size.book().clear();
-    hostGalleryDecodeBook().setDeferPopulate(false);
-    hostGallerySizeResolve().cancel();
-    ImageCache::clear();
-    m_tileNeighborPrefetch.clear();
-    m_displayPipeline->dropAllTileLodSessions();
-    tilelod::TileLodRegistry::instance().invalidateAll();
-    ThumtooCache::clearSessionReplaceMemos();
-    pathOrderClear();
-    // Path-keyed placement is legacy for unbound tiles only; drop it so a
-    // project load cannot inherit stale poses from a previous session.
-    m_itemWorld.pathBook().clear();
-    // SessionDocument::clear only wipes the seed book; sparse ItemWorld tables
-    // must be cleared here so hasDurableAppearance cannot see stale ids.
-    m_itemWorld.clearAppearance();
-    m_image.clearClassicPath();
-    // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
-    // seed the empty Workspace after this wipe (first-path unbound tile).
-    m_displayPipeline->loadGate().bumpGeneration();
-    if (m_scene) {
-        m_scene->blockSignals(true);
-        m_scene->clear();
-        m_scene->blockSignals(false);
-    }
+    m_workspace.clearWorkspace();
 }
+
 
 void ImageView::prepareImageModeCanvas()
 {
