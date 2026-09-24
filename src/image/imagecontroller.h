@@ -100,6 +100,17 @@ public:
      * live applied residual. ImageView setViewMode calls this via thin router.
      */
     void flushAppliedContentToItemWorld();
+    /**
+     * Bind SessionImageId on a live tile: scrub path conflicts across live/stash,
+     * refresh list-index cache, seed live color lag. ImageView host override routes here.
+     */
+    void setItemSessionId(ImageItem *item, SessionImageId id);
+    /**
+     * Freeze live appearance into ItemWorld + path XDG; emit filmstrip signals.
+     * ImageView persistSessionAppearanceSlot is a thin router.
+     */
+    void persistSessionAppearanceSlot(ImageItem *item);
+
 
 
 

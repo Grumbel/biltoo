@@ -154,55 +154,9 @@ ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
 
 void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
 {
-    if (!item) {
-        return;
-    }
-    // IDENTITY: one SessionImageId maps to one path. If a live or stashed tile
-    // already holds this id on a different path, unbind it (peer-sync was
-    // seeing sid=2 on both 001.jpg and 002.jpg).
-    if (id != kInvalidSessionImageId && !item->path().isEmpty()) {
-        auto scrub = [&](const QList<ImageItem *> &list) {
-            for (ImageItem *other : list) {
-                if (!other || other == item) {
-                    continue;
-                }
-                if (other->sessionId() != id) {
-                    continue;
-                }
-                if (other->path() == item->path()) {
-                    continue;
-                }
-                qCritical("setItemSessionId: SessionImageId %lld path conflict "
-                          "(%s vs %s) — unbinding other tile",
-                          static_cast<long long>(id),
-                          qPrintable(item->path()),
-                          qPrintable(other->path()));
-                other->setSessionId(kInvalidSessionImageId);
-            }
-        };
-        scrub(m_items);
-        scrub(m_workspace.stashedItems());
-        scrub(m_gallery.stashedItems());
-    }
-    item->setSessionId(id);
-    refreshSessionIndexCache(item);
-    // Live lag is paint/slider residual. Durable Color is store authority.
-    // Do not insert an identity lag row on every bind (pollutes hasLiveColorLag
-    // and made freeze→setAppearance look like a grade commit).
-    if (id != kInvalidSessionImageId) {
-        switch (SessionAppearance::bindLiveColorLagAction(
-            m_itemWorld.hasColor(id), item->colorAdjustments().isIdentity())) {
-        case SessionAppearance::BindLagAction::FromDurableColor:
-            m_itemWorld.setLiveColorLag(id, m_itemWorld.color(id).grade);
-            break;
-        case SessionAppearance::BindLagAction::FromItemGrade:
-            m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
-            break;
-        case SessionAppearance::BindLagAction::None:
-            break;
-        }
-    }
+    m_image.setItemSessionId(item, id);
 }
+
 
 void ImageView::setItemSessionIndex(ImageItem *item, int index)
 {
@@ -348,54 +302,7 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
 
 void ImageView::persistSessionAppearanceSlot(ImageItem *item)
 {
-    // Per-session-image appearance is a value copy keyed by stable id.
-    // Image mode may bind the cursor id when the live item is not yet tagged.
-    // Workspace/Gallery must not invent an id — that merges edits onto peers.
-    const SessionImageId sid = resolveContentEditSessionId(item);
-    WorkspaceItemState contentSlot;
-    bool haveContentSlot = false;
-    if (sid != kInvalidSessionImageId) {
-        if (item->sessionId() == kInvalidSessionImageId) {
-            setItemSessionId(item, sid);
-        }
-        WorkspaceItemState slot = freezeItemAppearance(item);
-        slot.sessionId = sid;
-        slot.sessionIndex = sessionListIndex(item);
-        slot.path = item->path();
-        // freeze may carry live color lag; durable Color is grade-commit only.
-        slot = SessionAppearance::preferDurableColor(
-            slot, m_itemWorld.hasColor(sid), m_itemWorld.color(sid).grade);
-        // Full freeze replace into sparse tables (placement preserved when
-        // identity — tip 2059). Color field is durable (above), not lag.
-        m_itemWorld.setAppearance(sid, slot);
-        slot = SessionAppearance::preferDurableColor(
-            slot, m_itemWorld.hasColor(sid), m_itemWorld.color(sid).grade);
-        contentSlot = slot;
-        haveContentSlot = true;
-    } else {
-        // Unbound tile: still persist content-hash state for the file.
-        contentSlot = freezeItemAppearance(item);
-        haveContentSlot = true;
-    }
-    if (haveContentSlot) {
-        // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
-        // Bound: orient/flip/grade only in XDG — crop lives in ItemWorld sparse by id.
-        SessionAppearance::persistPathContentAppearance(
-            item->path(), sid != kInvalidSessionImageId, contentSlot);
-    }
-    if (sid != kInvalidSessionImageId) {
-        // Bound: do not last-write appearance onto the path map (duplicates
-        // share a path). Placement remains in path book from Workspace
-        // rememberItemState / snapshot only.
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            // Id-keyed only — path signals paint every filmstrip row with
-            // the same file (IDENTITY.md).
-            emit sessionAppearanceChanged(sid, item->path(), appearance);
-            const bool hasCrop = m_itemWorld.hasCrop(sid)
-                || itemAppliedContentXform(item).hasCrop;
-            emit sessionCropApplied(sid, item->path(), appearance, hasCrop);
-        }
-    }
+    m_image.persistSessionAppearanceSlot(item);
 }
+
 
