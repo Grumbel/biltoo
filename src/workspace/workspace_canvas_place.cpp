@@ -93,7 +93,7 @@ bool WorkspaceController::addImageForSession(const QString &path, SessionImageId
             m_view->hostPathOrderAppendRow(path, kInvalidSessionImageId);
         }
     }
-    m_view->hostDisplayPipeline().scheduleImageLoad(path, LoadAdd);
+    m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadAdd));
     emit m_view->statusChanged();
     return true;
 }
@@ -125,7 +125,7 @@ bool WorkspaceController::placeOrMoveImageAt(const QString &path, const QPointF 
                 existing->setSelected(true);
                 // Pose-only: sparse Placement — do not setAppearance the whole
                 // DTO (content already lives on the session id).
-                m_view->persistGeometrySessionState(existing, existing->placement());
+                m_view->hostPersistGeometrySessionState(existing, existing->placement());
                 m_view->updateWorkspaceSceneRect();
                 m_view->ensureVisible(static_cast<const QGraphicsItem *>(existing),
                                   ViewTransform::kEnsureVisibleMargin,
@@ -230,11 +230,11 @@ bool WorkspaceController::placeOrMoveImageAt(const QString &path, const QPointF 
     QPointer<ImageView> guard(m_view);
     QTimer::singleShot(0, m_view, [guard, pathCopy]() {
         ImageView *const host = guard.data();
-        if (!host || !host->m_view->isWorkspaceMode()) {
+        if (!host || !host->isWorkspaceMode()) {
             return;
         }
-        host->hostDisplayPipeline().scheduleImageLoad(pathCopy, LoadAdd);
-        host->m_view->updateWorkspaceSceneRect();
+        host->hostDisplayPipeline().scheduleImageLoad(pathCopy, static_cast<int>(ImageView::LoadAdd));
+        host->updateWorkspaceSceneRect();
         emit host->statusChanged();
         // Do not emit workspacePathsChanged here: MainWindow defers
         // syncThumbnailCanvasMembership after the drop; a second rebind race

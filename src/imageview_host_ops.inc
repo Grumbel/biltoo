@@ -101,6 +101,10 @@
 
     /** Controller host: snapshot bound appearance/pose before tile teardown. */
     void hostRememberItemState(ImageItem *item) { rememberItemState(item); }
+    void hostPersistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
+    {
+        persistGeometrySessionState(item, pl);
+    }
     bool hostPreserveUndoOnDestroy() const { return m_preserveUndoOnDestroy; }
 
     /** Controller host: cache-only sizes + LQIP before first gallery pack. */

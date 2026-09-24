@@ -88,7 +88,7 @@ void WorkspaceController::applyPendingBindScenePos(ImageItem *item, const Pendin
     }
     m_view->hostDisplayPipeline().loadGate().removePendingScenePos(item->path());
     // Pose-only persist (explicit drop); content stays on session id / path map.
-    m_view->persistGeometrySessionState(item, item->placement());
+    m_view->hostPersistGeometrySessionState(item, item->placement());
 }
 
 void WorkspaceController::placeNewLoadAddItem(ImageItem *item, const QString &path,
@@ -134,7 +134,7 @@ void WorkspaceController::placeNewLoadAddItem(ImageItem *item, const QString &pa
         m_view->applyState(item, *st);
         return;
     }
-    WorkspaceItemState s = m_view->defaultStateForPath(path, m_view->liveItems().size() - 1);
+    WorkspaceItemState s = defaultStateForPath(path, m_view->liveItems().size() - 1);
     const QSizeF sz(image.width(), image.height());
     s.pos = findEmptyPlacement(sz);
     m_view->applyState(item, s);

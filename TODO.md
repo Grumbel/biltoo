@@ -2,22 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2591.1-crop-appearance** (base `7d823d8`).
+**Tip: biltoo-2592.1-fix-workspace-place-access** (base `7d823d8`).
 
-### Ownership transfer
-- **CropController** owns crop appearance:
-  - `storeCropAppearance`
-  - `loadRestoreCropAppearance`
-  - `restoreSessionCropAppearance`
-  - `applyCropAppearance`
-  - `emitCropApplyAppearance`
-- New TU: `crop/cropcontroller_appearance.cpp`
-- ImageView methods are thin routers (undo command / host API unchanged)
+### Fix
+Compile fixes for workspace placement TUs moved in 2586/2587:
+- `ImageView::LoadAdd` fully qualified for `scheduleImageLoad`
+- `hostPersistGeometrySessionState` public host for pose-only persist
+- Deferred drop lambda uses `ImageView *host` (not `host->m_view`)
+- `defaultStateForPath` uses WorkspaceController's own method
 
 ### Prior
+**2591.1** CropController owns crop appearance store/restore/apply  
 **2590.1** ImageController copy appearance; SessionAppearance soft materialize  
-**2589.1** SessionAppearance layout size; mode controllers own print  
-**2588.1** ImageController owns resetContentAppearanceForTargets
+**2589.1** SessionAppearance layout size; mode controllers own print
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -39,5 +36,5 @@ status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2591.1-crop-appearance-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2592.1-fix-workspace-place-access-7d823d8.bundle HEAD
 ```
