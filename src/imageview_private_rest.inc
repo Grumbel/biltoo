@@ -120,53 +120,25 @@
      * Dimensions are a property of the file; safe to key by path (not id).
      */
     ImageSizeCoordinator m_size;
-    /** Centre HUD progress (expand / size resolve / sort). */
-    // CentreProgress: owned by HudChrome (m_hud.centreProgress()).
-    /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
-    /** Session path list + parallel SessionImageId order (IDENTITY). */
-    // PackOrderOverlay: owned by SessionShell (m_session.pathOrder()).
 
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;
 
 
+    /** Image-mode sticky pan / fit-fill (methods on ImageController; state on host for dual). */
     ViewFraming m_framing;
+    /** Viewport pointer chrome + canvas materials. */
     ViewShellChrome m_shell;
     ViewMode m_viewMode = ViewMode::Image;
-    // SessionNavFlags: owned by ImageController (m_image).
-    // CanvasBackground: owned by ViewShellChrome (m_shell.canvasBg()).
-    // TextLayerSession: owned by TextLayerController (m_textCtrl).
+    /** HUD appearance, flash, centre progress, perf overlay, status-refresh timer. */
     HudChrome m_hud;
-    // SessionIdentity: owned by SessionShell (m_session.identity()).
-    // Edge hover: owned by ImageController (m_image).
-    // Tool: owned by WorkspaceController (m_workspace).
-    // LayoutPrefs: owned by GalleryController (hostLayout).
-    // GalleryDecodeBook: owned by GalleryController (hostGalleryDecodeBook).
-    /** Central path→raster climb (slideshow + shared PreferCache policy). */
+    /** Soft-provider injection (dual shell / MainWindow). */
     ImageModeSoftProvider m_imageModeSoftProvider;
-
-    // PathRasterService: owned by DisplayPipelineController (pathRaster()).
-    // --- LoadAdd pending-bind helpers ---
-
+    /** Session identity, LoadAdd bind queue, pack-order overlay. */
     SessionShell m_session;
-    // SessionBindBook + PendingItemAppearanceBook: m_session.bindBook().
-    // ViewportChrome: owned by ViewShellChrome (m_shell.viewport()).
-    // ZoomRegionGesture: owned by ImageController (m_image).
-
-
-    // Group transform session: owned by WorkspaceController.
-
-    // LayoutApplyGuard: owned by GalleryController.
-    // GalleryRelayoutSuppress: owned by GalleryController.
-    // Status-refresh QTimer: owned by HudChrome.
-    /** Off-canvas neighbor tile prefetch (session-replace clears). */
+    /**
+     * Off-canvas neighbor tile prefetch (per-view: pathOnLiveCanvas for dual pane).
+     * Not shared on DisplayPipelineController.
+     */
     TileNeighborPrefetch m_tileNeighborPrefetch;
-    // PerfStats: owned by HudChrome (m_hud.perf()).
-
-    // Gallery decode watchdog QTimer: owned by GalleryController.
-    // Layout debounce QTimer: owned by GalleryController.
-    // LayoutDebounce: owned by GalleryController.
-    /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
-    // Colour-adjust commit QTimer: owned by ImageController.
-    // ColorAdjustCommit: owned by ImageController (m_image).

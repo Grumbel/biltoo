@@ -414,3 +414,23 @@ Product shell (minimal):
 33. **biltoo-2491:** PerfStats owned by HudChrome (HUD overlay diagnostics);
     TileNeighborPrefetch stays on ImageView (per-view pathOnLiveCanvas for dual pane).
 
+34. **biltoo-2492:** Residual inventory — intentional ImageView shell/host bags
+    after the mode-ownership transfer series (2471–2491):
+
+    | Residual | Why it stays on ImageView |
+    |----------|---------------------------|
+    | ViewFraming | Dual-pane host surface; methods on ImageController |
+    | ViewMode | Mode shell enum |
+    | ViewShellChrome | Viewport + canvas materials (QGraphicsView shell) |
+    | HudChrome | Cross-mode HUD overlay |
+    | SessionShell | Session identity / bind / pack-order host surface |
+    | TileNeighborPrefetch | Per-view pathOnLiveCanvas (must not share across dual pane) |
+    | ImageSizeCoordinator | SIZE.md host + GallerySizeResolve surface |
+    | ImageModeSoftProvider | Injection from MainWindow / dual shell |
+    | ItemWorld / PathItemStateBook | Data domain bound on host |
+    | QUndoStack | Cross-mode undo shell |
+    | DisplayPipelineController | Shared or owned pipeline pointer |
+
+    Mode bags (Workspace / Gallery / Image / Text / Slideshow / Crop) and
+    PathRasterService live on their controllers.
+
