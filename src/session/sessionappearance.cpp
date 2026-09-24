@@ -670,4 +670,35 @@ QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
     return bookKnown.isValid() && !bookKnown.isEmpty() ? bookKnown : logical;
 }
 
+
+bool shouldAugmentFromPathStore(bool allowStoreAppearance,
+                                bool hasContentAlready,
+                                bool pathEmpty,
+                                SessionImageId sid)
+{
+    return allowStoreAppearance && !hasContentAlready && !pathEmpty
+        && sid == kInvalidSessionImageId;
+}
+
+bool itemShowsContentEdit(SessionImageId sid,
+                          bool hasContentEditComponents,
+                          bool hasDurableAppearance,
+                          bool durableHasContentAppearance,
+                          bool liveHasContentMods,
+                          bool pathHasContentAppearance)
+{
+    if (sid != kInvalidSessionImageId) {
+        if (hasContentEditComponents) {
+            return true;
+        }
+        if (hasDurableAppearance && durableHasContentAppearance) {
+            return true;
+        }
+    }
+    if (liveHasContentMods) {
+        return true;
+    }
+    return pathHasContentAppearance;
+}
+
 } // namespace SessionAppearance

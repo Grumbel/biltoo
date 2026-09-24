@@ -54,8 +54,9 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     }
     // Bound: never path XDG. Unbound path rows may still use full XDG including crop.
     // Virtual plan / bulk open: never Store loadContentAppearance (GUI freeze).
-    if (allowStoreAppearance && !SessionAppearance::hasContentAppearance(want)
-        && !path.isEmpty() && sessionId == kInvalidSessionImageId) {
+    if (SessionAppearance::shouldAugmentFromPathStore(
+            allowStoreAppearance, SessionAppearance::hasContentAppearance(want),
+            path.isEmpty(), sessionId)) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
             SessionAppearance::applyStoredContentAppearance(&want, stored, false);

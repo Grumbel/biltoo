@@ -131,20 +131,16 @@ bool ImageView::targetHasContentAppearance() const
             continue;
         }
         const SessionImageId sid = resolveContentEditSessionId(item);
-        // Bound: ItemWorld sparse tables are authority (Crop / ContentBake / Color).
-        if (sid != kInvalidSessionImageId) {
-            if (m_itemWorld.hasContentEditComponents(sid)) {
-                return true;
-            }
-            if (m_itemWorld.hasDurableAppearance(sid)
-                && SessionAppearance::hasContentAppearance(sessionAppearanceValue(sid))) {
-                return true;
-            }
-        }
-        if (SessionAppearance::liveItemHasContentMods(itemAppliedContentXform(item))) {
-            return true;
-        }
-        if (ThumtooCache::hasContentAppearance(item->path())) {
+        const bool hasDurable = sid != kInvalidSessionImageId
+            && m_itemWorld.hasDurableAppearance(sid);
+        if (SessionAppearance::itemShowsContentEdit(
+                sid,
+                sid != kInvalidSessionImageId && m_itemWorld.hasContentEditComponents(sid),
+                hasDurable,
+                hasDurable && SessionAppearance::hasContentAppearance(
+                                  sessionAppearanceValue(sid)),
+                SessionAppearance::liveItemHasContentMods(itemAppliedContentXform(item)),
+                ThumtooCache::hasContentAppearance(item->path()))) {
             return true;
         }
     }

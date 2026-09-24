@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2567.1-own-native-path-prefer-pure** (base `7d823d8`).
+**Tip: biltoo-2568.1-own-content-edit-detect-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::pickNativeSize** — logical → book → optional store cache
-- **SelectionGeometry::preferUniquePathItem** — unique selected / unique live
-  path preference for duplicates
-- `contentLayoutSize` / `findPreferredItemForPath` keep host resolution loops
+- **SessionAppearance::shouldAugmentFromPathStore** — unbound path XDG layout load
+- **SessionAppearance::itemShowsContentEdit** — per-item content-edit presence
+  (sparse / durable / live applied / path XDG)
+- `contentLayoutSize` / `targetHasContentAppearance` keep host queries
 
 ### Prior
-**2566.1** Own layout size pure helpers on SessionAppearance.
+**2567.1** Own pickNativeSize and path prefer pure helpers.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -29,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2567.1-own-native-path-prefer-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2568.1-own-content-edit-detect-pure-7d823d8.bundle HEAD
 ```

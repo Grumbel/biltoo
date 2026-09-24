@@ -334,6 +334,27 @@ QSize layoutSizeOrNative(const QSize &native, const WorkspaceItemState &want);
 QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
                      const QSize &storeKnown, bool allowStore);
 
+/**
+ * Unbound path may load XDG content appearance for layout when allowStore and
+ * no content yet. Bound SessionImageId never uses path XDG.
+ */
+[[nodiscard]] bool shouldAugmentFromPathStore(bool allowStoreAppearance,
+                                              bool hasContentAlready,
+                                              bool pathEmpty,
+                                              SessionImageId sid);
+
+/**
+ * Per-item content-edit presence for status / reset targets:
+ * ItemWorld sparse edit components, durable content appearance, live applied
+ * mods, or path XDG content.
+ */
+[[nodiscard]] bool itemShowsContentEdit(SessionImageId sid,
+                                        bool hasContentEditComponents,
+                                        bool hasDurableAppearance,
+                                        bool durableHasContentAppearance,
+                                        bool liveHasContentMods,
+                                        bool pathHasContentAppearance);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H
