@@ -39,7 +39,7 @@ not being two copies of a 12k-line façade.
 | Path | API |
 |------|-----|
 | Primary install | `DisplayPipelineController::installDisplayPixels` |
-| Attach already-materialized sample | `ImageView::attachDisplaySample` (sole place that calls `setPreviewImage` / `setSourceImageReady`) |
+| Attach already-materialized sample | `DisplayPipelineController::attachDisplaySample` (sole place that calls `setPreviewImage` / `setSourceImageReady`); `ImageView::attachDisplaySample` forwards |
 | Soft preview only | `ImageView::setItemPreviewImage` → `setPreviewImage` |
 | Clear display pixels | `ImageView::clearItemDecodedPixels` **or** pipeline (friend) during install/replace |
 | Intrinsic / layout size | `ImageView::setItemIntrinsicSize` **or** pipeline; samples must not define geometry (SIZE.md) |
@@ -84,8 +84,8 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 
 ## Extraction backlog (ordered)
 
-1. **Done (this doc + hygiene):** graph written; ImageView call sites prefer host wrappers for clear/intrinsic.
-2. Move `attachDisplaySample` implementation into `DisplayPipelineController` (view keeps a one-line forward).
+1. **Done:** graph written; ImageView clear/intrinsic via host wrappers.
+2. **Done:** `attachDisplaySample` implementation on `DisplayPipelineController`; view one-line forward.
 3. Narrow `friend class ImageView` to an explicit host interface (or remove friend).
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade.
 

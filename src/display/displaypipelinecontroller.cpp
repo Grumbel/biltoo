@@ -1058,7 +1058,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
         }
     }
     const QSize sizeBeforeAttach = item->imageSize();
-    m_view->attachDisplaySample(item, display, appearance, attachKind);
+    attachDisplaySample(item, display, appearance, attachKind);
     if (scheduleFullBake) {
         m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
     }
@@ -1231,7 +1231,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             // Layout still follows want below; decode will fill pixels from host.
         } else if (displayReady) {
             // Identity want: filmstrip/host soft is safe to attach as underlay.
-            m_view->attachDisplaySample(item, pixels, want,
+            attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);
         } else {
             installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
@@ -1666,4 +1666,49 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
 }
 
 
+
+
+
+void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImage &display,
+                                                    const WorkspaceItemState &want,
+                                                    SessionAppearance::PixelKind kind)
+{
+    if (!item || display.isNull() || !m_view) {
+        return;
+    }
+    const QString path = item->path();
+
+    // Display samples are always display-ready (materializeDisplay or host-raw
+    // identity). Never use setSourceImage here — it re-runs updateDisplayedPixmap
+    // and double-applies m_colorAdjust on Gallery/Workspace tiles.
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        item->setPreviewImage(display);
+    } else {
+        item->setSourceImageReady(display);
+    }
+
+    // Layout: ONE rule — ContentXform::layoutSize(fileNative, want) via view host.
+    // Soft/full sample pixels never define intrinsic (SIZE.md / CONTENT_PIPELINE).
+    m_view->applyContentLayoutSize(item, want);
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")
+        || (want.hasCrop && item->imageSize().width() <= 1)) {
+        const QSize isz = item->imageSize();
+        if (want.hasCrop && (isz.width() <= 1 || isz.height() <= 1)) {
+            qCritical("attachDisplaySample: crop want but intrinsic %dx%d (display %dx%d path=%s)",
+                      isz.width(), isz.height(), display.width(), display.height(),
+                      qPrintable(path));
+        }
+    }
+
+    m_view->syncLiveContentMetaFromState(item, want);
+    {
+        ColorAdjustments grade = want.colorAdjust;
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId && grade.isIdentity()
+            && m_view->itemWorld().hasColor(sid)) {
+            grade = m_view->itemWorld().color(sid).grade;
+        }
+        m_view->syncLiveColorFromState(item, grade);
+    }
+}
 

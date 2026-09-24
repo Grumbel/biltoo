@@ -22,50 +22,9 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
                                       const WorkspaceItemState &want,
                                       SessionAppearance::PixelKind kind)
 {
-    if (!item || display.isNull()) {
-        return;
-    }
-    const QString path = item->path();
-
-    // Display samples are always display-ready (materializeDisplay or host-raw
-    // identity). Never use setSourceImage here — it re-runs updateDisplayedPixmap
-    // and double-applies m_colorAdjust on Gallery/Workspace tiles.
-    if (kind == SessionAppearance::PixelKind::SoftPreview) {
-        item->setPreviewImage(display);
-    } else {
-        item->setSourceImageReady(display);
-    }
-
-    // Layout: ONE rule — ContentXform::layoutSize(fileNative, want).
-    // Soft/full sample pixels never define intrinsic (SIZE.md / CONTENT_PIPELINE).
-    // The old "crop → display.size()" branch set soft crop pixels as geometry,
-    // which collapsed Workspace scale to ~1% and broke second-crop draft size.
-    applyContentLayoutSize(item, want);
-    // SIZE.md: samples (LQIP / soft / full ladder) never write intrinsic.
-    // Cold open keeps the provisional stand-in until sizeReady / cachedSize.
-    // Adopting display.size() made 32× LQIP the layout box, then jumped when
-    // the durable probe arrived.
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")
-        || (want.hasCrop && item->imageSize().width() <= 1)) {
-        const QSize isz = item->imageSize();
-        if (want.hasCrop && (isz.width() <= 1 || isz.height() <= 1)) {
-            qCritical("attachDisplaySample: crop want but intrinsic %dx%d (display %dx%d path=%s)",
-                      isz.width(), isz.height(), display.width(), display.height(),
-                      qPrintable(path));
-        }
-    }
-
-    syncLiveContentMetaFromState(item, want);
-    {
-        ColorAdjustments grade = want.colorAdjust;
-        const SessionImageId sid = item->sessionId();
-        // Cold install: want may lack grade while sparse Color already holds it.
-        if (sid != kInvalidSessionImageId && grade.isIdentity()
-            && m_itemWorld.hasColor(sid)) {
-            grade = m_itemWorld.color(sid).grade;
-        }
-        syncLiveColorFromState(item, grade);
-    }
+    // Pixel attach lives on DisplayPipelineController (Phase 5 ownership).
+    // External callers keep this ImageView entry; implementation is pipeline.
+    m_displayPipeline.attachDisplaySample(item, display, want, kind);
 }
 
 

@@ -72,6 +72,15 @@ public:
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
     /**
+     * Attach an already-materialized display sample (soft or full-ready).
+     * Sole pipeline owner for setPreviewImage / setSourceImageReady + layout
+     * sync. ImageView::attachDisplaySample forwards here.
+     * @see docs/IMAGEVIEW_ITEM_OWNERSHIP.md
+     */
+    void attachDisplaySample(ImageItem *item, const QImage &display,
+                             const WorkspaceItemState &want,
+                             SessionAppearance::PixelKind kind);
+    /**
      * Gallery underlay from ImageCache only (SizeReply EMB/LQIP).
      * Scales to EMB band, installDisplayPixels + setItemPreviewImage fallback.
      * @return true if the item shows display pixels afterward.
