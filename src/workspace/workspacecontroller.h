@@ -11,6 +11,7 @@
 #include <QHash>
 #include <QList>
 #include <QPointF>
+#include <QRectF>
 #include <QString>
 #include <QTransform>
 #include "workspace/grouptransformsession.h"
@@ -105,6 +106,8 @@ public:
     int pageGuideHandleAt(const QPoint &viewPos) const;
     bool beginPageGuideResize(int handle);
     void updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    QRectF pageGuideRectFromHandleDrag(const QPointF &scenePos,
+                                      Qt::KeyboardModifiers mods) const;
     void endPageGuideResize();
     void paintPageGuideHandles(QPainter *painter) const;
     static qreal pageGuidePxPerMm();

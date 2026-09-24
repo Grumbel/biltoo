@@ -36,7 +36,6 @@
     QString loadingStatusHudLine() const;
 
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
-    void refreshScrollBarGeometry();
 
     // --- completeLoadReplace phases ---
 

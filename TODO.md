@@ -2,16 +2,14 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2469.2-fix-apply-probed-public** (base `7d823d8`).
+**Tip: biltoo-2470.1-fix-ownership-compile** (base `7d823d8`).
 
-### Ownership transfer
-- **2469:** GallerySizeResolveHost + gate on GalleryController
-- **2469.2:** applyProbedImageSize public host decl (needed by gate)
-
-### Stack
-2464–2468 as before; dual compare works.
+### Fix compile after ownership moves
+- `pageGuideRectFromHandleDrag` declared on WorkspaceController
+- ImageController: `#include <QSize>`, `itemHasReliableFrameSize` helper
+- `refreshScrollBarGeometry` public host API for ImageController framing
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2469.2-fix-apply-probed-public-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2470.1-fix-ownership-compile-7d823d8.bundle HEAD
 ```

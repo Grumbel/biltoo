@@ -5,6 +5,7 @@
 #define IMAGECONTROLLER_H
 
 #include <QString>
+#include <QSize>
 
 class ImageView;
 class ImageItem;

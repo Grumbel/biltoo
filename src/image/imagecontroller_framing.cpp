@@ -19,6 +19,18 @@
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 
+
+/** True when intrinsic size is large enough that fitInView will not explode. */
+static bool itemHasReliableFrameSize(const ImageItem *item)
+{
+    if (!item) {
+        return false;
+    }
+    const QSize s = item->imageSize();
+    // QSize(1,1) placeholders produced ~5000% view scale via fitInView.
+    return s.width() > 8 && s.height() > 8;
+}
+
 void ImageController::captureStickyPanAnchor(ImageItem *item)
 {
     // Sample scale + pan when leaving an image so free navigation (and mode

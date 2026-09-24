@@ -85,3 +85,5 @@
                                 const QImage &beforeSrc, const QImage &afterSrc,
                                 const WorkspaceItemState &before,
                                 const WorkspaceItemState &after) override;
+
+    void refreshScrollBarGeometry();
