@@ -2,7 +2,7 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2443.1-drop-rematerialize-forwards-tu** (base `d80d461`).
+**Tip: biltoo-2443.2-drop-rematerialize-forwards-tu** (base `d80d461`).
 
 ### Phase 5 / Tier 0 cleanup
 - **Deleted `src/imageview_rematerialize.cpp`** and CMake entry
@@ -28,5 +28,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2443.1-drop-rematerialize-forwards-tu-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2443.2-drop-rematerialize-forwards-tu-d80d461.bundle HEAD
 ```
