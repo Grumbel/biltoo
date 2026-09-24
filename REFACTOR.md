@@ -846,8 +846,8 @@ split (1913–1915): `host_accessors` bags, `host_ops` / `host_crop_display` /
 - biltoo-1721: PackOrderView locals — fix dangling ref warnings on .ids()/.paths().
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
-  `imageview*`; declarations live in `imageview_private_methods.inc` +
-  `imageview_private_rest.inc` included from `private:`. Metrics: `imageview.h`
+  `imageview*`; declarations live in `imageview_private.inc` (
+  was methods+rest; now single file) included from `private:`. Metrics: `imageview.h`
   993 lines; public methods 259; no new `friend`.
 - Tier 1a: **done** (biltoo-1597) — state ownership on `SlideshowController`.
 - Tier 1b: **done** (biltoo-1598) — 95 orchestration methods moved to

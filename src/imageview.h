@@ -482,7 +482,7 @@ signals:
                       const QStringList &internalPaths = {});
 public:
     // Pack-order + load/framing host surface (controllers).
-    // Paint/input try* phases: imageview_private_methods.inc.
+    // Paint/input try* phases: imageview_private.inc.
 #include "imageview_host_pipeline.inc"
 
 protected:
@@ -502,8 +502,7 @@ private:
     /** Geometry undo command (transform_actions); needs private session-state APIs. */
     friend class ImageViewTransformGeometryCommand;
 
-    // Phase 6 Tier 0: privatized methods — see REFACTOR.md / imageview_private_methods.inc
-#include "imageview_private_methods.inc"
-#include "imageview_private_rest.inc"
+    // Private methods + members (see docs/IMAGEVIEW_SURFACE.md).
+#include "imageview_private.inc"
 };
 #endif // IMAGEVIEW_H

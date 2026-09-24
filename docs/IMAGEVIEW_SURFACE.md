@@ -32,7 +32,7 @@ Status **formatting** is pure `HudModel` (`formatMultiItemStatusLine`,
 
 - `imageview.h` — public shell + includes
 - `imageview_host_*.inc` — controller/pipeline host surface (keep split)
-- `imageview_private_*.inc` — private helpers/members (collapse as they shrink)
+- `imageview_private.inc` — private helpers/members
 
 ## See also
 

@@ -2,18 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2622.1-hudmodel-status-assembler-tests** (base `7d823d8`).
+**Tip: biltoo-2623.1-merge-private-incs** (base `7d823d8`).
 
 ### This tip
-Unit tests for pure status assemblers:
-- `formatMultiItemStatus_basic`
-- `formatImageModeStatus_basic`
-- `formatImageModeStatus_editedFlip`
+Merged `imageview_private_methods.inc` + `imageview_private_rest.inc` →
+single `imageview_private.inc`. Updated `imageview.h`, surface doc, REFACTOR note.
 
-### Prior (2621)
-Status assemblers + IMAGEVIEW_SURFACE.md + private comment cleanup.
+Host `imageview_host_*.inc` files stay split (intentional).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2622.1-hudmodel-status-assembler-tests-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2623.1-merge-private-incs-7d823d8.bundle HEAD
 ```
