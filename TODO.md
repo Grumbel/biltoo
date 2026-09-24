@@ -2,17 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2578.1-gallery-pixel-mix-counts** (base `7d823d8`).
+**Tip: biltoo-2579.1-hud-appearance-centre-progress** (base `7d823d8`).
 
 ### Ownership transfer
-- **GalleryController::countLoadingTileStats** — blank / weak for HUD loading line
-- **GalleryController::countDebugPixelMix** — blank/lqip/soft/higher/climbing
-- ImageView status only gathers host context and calls HudModel + gallery counts
+- **HudChrome** appearance mutators: setVisible / setFontPointSize / setTextColor / setPanelColor
+  (afterChange callback; ImageView routers thin)
+- **ViewShellChrome::setCentreProgress / clearCentreProgress** — bag + FullViewportUpdate policy
+- ImageView `setCentreProgress` / `clearCentreProgress` are thin shell routers
+- Slimmed `imageview_input.cpp` includes (edge/wheel/resize only)
 
 ### Prior
+**2578.1** GalleryController owns pixel-mix / loading tile counts  
 **2577.1** HudModel pure status helpers; ViewShellChrome::restoreToolCursor  
-**2576.1** Own canvas material mutators on ViewShellChrome  
-**2575.1** Own paintEvent timing on HudChrome; drop empty group TU
+**2576.1** Own canvas material mutators on ViewShellChrome
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -23,14 +25,14 @@ applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 freeze / flush / remember / persist / crop-restore host residual,
 drawBackground / drawForeground / paintEvent / input one-line QGraphicsView overrides,
 public thin routers (MainWindow API surface),
-status host orchestration (mode branch + climb labels)
+status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Next thinning candidates
 - setViewMode body (mode shell by design — leave/enter orchestration)
 - public thin routers beyond materials (keep until dual/callers migrate)
-- HUD appearance setters (slideshow sync residual on setHudVisible)
+- slideshow coupling on setHudVisible (SlideshowController host)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2578.1-gallery-pixel-mix-counts-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2579.1-hud-appearance-centre-progress-7d823d8.bundle HEAD
 ```

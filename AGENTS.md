@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2578.1-gallery-pixel-mix-counts**.
-Latest tip: **biltoo-2578** (+ thumtoo-338). GalleryController owns pixel-mix / loading tile counts.
+Latest agent handoff: **TODO.md → biltoo-2579.1-hud-appearance-centre-progress**.
+Latest tip: **biltoo-2579** (+ thumtoo-338). HudChrome appearance mutators; shell owns centre progress.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
