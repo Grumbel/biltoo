@@ -14,6 +14,7 @@
 #include <QRectF>
 #include <QSizeF>
 #include <QString>
+#include <QStringList>
 #include <QTransform>
 #include <QVector>
 #include "workspace/grouptransformsession.h"
@@ -106,6 +107,12 @@ public:
     bool hasContent() const;
     void updateSceneRect();
     QPointF findEmptyPlacement(const QSizeF &itemSize) const;
+
+    /** Path membership: tiles to drop on setWorkspacePaths + default pose. */
+    QList<ImageItem *> collectDoomedItems(const QStringList &paths,
+                                          const QVector<SessionImageId> &sessionIds) const;
+    void destroyDoomedItems(const QList<ImageItem *> &doomed);
+    WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
 
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);

@@ -1,0 +1,121 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Workspace path membership helpers used by setWorkspacePaths / bind.
+// ImageView keeps private thin wrappers where the methods were private.
+
+#include "workspace/workspacecontroller.h"
+#include "imageview.h"
+#include "imageitem.h"
+#include "display/displaypipelinecontroller.h"
+#include "imageview_types.h"
+
+#include <QHash>
+#include <QSet>
+#include <QStringList>
+#include <QVector>
+
+QList<ImageItem *> WorkspaceController::collectDoomedItems(
+    const QStringList &paths, const QVector<SessionImageId> &sessionIds) const
+{
+    // Prefer session-id identity. Fall back to path occurrence counts so
+    // duplicate paths remain as separate tiles (same path, distinct items).
+    QList<ImageItem *> doomed;
+    QSet<ImageItem *> doomedSeen;
+    auto doom = [&](ImageItem *item) {
+        if (!item || doomedSeen.contains(item)) {
+            return;
+        }
+        doomedSeen.insert(item);
+        doomed.append(item);
+    };
+
+    const QList<ImageItem *> &items = m_view->liveItems();
+    const bool haveIds = !sessionIds.isEmpty();
+    if (haveIds) {
+        QSet<SessionImageId> wantedIds;
+        for (SessionImageId id : sessionIds) {
+            if (id != kInvalidSessionImageId) {
+                wantedIds.insert(id);
+            }
+        }
+        QSet<QString> wantedPaths(paths.begin(), paths.end());
+        for (ImageItem *item : items) {
+            if (!item) {
+                continue;
+            }
+            const SessionImageId sid = item->sessionId();
+            if (sid != kInvalidSessionImageId) {
+                if (!wantedIds.contains(sid)) {
+                    doom(item);
+                }
+            } else if (!wantedPaths.contains(item->path())) {
+                doom(item);
+            }
+        }
+        // Excess unbound tiles for a path beyond the number of unbound session rows.
+        QHash<QString, int> unboundWanted;
+        for (int i = 0; i < paths.size(); ++i) {
+            const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
+                                                              : kInvalidSessionImageId;
+            if (sid == kInvalidSessionImageId) {
+                unboundWanted[paths.at(i)] += 1;
+            }
+        }
+        QHash<QString, int> unboundSeen;
+        for (ImageItem *item : items) {
+            if (!item || doomedSeen.contains(item)) {
+                continue;
+            }
+            if (item->sessionId() != kInvalidSessionImageId) {
+                continue;
+            }
+            const int n = ++unboundSeen[item->path()];
+            if (n > unboundWanted.value(item->path())) {
+                doom(item);
+            }
+        }
+    } else {
+        QHash<QString, int> wantedCount;
+        for (const QString &path : paths) {
+            wantedCount[path] += 1;
+        }
+        QHash<QString, int> seenCount;
+        for (ImageItem *item : items) {
+            if (!item) {
+                continue;
+            }
+            const int n = ++seenCount[item->path()];
+            if (n > wantedCount.value(item->path())) {
+                doom(item);
+            }
+        }
+    }
+    return doomed;
+}
+
+void WorkspaceController::destroyDoomedItems(const QList<ImageItem *> &doomed)
+{
+    for (ImageItem *item : doomed) {
+        if (!item) {
+            continue;
+        }
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(item->path());
+        m_view->hostDisplayPipeline().loadGate().removePendingWorkspacePath(item->path());
+        m_view->destroyCanvasItem(item);
+    }
+}
+
+WorkspaceItemState WorkspaceController::defaultStateForPath(const QString &path,
+                                                            int ordinal) const
+{
+    WorkspaceItemState s;
+    s.path = path;
+    s.pos = QPointF(40.0 * ordinal, 30.0 * ordinal);
+    s.scale = 1.0;
+    s.scaleY = 1.0;
+    s.rotation = 0.0;
+    s.opacity = 1.0;
+    s.z = ordinal;
+    return s;
+}

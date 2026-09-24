@@ -460,3 +460,7 @@ Product shell (minimal):
     (all modes; pipeline bake + Image framing / Gallery pack / Workspace scene
     rect post-steps); ImageView thin routers.
 
+42. **biltoo-2500:** WorkspaceController owns path-membership doomed collect/
+    destroy and defaultStateForPath (`workspace_paths.cpp`); ImageView private
+    thin wrappers for setWorkspacePaths / session bind.
+

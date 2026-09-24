@@ -2,12 +2,11 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2499.1-own-image-content-transform** (base `7d823d8`).
+**Tip: biltoo-2500.1-own-workspace-path-membership** (base `7d823d8`).
 
 ### Ownership transfer
-- **flipHorizontal / flipVertical / rotateLeft / rotateRight /
-  rotateContentByQuarterTurns** on ImageController (`imagecontroller_transform.cpp`)
-- ImageView thin routers
+- **collectDoomedItems / destroyDoomedItems / defaultStateForPath** on WorkspaceController
+- ImageView private thin wrappers (setWorkspacePaths / session bind)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -16,10 +15,10 @@ QUndoStack, display pipeline, fitItem host orchestration
 
 ### Still on ImageView
 - `duplicateSelected` (Workspace + Gallery)
-- setWorkspacePaths / rebind / destroy canvas orchestration
-- geometry undo command helpers (`pushItemGeometryCommand`)
+- `setWorkspacePaths` / `finishSetWorkspacePaths` / rebind orchestration
+- geometry undo command helpers
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2499.1-own-image-content-transform-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2500.1-own-workspace-path-membership-7d823d8.bundle HEAD
 ```

@@ -27,88 +27,12 @@
 QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &paths,
                                                           const QVector<SessionImageId> &sessionIds) const
 {
-    // Prefer session-id identity. Fall back to path occurrence counts so
-    // duplicate paths remain as separate tiles (same path, distinct items).
-    QList<ImageItem *> doomed;
-    QSet<ImageItem *> doomedSeen;
-    auto doom = [&](ImageItem *item) {
-        if (!item || doomedSeen.contains(item)) {
-            return;
-        }
-        doomedSeen.insert(item);
-        doomed.append(item);
-    };
-
-    const bool haveIds = !sessionIds.isEmpty();
-    if (haveIds) {
-        QSet<SessionImageId> wantedIds;
-        for (SessionImageId id : sessionIds) {
-            if (id != kInvalidSessionImageId) {
-                wantedIds.insert(id);
-            }
-        }
-        QSet<QString> wantedPaths(paths.begin(), paths.end());
-        for (ImageItem *item : m_items) {
-            if (!item) {
-                continue;
-            }
-            const SessionImageId sid = item->sessionId();
-            if (sid != kInvalidSessionImageId) {
-                if (!wantedIds.contains(sid)) {
-                    doom(item);
-                }
-            } else if (!wantedPaths.contains(item->path())) {
-                doom(item);
-            }
-        }
-        // Excess unbound tiles for a path beyond the number of unbound session rows.
-        QHash<QString, int> unboundWanted;
-        for (int i = 0; i < paths.size(); ++i) {
-            const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
-                                                              : kInvalidSessionImageId;
-            if (sid == kInvalidSessionImageId) {
-                unboundWanted[paths.at(i)] += 1;
-            }
-        }
-        QHash<QString, int> unboundSeen;
-        for (ImageItem *item : m_items) {
-            if (!item || doomedSeen.contains(item)) {
-                continue;
-            }
-            if (item->sessionId() != kInvalidSessionImageId) {
-                continue;
-            }
-            const int n = ++unboundSeen[item->path()];
-            if (n > unboundWanted.value(item->path())) {
-                doom(item);
-            }
-        }
-    } else {
-        QHash<QString, int> wantedCount;
-        for (const QString &path : paths) {
-            wantedCount[path] += 1;
-        }
-        QHash<QString, int> seenCount;
-        for (ImageItem *item : m_items) {
-            if (!item) {
-                continue;
-            }
-            const int n = ++seenCount[item->path()];
-            if (n > wantedCount.value(item->path())) {
-                doom(item);
-            }
-        }
-    }
-    return doomed;
+    return m_workspace.collectDoomedItems(paths, sessionIds);
 }
 
 void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 {
-    for (ImageItem *item : doomed) {
-        m_displayPipeline->galleryDecodeResetPath(item->path());
-        m_displayPipeline->loadGate().removePendingWorkspacePath(item->path());
-        destroyCanvasItem(item);
-    }
+    m_workspace.destroyDoomedItems(doomed);
 }
 
 void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,

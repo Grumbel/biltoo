@@ -288,13 +288,6 @@ QPointF ImageView::findEmptyPlacement(const QSizeF &itemSize) const
 
 WorkspaceItemState ImageView::defaultStateForPath(const QString &path, int ordinal) const
 {
-    WorkspaceItemState s;
-    s.path = path;
-    s.pos = QPointF(40.0 * ordinal, 30.0 * ordinal);
-    s.scale = 1.0;
-    s.scaleY = 1.0;
-    s.rotation = 0.0;
-    s.opacity = 1.0;
-    s.z = ordinal;
-    return s;
+    return m_workspace.defaultStateForPath(path, ordinal);
 }
+
