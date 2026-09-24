@@ -117,6 +117,15 @@ public:
      * call this owner directly.
      */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
+
+    /**
+     * Resolve durable/path appearance for @p item into @p fallback; apply via
+     * full-raster install or rematerialize. ImageView thin-forwards.
+     */
+    const WorkspaceItemState *resolveStoredAppearance(ImageItem *item,
+                                                      WorkspaceItemState *fallback,
+                                                      SessionImageId *sidOut);
+    void applyStoredAppearance(ImageItem *item);
     /**
      * Gallery restore: rematerialize from ItemWorld durable appearance when
      * applied fingerprint is stale or pixels missing. ImageView forwards.

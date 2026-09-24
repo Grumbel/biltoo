@@ -30,60 +30,12 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
                                                              WorkspaceItemState *fallback,
                                                              SessionImageId *sidOut)
 {
-    if (!item || !fallback) {
-        return nullptr;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sidOut) {
-        *sidOut = sid;
-    }
-    if (sid != kInvalidSessionImageId) {
-        // Gallery/Workspace: seed orient/flip/grade from path XDG when empty.
-        // Image mode: ItemWorld only (session open already seeded).
-        if (!isImageMode()) {
-            m_displayPipeline->seedSessionAppearanceFromState(sid, item->path());
-        }
-        if (m_itemWorld.hasDurableAppearance(sid)) {
-            // Always copy through sessionAppearanceValue so sparse Crop/Color/…
-            // override lagging live xform (store-read authority).
-            *fallback = sessionAppearanceValue(sid);
-            return fallback;
-        }
-        // Bound with no durable content after seed = full frame.
-        // NEVER fall back to the path map — that leaks crop/flip across
-        // independent session images that share a file path.
-        return nullptr;
-    }
-    // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
-        *fallback = *st;
-        return fallback;
-    }
-    return nullptr;
+    return m_displayPipeline->resolveStoredAppearance(item, fallback, sidOut);
 }
 
 void ImageView::applyStoredAppearance(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    WorkspaceItemState fallback;
-    SessionImageId sid = kInvalidSessionImageId;
-    const WorkspaceItemState *app = resolveStoredAppearance(item, &fallback, &sid);
-    if (!app) {
-        return;
-    }
-    const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
-        || app->contentQuarterTurns != 0;
-    if (needsFullSource) {
-        const QImage full = m_displayPipeline->fullRasterForEdit(item->path());
-        if (!full.isNull()) {
-            m_displayPipeline->installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
-                                 sid);
-            return;
-        }
-    }
-    m_displayPipeline->rematerializeItemContent(item, *app);
+    m_displayPipeline->applyStoredAppearance(item);
 }
 
 
