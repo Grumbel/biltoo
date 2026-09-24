@@ -386,6 +386,40 @@ enum class CropRestoreSource {
     return itemCachedIndex;
 }
 
+/** Unknown-file probe placeholders used by size memo defaults. */
+[[nodiscard]] inline bool isPlaceholderProbeSize(const QSize &s)
+{
+    return s == QSize(1000, 1000) || s == QSize(1024, 1024);
+}
+
+/** Valid layout-native size (not empty, not placeholder probe). */
+[[nodiscard]] inline bool isUsableNativeSize(const QSize &s)
+{
+    return s.isValid() && s.width() > 1 && s.height() > 1
+        && !isPlaceholderProbeSize(s);
+}
+
+/**
+ * Live grade for paint/status: prefer ItemWorld runtime lag when bound;
+ * else item mirror.
+ */
+ColorAdjustments preferLiveColor(bool hasLiveColorLag,
+                                 const ColorAdjustments &lag,
+                                 const ColorAdjustments &itemGrade);
+
+/**
+ * On session bind: whether to stamp live color lag from durable Color,
+ * from non-identity item grade, or leave lag table unchanged (no identity row).
+ */
+enum class BindLagAction {
+    None,
+    FromDurableColor,
+    FromItemGrade,
+};
+
+[[nodiscard]] BindLagAction bindLiveColorLagAction(bool hasDurableColor,
+                                                   bool itemGradeIsIdentity);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

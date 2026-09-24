@@ -2,16 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2570.1-own-mode-leave-hud-index-pure** (base `7d823d8`).
+**Tip: biltoo-2571.1-own-live-color-bind-native-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **ViewModeFlags::shouldCaptureStickyPanOnLeave** — Image leave sticky pan
-- **HudModel::fileNameWithModifiedSuffix** — HUD filename ± modified mark
-- **SessionAppearance::preferSessionListIndex** — document order when bound
-- Host keeps setViewMode / hudFileName / sessionListIndex orchestration
+- **SessionAppearance::preferLiveColor** — lag vs item grade for paint/status
+- **SessionAppearance::BindLagAction** / **bindLiveColorLagAction** — bind lag
+  stamp policy (no identity row pollution)
+- **SessionAppearance::isPlaceholderProbeSize** / **isUsableNativeSize**
+- Host keeps ItemWorld lag table and intrinsic size writes
 
 ### Prior
-**2569.1** Own crop restore source and Gallery enter layout.
+**2570.1** Own mode-leave sticky pan, HUD modified suffix, session index pure.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -29,5 +30,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2570.1-own-mode-leave-hud-index-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2571.1-own-live-color-bind-native-pure-7d823d8.bundle HEAD
 ```

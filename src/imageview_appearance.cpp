@@ -144,10 +144,12 @@ ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
     // Prefer ItemWorld runtime lag when bound (host-side scratch); item mirror
     // for paint / unbound. Durable grade remains ItemWorld Color.
     const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasLiveColorLag(sid)) {
-        return m_itemWorld.liveColorLag(sid);
-    }
-    return item->colorAdjustments();
+    const bool hasLag = sid != kInvalidSessionImageId
+        && m_itemWorld.hasLiveColorLag(sid);
+    return SessionAppearance::preferLiveColor(
+        hasLag,
+        hasLag ? m_itemWorld.liveColorLag(sid) : ColorAdjustments{},
+        item->colorAdjustments());
 }
 
 void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
@@ -186,15 +188,19 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
     refreshSessionIndexCache(item);
     // Live lag is paint/slider residual. Durable Color is store authority.
     // Do not insert an identity lag row on every bind (pollutes hasLiveColorLag
-    // and made freeze→setAppearance look like a grade commit). Prefer durable
-    // Color when present; only stamp item grade when non-identity.
+    // and made freeze→setAppearance look like a grade commit).
     if (id != kInvalidSessionImageId) {
-        if (m_itemWorld.hasColor(id)) {
+        switch (SessionAppearance::bindLiveColorLagAction(
+            m_itemWorld.hasColor(id), item->colorAdjustments().isIdentity())) {
+        case SessionAppearance::BindLagAction::FromDurableColor:
             m_itemWorld.setLiveColorLag(id, m_itemWorld.color(id).grade);
-        } else if (!item->colorAdjustments().isIdentity()) {
+            break;
+        case SessionAppearance::BindLagAction::FromItemGrade:
             m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
+            break;
+        case SessionAppearance::BindLagAction::None:
+            break;
         }
-        // else: leave lag table unchanged (no identity row)
     }
 }
 

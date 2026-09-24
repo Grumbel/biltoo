@@ -196,8 +196,7 @@ int ImageView::resetContentAppearanceForTargets()
                     native = known;
                 }
             }
-            if (native.isValid() && native.width() > 1 && native.height() > 1
-                && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
+            if (SessionAppearance::isUsableNativeSize(native)) {
                 m_displayPipeline->hostSetIntrinsicSize(item, native);
             }
         }

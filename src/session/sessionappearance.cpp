@@ -723,4 +723,27 @@ CropRestoreSource cropRestoreSource(bool sessionStoreLoaded,
     return CropRestoreSource::None;
 }
 
+
+ColorAdjustments preferLiveColor(bool hasLiveColorLag,
+                                 const ColorAdjustments &lag,
+                                 const ColorAdjustments &itemGrade)
+{
+    if (hasLiveColorLag) {
+        return lag;
+    }
+    return itemGrade;
+}
+
+BindLagAction bindLiveColorLagAction(bool hasDurableColor,
+                                     bool itemGradeIsIdentity)
+{
+    if (hasDurableColor) {
+        return BindLagAction::FromDurableColor;
+    }
+    if (!itemGradeIsIdentity) {
+        return BindLagAction::FromItemGrade;
+    }
+    return BindLagAction::None;
+}
+
 } // namespace SessionAppearance
