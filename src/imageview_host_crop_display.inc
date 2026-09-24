@@ -9,6 +9,8 @@
                                     SessionImageId *sidOut) const;
     void rememberSizeFromDecode(const QString &path, const QImage &image) override;
     void rememberImageSize(const QString &path, const QSize &size);
+    /** Apply probe size to live items (layout + intrinsic). */
+    void applyProbedImageSize(const QString &path, const QSize &size);
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);

@@ -2,19 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2469.1-own-gallery-size-resolve** (base `7d823d8`).
+**Tip: biltoo-2469.2-fix-apply-probed-public** (base `7d823d8`).
 
 ### Ownership transfer
-- **2464–2468:** Workspace / framing / ImageSizeCoordinator
-- **2469:** `GallerySizeResolveHost` + `GallerySizeResolve` owned by
-  `GalleryController` (`gallerycontroller_sizeresolve.cpp`). ImageView is no
-  longer the size-gate host; `hostGallerySizeResolve()` forwards to gallery.
+- **2469:** GallerySizeResolveHost + gate on GalleryController
+- **2469.2:** applyProbedImageSize public host decl (needed by gate)
 
-### Next
-- paint collaborator (optional)
-- Dual PreferCache coordination (optional)
+### Stack
+2464–2468 as before; dual compare works.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2469.1-own-gallery-size-resolve-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2469.2-fix-apply-probed-public-7d823d8.bundle HEAD
 ```
