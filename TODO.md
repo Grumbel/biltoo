@@ -2,15 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2527.1-fix-ensureVisible-own-session-nav** (base `7d823d8`).
-
-### Build fix
-- `ensureVisibleItem`: include `imageitem.h` + `QGraphicsItem` cast (incomplete type after
-  framing TU thin); use `ViewTransform::kEnsureVisibleMargin`
+**Tip: biltoo-2528.1-own-wheel-zoom** (base `7d823d8`).
 
 ### Ownership transfer
-- **ImageController::setImageModeNavigationEnabled / setGalleryReturnAvailable**
-  — session-nav flags + hover clear + viewport update (ImageView thin routers)
+- **ImageController::wheelZoomAboutCursor** — wheel zoom about cursor (Image / free-form
+  Workspace after Gallery wheel tries). ImageView::wheelEvent is dispatch only.
+
+### Prior in this stack (2522–2527)
+- Transform reset; attention session; gallery open/focus; text link+hover; Ctrl+A
+- zoomIn/Out; colour grade; angleAt; ensureVisible; session-nav enable
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -24,10 +24,10 @@ appearance load/apply / paint / status composition / pan shell
 ### Next thinning candidates
 - appearance apply/commit residual
 - status text composition (HudModel already pure)
-- wheel zoom / pan shell
+- pan shell (ViewportChrome bag; multi-mode)
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2527.1-fix-ensureVisible-own-session-nav-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2528.1-own-wheel-zoom-7d823d8.bundle HEAD
 ```

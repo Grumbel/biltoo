@@ -212,4 +212,3 @@
     bool tryKeyPressZoomRegion(QKeyEvent *event);
 
     // wheelEvent phases
-    void wheelZoomViewAboutCursor(QWheelEvent *event);

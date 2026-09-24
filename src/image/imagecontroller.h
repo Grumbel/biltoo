@@ -16,6 +16,7 @@
 class ImageView;
 class ImageItem;
 class QKeyEvent;
+class QWheelEvent;
 class QMouseEvent;
 class QPainter;
 class QTimer;
@@ -89,6 +90,8 @@ public:
     void zoomViewBy(qreal factor);
     void zoomIn();
     void zoomOut();
+    /** Wheel zoom about cursor (Image / free-form Workspace; after Gallery tries). */
+    void wheelZoomAboutCursor(QWheelEvent *event);
     /** Workspace overview scale ≈ four zoom-out steps (41%). */
     void setWorkspaceDefaultViewScale();
     void preserveImageViewOnLogicalSizeChange(ImageItem *item,

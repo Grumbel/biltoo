@@ -86,36 +86,12 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
     }
 }
-void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
-{
-    const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
-    // Image mode and free-form Workspace: zoom the view about the cursor.
-    // Do not touch selected-item geometry here — prepareGeometryChange on
-    // handle pads was expanding AABBs and fighting the user's pan/zoom.
-    m_slideshow.cancelSlideshowMotion();
-    releaseStickyZoom();
-    m_image.framing().releaseFit();
-    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    scale(factor, factor);
-    // Workspace: keep sceneRect covering all free-form tiles after zoom so
-    // items are not clipped when the viewport-in-scene halo shrinks.
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
-    // Per-notch climb+tick was heavy on the GUI thread (set_viewport, cancel,
-    // issue_requests). Paint uses the last plan + soft until the debounce fires.
-    m_displayPipeline->scheduleTileLodAfterInteraction(50);
-    viewport()->update(); // refresh viewport-space chrome at the new scale
-    emit statusChanged();
-    event->accept();
-}
 void ImageView::wheelEvent(QWheelEvent *event)
 {
     if (m_gallery.tryWheelGalleryZoom(event) || m_gallery.tryWheelGalleryScroll(event)) {
         return;
     }
-    wheelZoomViewAboutCursor(event);
+    m_image.wheelZoomAboutCursor(event);
 }
 void ImageView::resizeEvent(QResizeEvent *event)
 {

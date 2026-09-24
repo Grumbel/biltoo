@@ -4,6 +4,8 @@
 // Image-mode framing and sticky pan (owned by ImageController).
 
 #include "image/imagecontroller.h"
+#include <QWheelEvent>
+#include <QGraphicsView>
 #include "imageview.h"
 #include "util/biltoo_thread.h"
 #include "imageitem.h"
@@ -490,6 +492,36 @@ void ImageController::zoomIn()
 void ImageController::zoomOut()
 {
     zoomViewBy(1.0 / 1.25);
+}
+
+void ImageController::wheelZoomAboutCursor(QWheelEvent *event)
+{
+    if (!event) {
+        return;
+    }
+    const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
+    // Image mode and free-form Workspace: zoom the view about the cursor.
+    // Do not touch selected-item geometry here — prepareGeometryChange on
+    // handle pads was expanding AABBs and fighting the user's pan/zoom.
+    m_view->hostSlideshow().cancelSlideshowMotion();
+    m_view->releaseStickyZoom();
+    m_framing.releaseFit();
+    m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    m_view->scale(factor, factor);
+    // Workspace: keep sceneRect covering all free-form tiles after zoom so
+    // items are not clipped when the viewport-in-scene halo shrinks.
+    if (m_view->isWorkspaceMode()) {
+        m_view->updateWorkspaceSceneRect();
+    }
+    // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
+    // Per-notch climb+tick was heavy on the GUI thread (set_viewport, cancel,
+    // issue_requests). Paint uses the last plan + soft until the debounce fires.
+    m_view->hostDisplayPipeline().scheduleTileLodAfterInteraction(50);
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update(); // refresh viewport-space chrome at the new scale
+    }
+    emit m_view->statusChanged();
+    event->accept();
 }
 
 void ImageController::setWorkspaceDefaultViewScale()
