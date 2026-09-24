@@ -355,6 +355,24 @@ QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
                                         bool liveHasContentMods,
                                         bool pathHasContentAppearance);
 
+/**
+ * Priority for restoring crop appearance onto a live tile:
+ * session store → sparse Crop → live applied freeze → unbound path map.
+ */
+enum class CropRestoreSource {
+    None = 0,
+    SessionStore,
+    SparseCrop,
+    LiveAppliedFreeze,
+    PathMap,
+};
+
+[[nodiscard]] CropRestoreSource cropRestoreSource(bool sessionStoreLoaded,
+                                                  SessionImageId sid,
+                                                  bool hasSparseCrop,
+                                                  bool liveAppliedHasCrop,
+                                                  bool hasPathState);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

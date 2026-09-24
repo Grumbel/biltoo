@@ -186,10 +186,7 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
-    LayoutMode layout = hostLayout().currentMode();
-    if (layout == LayoutMode::FreeForm) {
-        layout = LayoutMode::Masonry;
-    }
+    const LayoutMode layout = hostLayout().galleryEnterMode();
     setActiveMode(ViewMode::Gallery, layout);
     m_gallery.enter(static_cast<int>(layout), static_cast<int>(previous));
 }

@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2568.1-own-content-edit-detect-pure** (base `7d823d8`).
+**Tip: biltoo-2569.1-own-crop-restore-gallery-enter** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::shouldAugmentFromPathStore** — unbound path XDG layout load
-- **SessionAppearance::itemShowsContentEdit** — per-item content-edit presence
-  (sparse / durable / live applied / path XDG)
-- `contentLayoutSize` / `targetHasContentAppearance` keep host queries
+- **SessionAppearance::CropRestoreSource** / **cropRestoreSource** — priority for
+  restoring crop (session store → sparse → live freeze → path map)
+- **LayoutPrefs::galleryEnterMode** — FreeForm → Masonry on Gallery enter
+- `loadRestoreCropAppearance` / `setViewMode` Gallery branch keep host loads
 
 ### Prior
-**2567.1** Own pickNativeSize and path prefer pure helpers.
+**2568.1** Own content-edit detect pure on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -19,7 +19,7 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freeze / flush / remember / persist host residual (orchestration only),
+freeze / flush / remember / persist / crop-restore host residual,
 drawBackground / drawForeground one-line QGraphicsView overrides,
 input event routers (QGraphicsView overrides)
 
@@ -29,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2568.1-own-content-edit-detect-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2569.1-own-crop-restore-gallery-enter-7d823d8.bundle HEAD
 ```

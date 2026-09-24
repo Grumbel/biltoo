@@ -33,6 +33,18 @@ struct LayoutPrefs {
 
     LayoutMode currentMode() const { return mode; }
 
+    /**
+     * Gallery enter layout: FreeForm is Workspace-only on this bag; map to
+     * Masonry so Gallery never starts in free-form.
+     */
+    LayoutMode galleryEnterMode() const
+    {
+        if (mode == LayoutMode::FreeForm) {
+            return LayoutMode::Masonry;
+        }
+        return mode;
+    }
+
     int gridColumnsValue() const { return gridColumns; }
 
     int masonryColumnsValue() const { return masonryColumns; }

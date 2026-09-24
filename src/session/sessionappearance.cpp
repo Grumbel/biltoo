@@ -701,4 +701,26 @@ bool itemShowsContentEdit(SessionImageId sid,
     return pathHasContentAppearance;
 }
 
+
+CropRestoreSource cropRestoreSource(bool sessionStoreLoaded,
+                                    SessionImageId sid,
+                                    bool hasSparseCrop,
+                                    bool liveAppliedHasCrop,
+                                    bool hasPathState)
+{
+    if (sessionStoreLoaded) {
+        return CropRestoreSource::SessionStore;
+    }
+    if (sid != kInvalidSessionImageId && hasSparseCrop) {
+        return CropRestoreSource::SparseCrop;
+    }
+    if (liveAppliedHasCrop) {
+        return CropRestoreSource::LiveAppliedFreeze;
+    }
+    if (sid == kInvalidSessionImageId && hasPathState) {
+        return CropRestoreSource::PathMap;
+    }
+    return CropRestoreSource::None;
+}
+
 } // namespace SessionAppearance

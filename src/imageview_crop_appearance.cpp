@@ -51,25 +51,32 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (sidOut) {
         *sidOut = sid;
     }
-    if (loadSessionAppearance(sid, app)) {
-        return true;
-    }
+    WorkspaceItemState sessionApp;
+    const bool sessionLoaded = loadSessionAppearance(sid, &sessionApp);
+    const WorkspaceItemState *pathSt =
+        (sid == kInvalidSessionImageId) ? m_itemWorld.getPathState(item->path())
+                                        : nullptr;
     // Stage 2 / 4a: durable crop from sparse-prefer store, not a parallel
     // captureState rebuild. Live applied xform still uses captureState.
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasCrop(sid)) {
+    switch (SessionAppearance::cropRestoreSource(
+        sessionLoaded, sid,
+        sid != kInvalidSessionImageId && m_itemWorld.hasCrop(sid),
+        itemAppliedContentXform(item).hasCrop,
+        pathSt != nullptr)) {
+    case SessionAppearance::CropRestoreSource::SessionStore:
+        *app = sessionApp;
+        return true;
+    case SessionAppearance::CropRestoreSource::SparseCrop:
         *app = sessionAppearanceValue(sid);
         return true;
-    }
-    if (itemAppliedContentXform(item).hasCrop) {
+    case SessionAppearance::CropRestoreSource::LiveAppliedFreeze:
         *app = freezeItemAppearance(item);
         return true;
-    }
-    // Unbound path map may hold crop; bound crop is sparse only.
-    if (sid == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
-            *app = *st;
-            return true;
-        }
+    case SessionAppearance::CropRestoreSource::PathMap:
+        *app = *pathSt;
+        return true;
+    case SessionAppearance::CropRestoreSource::None:
+        break;
     }
     return false;
 }
