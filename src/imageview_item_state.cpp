@@ -27,49 +27,38 @@ ItemComponents::Placement ImageView::placementFromItem(const ImageItem *item)
 
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
+    if (!item) {
+        return {};
+    }
     // Interaction snapshot: durable content from ItemWorld sparse tables
     // (Stage 4b), then live pose / applied ContentXform / grade overlays.
     // Bound content starts from sessionAppearanceValue (single merge policy).
     const SessionImageId sid = resolveContentEditSessionId(item);
-
-    WorkspaceItemState s;
-    if (sid != kInvalidSessionImageId) {
-        s = sessionAppearanceValue(sid);
-    } else {
-        // Unbound: live applied via tileContentXform; path map may hold
-        // orient extras (quarter turns / crop source).
-        SessionAppearance::fillUnboundContentFromLiveAndPath(
-            s, itemAppliedContentXform(item), m_itemWorld.getPathState(item->path()));
+    const bool hasBoundDurable =
+        sid != kInvalidSessionImageId && hasSessionAppearance(sid);
+    WorkspaceItemState boundFallback;
+    const WorkspaceItemState *boundPtr = nullptr;
+    if (hasBoundDurable) {
+        boundFallback = sessionAppearanceValue(sid);
+        boundPtr = &boundFallback;
     }
-
-    s.path = item->path();
-    s.sessionId = sid != kInvalidSessionImageId ? sid : item->sessionId();
-    s.sessionIndex = sessionListIndex(item); // document order when bound
-    // Live pose always wins (interaction may lead the Placement table).
-    ItemComponents::applyPlacementToState(s, placementFromItem(item));
-
-    if (sid != kInvalidSessionImageId) {
-        // Applied ContentXform is mid-edit authority over sparse tables
-        // (Gallery full-circle rotate must not resurrect turns). Without an
-        // applied fingerprint, Stage 4b sparse assembly is sole content truth —
-        // no legacy live-xform gap fill.
-        if (itemHasAppliedContentXform(item)) {
-            SessionAppearance::overlayAppliedContentXform(
-                s, itemAppliedContentXform(item));
-        }
-    }
-    // Live grade is interaction authority (slider may lead ItemWorld Color
-    // until flushColorAdjustCommit).
-    s.colorAdjust = itemLiveColor(item);
-
-    // Path-map list-index hint: unbound tiles only. Bound ids use
-    // sessionListIndex / SessionDocument — do not adopt a stale path-book index.
-    if (s.sessionIndex < 0 && item->sessionId() == kInvalidSessionImageId) {
-        SessionAppearance::adoptPathSessionIndexHint(
-            s, m_itemWorld.getPathState(item->path()));
-    }
-    return s;
+    const WorkspaceItemState *pathState =
+        (sid == kInvalidSessionImageId) ? m_itemWorld.getPathState(item->path())
+                                        : nullptr;
+    return SessionAppearance::assembleCaptureState(
+        sid,
+        item->path(),
+        item->sessionId(),
+        sessionListIndex(item),
+        placementFromItem(item),
+        hasBoundDurable,
+        boundPtr,
+        itemAppliedContentXform(item),
+        itemHasAppliedContentXform(item),
+        pathState,
+        itemLiveColor(item));
 }
+
 
 WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
 {

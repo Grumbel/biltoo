@@ -325,33 +325,16 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
 void ImageView::persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
                                                 const char *debugTag)
 {
-    // Bound session images: path XDG keeps orient/flip/grade as a file-level
-    // hint; crop stays SessionImageId-only (duplicates share a path — IDENTITY).
-    const bool bound = item && item->sessionId() != kInvalidSessionImageId;
-    const bool writeCrop = SessionAppearance::shouldWriteCropToPathStore(
-        bound, s.hasCrop, s.cropRect.isEmpty());
-    ThumtooCache::StoredContentAppearance stored;
-    if (SessionAppearance::fillStoredContentAppearance(&stored, s, writeCrop)) {
-        ThumtooCache::saveContentAppearance(item->path(), stored);
-        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-            qWarning().noquote()
-                << QStringLiteral("[appearance] %1 save path=%2 h=%3 v=%4 turns=%5")
-                       .arg(QLatin1String(debugTag))
-                       .arg(item->path())
-                       .arg(s.contentHFlip)
-                       .arg(s.contentVFlip)
-                       .arg(s.contentQuarterTurns);
-        }
-    } else {
-        ThumtooCache::clearContentAppearance(item->path());
-        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-            qWarning().noquote()
-                << QStringLiteral("[appearance] %1 clear (identity) path=%2")
-                       .arg(QLatin1String(debugTag))
-                       .arg(item->path());
-        }
+    if (!item) {
+        return;
     }
+    SessionAppearance::persistPathContentAppearance(
+        item->path(),
+        item->sessionId() != kInvalidSessionImageId,
+        s,
+        debugTag);
 }
+
 
 
 

@@ -359,6 +359,27 @@ QImage softImageWithAppearanceSources(const QImage &src, SessionImageId sid,
                                       const ColorAdjustments &sparseGrade);
 
 /**
+ * Write (or clear) path XDG content appearance from a frozen slot.
+ * Bound tiles: orient/flip/grade only (no crop). Unbound may include crop.
+ * ImageView::persistDurableContentAppearance is a thin router.
+ */
+void persistPathContentAppearance(const QString &path, bool sessionBound,
+                                  const WorkspaceItemState &s,
+                                  const char *debugTag = nullptr);
+
+/**
+ * Interaction snapshot assembly: durable/session base + live pose / applied
+ * ContentXform / grade overlays. ImageView::captureState gathers host inputs.
+ */
+WorkspaceItemState assembleCaptureState(
+    SessionImageId resolvedSid, const QString &path, SessionImageId itemSid,
+    int sessionIndex, const ItemComponents::Placement &placement,
+    bool hasBoundDurable, const WorkspaceItemState *boundAppearance,
+    const ContentXform::Value &appliedXform, bool hasAppliedXform,
+    const WorkspaceItemState *pathState, const ColorAdjustments &liveColor);
+
+
+/**
  * Unbound path may load XDG content appearance for layout when allowStore and
  * no content yet. Bound SessionImageId never uses path XDG.
  */

@@ -12,6 +12,9 @@
 
 #include <QtMath>
 #include <QImage>
+#include <QLoggingCategory>
+#include <QtGlobal>
+#include <QDebug>
 #include <QPainter>
 #include <QTransform>
 #include <QPolygonF>
@@ -748,6 +751,83 @@ QImage softImageWithAppearanceSources(const QImage &src, SessionImageId sid,
         src, paint, PixelKind::SoftPreview);
     return out.isNull() ? src : out;
 }
+
+void persistPathContentAppearance(const QString &path, bool sessionBound,
+                                  const WorkspaceItemState &s,
+                                  const char *debugTag)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    // Bound session images: path XDG keeps orient/flip/grade as a file-level
+    // hint; crop stays SessionImageId-only (duplicates share a path — IDENTITY).
+    const bool writeCrop = shouldWriteCropToPathStore(
+        sessionBound, s.hasCrop, s.cropRect.isEmpty());
+    ThumtooCache::StoredContentAppearance stored;
+    if (fillStoredContentAppearance(&stored, s, writeCrop)) {
+        ThumtooCache::saveContentAppearance(path, stored);
+        if (debugTag && qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+            qWarning().noquote()
+                << QStringLiteral("[appearance] %1 save path=%2 h=%3 v=%4 turns=%5")
+                       .arg(QLatin1String(debugTag))
+                       .arg(path)
+                       .arg(s.contentHFlip)
+                       .arg(s.contentVFlip)
+                       .arg(s.contentQuarterTurns);
+        }
+    } else {
+        ThumtooCache::clearContentAppearance(path);
+        if (debugTag && qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
+            qWarning().noquote()
+                << QStringLiteral("[appearance] %1 clear (identity) path=%2")
+                       .arg(QLatin1String(debugTag))
+                       .arg(path);
+        }
+    }
+}
+
+WorkspaceItemState assembleCaptureState(
+    SessionImageId resolvedSid, const QString &path, SessionImageId itemSid,
+    int sessionIndex, const ItemComponents::Placement &placement,
+    bool hasBoundDurable, const WorkspaceItemState *boundAppearance,
+    const ContentXform::Value &appliedXform, bool hasAppliedXform,
+    const WorkspaceItemState *pathState, const ColorAdjustments &liveColor)
+{
+    // Interaction snapshot: durable content from ItemWorld sparse tables
+    // (Stage 4b), then live pose / applied ContentXform / grade overlays.
+    WorkspaceItemState s;
+    if (hasBoundDurable && boundAppearance) {
+        s = *boundAppearance;
+    } else {
+        // Unbound: live applied via tileContentXform; path map may hold
+        // orient extras (quarter turns / crop source).
+        fillUnboundContentFromLiveAndPath(s, appliedXform, pathState);
+    }
+
+    s.path = path;
+    s.sessionId = resolvedSid != kInvalidSessionImageId ? resolvedSid : itemSid;
+    s.sessionIndex = sessionIndex;
+    // Live pose always wins (interaction may lead the Placement table).
+    ItemComponents::applyPlacementToState(s, placement);
+
+    if (resolvedSid != kInvalidSessionImageId) {
+        // Applied ContentXform is mid-edit authority over sparse tables.
+        if (hasAppliedXform) {
+            overlayAppliedContentXform(s, appliedXform);
+        }
+    }
+    // Live grade is interaction authority (slider may lead ItemWorld Color
+    // until flushColorAdjustCommit).
+    s.colorAdjust = liveColor;
+
+    // Path-map list-index hint: unbound tiles only. Bound ids use
+    // sessionListIndex / SessionDocument — do not adopt a stale path-book index.
+    if (s.sessionIndex < 0 && itemSid == kInvalidSessionImageId) {
+        adoptPathSessionIndexHint(s, pathState);
+    }
+    return s;
+}
+
 
 
 
