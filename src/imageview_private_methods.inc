@@ -115,6 +115,8 @@
     void flushColorAdjustCommit();
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
+    void restoreStickyPanAnchor(ImageItem *item);
+    bool sessionIdMatchesPath(SessionImageId id, const QString &path) const;
     void setItemIntrinsicSize(ImageItem *item, const QSize &size);
     void rematerializeGalleryItemFromStore(ImageItem *item);
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);

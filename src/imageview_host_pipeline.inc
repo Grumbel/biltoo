@@ -3,16 +3,15 @@
 
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
+    void clearTextSelection();
     bool matchesLoadGeneration(quint64 gen) const
     {
         return m_displayPipeline.loadGate().accepts(gen);
     }
-    void clearTextSelection();
     void refreshTextLayer();
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
     void captureStickyPanAnchor(ImageItem *item);
-    void restoreStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
     /** View-local pack multiplicity (never SessionDocument — pathOrderClear). */
     int pathOrderOccurrences(const QString &path) const
