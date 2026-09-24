@@ -494,7 +494,7 @@ void MainWindow::installProjectSession(
     if (m_imageView) {
         // Drop prior session tiles, stashes, and durable Workspace snapshot so
         // enterWorkspaceMode does not restore the previous arrangement.
-        m_imageView->clearWorkspace();
+        m_imageView->hostWorkspace().clearWorkspace();
         installProjectAppearances(ids, appearanceByRow, rowHasAppearance);
         installProjectBackground(doc, projectPath);
     }

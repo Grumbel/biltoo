@@ -185,11 +185,6 @@ void ImageView::dropEvent(QDropEvent *event)
 
 
 // --- from imageview_modes.cpp ---
-void ImageView::stopDeferredPacking()
-{
-    m_gallery.stopLayoutDebounceTimer();
-    hostLayoutApply().clear();
-}
 
 void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
@@ -247,19 +242,9 @@ void ImageView::applyToolDragMode()
     m_workspace.applyToolDragMode();
 }
 
-void ImageView::clearInteractionState()
-{
-    m_workspace.clearInteractionState();
-}
-
 void ImageView::clearLiveCanvas()
 {
     m_workspace.clearLiveCanvas();
-}
-
-void ImageView::clearWorkspace()
-{
-    m_workspace.clearWorkspace();
 }
 
 void ImageView::prepareImageModeCanvas()
@@ -388,14 +373,4 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
 
 
 // --- Tool / nav shell (was imageview_view.cpp) ---
-
-void ImageView::setImageModeNavigationEnabled(bool on)
-{
-    m_image.setImageModeNavigationEnabled(on);
-}
-
-void ImageView::setGalleryReturnAvailable(bool on)
-{
-    m_image.setGalleryReturnAvailable(on);
-}
 

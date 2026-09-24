@@ -32,44 +32,9 @@ ImageItem *ImageView::targetItem() const
     return m_workspace.targetItem();
 }
 
-int ImageView::workspacePathOccurrenceCount(const QString &path) const
-{
-    return m_workspace.pathOccurrenceCount(path);
-}
-
-void ImageView::focusGalleryItem(ImageItem *item)
-{
-    m_gallery.focusItem(item);
-}
-
-void ImageView::focusSessionId(SessionImageId sessionId)
-{
-    m_gallery.focusSessionId(sessionId);
-}
-
-void ImageView::focusSessionPath(const QString &path)
-{
-    m_gallery.focusSessionPath(path);
-}
-
-void ImageView::revealGalleryPath(const QString &path)
-{
-    m_gallery.revealPath(path);
-}
-
-void ImageView::revealGallerySessionId(SessionImageId sessionId)
-{
-    m_gallery.revealSessionId(sessionId);
-}
-
 void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
 {
     m_workspace.destroyCanvasItem(item, persistState);
-}
-
-bool ImageView::hasWorkspaceContent() const
-{
-    return m_workspace.hasContent();
 }
 
 void ImageView::updateWorkspaceSceneRect()
@@ -144,11 +109,6 @@ void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &ke
                                                   scrollV);
 }
 
-void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
-{
-    m_workspace.removeWorkspaceSessionId(sessionId);
-}
-
 void ImageView::setCurrentSessionId(SessionImageId id)
 {
     if (m_session.identity().currentId == id) {
@@ -157,18 +117,6 @@ void ImageView::setCurrentSessionId(SessionImageId id)
     m_session.identity().setCurrentId(id);
     // Attention marker is per SessionImageId — reload draft for the new image.
     m_attentionCtrl.onCurrentSessionChanged();
-}
-
-void ImageView::removeCanvasSessionIds(const QList<SessionImageId> &ids)
-{
-    m_workspace.removeCanvasSessionIds(ids);
-}
-
-void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
-                                        const QStringList &paths,
-                                        const QList<int> &sessionIndices)
-{
-    m_workspace.placeSessionIdsOnCanvas(ids, paths, sessionIndices);
 }
 
 // --- from src/imageview_pageguide.cpp ---
@@ -229,11 +177,6 @@ void ImageView::selectBySessionIndices(const QList<int> &indices)
     m_workspace.selectBySessionIndices(indices);
 }
 
-QList<SessionImageId> ImageView::selectedSessionIds() const
-{
-    return m_workspace.selectedSessionIds();
-}
-
 void ImageView::selectBySessionIds(const QList<SessionImageId> &ids)
 {
     m_workspace.selectBySessionIds(ids);
@@ -244,24 +187,9 @@ void ImageView::selectPathsByOccurrence(const QStringList &paths)
     m_workspace.selectPathsByOccurrence(paths);
 }
 
-bool ImageView::hasTransformTargets() const
-{
-    return m_workspace.hasTransformTargets();
-}
-
-bool ImageView::hasSingleCropTarget() const
-{
-    return m_workspace.hasSingleCropTarget();
-}
-
 bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 {
     return m_workspace.validateUniqueLiveSessionIds(context);
-}
-
-QList<int> ImageView::selectedSessionIndices() const
-{
-    return m_workspace.selectedSessionIndices();
 }
 
 void ImageView::selectAllCanvasItems()
@@ -280,17 +208,5 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
                                   int firstSessionIndex)
 {
     m_workspace.duplicateSelected(newIds, firstSessionIndex);
-}
-
-QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
-{
-    return m_workspace.captureSelectedClipboard();
-}
-
-void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,
-                                             const QVector<SessionImageId> &newIds,
-                                             const QList<int> &sessionIndices)
-{
-    m_workspace.placeClipboardItems(items, newIds, sessionIndices);
 }
 

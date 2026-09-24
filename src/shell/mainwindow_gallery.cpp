@@ -671,7 +671,7 @@ void MainWindow::updateUpToGalleryAction()
         m_backToGalleryAct->setToolTip(tr("Return to Gallery"));
     }
     if (m_imageView) {
-        m_imageView->setGalleryReturnAvailable(canReturn);
+        m_imageView->hostImage().setGalleryReturnAvailable(canReturn);
     }
 }
 
@@ -720,14 +720,14 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_duplicateAct) {
         m_duplicateAct->setVisible(true);
         const bool canDup = m_imageView
-            && ((workspace && m_imageView->hasTransformTargets())
+            && ((workspace && m_imageView->hostWorkspace().hasTransformTargets())
                 || (m_imageView->isGalleryMode()
                     && !m_imageView->selectedPaths().isEmpty()));
         m_duplicateAct->setEnabled(canDup);
     }
     // Copy/Cut: Workspace selection only. Paste stays available (enters Workspace).
     const bool canEditTiles = workspace && m_imageView
-        && m_imageView->hasTransformTargets();
+        && m_imageView->hostWorkspace().hasTransformTargets();
     if (m_copyWorkspaceAct) {
         m_copyWorkspaceAct->setVisible(true);
         m_copyWorkspaceAct->setEnabled(canEditTiles);

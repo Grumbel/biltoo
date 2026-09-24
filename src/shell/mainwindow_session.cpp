@@ -241,7 +241,7 @@ void MainWindow::newSession()
     if (m_imageView) {
         // Drop all canvas objects and classic path so Image mode does not
         // reload the previous file after the mode switch.
-        m_imageView->clearWorkspace();
+        m_imageView->hostWorkspace().clearWorkspace();
         m_imageView->clearWorkspaceBackground();
         if (!m_imageView->isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);
@@ -466,9 +466,9 @@ bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
         const SessionImageId sid = sessionIdAt(m_currentIndex);
         if (sid != kInvalidSessionImageId
             && m_imageView->findItemBySessionId(sid)) {
-            m_imageView->focusSessionId(sid);
+            m_imageView->hostGallery().focusSessionId(sid);
         } else {
-            m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
+            m_imageView->hostGallery().focusSessionPath(m_session.paths().at(m_currentIndex));
         }
         return true;
     }
@@ -568,18 +568,18 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
             const SessionImageId sid = sessionIdAt(m_currentIndex);
             if (sid != kInvalidSessionImageId
                 && m_imageView->findItemBySessionId(sid)) {
-                m_imageView->focusSessionId(sid);
+                m_imageView->hostGallery().focusSessionId(sid);
             } else {
-                m_imageView->focusSessionPath(path);
+                m_imageView->hostGallery().focusSessionPath(path);
             }
         }
     } else if (m_imageView) {
         const SessionImageId sid = sessionIdAt(m_currentIndex);
         if (sid != kInvalidSessionImageId
             && m_imageView->findItemBySessionId(sid)) {
-            m_imageView->focusSessionId(sid);
+            m_imageView->hostGallery().focusSessionId(sid);
         } else {
-            m_imageView->focusSessionPath(path);
+            m_imageView->hostGallery().focusSessionPath(path);
         }
     }
 }

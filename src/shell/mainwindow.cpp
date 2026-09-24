@@ -260,7 +260,7 @@ MainWindow::MainWindow(QWidget *parent)
                 // Mirror Gallery multi-select onto the filmstrip (same as Workspace).
                 if (!m_syncingSelection && m_thumbnailBar && m_imageView) {
                     m_syncingSelection = true;
-                    m_thumbnailBar->setSelectedIndices(m_imageView->selectedSessionIndices());
+                    m_thumbnailBar->setSelectedIndices(m_imageView->hostWorkspace().selectedSessionIndices());
                     m_syncingSelection = false;
                 }
             });
@@ -275,7 +275,7 @@ MainWindow::MainWindow(QWidget *parent)
             return;
         }
         m_syncingSelection = true;
-        m_thumbnailBar->setSelectedIndices(m_imageView->selectedSessionIndices());
+        m_thumbnailBar->setSelectedIndices(m_imageView->hostWorkspace().selectedSessionIndices());
         m_syncingSelection = false;
     });
 
@@ -345,7 +345,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_adjustmentsPanel, &AdjustmentsPanel::adjustmentsChanged,
             this, [this](const ColorAdjustments &adj) {
                 if (m_imageView) {
-                    m_imageView->setTargetColorAdjustments(adj);
+                    m_imageView->hostImage().setTargetColorAdjustments(adj);
                 }
                 // Histogram / vectorscope: rebuild after slider idle (not every tick).
                 if (!m_adjustmentsPreviewTimer) {
@@ -564,9 +564,9 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
             && sel.last() < m_session.paths().size()) {
             const SessionImageId sid = sessionIdAt(sel.last());
             if (sid != kInvalidSessionImageId) {
-                m_imageView->revealGallerySessionId(sid);
+                m_imageView->hostGallery().revealSessionId(sid);
             } else {
-                m_imageView->revealGalleryPath(m_session.paths().at(sel.last()));
+                m_imageView->hostGallery().revealPath(m_session.paths().at(sel.last()));
             }
         }
     }
@@ -761,7 +761,7 @@ void MainWindow::flipVertical()
 
 void MainWindow::resetContentAppearance()
 {
-    if (!m_imageView || !m_imageView->targetHasContentAppearance()) {
+    if (!m_imageView || !m_imageView->hostImage().targetHasContentAppearance()) {
         return;
     }
     QMessageBox box(this);
@@ -806,7 +806,7 @@ void MainWindow::toggleCropMode()
     // mode, then enter crop once pixels are ready.
     if (want && m_imageView->isGalleryMode()) {
         ImageItem *item = m_imageView->targetItem();
-        if (!item || !m_imageView->hasSingleCropTarget()) {
+        if (!item || !m_imageView->hostWorkspace().hasSingleCropTarget()) {
             if (m_cropAct) {
                 m_cropAct->setChecked(false);
             }
@@ -1421,7 +1421,7 @@ QList<int> MainWindow::sessionSelectionIndices() const
         }
     }
     if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
-        for (int idx : m_imageView->selectedSessionIndices()) {
+        for (int idx : m_imageView->hostWorkspace().selectedSessionIndices()) {
             if (idx >= 0 && idx < m_session.size()) {
                 set.insert(idx);
             }
@@ -3645,7 +3645,7 @@ bool MainWindow::workspaceHasUnsavedWork() const
     if (!m_workspaceDirty) {
         return false;
     }
-    return m_imageView && m_imageView->hasWorkspaceContent();
+    return m_imageView && m_imageView->hostWorkspace().hasContent();
 }
 
 void MainWindow::markWorkspaceDirty()
@@ -3749,7 +3749,7 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
         // Prefer session-id membership over path counts (duplicates share a path).
         const bool alreadyOnCanvas = (sourceSid != kInvalidSessionImageId)
             ? (m_imageView->findItemBySessionId(sourceSid) != nullptr)
-            : (m_imageView->workspacePathOccurrenceCount(img) > 0);
+            : (m_imageView->hostWorkspace().pathOccurrenceCount(img) > 0);
         // Session image already on the canvas: allocate a new session image
         // (drop-duplicate) and copy content appearance so a cropped filmstrip
         // drag does not place a full-frame / wrong-looking twin.

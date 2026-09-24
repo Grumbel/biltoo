@@ -37,7 +37,7 @@ void ImageController::enter()
     // Gallery/Workspace → Image: matching onLeave already stashed live tiles.
     // MODE_OWNERSHIP.md: never take ImageItem* out of a mode stash.
     m_view->setActiveMode(ImageView::ViewMode::Image, LayoutMode::FreeForm);
-    m_view->stopDeferredPacking();
+    m_view->hostGallery().stopLayoutDebounceTimer();
     m_view->prepareImageModeCanvas();
     m_view->hostGalleryDecodeBook().setDeferPopulate(false);
 

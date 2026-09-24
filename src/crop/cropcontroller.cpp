@@ -445,7 +445,7 @@ bool CropController::enterCropModeFromUi()
         return false;
     }
     // Image or Workspace: one explicit subject only.
-    if (!m_view->hasSingleCropTarget()) {
+    if (!m_view->hostWorkspace().hasSingleCropTarget()) {
         flashCropHud(CropFlash::needSingleTarget());
         return false;
     }

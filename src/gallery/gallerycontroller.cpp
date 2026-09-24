@@ -350,7 +350,7 @@ void GalleryController::onLeave(int nextMode)
     m_view->setDragMode(QGraphicsView::NoDrag);
     // Stop deferred packs immediately — a pending 0ms debounce after
     // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
-    m_view->stopDeferredPacking();
+    stopLayoutDebounceTimer();
     m_view->hostGallerySizeResolve().cancel();
     m_pendingRestore = false;
     // Gallery → Image or Workspace: keep pack in Gallery stash (off-scene).
@@ -1066,7 +1066,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
         ImageItem *item = (event->key() == Qt::Key_Home)
                               ? m_view->liveItems().first()
                               : m_view->liveItems().last();
-        m_view->focusGalleryItem(item);
+        focusItem(item);
         emitItemFocus(item);
         event->accept();
         return true;
@@ -1104,7 +1104,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
     if (!best) {
         return false;
     }
-    m_view->focusGalleryItem(best);
+    focusItem(best);
     emitItemFocus(best);
     event->accept();
     return true;

@@ -49,7 +49,7 @@ bool prepareExpandedSession(ImageView *view,
         view->hostWorkspace().discardStash();
         view->hostWorkspace().clearDurableSnapshot();
         if (clearLiveWorkspace) {
-            view->clearWorkspace();
+            view->hostWorkspace().clearWorkspace();
         }
     }
 

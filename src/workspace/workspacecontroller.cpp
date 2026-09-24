@@ -184,7 +184,7 @@ void WorkspaceController::stashItems()
     m_stashedViewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
     m_hasStashedView = true;
     m_stashedItems = m_view->liveItems();
-    m_view->clearInteractionState();
+    clearInteractionState();
     for (ImageItem *item : m_stashedItems) {
         if (!item) {
             continue;

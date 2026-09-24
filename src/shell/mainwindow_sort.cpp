@@ -463,7 +463,7 @@ void MainWindow::applySessionOrder(const QStringList &paths,
             m_imageView->enterGallery(layout);
             if (id != kInvalidSessionImageId
                 && m_imageView->findItemBySessionId(id)) {
-                m_imageView->focusSessionId(id);
+                m_imageView->hostGallery().focusSessionId(id);
             }
         }
     } else if (isWorkspaceMode() && m_imageView) {

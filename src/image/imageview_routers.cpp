@@ -87,11 +87,6 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
 
 // --- content appearance targets (from transform) ---
 
-bool ImageView::targetHasContentAppearance() const
-{
-    return m_image.targetHasContentAppearance();
-}
-
 
 
 // --- from src/imageview_color_grade.cpp ---
@@ -103,11 +98,6 @@ void ImageView::scheduleColorAdjustCommit(SessionImageId sid, const QString &pat
 void ImageView::flushColorAdjustCommit()
 {
     m_image.flushColorAdjustCommit();
-}
-
-void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
-{
-    m_image.setTargetColorAdjustments(adj);
 }
 
 

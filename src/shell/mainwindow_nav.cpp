@@ -144,7 +144,7 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
         }
     }
     if (m_imageView) {
-        m_imageView->setImageModeNavigationEnabled(imageNav);
+        m_imageView->hostImage().setImageModeNavigationEnabled(imageNav);
     }
     // Stop only when a running slideshow becomes invalid (empty session or
     // Workspace). Idle stopSlideshow is a no-op for the timer, but still
@@ -172,11 +172,11 @@ void MainWindow::updateNavTransformCropActions(bool canTransform)
     }
     if (m_resetContentAppearanceAct) {
         m_resetContentAppearanceAct->setEnabled(
-            canTransform && m_imageView && m_imageView->targetHasContentAppearance());
+            canTransform && m_imageView && m_imageView->hostImage().targetHasContentAppearance());
     }
     // Crop: Image mode, or exactly one Gallery/Workspace selection.
     if (m_cropAct) {
-        const bool canCrop = m_imageView && m_imageView->hasSingleCropTarget();
+        const bool canCrop = m_imageView && m_imageView->hostWorkspace().hasSingleCropTarget();
         m_cropAct->setEnabled(canCrop);
         m_cropAct->setProperty(
             "biltooDisabledHelp",
@@ -230,7 +230,7 @@ void MainWindow::updateNavigationActions()
     const bool hasFiles = !m_session.paths().isEmpty();
     const bool hasMany = m_session.paths().size() > 1;
     const bool hasItem = m_imageView && m_imageView->itemCount() > 0;
-    const bool canTransform = m_imageView && m_imageView->hasTransformTargets();
+    const bool canTransform = m_imageView && m_imageView->hostWorkspace().hasTransformTargets();
 
     updateNavPrevNextSlideshowActions(hasFiles, hasMany);
     updateNavTransformCropActions(canTransform);

@@ -154,7 +154,7 @@ void MainWindow::removeSessionIndicesFromModel(const QList<int> &sorted)
         // in Workspace/Gallery; Image mode still must not leave orphaned rows.
         if (m_imageView && sid != kInvalidSessionImageId) {
             if (isWorkspaceMode() || isGalleryMode()) {
-                m_imageView->removeWorkspaceSessionId(sid);
+                m_imageView->hostWorkspace().removeWorkspaceSessionId(sid);
             } else {
                 m_imageView->itemWorld().removeAppearance(sid);
             }
@@ -179,7 +179,7 @@ void MainWindow::selectIndexAfterSessionRemove(SessionImageId currentId, const Q
 {
     if (m_session.paths().isEmpty()) {
         m_currentIndex = -1;
-        m_imageView->clearWorkspace();
+        m_imageView->hostWorkspace().clearWorkspace();
         if (m_metadataPanel) {
             m_metadataPath.clear();
             m_metadataPanel->clear();

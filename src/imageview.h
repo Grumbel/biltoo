@@ -168,16 +168,12 @@ public:
      * document order. Returns the stamped index, or -1 when unbound/unknown.
      */
     int refreshSessionIndexCache(ImageItem *item) override;
-    QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
-    /** SessionImageIds of selected canvas items (skips unbound). */
-    QList<SessionImageId> selectedSessionIds() const;
     void selectBySessionIds(const QList<SessionImageId> &ids);
     /** Select live tiles matching @p paths by occurrence order (duplicate-safe). */
     void selectPathsByOccurrence(const QStringList &paths);
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
-    void clearWorkspace();
     // Load roles (public for DisplayPipelineController; not under public slots — moc).
     enum LoadRole {
         LoadReplace = 0,
@@ -194,10 +190,6 @@ public:
     // Used by ImageController / GalleryController / WorkspaceController.
     // Prefer these over reaching into ImageView internals.
     // =====================================================================
-    /** Clear drag/group/rotate interaction pointers (items stay on canvas). */
-    void clearInteractionState();
-    /** Controller host: stop layout debounce and clear applyingLayout. */
-    void stopDeferredPacking();
     /**
      * Progress HUD title/detail (archive expand, size resolve, tile load, …).
      * Blocking messages paint centred; non-blocking (size resolve, tiles) top-left.
@@ -332,13 +324,6 @@ public:
     }
 
 
-    /**
-     * Enable left/right edge navigation affordances in Image mode.
-     * Typically true when the session has more than one image.
-     */
-    void setImageModeNavigationEnabled(bool on);
-    /** When true, Image mode top edge offers return-to-gallery. */
-    void setGalleryReturnAvailable(bool on);
 
     /**
      * Show exactly the given session rows on the workspace. @p sessionIds must
@@ -373,19 +358,6 @@ public:
     void hardReloadFromDisk(bool relayoutGallery = true);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
     void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
-    /**
-     * Gallery: scroll/HUD focus for session cursor without collapsing multi-select.
-     * (focusSessionPath exclusive-selects — for keyboard nav.)
-     */
-    void revealGalleryPath(const QString &path);
-    /**
-     * Gallery: scroll @p sessionId into view without clearing multi-select
-     * (preferred over path when the tile is bound).
-     */
-    void revealGallerySessionId(SessionImageId sessionId);
-    void removeWorkspaceSessionId(SessionImageId sessionId);
-    /** How many canvas items currently show @p path. */
-    int workspacePathOccurrenceCount(const QString &path) const;
     Tool currentTool() const { return m_workspace.currentTool(); }
 
 
@@ -409,10 +381,6 @@ public:
      * from UI code so chrome and shortcuts cannot diverge.
      */
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
-    /** True when rotate/flip have at least one target (selection or sole image). */
-    bool hasTransformTargets() const;
-    /** True when crop is allowed: exactly one transform target (not multi-select). */
-    bool hasSingleCropTarget() const;
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
@@ -474,15 +442,6 @@ public:
      * use false for silent updates (e.g. slideshow auto-advance).
      */
     void setCurrentSessionId(SessionImageId id) override;
-    /**
-     * Exclusive-select @p item; ensure visible + HUD hover in Gallery.
-     * Prefer this when the live ImageItem is already known (keyboard nav).
-     */
-    void focusGalleryItem(ImageItem *item);
-    /** Exclusive-select live item bound to @p sessionId (identity-correct). */
-    void focusSessionId(SessionImageId sessionId);
-    /** Select preferred/first canvas item for @p path; ensure visible in Gallery. */
-    void focusSessionPath(const QString &path);
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
@@ -523,26 +482,7 @@ public:
     void duplicateSelected(const QVector<SessionImageId> &newIds,
                            int firstSessionIndex = -1);
 
-    /**
-     * Workspace clipboard: capture selected tiles (path + content + pose).
-     * Empty when not Workspace or nothing selected.
-     */
-    QList<WorkspaceItemState> captureSelectedWorkspaceClipboard() const;
-    /**
-     * Place clipboard tiles. @p items already include paste pose offset;
-     * @p newIds / sessionIndices are parallel. Caller must setSessionAppearance
-     * before this so LoadAdd applies content + pose from the store.
-     */
-    void placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,
-                                      const QVector<SessionImageId> &newIds,
-                                      const QList<int> &sessionIndices);
 
-    /** Remove canvas tiles for @p ids (pose remembered). Session rows stay. */
-    void removeCanvasSessionIds(const QList<SessionImageId> &ids);
-    /** Place tiles for existing session ids using appearance store + path. */
-    void placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
-                                 const QStringList &paths,
-                                 const QList<int> &sessionIndices);
 
     void setLayoutMode(LayoutMode mode);
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
@@ -604,22 +544,9 @@ public:
     /** Restore appearance after session undo (store only; no canvas mutate). */
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
-    void setTargetColorAdjustments(const ColorAdjustments &adj);
     /** Flush deferred durable grade commit (timer + ImageController bag). */
     void flushColorAdjustCommit();
 
-
-    /**
-     * True when the primary transform target has non-identity content
-     * appearance (session store and/or durable XDG state for its path).
-     */
-    bool targetHasContentAppearance() const;
-
-    /**
-     * Clear content appearance (flip / quarter-turns / crop) for transform
-     * targets: durable state, session store, and reload full on-disk pixels.
-     * Does not touch Workspace placement. Returns number of items reset.
-     */
 
     QString statusText() const;
     /** Basename of the current/target image for the bottom HUD. */
@@ -628,8 +555,6 @@ public:
     QString loadingStatusHudLine() const;
     QSize imageSize() const;
     int itemCount() const override;
-    /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */
-    bool hasWorkspaceContent() const;
     QStringList itemPaths() const;
     /** Live canvas SessionImageIds (parallel to itemPaths; invalid when unbound). */
     QVector<SessionImageId> itemSessionIds() const;

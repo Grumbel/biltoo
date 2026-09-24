@@ -290,7 +290,7 @@ void MainWindow::duplicateSelected()
     }
     // Prefer SessionImageId — path occurrence always hits the first tile and
     // broke selection + source identity on the 2nd+ Duplicate of the same path.
-    const QList<SessionImageId> sourceIds = m_imageView->selectedSessionIds();
+    const QList<SessionImageId> sourceIds = m_imageView->hostWorkspace().selectedSessionIds();
     const QStringList fallbackPaths = m_imageView->selectedPaths();
     if (sourceIds.isEmpty() && fallbackPaths.isEmpty()) {
         return;
@@ -488,7 +488,7 @@ void MainWindow::copyWorkspaceItems()
     if (!m_imageView || !isWorkspaceMode()) {
         return;
     }
-    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
+    const QList<WorkspaceItemState> items = m_imageView->hostWorkspace().captureSelectedClipboard();
     if (items.isEmpty()) {
         return;
     }
@@ -505,7 +505,7 @@ void MainWindow::cutWorkspaceItems()
     if (!m_imageView || !isWorkspaceMode()) {
         return;
     }
-    const QList<WorkspaceItemState> items = m_imageView->captureSelectedWorkspaceClipboard();
+    const QList<WorkspaceItemState> items = m_imageView->hostWorkspace().captureSelectedClipboard();
     if (items.isEmpty()) {
         return;
     }
@@ -531,7 +531,7 @@ void MainWindow::applyWorkspaceCut(const QList<WorkspaceItemState> &items)
             ids.append(s.sessionId);
         }
     }
-    m_imageView->removeCanvasSessionIds(ids);
+    m_imageView->hostWorkspace().removeCanvasSessionIds(ids);
     syncThumbnailCanvasMembership();
     markWorkspaceDirty();
     updateWorkspaceActionVisibility();
@@ -561,7 +561,7 @@ void MainWindow::applyWorkspaceUncut(const QList<WorkspaceItemState> &items)
         paths.append(s.path);
         indices.append(m_session.indexOfId(s.sessionId));
     }
-    m_imageView->placeSessionIdsOnCanvas(ids, paths, indices);
+    m_imageView->hostWorkspace().placeSessionIdsOnCanvas(ids, paths, indices);
     syncThumbnailCanvasMembership();
     markWorkspaceDirty();
     updateWorkspaceActionVisibility();
@@ -625,7 +625,7 @@ QVector<SessionImageId> MainWindow::applyWorkspacePaste(const QList<WorkspaceIte
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
         m_thumbnailBar->setMultiSelectEnabled(true);
     }
-    m_imageView->placeWorkspaceClipboardItems(items, newIds, indices);
+    m_imageView->hostWorkspace().placeClipboardItems(items, newIds, indices);
     m_imageView->selectBySessionIds(selectIds);
     if (m_thumbnailBar && !indices.isEmpty()) {
         m_thumbnailBar->setSelectedIndices(indices);
