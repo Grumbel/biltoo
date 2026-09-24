@@ -451,7 +451,7 @@ void CropSession::applyCommitPlacementRotation(ImageItem *item) const
 QSize CropSession::ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal cropH,
                                             const QString &pathForLog)
 {
-    // Does not write the item — caller applies via ImageView::setItemIntrinsicSize
+    // Does not write the item — caller applies via DisplayPipelineController::hostSetIntrinsicSize
     // (CropSession is not a pixel/geometry mutator friend).
     if (!item) {
         return {};

@@ -560,8 +560,6 @@ public:
      * mirror for paint / unbound. Durable grade is ItemWorld Color.
      */
     ColorAdjustments itemLiveColor(const ImageItem *item) const;
-    /** Host path for logical layout size (ImageItem::setIntrinsicSize is private). */
-    void setItemIntrinsicSize(ImageItem *item, const QSize &size);
     void setItemSessionId(ImageItem *item, SessionImageId id);
     void setItemSessionIndex(ImageItem *item, int index);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */

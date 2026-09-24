@@ -171,7 +171,7 @@ ImageView::ImageView(QWidget *parent)
                                 m_displayPipeline.wantAppearanceForItem(item, sid);
                             const QSize lay = ContentXform::layoutSize(size, want);
                             if (isPositiveSize(lay) && lay.width() > 1) {
-                                setItemIntrinsicSize(item, lay);
+                                m_displayPipeline.hostSetIntrinsicSize(item, lay);
                             }
                             m_displayPipeline.tryInstallGalleryUnderlay(item);
                         }

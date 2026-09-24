@@ -115,6 +115,7 @@
     void flushColorAdjustCommit();
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
+    void setItemIntrinsicSize(ImageItem *item, const QSize &size);
     void rematerializeGalleryItemFromStore(ImageItem *item);
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
