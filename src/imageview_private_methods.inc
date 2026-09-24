@@ -188,11 +188,9 @@
     bool tryMousePressZoomRegion(QMouseEvent *event);
     bool tryMousePressImageLink(QMouseEvent *event);
     bool tryMousePressTextRubber(QMouseEvent *event);
-    bool tryMousePressPan(QMouseEvent *event);
 
     // mouseMoveEvent phases
     bool tryMouseMoveTextRubber(QMouseEvent *event);
-    bool tryMouseMovePan(QMouseEvent *event);
     bool tryMouseMoveZoomRegion(QMouseEvent *event);
     bool tryMouseMovePageGuide(QMouseEvent *event);
     bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
@@ -205,7 +203,6 @@
     bool tryMouseReleasePageGuide(QMouseEvent *event);
     bool tryMouseReleaseGroupDrag(QMouseEvent *event);
     bool tryMouseReleaseHandleDrag(QMouseEvent *event);
-    bool tryMouseReleasePan(QMouseEvent *event);
     bool tryMouseReleaseItemDrag(QMouseEvent *event);
 
     // keyPressEvent phases

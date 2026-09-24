@@ -65,7 +65,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         || tryMousePressImageLink(event)
         || tryMousePressTextRubber(event)
         || m_image.tryMousePressEdges(event)
-        || tryMousePressPan(event)
+        || m_shell.tryMousePressPan(event)
         || m_workspace.tryMousePressWorkspaceRotate(event)
         || m_gallery.tryMousePressGalleryRight(event)
         || m_gallery.tryMousePressGalleryLeft(event)
@@ -74,32 +74,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
 
     QGraphicsView::mousePressEvent(event);
-}
-bool ImageView::tryMouseMovePan(QMouseEvent *event)
-{
-    if (!m_shell.viewport().isPanning()) {
-        return false;
-    }
-    // Dwell camera owns the view transform — do not fight it with hand pan.
-    if (m_slideshow.dwell().isMotionActive()) {
-        m_shell.viewport().endPan();
-        event->accept();
-        return true;
-    }
-    const QPoint delta = m_shell.viewport().panDeltaFrom(event->pos());
-    m_shell.viewport().updatePanPos(event->pos());
-    // Grow the free-form sceneRect with the view so middle-drag is never
-    // clamped against a stale zero-range scrollbar.
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
-    verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
-    // Tile LOD timer stops once the viewport is covered. Panning changes the
-    // visible set without a zoom/climb event — coalesce issues (not per move).
-    m_displayPipeline->scheduleTileLodAfterInteraction(32);
-    event->accept();
-    return true;
 }
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
@@ -113,7 +87,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     m_textCtrl.updateMouseMoveLinkHover(event);
     if (m_attentionCtrl.tryMouseMoveAttention(event)
         || m_cropCtrl.tryMouseMoveCropDrag(event)
-        || tryMouseMovePan(event)
+        || m_shell.tryMouseMovePan(event)
         || m_cropCtrl.tryMouseMoveCropHover(event)
         || tryMouseMoveZoomRegion(event)
         || m_gallery.tryMouseMoveGalleryDrag(event)) {
@@ -166,18 +140,6 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 }
 
 
-bool ImageView::tryMouseReleasePan(QMouseEvent *event)
-{
-    if (!m_shell.viewport().isPanning()
-        || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
-        return false;
-    }
-    m_shell.viewport().endPan();
-    restoreToolCursor();
-    m_displayPipeline->tickPrimaryTileLod(8);
-    event->accept();
-    return true;
-}
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
     return m_workspace.tryMouseReleaseItemDrag(event);
@@ -193,7 +155,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         || tryMouseReleaseGroupDrag(event)
         || tryMouseReleaseHandleDrag(event)
         || m_workspace.tryMouseReleaseWorkspaceRotate(event)
-        || tryMouseReleasePan(event)) {
+        || m_shell.tryMouseReleasePan(event)) {
         return;
     }
     m_gallery.clearGalleryDragArm();

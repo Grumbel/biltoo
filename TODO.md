@@ -2,30 +2,31 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2529.1-own-view-resized** (base `7d823d8`).
+**Tip: biltoo-2530.1-own-viewport-pan** (base `7d823d8`).
 
 ### Ownership transfer
-- **ImageController::onViewResized** — Image-mode quality climb + sticky fit
-- **GalleryController::onViewResized** — decode-window re-arm (no pack)
-- **SlideshowController::onViewResizedDuringDwell** — atlas/zoom-blur invalidate
-- ImageView::resizeEvent is mode dispatch only (Workspace still uses pipeline climb)
+- **ViewShellChrome** owns multi-mode viewport pan (`tryMousePress/Move/ReleasePan`)
+- ImageView binds `m_shell.bindView(this)` at construction; input dispatch calls `m_shell`
+
+### Build note
+- `ensureVisibleItem` fix is in this stack (2527+): needs `imageitem.h` + `QGraphicsItem` cast.
+  If you still see `ensureVisible(item, 32, 32)` failures, pull this tip (or at least 2527).
 
 ### Residual on ImageView (intentional)
-ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
+ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
 ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-appearance load/apply / paint / status composition / pan shell
+appearance load/apply / paint / status composition
 
 ### Next thinning candidates
 - appearance apply/commit residual
 - status text composition (HudModel already pure)
-- pan shell (ViewportChrome; multi-mode)
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2529.1-own-view-resized-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2530.1-own-viewport-pan-7d823d8.bundle HEAD
 ```

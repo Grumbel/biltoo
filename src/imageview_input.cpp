@@ -125,32 +125,6 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
     return m_textCtrl.tryMousePressLink(event);
 }
-bool ImageView::tryMousePressPan(QMouseEvent *event)
-{
-    // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (!m_slideshow.dwell().isMotionActive()
-        && (event->button() == Qt::MiddleButton
-            || (event->button() == Qt::LeftButton
-                && ((isImageMode() && m_shell.viewport().isImageModeLeftDragPan())
-                    || (isWorkspaceMode() && m_workspace.currentTool() == Tool::Pan)
-                    || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
-                    || (event->modifiers() & Qt::AltModifier))))) {
-        if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
-              && event->button() == Qt::LeftButton)) {
-            m_shell.viewport().beginPan(event->pos());
-            setCursor(Qt::ClosedHandCursor);
-            event->accept();
-            return true;
-        }
-    }
-    if (event->button() == Qt::MiddleButton && !m_slideshow.dwell().isMotionActive()) {
-        m_shell.viewport().beginPan(event->pos());
-        setCursor(Qt::ClosedHandCursor);
-        event->accept();
-        return true;
-    }
-    return false;
-}
 
 bool ImageView::setHoverEdge(EdgeZone zone)
 {

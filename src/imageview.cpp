@@ -68,6 +68,7 @@ ImageView::ImageView(QWidget *parent)
     , m_size(this)
     , m_tileNeighborPrefetch(this, this)
 {
+    m_shell.bindView(this);
     // Phase 7 Stage 0: path/size books are owned here; appearance binds later
     // from MainWindow (SessionDocument).
     m_itemWorld.bindPathBook(&m_pathStateBook);
