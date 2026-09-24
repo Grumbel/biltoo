@@ -186,16 +186,10 @@ public:
     // =====================================================================
     /** Controller host: set m_viewMode + hostLayout().currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
-    /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
-    void invalidateSessionLoads();
-    /** Controller host: LoadReplace for a path (no-op if empty). */
-    void scheduleReplaceLoad(const QString &path);
     /** Controller host: live canvas item list. */
     QList<ImageItem *> &liveItems() override { return m_items; }
     const QList<ImageItem *> &liveItems() const override { return m_items; }
     QGraphicsScene *canvasScene() override { return m_scene; }
-    /** Controller host: applyItemModeFlags to every live item. */
-    void applyModeFlagsToLiveItems();
     /**
      * Logical image size for @a path (never soft-raster dimensions).
      * Lookup only: size book, then thumtoo cache. Empty if unknown.

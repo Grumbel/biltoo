@@ -121,7 +121,7 @@ void WorkspaceController::restore()
         if (state.sessionId == kInvalidSessionImageId && !state.path.isEmpty()) {
             m_view->itemWorld().setPathState(state.path, state);
         }
-        m_view->scheduleRestoreLoad(state.path);
+        m_view->hostDisplayPipeline().scheduleImageLoad(state.path, static_cast<int>(ImageView::LoadRestore));
     }
     m_view->hostFraming().clearFitFill();
     // Apply zoom before scene-rect expansion; pan after range is valid.
@@ -422,7 +422,6 @@ void WorkspaceController::enter(int previousMode)
             m_view->clearLiveCanvas();
             m_view->hostGallery().invalidateDecodes();
             m_view->pathOrderClear();
-            m_view->applyModeFlagsToLiveItems();
         }
     } else if (!m_stashedItems.isEmpty()) {
         restoreStashedItems();
@@ -435,7 +434,6 @@ void WorkspaceController::enter(int previousMode)
         m_view->clearLiveCanvas();
         m_view->hostGallery().invalidateDecodes();
         m_view->pathOrderClear();
-        m_view->applyModeFlagsToLiveItems();
     }
     // Always clear canvas selection on enter — restored stash may keep old
     // selected flags, which MainWindow would mirror onto every filmstrip row.

@@ -154,12 +154,6 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     hostLayout().setMode(layout);
     m_shell.applyModeViewportPolicy(static_cast<int>(mode));
 }
-
-void ImageView::invalidateSessionLoads()
-{
-    m_displayPipeline->invalidateSessionLoads();
-}
-
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
     if (!m_displayPipeline->loadGate().takePendingWorkspacePath(path)) {
@@ -168,32 +162,6 @@ void ImageView::takePendingWorkspacePath(const QString &path)
     // Status bar / HUD pending count (even when the caller also emits).
     emit statusChanged();
 }
-
-void ImageView::scheduleReplaceLoad(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    m_displayPipeline->scheduleImageLoad(path, LoadReplace);
-}
-
-void ImageView::scheduleRestoreLoad(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    m_displayPipeline->scheduleImageLoad(path, LoadRestore);
-}
-
-void ImageView::applyModeFlagsToLiveItems()
-{
-    for (ImageItem *item : m_items) {
-        if (item) {
-            applyItemModeFlags(item);
-        }
-    }
-}
-
 void ImageView::clearLiveCanvas()
 {
     m_workspace.clearLiveCanvas();

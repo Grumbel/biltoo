@@ -14,7 +14,7 @@ void beginReplace(ImageView *view, ThumbnailBar *filmstrip)
 {
     // Cancel in-flight soft/PreferCache for the previous session before expand.
     if (view) {
-        view->invalidateSessionLoads();
+        view->hostDisplayPipeline().invalidateSessionLoads();
     }
     // Drop the previous filmstrip immediately so History / Open does not keep
     // showing old session thumbs while expand or async sort runs.
@@ -32,7 +32,7 @@ bool prepareExpandedSession(ImageView *view,
     // loadFiles start, but expand is async — bump again so jobs from the
     // previous session that finished during expand still cannot install.
     if (view) {
-        view->invalidateSessionLoads();
+        view->hostDisplayPipeline().invalidateSessionLoads();
     }
     TtfpTrace::mark("after_invalidateSessionLoads");
 

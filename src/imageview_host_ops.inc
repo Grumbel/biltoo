@@ -38,8 +38,6 @@
      */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
     void updateWorkspaceSceneRect() override;
-    /** Queue LoadRestore for workspace rebuild from durable snapshot. */
-    void scheduleRestoreLoad(const QString &path);
 
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas() override;

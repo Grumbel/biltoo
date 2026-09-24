@@ -183,7 +183,7 @@ void ImageController::reloadFromDisk()
     // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
     m_view->hostDisplayPipeline().purgeTilePathRam(path);
     // Force a fresh decode of the focused session image only.
-    m_view->scheduleReplaceLoad(path);
+    m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadReplace));
     m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 }
 
@@ -214,7 +214,7 @@ void ImageController::hardReloadFromDisk()
         m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
             ThumtooCache::scheduleProbe(path);
-            m_view->scheduleReplaceLoad(path);
+            m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadReplace));
             emit m_view->statusChanged();
         });
         return;
@@ -267,7 +267,7 @@ void ImageController::hardReloadFromDisk()
                 ThumtooCache::scheduleProbe(b.path);
                 probed.insert(b.path);
             }
-            m_view->scheduleReplaceLoad(b.path);
+            m_view->hostDisplayPipeline().scheduleImageLoad(b.path, static_cast<int>(ImageView::LoadReplace));
         }
         if (*tileTotal > 0) {
             m_view->hostHud().showFlash(ImageView::tr("Hard reload"), ImageView::tr("%1 Store tiles removed").arg(*tileTotal), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
