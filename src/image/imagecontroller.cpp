@@ -290,6 +290,8 @@ void ImageController::prepareModeCanvas()
     if (QUndoStack *stack = m_view->hostUndoStack()) {
         stack->clear();
     }
+    // Clear view-level override first (scene-only clear leaves it sticky).
+    m_view->setSceneRect(QRectF());
     if (QGraphicsScene *scene = m_view->canvasScene()) {
         scene->clearSelection();
         // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
@@ -368,6 +370,7 @@ void ImageController::onContentAppearancePropagated(ImageItem *item)
     if (!scene || item->scene() != scene) {
         return;
     }
+    m_view->setSceneRect(QRectF());
     scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     if (QWidget *vp = m_view->viewport()) {
         vp->update();

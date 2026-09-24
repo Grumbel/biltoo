@@ -279,12 +279,22 @@ void ImageController::syncImageModeSceneRect(ImageItem *item)
     // free Workspace-style halo. Stale larger/null rects (mode switch, resize
     // fitItem without this, provisional size race) cause intermittent free or
     // asymmetric scroll range.
+    //
+    // Authority is the *scene* rect only. Never QGraphicsView::setSceneRect —
+    // that installs a view-level override that survives Gallery return and
+    // clamps scroll to the single-image bounds (off-centre pack, wrong area).
     const QRectF bounds = item->sceneBoundingRect().adjusted(-8, -8, 8, 8);
     if (!bounds.isValid() || bounds.isEmpty()) {
         return;
     }
-    if (m_view->sceneRect() != bounds) {
-        m_view->setSceneRect(bounds);
+    QGraphicsScene *scene = m_view->canvasScene();
+    // Drop any residual view-level override (older builds, sticky path).
+    if (!m_view->sceneRect().isNull()
+        && m_view->sceneRect() != scene->sceneRect()) {
+        m_view->setSceneRect(QRectF());
+    }
+    if (scene->sceneRect() != bounds) {
+        scene->setSceneRect(bounds);
     }
 }
 

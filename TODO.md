@@ -2,19 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2627.2-host-fwd-and-test-fititem** (base `fe7adfe`).
+**Tip: biltoo-2628.1-gallery-scene-rect-override** (base `484a30a`).
 
-### This tip
-1. Forward-declare `TextLayerController` in `displaypipelinehost.h` (hostText pure virtuals)
-2. Characterization tests: `view.fitItem` → `view.hostImage().fitItem` after
-   ImageView peel removed the thin forward (15f3114)
-
-### Host virtuals remaining: ~57
+### This tip — Gallery→Image→Gallery off-centre / wrong scroll area
+- Root cause: `ImageController::syncImageModeSceneRect` used
+  `QGraphicsView::setSceneRect` (view-level override). Gallery only updated
+  `QGraphicsScene::setSceneRect`, so the tight single-image rect survived
+  return and clamped scroll.
+- Fix: scene is sole authority; clear view override in prepareCanvas /
+  prepareModeCanvas / applyLayout / warm stash restore; syncImageModeSceneRect
+  writes the scene rect only.
 
 ### Apply
 ```bash
-# Supersedes 2627.1 — full stack from origin/master (fe7adfe)
-git pull --ff-only …/biltoo-2627.2-host-fwd-and-test-fititem-fe7adfe.bundle HEAD
+git pull --ff-only …/biltoo-2628.1-gallery-scene-rect-override-484a30a.bundle HEAD
 ```
-If you already applied 2627.1 with a different SHA for the forward-decl commit,
-reset to `origin/master` first, then pull this bundle.

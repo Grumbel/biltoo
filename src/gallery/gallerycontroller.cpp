@@ -544,6 +544,16 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
         // underlays, and tile bags. applyLayout(EnterGallery) re-packed the
         // whole session and ran a full decode window (tile re-issue) — that was
         // the bulk of the “reload” after return. Only fill blanks / tile gaps.
+        //
+        // Re-apply the planned pack sceneRect (prepareCanvas cleared it). Without
+        // this, a residual view override or null sceneRect limits scroll to the
+        // live-window bounding box and the overview looks off-centre.
+        if (m_virtualSceneBounds.isValid() && m_view->canvasScene()) {
+            m_view->setSceneRect(QRectF());
+            if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
+                m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
+            }
+        }
         updateDecodeWindow();
     }
     // Cold enter (no stash): first pack is owned by setWorkspacePaths /
@@ -1650,6 +1660,8 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     const GalleryLayout::Mode packMode =
         GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
     bounds = GalleryPackFit::clampSceneRectToPack(bounds, packMode, availW, availH, margin);
+    // Scene is sole authority; drop any QGraphicsView-level override first.
+    m_view->setSceneRect(QRectF());
     if (m_view->canvasScene()->sceneRect() != bounds) {
         m_view->canvasScene()->setSceneRect(bounds);
     }
@@ -1951,6 +1963,7 @@ void GalleryController::syncVirtualWindow()
     }
 
     if (m_view->canvasScene() && m_virtualSceneBounds.isValid()) {
+        m_view->setSceneRect(QRectF());
         if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
             m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
         }
@@ -2188,6 +2201,10 @@ void GalleryController::prepareCanvas()
     if (m_view->verticalScrollBar()) {
         m_view->verticalScrollBar()->setValue(0);
     }
+    // Clear QGraphicsView-level sceneRect override (Image mode used to set it
+    // via setSceneRect on the view). Scene-only setSceneRect does not remove
+    // that override — Gallery return then scrolled a one-image rect.
+    m_view->setSceneRect(QRectF());
     m_view->canvasScene()->setSceneRect(QRectF());
     m_view->hostFraming().setFitOnly();
     // Force a blank pass before items are re-packed.
