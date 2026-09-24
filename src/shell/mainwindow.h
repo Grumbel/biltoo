@@ -25,6 +25,7 @@
 #include <QMimeData>
 #include <QElapsedTimer>
 
+class DualImageShell;
 class ThumbnailBar;
 class MetadataPanel;
 class AdjustmentsPanel;
@@ -318,6 +319,9 @@ private slots:
                         const QStringList &internalPaths = {});
     void toggleScrollBars();
     void toggleWorkspaceMode();
+    /** Stage 2c.2: Image-mode side-by-side compare (shared ItemWorld + pipeline). */
+    void setDualCompareEnabled(bool on);
+
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
     void enterWorkspaceMode();
     /** DOMAIN: enter Gallery with layout L and populate from session. */
@@ -517,6 +521,9 @@ private:
     static bool isImageFile(const QString &path);
 
     ImageView *m_imageView = nullptr;
+    /** Stage 2c.2: owns splitter; primary is m_imageView. */
+    DualImageShell *m_dualShell = nullptr;
+    QAction *m_dualCompareAct = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
     QDockWidget *m_thumbnailDock = nullptr;
     bool m_dockLocationGuard = false;

@@ -283,10 +283,21 @@ Shared pipeline ownership plumbing (still no dual-pane product UI):
 4. `secondary->bindSharedDisplayPipeline(&primary->hostDisplayPipeline())`.
 5. On pane focus: `pipeline.setActiveHost(focusedHost)`.
 
+### Stage 2c.2 (landed — biltoo-2457)
+
+Product shell (minimal):
+
+- `DualImageShell` (`src/shell/dualimageshell.{h,cpp}`) — QSplitter, primary +
+  optional secondary `ImageView`, focus → `setActiveHost` on the shared pipeline.
+- MainWindow central widget is the shell; `m_imageView` remains the primary host.
+- View → **Dual compare** (`Ctrl+Shift+D`) enables Image-mode side-by-side.
+  Secondary binds `bindSharedItemWorld` + `bindSharedDisplayPipeline` from primary.
+- Session navigation / filmstrip / Gallery still drive the **primary** only.
+- Secondary starts empty (compare load / lock-step nav is later product work).
+
 ### Stage 2c (remaining)
 
-- Dual-pane product shell in MainWindow (two hosts, shared ItemWorld + pipeline,
-  focus → `setActiveHost`).
+- Load a second SessionImageId into the secondary pane; lock-step or independent ←/→.
 - PreferCache / focus surface rules when two panes show different SessionImageIds:
   - PreferCache climb targets the **active** host's primary/target item.
   - Inactive host may still paint already-installed samples; do not run a second

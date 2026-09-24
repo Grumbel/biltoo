@@ -219,6 +219,14 @@ void MainWindow::createActions()
 
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
+    m_dualCompareAct = new QAction(tr("&Dual compare"), this);
+    m_dualCompareAct->setObjectName(QStringLiteral("dualCompare"));
+    m_dualCompareAct->setCheckable(true);
+    m_dualCompareAct->setChecked(false);
+    m_dualCompareAct->setStatusTip(tr("Side-by-side Image-mode surfaces sharing appearance and pipeline"));
+    m_dualCompareAct->setShortcut(QKeySequence(tr("Ctrl+Shift+D")));
+    connect(m_dualCompareAct, &QAction::toggled, this, &MainWindow::setDualCompareEnabled);
+
     // Keyboard F/F11 are QShortcut WindowShortcuts in MainWindow so leave
     // fullscreen cannot get stuck when the checkable action and window state
     // briefly disagree. Menu/toolbar still use this action.
@@ -1013,6 +1021,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
+    m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_showLocationBarAct);

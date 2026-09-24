@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "shell/dualimageshell.h"
 #include "session/sessionopen.h"
 #include "shell/keyboardshortcutsdialog.h"
 #include "version.h"
@@ -279,7 +280,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     m_imageView->setMinimumHeight(120);
-    setCentralWidget(m_imageView);
+    m_dualShell = new DualImageShell(m_imageView, this);
+    setCentralWidget(m_dualShell);
+    connect(m_dualShell, &DualImageShell::activeViewChanged, this, [this](ImageView *view) {
+        Q_UNUSED(view);
+        // PreferCache / tile ticks already follow setActiveHost inside the shell.
+        // Session navigation and filmstrip stay on primary (m_imageView).
+    });
 
     m_thumbnailDock = new QDockWidget(tr("Filmstrip"), this);
     m_thumbnailDock->setObjectName(QStringLiteral("ThumbnailDock"));
@@ -4090,3 +4097,21 @@ void MainWindow::dropEvent(QDropEvent *event)
                       hasScenePos, sessionIds, internalPaths);
     event->acceptProposedAction();
 }
+
+void MainWindow::setDualCompareEnabled(bool on)
+{
+    if (!m_dualShell || !m_imageView) {
+        return;
+    }
+    if (on) {
+        // Dual is Image-mode compare only (not Gallery pack Facing).
+        if (!m_imageView->isImageMode()) {
+            m_imageView->setViewMode(ImageView::ViewMode::Image);
+        }
+    }
+    m_dualShell->setDualEnabled(on, &m_session, &m_session.seedBook());
+    if (m_dualCompareAct) {
+        m_dualCompareAct->setChecked(m_dualShell->isDualEnabled());
+    }
+}
+

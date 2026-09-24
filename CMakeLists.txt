@@ -98,6 +98,8 @@ find_package(PkgConfig)
 set(BILTOO_LIB_SOURCES
   src/shell/mainwindow.cpp
   src/shell/mainwindow_ui.cpp
+  src/shell/dualimageshell.cpp
+  src/shell/dualimageshell.h
   src/shell/mainwindow_gallery.cpp
   src/shell/mainwindow_session.cpp
   src/shell/mainwindow_session_remove.cpp
