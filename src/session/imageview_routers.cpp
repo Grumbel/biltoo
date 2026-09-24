@@ -108,16 +108,6 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
 {
     m_image.setItemSessionId(item, id);
 }
-
-
-void ImageView::setItemSessionIndex(ImageItem *item, int index)
-{
-    if (!item) {
-        return;
-    }
-    item->setSessionIndex(index);
-}
-
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
     m_image.persistGeometrySessionState(item, pl);

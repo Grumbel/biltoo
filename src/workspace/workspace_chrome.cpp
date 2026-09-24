@@ -20,7 +20,7 @@
 bool WorkspaceController::tryMousePressWorkspaceChrome(QMouseEvent *event)
 {
     if (!m_view->isWorkspaceMode() || event->button() != Qt::LeftButton
-        || m_view->currentTool() != Tool::Select) {
+        || m_view->hostWorkspace().currentTool() != Tool::Select) {
         return false;
     }
     // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
@@ -136,7 +136,7 @@ void WorkspaceController::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event
 {
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
-    if (m_view->isWorkspaceMode() && m_view->currentTool() == Tool::Select && !m_itemInteract.isHandleDragging()
+    if (m_view->isWorkspaceMode() && m_view->hostWorkspace().currentTool() == Tool::Select && !m_itemInteract.isHandleDragging()
         && !groupSession().isScaleDrag() && !groupSession().isRotateDrag() && !m_view->hostChrome().isPanning()) {
         const QPointF scenePos = m_view->mapToScene(event->pos());
         QList<ImageItem *> candidates;

@@ -335,7 +335,6 @@ public:
     void hardReloadFromDisk(bool relayoutGallery = true);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
     void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
-    Tool currentTool() const { return m_workspace.currentTool(); }
 
 
     /**
@@ -396,7 +395,6 @@ public:
      */
     ColorAdjustments itemLiveColor(const ImageItem *item) const override;
     void setItemSessionId(ImageItem *item, SessionImageId id) override;
-    void setItemSessionIndex(ImageItem *item, int index);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item) override;
     /** Copy of stored appearance for @p id (empty/default if none). */

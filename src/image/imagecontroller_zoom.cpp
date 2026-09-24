@@ -18,7 +18,7 @@ void ImageController::cancelZoomRegion()
     m_zoomRegion.hideRubber();
     if (!m_view->hostChrome().isPanning()
         && !m_view->hostWorkspace().itemInteract().isRotating()) {
-        m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
+        m_view->setCursor(ToolPolicy::cursorFor(m_view->hostWorkspace().currentTool()));
     }
     emit m_view->statusChanged();
 }
@@ -40,7 +40,7 @@ void ImageController::armZoomRegion()
 bool ImageController::tryMousePressZoomRegion(QMouseEvent *event)
 {
     if (!(m_zoomRegion.isArmed()
-          || (m_view->isWorkspaceMode() && m_view->currentTool() == Tool::Zoom))
+          || (m_view->isWorkspaceMode() && m_view->hostWorkspace().currentTool() == Tool::Zoom))
         || event->button() != Qt::LeftButton) {
         return false;
     }

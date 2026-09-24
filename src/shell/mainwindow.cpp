@@ -616,7 +616,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         const SessionImageId id = allocSessionId();
         m_session.append(path, id);
         m_imageView->setItemSessionId(item, id);
-        m_imageView->setItemSessionIndex(item, m_session.size() - 1);
+        item->setSessionIndex(m_session.size() - 1);
         // Preserve current pixels as the new session image's appearance.
         m_imageView->hostImage().commitItemSessionEdit(item);
         grew = true;

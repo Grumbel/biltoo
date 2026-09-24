@@ -2,21 +2,21 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2619.1-peel-load-schedule-modeflags** (base `7d823d8`).
+**Tip: biltoo-2620.1-peel-currenttool-sessionindex** (base `7d823d8`).
 
 ### This tip
-Peeled thin load/mode helpers off ImageView:
+| Peeled | Replacement |
+|--------|-------------|
+| `currentTool()` | `hostWorkspace().currentTool()` |
+| `setItemSessionIndex` | `item->setSessionIndex(...)` |
 
-| Was on ImageView | Now |
-|------------------|-----|
-| `scheduleReplaceLoad` | `hostDisplayPipeline().scheduleImageLoad(..., LoadReplace)` |
-| `scheduleRestoreLoad` | `… LoadRestore` |
-| `invalidateSessionLoads` | `hostDisplayPipeline().invalidateSessionLoads()` |
-| `applyModeFlagsToLiveItems` | Removed (call sites were no-ops on empty canvas) |
+Header ~509 lines. Domain routers kept split.
 
-Routers stay domain-split. Header continues to shrink.
+### Remaining intentional public API
+Mode shell, status gather, selectedPaths/pendingDecodeCount, capture/freeze
+appearance, bindShared*, setActiveMode, host surface.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2619.1-peel-load-schedule-modeflags-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2620.1-peel-currenttool-sessionindex-7d823d8.bundle HEAD
 ```
