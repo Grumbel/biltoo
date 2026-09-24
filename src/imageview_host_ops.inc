@@ -94,3 +94,9 @@
         return sessionAppearanceImage(item);
     }
 
+    /** Controller host: assert live + stash SessionImageId uniqueness. */
+    bool hostValidateUniqueLiveSessionIds(const char *context = nullptr) const
+    {
+        return validateUniqueLiveSessionIds(context);
+    }
+

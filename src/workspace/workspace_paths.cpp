@@ -195,3 +195,121 @@ void WorkspaceController::reorderItemsByPaths(const QStringList &paths,
         }
     }
 }
+
+void WorkspaceController::rebindSession(const QStringList &sessionFiles,
+                                        const QVector<SessionImageId> &sessionIds)
+{
+    QList<ImageItem *> &items = m_view->liveItems();
+    if (sessionFiles.isEmpty()) {
+        for (ImageItem *item : items) {
+            if (item) {
+                item->setSessionIndex(-1);
+                // Keep sessionId — still identifies the session image if list is rebuilt.
+            }
+        }
+        return;
+    }
+
+    QSet<int> usedIndex;
+    QSet<SessionImageId> usedId;
+    // Document order for bound ids — O(1) lookup (sessionIndex cache is only a mirror).
+    QHash<SessionImageId, int> idToIndex;
+    const int n = qMin(sessionFiles.size(), sessionIds.size());
+    for (int i = 0; i < n; ++i) {
+        const SessionImageId id = sessionIds.at(i);
+        if (id != kInvalidSessionImageId) {
+            idToIndex.insert(id, i);
+        }
+    }
+
+    // 1) Prefer stable id: refresh list-order cache from document position.
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            const int found = idToIndex.value(sid, -1);
+            if (found < 0) {
+                // Id not in current session list — unbound from list order.
+                item->setSessionIndex(-1);
+                continue;
+            }
+            if (sessionFiles.at(found) != item->path()) {
+                // Id maps to a different path than this tile — do not trust cache.
+                qCritical("rebindWorkspaceSession: SessionImageId %lld path mismatch "
+                          "(list=%s tile=%s) — clearing list-order cache",
+                          static_cast<long long>(sid),
+                          qPrintable(sessionFiles.at(found)),
+                          qPrintable(item->path()));
+                item->setSessionIndex(-1);
+                continue;
+            }
+            // One SessionImageId → at most one live tile. A second claim is
+            // corruption (drop id fan-out); unbind so a
+            // new session row can be allocated instead of sharing crop/state.
+            if (usedId.contains(sid)) {
+                qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",
+                          static_cast<long long>(sid), qPrintable(item->path()));
+                // Unbind: setItemSessionId(invalid) + refresh clears list-order cache.
+                m_view->setItemSessionId(item, kInvalidSessionImageId);
+                continue;
+            }
+            m_view->setItemSessionId(item, sid); // refresh list index + applied migrate
+            usedIndex.insert(found);
+            usedId.insert(sid);
+            continue;
+        }
+        // No id yet — validate legacy index against list path.
+        const int si = item->sessionIndex();
+        if (si >= 0 && si < sessionFiles.size()
+            && sessionFiles.at(si) == item->path() && !usedIndex.contains(si)) {
+            usedIndex.insert(si);
+            if (si < sessionIds.size()) {
+                const SessionImageId listId = sessionIds.at(si);
+                if (listId != kInvalidSessionImageId) {
+                    m_view->setItemSessionId(item, listId);
+                    usedId.insert(listId);
+                }
+            }
+        } else {
+            item->setSessionIndex(-1);
+        }
+    }
+
+    // 2) Assign remaining session rows to unbound canvas items by path occurrence.
+    for (int i = 0; i < sessionFiles.size(); ++i) {
+        if (usedIndex.contains(i)) {
+            continue;
+        }
+        const QString &path = sessionFiles.at(i);
+        const SessionImageId sid = (i < sessionIds.size()) ? sessionIds.at(i)
+                                                           : kInvalidSessionImageId;
+        for (ImageItem *item : items) {
+            if (!item || item->sessionIndex() >= 0) {
+                continue;
+            }
+            if (item->path() != path) {
+                continue;
+            }
+            // Do not steal an item that already has a different stable id.
+            if (item->sessionId() != kInvalidSessionImageId
+                && sid != kInvalidSessionImageId
+                && item->sessionId() != sid) {
+                continue;
+            }
+            // Do not assign an id already owned by another live item.
+            if (sid != kInvalidSessionImageId && usedId.contains(sid)) {
+                continue;
+            }
+            item->setSessionIndex(i);
+            if (sid != kInvalidSessionImageId) {
+                m_view->setItemSessionId(item, sid);
+                usedId.insert(sid);
+            }
+            usedIndex.insert(i);
+            break;
+        }
+    }
+    m_view->hostValidateUniqueLiveSessionIds("rebindWorkspaceSession");
+}

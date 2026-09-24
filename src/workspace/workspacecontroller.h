@@ -116,6 +116,9 @@ public:
     /** Reorder live tiles to match session/pack order (id-prefer, path fallback). */
     void reorderItemsByPaths(const QStringList &paths,
                              const QVector<SessionImageId> &ids = {});
+    /** Refresh live tile SessionImageId / list-index from session document. */
+    void rebindSession(const QStringList &sessionFiles,
+                       const QVector<SessionImageId> &sessionIds);
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */
     void duplicateSelected(const QVector<SessionImageId> &newIds, int firstSessionIndex);

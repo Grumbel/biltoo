@@ -472,3 +472,7 @@ Product shell (minimal):
     order by session/pack id+path); ImageView thin router for Gallery /
     DisplayPipelineHost / MainWindow callers.
 
+45. **biltoo-2503:** WorkspaceController owns rebindSession (live tile
+    SessionImageId / list-index refresh from session document); ImageView thin
+    router. Host exposes hostValidateUniqueLiveSessionIds.
+
