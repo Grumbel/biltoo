@@ -1895,6 +1895,41 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
 }
 
 
+
+bool DisplayPipelineController::installInteractiveSoftPreview(
+    ImageItem *item, const WorkspaceItemState &want)
+{
+    if (!item || !m_view) {
+        return false;
+    }
+    const QString path = item->path();
+    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (host.isNull() && item->hasDecodedPixels()
+        && !m_view->itemHasAppliedContentXform(item)) {
+        host = item->sourceImage();
+    }
+    if (host.isNull()) {
+        return false;
+    }
+    // materializeDisplay asserts NOT GUI when long edge > kGuiMaterializeMaxEdge.
+    const int kInteractiveGradeMaxEdge = ContentXform::kGuiMaterializeMaxEdge;
+    if (ImageCache::longEdge(host) > kInteractiveGradeMaxEdge) {
+        host = ImageCache::clampToMaxEdge(host, kInteractiveGradeMaxEdge);
+    }
+    const auto kind = SessionAppearance::PixelKind::SoftPreview;
+    const QImage display = SessionAppearance::materializeDisplay(host, want, kind);
+    if (display.isNull()) {
+        return false;
+    }
+    if (item->hasDecodedPixels()
+        && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
+        // Soft stand-in for the drag; keep session id / path on the item.
+        hostClearDecodedPixels(item);
+    }
+    attachDisplaySample(item, display, want, kind);
+    return true;
+}
+
 void DisplayPipelineController::rematerializeGalleryItemFromStore(ImageItem *item)
 {
     if (!item || !m_view) {

@@ -98,6 +98,11 @@ public:
      */
     void rematerializeGalleryItemFromStore(ImageItem *item);
     /**
+     * Interactive color-grade drag: SoftPreview materialize from host ≤ GUI edge.
+     * Returns false if no host or materialize failed (caller may live-grade only).
+     */
+    bool installInteractiveSoftPreview(ImageItem *item, const WorkspaceItemState &want);
+    /**
      * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
      * Used by content bake (rotate/flip) for the pure GUI path.
      */

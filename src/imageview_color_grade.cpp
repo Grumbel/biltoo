@@ -11,15 +11,9 @@
 #include "util/biltoo_thread.h"
 #include <QTimer>
 #include <QImage>
-#include "view/viewtransform.h"
 #include "item/itemcomponents.h"
-#include "crop/cropsession.h"
-#include "display/imagecache.h"
-#include "content/contentxform.h"
 #include "session/sessionappearance.h"
-#include "host/thumtoocache.h"
 #include "imageitem.h"
-#include "host/imageloader.h"
 
 // --- Colour grade (was imageview_color_grade.cpp) ---
 
@@ -44,34 +38,12 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
         return;
     }
 
-    const QString path = item->path();
-    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (host.isNull() && item->hasDecodedPixels() && !itemHasAppliedContentXform(item)) {
-        host = item->sourceImage();
-    }
-    if (host.isNull()) {
+    // SoftPreview install for content-baked tiles while dragging — pipeline owns pixels.
+    if (!m_displayPipeline.installInteractiveSoftPreview(item, want)) {
         syncLiveColorFromState(item, want.colorAdjust);
         item->update();
         return;
     }
-    // materializeDisplay asserts NOT GUI when long edge > kGuiMaterializeMaxEdge.
-    // Interactive path must stay ≤ that limit (full bake is async on commit).
-    const int kInteractiveGradeMaxEdge = ContentXform::kGuiMaterializeMaxEdge;
-    if (ImageCache::longEdge(host) > kInteractiveGradeMaxEdge) {
-        host = ImageCache::clampToMaxEdge(host, kInteractiveGradeMaxEdge);
-    }
-    const auto kind = SessionAppearance::PixelKind::SoftPreview;
-    const QImage display = SessionAppearance::materializeDisplay(host, want, kind);
-    if (display.isNull()) {
-        syncLiveColorFromState(item, want.colorAdjust);
-        return;
-    }
-    if (item->hasDecodedPixels()
-        && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
-        // Soft stand-in for the drag; keep session id / path on the item.
-        clearItemDecodedPixels(item);
-    }
-    attachDisplaySample(item, display, want, kind);
     // Filmstrip / Gallery chrome: push soft appearance while dragging so the
     // strip does not wait for the idle commit (and does not require FullSource).
     const SessionImageId sid = resolveContentEditSessionId(item);
