@@ -536,3 +536,6 @@ Product shell (minimal):
 60. **biltoo-2518:** ImageController owns fitItem (crop-draft layout rules +
     Image-mode scale normalize + fitInView + scene rect); ImageView thin router.
 
+61. **biltoo-2519:** ImageController owns zoomFit / zoomFill / zoomReset /
+    zoomViewBy (mode-aware framing); ImageView thin routers.
+

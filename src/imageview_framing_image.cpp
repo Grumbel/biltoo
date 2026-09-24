@@ -72,30 +72,8 @@ qreal ImageView::viewScale() const
 
 void ImageView::zoomViewBy(qreal factor)
 {
-    // Gallery: view zoom is allowed for inspection (matches wheel zoom). Pack /
-    // resize still resets the view transform so tiles stay layout-correct
-    // (AUDIT M4 — one policy: zoom works until next pack).
-    releaseStickyZoom();
-    m_image.framing().clearFitFill();
-    // Keep the viewport centre stable when zooming via toolbar/shortcuts
-    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
-    scale(factor, factor);
-    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    // Viewport-space chrome only — no selected-item prepareGeometryChange.
-    if (viewport()) {
-        viewport()->update();
-    }
-    // Zoom changes on-screen cell size → ladder / tile LOD after settle.
-    // Gallery already debounced interest; Image/Workspace match that pattern
-    // so continuous zoom does not issue tile work every notch.
-    if (isGalleryMode()) {
-        m_gallery.scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowScrollMs);
-    } else {
-        m_displayPipeline->scheduleTileLodAfterInteraction(50);
-    }
-    emit statusChanged();
+    m_image.zoomViewBy(factor);
 }
-
 
 void ImageView::zoomIn()
 {
@@ -130,30 +108,8 @@ void ImageView::setWorkspaceDefaultViewScale()
 
 void ImageView::zoomReset()
 {
-    m_image.framing().clearFitFill();
-    if (isMultiItemMode()) {
-        // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
-        resetTransform();
-        if (isGalleryMode()) {
-            m_gallery.updateDecodeWindow();
-        }
-        emit statusChanged();
-        return;
-    }
-    // Image mode 1:1 — item at native scale, view identity, then centre
-    if (ImageItem *item = targetItem()) {
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        resetTransform();
-        centerOn(item);
-        emit statusChanged();
-    }
+    m_image.zoomReset();
 }
-
 
 void ImageView::refreshScrollBarGeometry()
 {
@@ -173,91 +129,13 @@ void ImageView::refreshScrollBarGeometry()
 
 void ImageView::zoomFit()
 {
-    m_image.framing().setFitOnly();
-    if (isGalleryMode()) {
-        // Fit the packed gallery into the viewport (whole pack). Sticky zoom
-        // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
-        if (!m_items.isEmpty()) {
-            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
-            if (bounds.isValid() && !bounds.isEmpty()) {
-                m_scene->setSceneRect(bounds);
-                fitInView(bounds, Qt::KeepAspectRatio);
-            }
-            m_gallery.updateDecodeWindow();
-            refreshScrollBarGeometry();
-            emit statusChanged();
-        }
-        return;
-    }
-    if (isWorkspaceMode()) {
-        if (!m_items.isEmpty()) {
-            fitInView(ViewTransform::padded(m_scene->itemsBoundingRect(), 32),
-                      Qt::KeepAspectRatio);
-            refreshScrollBarGeometry();
-            emit statusChanged();
-        }
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        fitItem(item, Qt::KeepAspectRatio);
-        refreshScrollBarGeometry();
-        emit statusChanged();
-    } else if (m_items.size() > 1) {
-        fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
-        refreshScrollBarGeometry();
-        emit statusChanged();
-    }
+    m_image.zoomFit();
 }
-
 
 void ImageView::zoomFill()
 {
-    m_image.framing().setFillMode();
-    if (isGalleryMode()) {
-        if (!m_items.isEmpty()) {
-            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
-            if (bounds.isValid() && !bounds.isEmpty()) {
-                m_scene->setSceneRect(bounds);
-                fitInView(bounds, Qt::KeepAspectRatioByExpanding);
-            }
-            m_gallery.updateDecodeWindow();
-            refreshScrollBarGeometry();
-            emit statusChanged();
-        }
-        return;
-    }
-    if (isWorkspaceMode()) {
-        if (!m_items.isEmpty()) {
-            fitInView(ViewTransform::padded(m_scene->itemsBoundingRect(), 32),
-                      Qt::KeepAspectRatioByExpanding);
-            refreshScrollBarGeometry();
-            emit statusChanged();
-        }
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        fitItem(item, Qt::KeepAspectRatioByExpanding);
-        refreshScrollBarGeometry();
-        emit statusChanged();
-    } else if (m_items.size() > 1) {
-        fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatioByExpanding);
-        refreshScrollBarGeometry();
-        emit statusChanged();
-    }
+    m_image.zoomFill();
 }
-
 
 void ImageView::armZoomRegion()
 {

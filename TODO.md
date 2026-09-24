@@ -2,26 +2,26 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2518.1-own-image-fit-item** (base `7d823d8`).
+**Tip: biltoo-2519.1-own-image-zoom-fit** (base `7d823d8`).
 
 ### Ownership transfer
-- **fitItem** on ImageController (`imagecontroller_framing.cpp`)
-- ImageView thin router
+- **zoomFit / zoomFill / zoomReset / zoomViewBy** on ImageController
+- ImageView thin routers
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
 ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
-QUndoStack, display pipeline, fitItem host API (thin),
+QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
-applyItemModeFlags (thin) / applyModeFlagsToLiveItems,
-pushItemGeometryCommand / pushItemContentCommand (body in item/)
+applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
+refreshScrollBarGeometry / setWorkspaceDefaultViewScale (view-matrix shell)
 
 ### Next thinning candidates
-- zoomFit / zoomFill / zoomReset / zoomViewBy (framing_image residual)
+- setWorkspaceDefaultViewScale
 - setViewMode body (mode shell by design)
 - appearance / paint / input event TUs
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2518.1-own-image-fit-item-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2519.1-own-image-zoom-fit-7d823d8.bundle HEAD
 ```

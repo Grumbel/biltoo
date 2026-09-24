@@ -82,6 +82,10 @@ public:
     void applyImageModeFraming(ImageItem *item);
     /** Fit item in view (Image-mode layout + crop-draft rules). */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode);
+    void zoomFit();
+    void zoomFill();
+    void zoomReset();
+    void zoomViewBy(qreal factor);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item,
                                               const QSize &before,
                                               const QSize &after);

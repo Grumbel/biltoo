@@ -22,6 +22,11 @@
 #include "crop/cropcontroller.h"
 #include "display/displaypipelinecontroller.h"
 #include "item/imagesizebook.h"
+#include "gallery/gallerylayout.h"
+#include "gallery/gallerycontroller.h"
+#include "gallery/gallerydecodesm.h"
+#include <QGraphicsScene>
+#include <QWidget>
 
 
 /** True when intrinsic size is large enough that fitInView will not explode. */
@@ -324,4 +329,153 @@ void ImageController::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         return;
     }
     m_view->fitInView(item, mode);
+}
+
+void ImageController::zoomFit()
+{
+    m_framing.setFitOnly();
+    if (m_view->isGalleryMode()) {
+        // Fit the packed gallery into the viewport (whole pack). Sticky zoom
+        // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
+        if (!m_view->liveItems().isEmpty()) {
+            QGraphicsScene *scene = m_view->canvasScene();
+            const QRectF bounds = ViewTransform::padded(
+                scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                scene->setSceneRect(bounds);
+                m_view->fitInView(bounds, Qt::KeepAspectRatio);
+            }
+            m_view->hostGallery().updateDecodeWindow();
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
+    if (m_view->isWorkspaceMode()) {
+        if (!m_view->liveItems().isEmpty()) {
+            m_view->fitInView(
+                ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), 32),
+                Qt::KeepAspectRatio);
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
+    if (ImageItem *item = m_view->targetItem()) {
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
+        fitItem(item, Qt::KeepAspectRatio);
+        m_view->refreshScrollBarGeometry();
+        emit m_view->statusChanged();
+    } else if (m_view->liveItems().size() > 1) {
+        m_view->fitInView(m_view->canvasScene()->itemsBoundingRect(), Qt::KeepAspectRatio);
+        m_view->refreshScrollBarGeometry();
+        emit m_view->statusChanged();
+    }
+}
+
+void ImageController::zoomFill()
+{
+    m_framing.setFillMode();
+    if (m_view->isGalleryMode()) {
+        if (!m_view->liveItems().isEmpty()) {
+            QGraphicsScene *scene = m_view->canvasScene();
+            const QRectF bounds = ViewTransform::padded(
+                scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
+            if (bounds.isValid() && !bounds.isEmpty()) {
+                scene->setSceneRect(bounds);
+                m_view->fitInView(bounds, Qt::KeepAspectRatioByExpanding);
+            }
+            m_view->hostGallery().updateDecodeWindow();
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
+    if (m_view->isWorkspaceMode()) {
+        if (!m_view->liveItems().isEmpty()) {
+            m_view->fitInView(
+                ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), 32),
+                Qt::KeepAspectRatioByExpanding);
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
+    if (ImageItem *item = m_view->targetItem()) {
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
+        fitItem(item, Qt::KeepAspectRatioByExpanding);
+        m_view->refreshScrollBarGeometry();
+        emit m_view->statusChanged();
+    } else if (m_view->liveItems().size() > 1) {
+        m_view->fitInView(m_view->canvasScene()->itemsBoundingRect(),
+                          Qt::KeepAspectRatioByExpanding);
+        m_view->refreshScrollBarGeometry();
+        emit m_view->statusChanged();
+    }
+}
+
+void ImageController::zoomReset()
+{
+    m_framing.clearFitFill();
+    if (m_view->isMultiItemMode()) {
+        // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
+        m_view->resetTransform();
+        if (m_view->isGalleryMode()) {
+            m_view->hostGallery().updateDecodeWindow();
+        }
+        emit m_view->statusChanged();
+        return;
+    }
+    // Image mode 1:1 — item at native scale, view identity, then centre
+    if (ImageItem *item = m_view->targetItem()) {
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
+        m_view->resetTransform();
+        m_view->centerOn(item);
+        emit m_view->statusChanged();
+    }
+}
+
+void ImageController::zoomViewBy(qreal factor)
+{
+    if (factor <= 0.0) {
+        return;
+    }
+    // Image sticky Fit/Fill ends on free zoom so the current framing is
+    // preserved for inspection (matches wheel zoom). Pack /
+    // resize still resets the view transform so tiles stay layout-correct
+    // (AUDIT M4 — one policy: zoom works until next pack).
+    m_view->releaseStickyZoom();
+    m_framing.clearFitFill();
+    // Keep the viewport centre stable when zooming via toolbar/shortcuts
+    m_view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    m_view->scale(factor, factor);
+    m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    // Viewport-space chrome only — no selected-item prepareGeometryChange.
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+    // Zoom changes on-screen cell size → ladder / tile LOD after settle.
+    // Gallery already debounced interest; Image/Workspace match that pattern
+    // so continuous zoom does not issue tile work every notch.
+    if (m_view->isGalleryMode()) {
+        m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowScrollMs);
+    } else {
+        m_view->hostDisplayPipeline().scheduleTileLodAfterInteraction(50);
+    }
+    emit m_view->statusChanged();
 }
