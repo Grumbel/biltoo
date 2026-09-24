@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "view/viewmodeflags.h"
 #include "util/biltoo_thread.h"
 #include "image/toolpolicy.h"
 #include "display/imagecache.h"
@@ -210,24 +211,7 @@ void ImageView::setViewMode(ViewMode mode)
 
 void ImageView::applyItemModeFlags(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    // Strict separation:
-    //   Workspace → movable + handles
-    //   Gallery   → selectable only (open on click), no chrome
-    //   Image     → static, no selection chrome
-    if (isWorkspaceMode()) {
-        item->setInteractive(true);
-        item->setScaleHandlesEnabled(true);
-    } else if (isGalleryMode()) {
-        item->setGallerySelectable(true);
-        item->setScaleHandlesEnabled(false);
-    } else {
-        item->setGalleryCellSize({});
-        item->setInteractive(false);
-        item->setScaleHandlesEnabled(false);
-    }
+    ViewModeFlags::applyToItem(item, m_viewMode);
 }
 
 void ImageView::setLayoutMode(LayoutMode mode)

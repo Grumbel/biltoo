@@ -524,3 +524,7 @@ Product shell (minimal):
     (cancel in-flight decodes, drop size book / tile RAM / ImageCache, clear
     live canvas on Image/Gallery Open); ImageView thin router.
 
+58. **biltoo-2516:** ViewModeFlags pure policy owns mode→item interact flags
+    (`view/viewmodeflags.cpp`); ImageView applyItemModeFlags is a thin host
+    wrapper. applyModeFlagsToLiveItems remains a live-list loop on ImageView.
+
