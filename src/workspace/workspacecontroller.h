@@ -82,6 +82,15 @@ public:
     /** Sync QGraphicsView drag mode with current tool (Workspace Select rubber-band). */
     void applyToolDragMode();
 
+    // Stack z-order (scene-overlap raise/lower) + opacity (Workspace-only).
+    void raiseItem(ImageItem *item);
+    void lowerItem(ImageItem *item);
+    void raiseSelected();
+    void lowerSelected();
+    void opacityUp();
+    void opacityDown();
+    void opacityReset();
+
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);
     bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);

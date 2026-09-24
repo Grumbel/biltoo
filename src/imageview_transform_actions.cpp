@@ -4,7 +4,6 @@
 #include "imageview.h"
 #include "item/itemcomponents.h"
 #include "item/placementlinear.h"
-#include "workspace/stackgeometry.h"
 #include "host/thumtoocache.h"
 #include "host/imageloader.h"
 #include "session/sessionappearance.h"
@@ -12,9 +11,7 @@
 
 #include <QUndoCommand>
 #include <QUndoStack>
-#include <QtMath>
 #include <QGraphicsItem>
-#include <algorithm>
 
 /** Geometry undo/redo — friend of ImageView; stores Placement only (Stage 2). */
 class ImageViewTransformGeometryCommand : public QUndoCommand {
@@ -63,49 +60,6 @@ private:
     ItemComponents::Placement m_before;
     ItemComponents::Placement m_after;
 };
-
-namespace {
-
-/** Overlap for stacking: scene AABB of content (rotation expands the box). */
-bool contentOverlaps(const ImageItem *a, const ImageItem *b)
-{
-    if (!a || !b || a == b) {
-        return false;
-    }
-    return StackGeometry::contentOverlaps(
-        a->contentSceneRect(), a->contentScenePolygon(),
-        b->contentSceneRect(), b->contentScenePolygon());
-}
-
-/** Overlapping stack including @p item, sorted bottom → top (stable on ties). */
-QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &all)
-{
-    QList<ImageItem *> layer;
-    if (!item) {
-        return layer;
-    }
-    layer.append(item);
-    for (ImageItem *other : all) {
-        if (other && other != item && contentOverlaps(item, other)) {
-            layer.append(other);
-        }
-    }
-    std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
-        const qreal za = a->placement().z;
-        const qreal zb = b->placement().z;
-        if (StackGeometry::zLess(za, zb)) {
-            return true;
-        }
-        if (StackGeometry::zGreater(za, zb)) {
-            return false;
-        }
-        return a < b;
-    });
-    return layer;
-}
-
-} // namespace
-
 
 void ImageView::flipHorizontal()
 {
@@ -201,183 +155,37 @@ void ImageView::rotateRight()
 
 void ImageView::raiseItem(ImageItem *item)
 {
-    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
-        return;
-    }
-    // One step: swap z with the next higher overlapping neighbour. Setting
-    // z = cover.z+1 skipped intermediates when z values were sparse (e.g. 1→3
-    // while 2 was an overlapping neighbour already at 3-epsilon).
-    const QList<ImageItem *> layer = overlappingStack(item, m_items);
-    const int idx = layer.indexOf(item);
-    const int target = StackGeometry::raiseTargetIndex(idx, layer.size());
-    if (target < 0) {
-        return; // already top among overlapping
-    }
-    ImageItem *above = layer.at(target);
-    const ItemComponents::Placement beforeItem = placementFromItem(item);
-    const ItemComponents::Placement beforeAbove = placementFromItem(above);
-    const StackGeometry::ZStep step =
-        StackGeometry::raiseStep(item->placement().z, above->placement().z);
-    {
-        ItemComponents::Placement pl = item->placement();
-        pl.z = step.selfZ;
-        item->applyPlacement(pl);
-    }
-    if (step.neighbourChanges) {
-        ItemComponents::Placement pl = above->placement();
-        pl.z = step.neighbourZ;
-        above->applyPlacement(pl);
-    }
-    if (m_undoStack) {
-        m_undoStack->beginMacro(tr("Raise"));
-        pushItemGeometryCommand(tr("Raise"), item, beforeItem, placementFromItem(item));
-        if (step.neighbourChanges) {
-            pushItemGeometryCommand(tr("Raise"), above, beforeAbove, placementFromItem(above));
-        }
-        m_undoStack->endMacro();
-    }
-    emit statusChanged();
+    m_workspace.raiseItem(item);
 }
 
 void ImageView::lowerItem(ImageItem *item)
 {
-    if (!item || !isWorkspaceMode() || m_items.size() < 2) {
-        return;
-    }
-    const QList<ImageItem *> layer = overlappingStack(item, m_items);
-    const int idx = layer.indexOf(item);
-    const int target = StackGeometry::lowerTargetIndex(idx, layer.size());
-    if (target < 0) {
-        return; // already bottom among overlapping
-    }
-    ImageItem *below = layer.at(target);
-    const ItemComponents::Placement beforeItem = placementFromItem(item);
-    const ItemComponents::Placement beforeBelow = placementFromItem(below);
-    const StackGeometry::ZStep step =
-        StackGeometry::lowerStep(item->placement().z, below->placement().z);
-    {
-        ItemComponents::Placement pl = item->placement();
-        pl.z = step.selfZ;
-        item->applyPlacement(pl);
-    }
-    if (step.neighbourChanges) {
-        ItemComponents::Placement pl = below->placement();
-        pl.z = step.neighbourZ;
-        below->applyPlacement(pl);
-    }
-    if (m_undoStack) {
-        m_undoStack->beginMacro(tr("Lower"));
-        pushItemGeometryCommand(tr("Lower"), item, beforeItem, placementFromItem(item));
-        if (step.neighbourChanges) {
-            pushItemGeometryCommand(tr("Lower"), below, beforeBelow, placementFromItem(below));
-        }
-        m_undoStack->endMacro();
-    }
-    emit statusChanged();
+    m_workspace.lowerItem(item);
 }
 
 void ImageView::raiseSelected()
 {
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    // Raise each selection from top-most down so mutual overlaps stay stable.
-    QList<ImageItem *> sel;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            sel.append(ii);
-        }
-    }
-    if (sel.isEmpty()) {
-        if (ImageItem *item = targetItem()) {
-            raiseItem(item);
-        }
-        return;
-    }
-    std::sort(sel.begin(), sel.end(),
-              [](ImageItem *a, ImageItem *b) {
-                  const qreal za = a->placement().z;
-                  const qreal zb = b->placement().z;
-                  return StackGeometry::zGreater(za, zb)
-                      || (qFuzzyCompare(za, zb) && a > b);
-              });
-    for (ImageItem *item : sel) {
-        raiseItem(item);
-    }
+    m_workspace.raiseSelected();
 }
 
 void ImageView::lowerSelected()
 {
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    QList<ImageItem *> sel;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            sel.append(ii);
-        }
-    }
-    if (sel.isEmpty()) {
-        if (ImageItem *item = targetItem()) {
-            lowerItem(item);
-        }
-        return;
-    }
-    std::sort(sel.begin(), sel.end(),
-              [](ImageItem *a, ImageItem *b) {
-                  const qreal za = a->placement().z;
-                  const qreal zb = b->placement().z;
-                  return StackGeometry::zLess(za, zb)
-                      || (qFuzzyCompare(za, zb) && a < b);
-              });
-    for (ImageItem *item : sel) {
-        lowerItem(item);
-    }
+    m_workspace.lowerSelected();
 }
 
 void ImageView::opacityUp()
 {
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, 0.1);
-        item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Opacity"), item, before, placementFromItem(item));
-        emit statusChanged();
-    }
+    m_workspace.opacityUp();
 }
 
 void ImageView::opacityDown()
 {
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, -0.1);
-        item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Opacity"), item, before, placementFromItem(item));
-        emit statusChanged();
-    }
+    m_workspace.opacityDown();
 }
 
 void ImageView::opacityReset()
 {
-    if (!isWorkspaceMode()) {
-        return;
-    }
-    if (ImageItem *item = targetItem()) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.opacity = 1.0;
-        item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset opacity"), item, before, placementFromItem(item));
-        emit statusChanged();
-    }
+    m_workspace.opacityReset();
 }
 
 void ImageView::resetItemScale()

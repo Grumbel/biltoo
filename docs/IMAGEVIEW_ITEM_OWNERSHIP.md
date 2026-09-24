@@ -440,3 +440,7 @@ Product shell (minimal):
 36. **biltoo-2494:** WorkspaceController::applyToolDragMode owns Select
     rubber-band drag-mode sync (pairs with tool ownership 2477).
 
+37. **biltoo-2495:** WorkspaceController owns stack raise/lower (scene-overlap
+    z-order) and opacity up/down/reset; ImageView thin routers. Helpers live in
+    workspace_stack.cpp beside group/page-guide.
+
