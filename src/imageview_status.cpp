@@ -3,17 +3,9 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "display/imagecache.h"
 #include "host/thumtoocache.h"
-#include "display/displayquality.h"
-#include "display/pathrasterservice.h"
-#include "host/archivepath.h"
 #include "host/pagepath.h"
 #include "hud/hudmodel.h"
-
-#include <QFileInfo>
-#include <QFontMetrics>
-#include "content/contentxform.h"
 
 void ImageView::refreshStatus()
 {
@@ -77,17 +69,7 @@ QString ImageView::loadingStatusHudLine() const
     int blank = 0;
     int weak = 0;
     if (isGalleryMode()) {
-        for (ImageItem *item : m_items) {
-            if (!item || item->path().isEmpty()) {
-                continue;
-            }
-            if (!item->hasDisplayPixels()) {
-                ++blank;
-            } else if (item->displayPixelLongEdge() > 0
-                       && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge) {
-                ++weak;
-            }
-        }
+        m_gallery.countLoadingTileStats(&blank, &weak);
     }
     return HudModel::loadingLineWithGalleryExtras(core, blank, weak);
 }
@@ -153,38 +135,11 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         isGalleryMode(), m_items.size(), qRound(viewScale() * 100));
     text += HudModel::qualityStatusSuffix(quality, edge, edge > 0);
     text += HudModel::nativeSizeStatusSuffix(native);
-    if (isGalleryMode()) {
-        int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
-        for (ImageItem *ii : m_items) {
-            if (!ii || ii->path().isEmpty()) {
-                continue;
-            }
-            const int e = ii->displayPixelLongEdge();
-            if (!ii->hasDisplayPixels() || e <= 0) {
-                ++blank;
-            } else {
-                switch (DisplayQuality::tierOf(e)) {
-                case DisplayQuality::Tier::Lqip:
-                    ++lqip;
-                    break;
-                case DisplayQuality::Tier::Soft:
-                    ++soft;
-                    break;
-                default:
-                    ++better;
-                    break;
-                }
-            }
-            if (const GalleryDecodeState *sit = hostGalleryDecodeBook().get(ii->path())) {
-                if (sit->inflight > 0) {
-                    ++climb;
-                }
-            }
-        }
+    if (isGalleryMode() && HudModel::isThumtooDebugEnabled()) {
         // Pipeline mix is debug-only — never put "LQIP" in the status bar.
-        if (HudModel::isThumtooDebugEnabled()) {
-            text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
-        }
+        int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
+        m_gallery.countDebugPixelMix(&blank, &lqip, &soft, &better, &climb);
+        text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
     }
     text += HudModel::pendingLoadStatusSuffix(pendingDecodeCount());
     text += HudModel::labeledStatusSuffix(ThumtooCache::loadingBreakdownLabel());

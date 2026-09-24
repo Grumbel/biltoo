@@ -2440,3 +2440,84 @@ void GalleryController::stopDecodeWatchdog()
         m_decodeWatchdogTimer->stop();
     }
 }
+
+void GalleryController::countLoadingTileStats(int *blankOut, int *weakOut) const
+{
+    int blank = 0;
+    int weak = 0;
+    if (!m_view) {
+        if (blankOut) {
+            *blankOut = 0;
+        }
+        if (weakOut) {
+            *weakOut = 0;
+        }
+        return;
+    }
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        if (!item->hasDisplayPixels()) {
+            ++blank;
+        } else if (item->displayPixelLongEdge() > 0
+                   && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge) {
+            ++weak;
+        }
+    }
+    if (blankOut) {
+        *blankOut = blank;
+    }
+    if (weakOut) {
+        *weakOut = weak;
+    }
+}
+
+void GalleryController::countDebugPixelMix(int *blankOut, int *lqipOut, int *softOut,
+                                           int *higherOut, int *climbingOut) const
+{
+    int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
+    if (m_view) {
+        for (ImageItem *ii : m_view->liveItems()) {
+            if (!ii || ii->path().isEmpty()) {
+                continue;
+            }
+            const int e = ii->displayPixelLongEdge();
+            if (!ii->hasDisplayPixels() || e <= 0) {
+                ++blank;
+            } else {
+                switch (DisplayQuality::tierOf(e)) {
+                case DisplayQuality::Tier::Lqip:
+                    ++lqip;
+                    break;
+                case DisplayQuality::Tier::Soft:
+                    ++soft;
+                    break;
+                default:
+                    ++better;
+                    break;
+                }
+            }
+            if (const GalleryDecodeState *sit = m_decodeBook.get(ii->path())) {
+                if (sit->inflight > 0) {
+                    ++climb;
+                }
+            }
+        }
+    }
+    if (blankOut) {
+        *blankOut = blank;
+    }
+    if (lqipOut) {
+        *lqipOut = lqip;
+    }
+    if (softOut) {
+        *softOut = soft;
+    }
+    if (higherOut) {
+        *higherOut = better;
+    }
+    if (climbingOut) {
+        *climbingOut = climb;
+    }
+}

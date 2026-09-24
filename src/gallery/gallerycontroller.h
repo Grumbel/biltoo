@@ -191,6 +191,18 @@ public:
     GalleryDecodeBook &decodeBook() { return m_decodeBook; }
     const GalleryDecodeBook &decodeBook() const { return m_decodeBook; }
 
+    /**
+     * Live-tile blank / weak (≤ LQIP edge) counts for the HUD loading line.
+     * Only meaningful in Gallery; walks liveItems().
+     */
+    void countLoadingTileStats(int *blankOut, int *weakOut) const;
+    /**
+     * THUMTOO_DEBUG gallery pixel mix: blank / lqip / soft / higher / climbing.
+     * Climbing counts decode-book inflight > 0. Walks liveItems().
+     */
+    void countDebugPixelMix(int *blankOut, int *lqipOut, int *softOut,
+                            int *higherOut, int *climbingOut) const;
+
     /** Packaged layout mode + grid/masonry prefs (also FreeForm for Workspace). */
     LayoutPrefs &layout() { return m_layout; }
     const LayoutPrefs &layout() const { return m_layout; }
