@@ -45,6 +45,16 @@ public:
     bool isCropDraftLockedItem(const ImageItem *item) const;
     bool isCropDraftLockedPath(const QString &path) const;
     void fitImageOrUpdateWorkspace(ImageItem *item);
+
+    /** Crop appearance store/restore/apply (was ImageView). ImageView routers stay for undo/host. */
+    void storeCropAppearance(ImageItem *item, SessionImageId sid, const WorkspaceItemState &s);
+    bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
+                                   SessionImageId *sidOut) const;
+    void restoreSessionCropAppearance(ImageItem *item);
+    void applyCropAppearance(ImageItem *item, const QImage &src, const WorkspaceItemState &state);
+    void emitCropApplyAppearance(SessionImageId sid, const QString &path, ImageItem *item,
+                                 const QImage &preferredDisplay, bool hasCrop);
+
     void cancelCrop();
     void leaveCropModeInternal(bool apply);
     void setCropMode(bool on);

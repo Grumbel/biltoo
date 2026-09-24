@@ -129,6 +129,7 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/slideshowcontroller.cpp
   src/slideshow/slideshowcontroller.h
   src/crop/cropcontroller.cpp
+  src/crop/cropcontroller_appearance.cpp
   src/crop/cropcontroller.h
   src/attention/attentioncontroller.cpp
   src/attention/attentioncontroller.h
