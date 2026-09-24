@@ -2,18 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2563.1-own-persist-color-crop-policy** (base `7d823d8`).
+**Tip: biltoo-2564.1-own-status-suffix-formatters** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::preferDurableColor** — freeze lag must not overwrite
-  ItemWorld durable Color (grade-commit authority)
-- **SessionAppearance::shouldWriteCropToPathStore** — path XDG crop only for
-  unbound tiles
-- `persistSessionAppearanceSlot` / `persistDurableContentAppearance` keep host
-  ItemWorld + ThumtooCache writes
+- **HudModel::qualityStatusSuffix** — quality ± optional edge px
+- **HudModel::nativeSizeStatusSuffix** — real native W×H (skip placeholders)
+- **HudModel::pendingLoadStatusSuffix** / **labeledStatusSuffix** / **editedStatusSuffix**
+- `statusTextMultiItem` / `statusTextImageMode` keep host snapshot assembly
 
 ### Prior
-**2562.1** Own live display overlays on SessionAppearance.
+**2563.1** Own persist color/crop policy on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -31,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2563.1-own-persist-color-crop-policy-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2564.1-own-status-suffix-formatters-7d823d8.bundle HEAD
 ```

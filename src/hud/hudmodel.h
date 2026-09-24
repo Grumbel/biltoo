@@ -7,6 +7,7 @@
 #include "display/displayedgepolicy.h"
 
 #include <QString>
+#include <QSize>
 #include <QtGlobal>
 
 /**
@@ -64,6 +65,24 @@ QString workspaceSelectedItemScaleSuffix(qreal scaleX, qreal scaleY, qreal rotat
 
 /** Image-mode status header: "W×H · Zoom Z%". */
 QString imageModeStatusHeader(int nativeWidth, int nativeHeight, int zoomPercent);
+
+/** " · quality" or " · quality (Npx)" when @p appendEdgePx and edge > 0. Empty if quality empty. */
+QString qualityStatusSuffix(const QString &quality, int edge, bool appendEdgePx);
+
+/**
+ * " · W×H" for real native sizes. Skips empty/provisional and placeholder
+ * 1000×1000 / 1024×1024 probes.
+ */
+QString nativeSizeStatusSuffix(const QSize &native);
+
+/** " · Loading N…" when pending > 0. */
+QString pendingLoadStatusSuffix(int pending);
+
+/** " · label" when @p label non-empty (ThumtooCache loading breakdown, climb activity). */
+QString labeledStatusSuffix(const QString &label);
+
+/** " · Edited" when content appearance is non-identity. */
+QString editedStatusSuffix(bool edited);
 
 } // namespace HudModel
 

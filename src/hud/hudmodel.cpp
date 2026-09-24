@@ -8,6 +8,7 @@
 
 #include <QCoreApplication>
 #include <QStringList>
+#include <QSize>
 #include <QtMath>
 
 namespace HudModel {
@@ -190,6 +191,54 @@ QString imageModeStatusHeader(int nativeWidth, int nativeHeight, int zoomPercent
         .arg(nativeWidth)
         .arg(nativeHeight)
         .arg(zoomPercent);
+}
+
+
+QString qualityStatusSuffix(const QString &quality, int edge, bool appendEdgePx)
+{
+    if (quality.isEmpty()) {
+        return {};
+    }
+    if (appendEdgePx && edge > 0) {
+        return tr(" · %1 (%2px)").arg(quality).arg(edge);
+    }
+    return tr(" · %1").arg(quality);
+}
+
+QString nativeSizeStatusSuffix(const QSize &native)
+{
+    if (!(native.width() > 1 && native.height() > 1)) {
+        return {};
+    }
+    // Placeholder probe sizes from unknown-file defaults — not real native.
+    if (native == QSize(1000, 1000) || native == QSize(1024, 1024)) {
+        return {};
+    }
+    return tr(" · %1×%2").arg(native.width()).arg(native.height());
+}
+
+QString pendingLoadStatusSuffix(int pending)
+{
+    if (pending <= 0) {
+        return {};
+    }
+    return tr(" · Loading %1…").arg(pending);
+}
+
+QString labeledStatusSuffix(const QString &label)
+{
+    if (label.isEmpty()) {
+        return {};
+    }
+    return tr(" · %1").arg(label);
+}
+
+QString editedStatusSuffix(bool edited)
+{
+    if (!edited) {
+        return {};
+    }
+    return tr(" · Edited");
 }
 
 } // namespace HudModel

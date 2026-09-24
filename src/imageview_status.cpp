@@ -163,17 +163,8 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
 {
     QString text = HudModel::multiItemHeader(
         isGalleryMode(), m_items.size(), qRound(viewScale() * 100));
-    if (!quality.isEmpty()) {
-        if (edge > 0) {
-            text += tr(" · %1 (%2px)").arg(quality).arg(edge);
-        } else {
-            text += tr(" · %1").arg(quality);
-        }
-    }
-    if (native.width() > 1 && native.height() > 1
-        && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
-        text += tr(" · %1×%2").arg(native.width()).arg(native.height());
-    }
+    text += HudModel::qualityStatusSuffix(quality, edge, edge > 0);
+    text += HudModel::nativeSizeStatusSuffix(native);
     if (isGalleryMode()) {
         int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
         for (ImageItem *ii : m_items) {
@@ -201,29 +192,14 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         if (dbg && dbg[0] && dbg[0] != '0') {
             text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
         }
-        const int pending = pendingDecodeCount();
-        if (pending > 0) {
-            text += tr(" · Loading %1…").arg(pending);
-        }
-    } else {
-        const int pending = pendingDecodeCount();
-        if (pending > 0) {
-            text += tr(" · Loading %1…").arg(pending);
-        }
     }
-    {
-        const QString load = ThumtooCache::loadingBreakdownLabel();
-        if (!load.isEmpty()) {
-            text += tr(" · %1").arg(load);
-        }
-    }
+    text += HudModel::pendingLoadStatusSuffix(pendingDecodeCount());
+    text += HudModel::labeledStatusSuffix(ThumtooCache::loadingBreakdownLabel());
     if (isWorkspaceMode() && item->isSelected()) {
         const ItemComponents::Placement pl = item->placement();
         text += HudModel::workspaceSelectedItemScaleSuffix(pl.scale, pl.scaleY, pl.rotation);
     }
-    if (targetHasContentAppearance()) {
-        text += tr(" · Edited");
-    }
+    text += HudModel::editedStatusSuffix(targetHasContentAppearance());
     appendThumtooDebugStatus(&text, item);
     return text;
 }
@@ -234,25 +210,17 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
 {
     QString text = HudModel::imageModeStatusHeader(
         native.width(), native.height(), qRound(viewScale() * 100));
-    if (!quality.isEmpty()) {
-        // quality may already include "show Npx · native Mpx" — avoid double edge.
-        if (edge > 0 && !item->hasDecodedPixels() && !quality.contains(QLatin1String("px"))) {
-            text += tr(" · %1 (%2px)").arg(quality).arg(edge);
-        } else {
-            text += tr(" · %1").arg(quality);
-        }
-    }
-    const QString climb = m_displayPipeline->imageModeClimbActivityLabel(item);
-    if (!climb.isEmpty()) {
-        text += tr(" · %1").arg(climb);
-    }
+    // quality may already include "show Npx · native Mpx" — avoid double edge.
+    const bool appendEdgePx = edge > 0 && !item->hasDecodedPixels()
+        && !quality.contains(QLatin1String("px"));
+    text += HudModel::qualityStatusSuffix(quality, edge, appendEdgePx);
+    text += HudModel::labeledStatusSuffix(
+        m_displayPipeline->imageModeClimbActivityLabel(item));
     {
         const ItemComponents::Placement pl = item->placement();
         text += HudModel::placementFlipRotationSuffix(pl.rotation, pl.hFlip, pl.vFlip);
     }
-    if (targetHasContentAppearance()) {
-        text += tr(" · Edited");
-    }
+    text += HudModel::editedStatusSuffix(targetHasContentAppearance());
     appendThumtooDebugStatus(&text, item);
     return text;
 }
