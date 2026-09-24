@@ -675,6 +675,44 @@ int DisplayPipelineController::imageModeOnScreenNeedEdge() const
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
 }
 
+QString DisplayPipelineController::imageModeClimbActivityLabel(const ImageItem *item) const
+{
+    // User-visible activity while samples climb toward *on-screen need*.
+    // Do not require native coverage — after progressive Soft→Prefer settle at
+    // window size, decoder is idle; claiming "Improving…" was a stuck HUD lie.
+    if (!item || item->path().isEmpty()) {
+        return {};
+    }
+    const QString path = item->path();
+    const int have = item->displayPixelLongEdge();
+    if (have <= 0) {
+        return QCoreApplication::translate("DisplayPipelineController", "Loading…");
+    }
+    const int need = imageModeOnScreenNeedEdge();
+    // Strict cover (DisplayEdgePolicy::coversEdge): have >= need.
+    if (need > 0 && have >= need) {
+        return {};
+    }
+    if (sampleCoversNativeLogical(path, item->displayImage())) {
+        return {};
+    }
+    if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
+        return m_pathRaster->isGaveUp(path)
+            ? QCoreApplication::translate("DisplayPipelineController", "Decoding full…")
+            : QCoreApplication::translate("DisplayPipelineController", "Improving quality…");
+    }
+    if (ThumtooCache::isAvailable()) {
+        const int want = cappedDisplayEdgeForPath(path, need);
+        if (ThumtooCache::isPixelsPending(path, want)
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
+            || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge)) {
+            return QCoreApplication::translate("DisplayPipelineController", "Improving quality…");
+        }
+    }
+    // No climb / decode pending: stay quiet even if below native.
+    return {};
+}
+
 
 void DisplayPipelineController::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role)

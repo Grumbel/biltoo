@@ -139,7 +139,6 @@
     QString statusTextMultiItem(ImageItem *item, const QString &quality,
                                 int edge, const QSize &native) const;
 
-    QString imageModeClimbActivityLabel(const ImageItem *item) const;
 
     QString statusTextImageMode(ImageItem *item, const QString &quality,
                                 int edge, const QSize &native) const;

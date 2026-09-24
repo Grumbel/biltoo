@@ -250,42 +250,6 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
     return text;
 }
 
-QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
-{
-    // User-visible activity while samples climb toward *on-screen need*.
-    // Do not require native coverage — after progressive Soft→Prefer settle at
-    // window size, decoder is idle; claiming "Improving…" was a stuck HUD lie.
-    if (!item || item->path().isEmpty()) {
-        return {};
-    }
-    const QString path = item->path();
-    const int have = item->displayPixelLongEdge();
-    if (have <= 0) {
-        return tr("Loading…");
-    }
-    const int need = m_displayPipeline->imageModeOnScreenNeedEdge();
-    // Strict cover (DisplayEdgePolicy::coversEdge): have >= need.
-    if (need > 0 && have >= need) {
-        return {};
-    }
-    if (m_displayPipeline->sampleCoversNativeLogical(path, item->displayImage())) {
-        return {};
-    }
-    if (hostPathRaster() && hostPathRaster()->isClimbPending(path)) {
-        return hostPathRaster()->isGaveUp(path) ? tr("Decoding full…")
-                                            : tr("Improving quality…");
-    }
-    if (ThumtooCache::isAvailable()) {
-        const int want = m_displayPipeline->cappedDisplayEdgeForPath(path, need);
-        if (ThumtooCache::isPixelsPending(path, want)
-            || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
-            || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge)) {
-            return tr("Improving quality…");
-        }
-    }
-    // No climb / decode pending: stay quiet even if below native.
-    return {};
-}
 
 QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
                                        int edge, const QSize &native) const
@@ -302,7 +266,7 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
             text += tr(" · %1").arg(quality);
         }
     }
-    const QString climb = imageModeClimbActivityLabel(item);
+    const QString climb = m_displayPipeline->imageModeClimbActivityLabel(item);
     if (!climb.isEmpty()) {
         text += tr(" · %1").arg(climb);
     }

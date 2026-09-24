@@ -13,6 +13,7 @@
 #include "host/thumtoocache.h"
 
 #include <QTimer>
+#include <QString>
 
 #include <memory>
 #include <unordered_map>
@@ -219,6 +220,8 @@ public:
     void bindImageModeSessionCursor(ImageItem *item);
     QImage fullRasterForEdit(const QString &path) const;
     int imageModeOnScreenNeedEdge() const;
+    /** User-visible climb activity label for Image-mode status (empty when idle). */
+    QString imageModeClimbActivityLabel(const ImageItem *item) const;
     void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
     bool loadImage(const QString &path);
 
