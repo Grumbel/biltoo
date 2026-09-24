@@ -167,6 +167,7 @@ set(BILTOO_LIB_SOURCES
   src/image/imagecontroller_color.cpp
   src/image/imagecontroller_transform.cpp
   src/view/viewmodeflags.cpp
+  src/item/geometryundocommand.cpp
   src/image/imagecontroller.h
   src/imageview_modes.cpp
   src/imageview_canvas.cpp

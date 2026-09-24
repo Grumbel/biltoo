@@ -528,3 +528,8 @@ Product shell (minimal):
     (`view/viewmodeflags.cpp`); ImageView applyItemModeFlags is a thin host
     wrapper. applyModeFlagsToLiveItems remains a live-list loop on ImageView.
 
+59. **biltoo-2517:** Geometry/content undo command bodies live in
+    `item/geometryundocommand.cpp` (ImageViewTransformGeometryCommand +
+    pushItemGeometryCommand / pushItemContentCommand). ImageView keeps the
+    host API; imageview_transform_actions.cpp is thin transform routers only.
+
