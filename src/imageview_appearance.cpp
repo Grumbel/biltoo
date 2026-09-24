@@ -309,19 +309,12 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
             }
         }
     }
-    // Prefer sparse Color grade for filmstrip / soft paint. Grade-only sparse
-    // presence still materializes when only color (or other single component) is set.
     WorkspaceItemState paint;
-    if (app) {
-        paint = *app;
-    } else if (sid == kInvalidSessionImageId || !m_itemWorld.hasColor(sid)) {
-        return src;
-    }
-    if (sid != kInvalidSessionImageId) {
-        paint.colorAdjust = m_itemWorld.color(sid).grade;
-        paint.sessionId = sid;
-    }
-    if (!SessionAppearance::hasContentAppearance(paint) && paint.colorAdjust.isIdentity()) {
+    const bool hasSparseColor =
+        sid != kInvalidSessionImageId && m_itemWorld.hasColor(sid);
+    if (!SessionAppearance::assembleSoftPaintState(
+            &paint, app, sid, hasSparseColor,
+            hasSparseColor ? m_itemWorld.color(sid).grade : ColorAdjustments{})) {
         return src;
     }
     // Single pipeline — SoftPreview scales crop into soft pixel space

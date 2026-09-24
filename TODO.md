@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2564.1-own-status-suffix-formatters** (base `7d823d8`).
+**Tip: biltoo-2565.1-own-soft-paint-state-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **HudModel::qualityStatusSuffix** — quality ± optional edge px
-- **HudModel::nativeSizeStatusSuffix** — real native W×H (skip placeholders)
-- **HudModel::pendingLoadStatusSuffix** / **labeledStatusSuffix** / **editedStatusSuffix**
-- `statusTextMultiItem` / `statusTextImageMode` keep host snapshot assembly
+- **SessionAppearance::assembleSoftPaintState** — durable app + sparse Color →
+  filmstrip/soft materialize state (false when identity)
+- Gallery status pixel-mix uses **DisplayQuality::tierOf** (no local thresholds)
+- `imageWithSessionAppearance` keeps ItemWorld / path-map / XDG host resolution
 
 ### Prior
-**2563.1** Own persist color/crop policy on SessionAppearance.
+**2564.1** Own status suffix formatters on HudModel.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -29,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2564.1-own-status-suffix-formatters-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2565.1-own-soft-paint-state-pure-7d823d8.bundle HEAD
 ```

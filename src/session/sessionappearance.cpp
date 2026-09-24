@@ -598,4 +598,33 @@ bool shouldWriteCropToPathStore(bool sessionBound,
     return !sessionBound && hasCrop && !cropRectEmpty;
 }
 
+
+bool assembleSoftPaintState(WorkspaceItemState *out,
+                            const WorkspaceItemState *app,
+                            SessionImageId sid,
+                            bool hasSparseColor,
+                            const ColorAdjustments &sparseGrade)
+{
+    if (!out) {
+        return false;
+    }
+    // Prefer sparse Color grade for filmstrip / soft paint. Grade-only sparse
+    // presence still materializes when only color (or other single component) is set.
+    WorkspaceItemState paint;
+    if (app) {
+        paint = *app;
+    } else if (sid == kInvalidSessionImageId || !hasSparseColor) {
+        return false;
+    }
+    if (sid != kInvalidSessionImageId) {
+        paint.colorAdjust = sparseGrade;
+        paint.sessionId = sid;
+    }
+    if (!hasContentAppearance(paint) && paint.colorAdjust.isIdentity()) {
+        return false;
+    }
+    *out = paint;
+    return true;
+}
+
 } // namespace SessionAppearance

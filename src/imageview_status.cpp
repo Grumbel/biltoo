@@ -174,12 +174,18 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
             const int e = ii->displayPixelLongEdge();
             if (!ii->hasDisplayPixels() || e <= 0) {
                 ++blank;
-            } else if (e <= DisplayQuality::kLqipMaxEdge) {
-                ++lqip;
-            } else if (e <= DisplayQuality::kSoftMaxEdge) {
-                ++soft;
             } else {
-                ++better;
+                switch (DisplayQuality::tierOf(e)) {
+                case DisplayQuality::Tier::Lqip:
+                    ++lqip;
+                    break;
+                case DisplayQuality::Tier::Soft:
+                    ++soft;
+                    break;
+                default:
+                    ++better;
+                    break;
+                }
             }
             if (const GalleryDecodeState *sit = hostGalleryDecodeBook().get(ii->path())) {
                 if (sit->inflight > 0) {

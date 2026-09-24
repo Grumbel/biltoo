@@ -303,6 +303,16 @@ WorkspaceItemState preferDurableColor(WorkspaceItemState slot,
                                               bool hasCrop,
                                               bool cropRectEmpty);
 
+/**
+ * Filmstrip / soft-sample paint state from optional durable appearance +
+ * sparse Color grade. Returns false when materialize is a no-op (identity).
+ */
+[[nodiscard]] bool assembleSoftPaintState(WorkspaceItemState *out,
+                                          const WorkspaceItemState *app,
+                                          SessionImageId sid,
+                                          bool hasSparseColor,
+                                          const ColorAdjustments &sparseGrade);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H
