@@ -147,7 +147,7 @@
     HudFlash m_hudFlash;
     QTimer *m_hudFlashTimer = nullptr;
     // Edge hover: owned by ImageController (m_image).
-    Tool m_tool = Tool::Select;
+    // Tool: owned by WorkspaceController (m_workspace).
     // LayoutPrefs: owned by GalleryController (hostLayout).
     // GalleryDecodeBook: owned by GalleryController (hostGalleryDecodeBook).
     /** Central path→raster climb (slideshow + shared PreferCache policy). */

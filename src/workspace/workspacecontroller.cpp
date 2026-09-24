@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/workspacecontroller.h"
+#include "image/toolpolicy.h"
+#include <QGraphicsView>
 #include "item/itemcomponents.h"
 #include <memory>
 #include <QSet>
@@ -849,5 +851,21 @@ void WorkspaceController::hardReloadFromDisk()
                 finish();
             }
         });
+    }
+}
+
+void WorkspaceController::setTool(Tool tool)
+{
+    if (m_tool == tool) {
+        return;
+    }
+    m_tool = tool;
+    m_view->setCursor(ToolPolicy::cursorFor(m_tool));
+    // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
+    // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
+    if (m_view->isWorkspaceMode()) {
+        m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+                                ? QGraphicsView::RubberBandDrag
+                                : QGraphicsView::NoDrag);
     }
 }

@@ -166,7 +166,7 @@ void ImageView::applyModeFlagsToLiveItems()
 
 void ImageView::applyToolDragMode()
 {
-    setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+    setDragMode(ToolPolicy::workspaceRubberBand(m_workspace.currentTool())
                     ? QGraphicsView::RubberBandDrag
                     : QGraphicsView::NoDrag);
 }
@@ -456,18 +456,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
 
 void ImageView::setTool(Tool tool)
 {
-    if (m_tool == tool) {
-        return;
-    }
-    m_tool = tool;
-    setCursor(ToolPolicy::cursorFor(m_tool));
-    // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
-    // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
-    if (isWorkspaceMode()) {
-        setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
-                        ? QGraphicsView::RubberBandDrag
-                        : QGraphicsView::NoDrag);
-    }
+    m_workspace.setTool(tool);
 }
 
 void ImageView::setImageModeNavigationEnabled(bool on)

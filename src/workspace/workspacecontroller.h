@@ -76,6 +76,10 @@ public:
     ItemInteractSession &itemInteract() { return m_itemInteract; }
     const ItemInteractSession &itemInteract() const { return m_itemInteract; }
 
+    /** Workspace / shell tool (Select / Pan / Zoom). */
+    Tool currentTool() const { return m_tool; }
+    void setTool(Tool tool);
+
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);
     bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
@@ -128,6 +132,7 @@ private:
     void restoreFreeFormStates();
 
     ImageView *m_view = nullptr;
+    Tool m_tool = Tool::Select;
 
     QList<WorkspaceItemState> m_savedItems;
     QList<ImageItem *> m_stashedItems;

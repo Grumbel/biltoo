@@ -185,7 +185,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
                 && ((isImageMode() && m_chrome.isImageModeLeftDragPan())
-                    || (isWorkspaceMode() && m_tool == Tool::Pan)
+                    || (isWorkspaceMode() && m_workspace.currentTool() == Tool::Pan)
                     || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
                     || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)

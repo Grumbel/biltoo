@@ -393,7 +393,7 @@ public:
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
     void setTool(Tool tool);
-    Tool currentTool() const { return m_tool; }
+    Tool currentTool() const { return m_workspace.currentTool(); }
 
 
     void zoomIn();

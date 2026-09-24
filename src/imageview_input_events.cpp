@@ -177,7 +177,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 }
 void ImageView::restoreToolCursor()
 {
-    setCursor(ToolPolicy::cursorFor(m_tool));
+    setCursor(ToolPolicy::cursorFor(m_workspace.currentTool()));
 }
 void ImageView::pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                       const ItemComponents::Placement &after, const QString &text)
@@ -385,7 +385,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
     // body opens Image mode (same path as Gallery). Empty space is swallowed
     // so the missing second press does not clear selection via the base class.
     if (isWorkspaceMode() && event->button() == Qt::LeftButton
-        && m_tool == Tool::Select && m_scene) {
+        && m_workspace.currentTool() == Tool::Select && m_scene) {
         const QPointF scenePos = mapToScene(event->pos());
         // Selected item handles first (chrome is above tiles).
         QList<ImageItem *> selected;

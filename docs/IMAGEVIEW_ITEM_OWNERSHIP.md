@@ -369,3 +369,6 @@ Product shell (minimal):
 18. **biltoo-2476:** TextLayerController owns TextLayerSession + text/link
     search, rubber-band, hit-test, and paint helpers; ImageView thin routers.
 
+19. **biltoo-2477:** Tool (Select/Pan/Zoom) owned by WorkspaceController;
+    ImageView setTool/currentTool thin forwards.
+
