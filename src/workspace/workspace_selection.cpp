@@ -173,3 +173,73 @@ ImageItem *WorkspaceController::targetItem() const
     }
     return nullptr;
 }
+
+void WorkspaceController::removeCanvasSessionIds(const QList<SessionImageId> &ids)
+{
+    if (!m_view->isWorkspaceMode() || ids.isEmpty()) {
+        return;
+    }
+    QList<ImageItem *> toRemove;
+    for (SessionImageId id : ids) {
+        if (id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (ImageItem *item = m_view->findItemBySessionId(id)) {
+            toRemove.append(item);
+        }
+    }
+    if (toRemove.isEmpty()) {
+        return;
+    }
+    m_view->setUpdatesEnabled(false);
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        scene->blockSignals(true);
+    }
+    for (ImageItem *item : toRemove) {
+        // destroyCanvasItem(persistState=true) snapshots via rememberItemState.
+        destroyCanvasItem(item);
+    }
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        scene->blockSignals(false);
+    }
+    m_view->setUpdatesEnabled(true);
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+    emit m_view->statusChanged();
+    emit m_view->workspacePathsChanged();
+}
+
+void WorkspaceController::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
+                                                  const QStringList &paths,
+                                                  const QList<int> &sessionIndices)
+{
+    if (!m_view->isWorkspaceMode() || ids.isEmpty()) {
+        return;
+    }
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        scene->clearSelection();
+    }
+    m_view->hostBindBook().clearSelectIds();
+    for (int i = 0; i < ids.size(); ++i) {
+        const SessionImageId sid = ids.at(i);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QString path = (i < paths.size()) ? paths.at(i) : QString();
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (m_view->findItemBySessionId(sid)) {
+            continue; // already on canvas
+        }
+        const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
+        m_view->hostBindBook().addSelectId(sid);
+        m_view->addImageForSession(path, sid, idx);
+    }
+    emit m_view->statusChanged();
+    emit m_view->workspacePathsChanged();
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}

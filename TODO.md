@@ -2,10 +2,11 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2519.1-own-image-zoom-fit** (base `7d823d8`).
+**Tip: biltoo-2520.1-own-workspace-place-remove-ids** (base `7d823d8`).
 
 ### Ownership transfer
-- **zoomFit / zoomFill / zoomReset / zoomViewBy** on ImageController
+- **setWorkspaceDefaultViewScale** on ImageController
+- **placeSessionIdsOnCanvas / removeCanvasSessionIds** on WorkspaceController
 - ImageView thin routers
 
 ### Residual on ImageView (intentional)
@@ -14,14 +15,14 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-refreshScrollBarGeometry / setWorkspaceDefaultViewScale (view-matrix shell)
+refreshScrollBarGeometry (view-matrix shell)
 
 ### Next thinning candidates
-- setWorkspaceDefaultViewScale
+- removeWorkspaceSessionId (session remove orchestration)
 - setViewMode body (mode shell by design)
 - appearance / paint / input event TUs
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2519.1-own-image-zoom-fit-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2520.1-own-workspace-place-remove-ids-7d823d8.bundle HEAD
 ```

@@ -539,3 +539,7 @@ Product shell (minimal):
 61. **biltoo-2519:** ImageController owns zoomFit / zoomFill / zoomReset /
     zoomViewBy (mode-aware framing); ImageView thin routers.
 
+62. **biltoo-2520:** ImageController owns setWorkspaceDefaultViewScale;
+    WorkspaceController owns placeSessionIdsOnCanvas and removeCanvasSessionIds;
+    ImageView thin routers.
+

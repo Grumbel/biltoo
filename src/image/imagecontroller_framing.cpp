@@ -479,3 +479,20 @@ void ImageController::zoomViewBy(qreal factor)
     }
     emit m_view->statusChanged();
 }
+
+void ImageController::setWorkspaceDefaultViewScale()
+{
+    // Workspace is an overview canvas for multiple pages. Match four toolbar
+    // zoom-out presses: each step is 1/1.25, so scale = (1/1.25)^4 ≈ 0.4096 (41%).
+    constexpr qreal kStep = 1.25;
+    const qreal s = 1.0 / (kStep * kStep * kStep * kStep);
+    m_framing.clearFitFill();
+    m_view->resetTransform();
+    m_view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    m_view->scale(s, s);
+    m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+    emit m_view->statusChanged();
+}

@@ -140,6 +140,10 @@ public:
     bool hasSingleCropTarget() const;
     ImageItem *primaryItem() const;
     ImageItem *targetItem() const;
+    void removeCanvasSessionIds(const QList<SessionImageId> &ids);
+    void placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
+                               const QStringList &paths,
+                               const QList<int> &sessionIndices);
     /** Teardown live/stash tile (pipeline bags, scene, undo). */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
     void clearInteractionState();
