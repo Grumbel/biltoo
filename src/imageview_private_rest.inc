@@ -142,10 +142,8 @@
     /** Last mouse position in viewport coords (gallery hover + scroll). */
     CanvasBackground m_canvasBg;
     // TextLayerSession: owned by TextLayerController (m_textCtrl).
-    HudAppearance m_hudPrefs;
+    HudChrome m_hud;
     SessionIdentity m_sessionId;
-    HudFlash m_hudFlash;
-    QTimer *m_hudFlashTimer = nullptr;
     // Edge hover: owned by ImageController (m_image).
     // Tool: owned by WorkspaceController (m_workspace).
     // LayoutPrefs: owned by GalleryController (hostLayout).

@@ -25,7 +25,7 @@ void ImageView::refreshStatus()
         m_statusRefreshTimer->setInterval(HudAppearance::kStatusRefreshMs);
         connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
             emit statusChanged();
-            if ((m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_slideshow.hud().isPausedHud())
+            if ((m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_slideshow.hud().isPausedHud())
                 && viewport()) {
                 viewport()->update();
             }
@@ -36,7 +36,7 @@ void ImageView::refreshStatus()
 
 void ImageView::setHudVisible(bool on)
 {
-    if (!m_hudPrefs.setVisible(on)) {
+    if (!m_hud.appearance().setVisible(on)) {
         return;
     }
     // Progress line only paints with the pinned HUD; drive the timer accordingly.
@@ -52,7 +52,7 @@ void ImageView::setHudVisible(bool on)
 
 void ImageView::setHudFontPointSize(int pt)
 {
-    if (!m_hudPrefs.setFontPointSize(pt)) {
+    if (!m_hud.appearance().setFontPointSize(pt)) {
         return;
     }
     viewport()->update();
@@ -60,7 +60,7 @@ void ImageView::setHudFontPointSize(int pt)
 
 void ImageView::setHudTextColor(const QColor &color)
 {
-    if (!m_hudPrefs.setTextColor(color)) {
+    if (!m_hud.appearance().setTextColor(color)) {
         return;
     }
     viewport()->update();
@@ -68,7 +68,7 @@ void ImageView::setHudTextColor(const QColor &color)
 
 void ImageView::setHudPanelColor(const QColor &color)
 {
-    if (!m_hudPrefs.setPanelColor(color)) {
+    if (!m_hud.appearance().setPanelColor(color)) {
         return;
     }
     viewport()->update();
@@ -76,11 +76,7 @@ void ImageView::setHudPanelColor(const QColor &color)
 
 void ImageView::flashHud(const QString &action, const QString &detail)
 {
-    m_hudFlash.show(action, detail);
-    if (m_hudFlashTimer) {
-        m_hudFlashTimer->start(HudFlash::kActionFlashMs);
-    }
-    viewport()->update();
+    m_hud.showFlash(action, detail, viewport());
 }
 
 QString ImageView::loadingStatusHudLine() const

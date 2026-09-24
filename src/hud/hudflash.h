@@ -8,7 +8,7 @@
 
 /**
  * Brief top-left HUD action flash (fit mode, slideshow step, …).
- * Flash QTimer stays on ImageView.
+ * Flash QTimer owned by HudChrome (parented to ImageView).
  */
 struct HudFlash {
     /** Identity badge pulse duration after session cursor moves (ms). */

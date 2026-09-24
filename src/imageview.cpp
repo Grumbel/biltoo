@@ -258,19 +258,19 @@ ImageView::ImageView(QWidget *parent)
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_slideshow.hud().isPausedHud()) {
+        if (m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_slideshow.hud().isPausedHud()) {
             viewport()->update();
         }
     });
 
     m_perf.enableFromEnv();
-    m_hudFlashTimer = new QTimer(this);
-    m_hudFlashTimer->setSingleShot(true);
     // Layout debounce QTimer: owned by GalleryController (parented to this).
     // Colour-adjust commit QTimer: owned by ImageController (parented to this).
-    connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
-        m_hudFlash.clear();
-        viewport()->update();
+    m_hud.ensureFlashTimer(this, [this]() {
+        m_hud.flash().clear();
+        if (viewport()) {
+            viewport()->update();
+        }
     });
 
     m_slideshow.progressTimer() = new QTimer(this);
@@ -284,7 +284,7 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
-        } else if (m_hudPrefs.isVisible() && m_slideshow.hud().hasProgressInterval()) {
+        } else if (m_hud.appearance().isVisible() && m_slideshow.hud().hasProgressInterval()) {
             if (viewport()) {
                 viewport()->update();
             }
@@ -379,9 +379,7 @@ ImageView::~ImageView()
         m_displayPipeline->loadGate().bumpGeneration();
     }
 
-    if (m_hudFlashTimer) {
-        m_hudFlashTimer->stop();
-    }
+    m_hud.stopFlashTimer();
     if (m_slideshow.progressTimer()) {
         m_slideshow.progressTimer()->stop();
     }

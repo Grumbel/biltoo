@@ -387,3 +387,6 @@ Product shell (minimal):
 24. **biltoo-2482:** Gallery decode-watchdog QTimer owned by GalleryController;
     slideshow phase surface tick moved onto the slideshow progress timer.
 
+25. **biltoo-2483:** HudChrome owns HudAppearance + HudFlash + flash QTimer;
+    ImageView thin flashHud / hostHud* forwards.
+

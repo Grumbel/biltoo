@@ -122,12 +122,11 @@
     }
     PathItemStateBook &hostItemStateBook() { return m_itemWorld.pathBook(); }
     const PathItemStateBook &hostItemStateBook() const { return m_itemWorld.pathBook(); }
-    HudAppearance &hostHudPrefs() { return m_hudPrefs; }
-    const HudAppearance &hostHudPrefs() const { return m_hudPrefs; }
-    HudFlash &hostHudFlash() { return m_hudFlash; }
-    const HudFlash &hostHudFlash() const { return m_hudFlash; }
-    QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
-    QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
+    HudAppearance &hostHudPrefs() { return m_hud.appearance(); }
+    const HudAppearance &hostHudPrefs() const { return m_hud.appearance(); }
+    HudFlash &hostHudFlash() { return m_hud.flash(); }
+    const HudFlash &hostHudFlash() const { return m_hud.flash(); }
+    QTimer *hostHudFlashTimer() const { return m_hud.flashTimer(); }
     DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline->displaySurfaces(); }
     const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline->displaySurfaces(); }
     TileNeighborPrefetch &hostTileNeighborPrefetch() override { return m_tileNeighborPrefetch; }

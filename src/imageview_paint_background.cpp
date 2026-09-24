@@ -300,7 +300,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         paintGallerySelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
-    if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
+    if (isGalleryMode() && !m_hud.appearance().isVisible() && !m_hud.flash().isVisible() && !m_hud.flash().isIdentityPulse()
         && !m_slideshow.hud().isPausedHud() && !hostGallerySizeResolve().active()
         && m_centreProgress.titleRef().isEmpty()
         && hostHoverEdge() == EdgeZone::None && !m_cropCtrl.session().active()

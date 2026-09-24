@@ -298,7 +298,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
     if (m_slideshow.hud().isProgressActive()
-        && (m_hudPrefs.isVisible() || m_slideshow.hud().isSeekbarVisible() || m_slideshow.hud().isSeekDragging())) {
+        && (m_hud.appearance().isVisible() || m_slideshow.hud().isSeekbarVisible() || m_slideshow.hud().isSeekDragging())) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
@@ -318,7 +318,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             }
             fraction = ViewTransform::clamp01(fraction);
 
-            QColor c = m_hudPrefs.effectiveTextColor(QColor(255, 255, 255));
+            QColor c = m_hud.appearance().effectiveTextColor(QColor(255, 255, 255));
             QColor track = c;
             track.setAlpha(60);
             c.setAlpha(200);
@@ -344,19 +344,19 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                              SlideshowClocks::formatClockMs(remain));
 
                 QFont f = painter.font();
-                f.setPointSize(m_hudPrefs.effectiveFontPointSize());
+                f.setPointSize(m_hud.appearance().effectiveFontPointSize());
                 painter.setFont(f);
                 const QFontMetrics fm(f);
                 const int textW = fm.horizontalAdvance(timeLine);
                 const int textH = fm.height();
                 const HudGeometry::PanelBox clock =
                     HudGeometry::placeTimelineClock(viewW, viewH, textW, textH);
-                painter.setBrush(m_hudPrefs.effectivePanelColor());
+                painter.setBrush(m_hud.appearance().effectivePanelColor());
                 painter.setPen(Qt::NoPen);
                 painter.drawRoundedRect(
                     HudGeometry::panelRect(clock), HudGeometry::kTimelineCornerRadius,
                     HudGeometry::kTimelineCornerRadius);
-                painter.setPen(m_hudPrefs.effectiveTextColor());
+                painter.setPen(m_hud.appearance().effectiveTextColor());
                 painter.drawText(
                     QRect(clock.x + HudGeometry::kTimelinePadX,
                           clock.y + HudGeometry::kTimelinePadY, textW, textH),
@@ -441,15 +441,15 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString ssPrefetchLine = m_slideshow.slideshowPrefetchHudLine();
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
-    const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
-    if (m_cropCtrl.session().active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
+    const QString loadingLine = m_hud.appearance().isVisible() ? loadingStatusHudLine() : QString();
+    if (m_cropCtrl.session().active() || m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_hud.flash().isIdentityPulse()
         || m_slideshow.hud().isPausedHud() || hostGallerySizeResolve().active()
         || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
-        const int pt = m_hudPrefs.effectiveFontPointSize();
+        const int pt = m_hud.appearance().effectiveFontPointSize();
         f.setPointSize(pt);
         QFont boldF = f;
         boldF.setBold(true);
@@ -494,9 +494,9 @@ void ImageView::paintHudPanels(QPainter &painter)
                 fromRight, fromBottom, centre);
             const QRect bg = HudGeometry::panelRect(box);
             painter.setPen(Qt::NoPen);
-            painter.setBrush(m_hudPrefs.effectivePanelColor());
+            painter.setBrush(m_hud.appearance().effectivePanelColor());
             painter.drawRoundedRect(bg, 6, 6);
-            painter.setPen(m_hudPrefs.effectiveTextColor());
+            painter.setPen(m_hud.appearance().effectiveTextColor());
             int ty = bg.top() + pad;
             const int textAreaW = bg.width() - 2 * pad;
             for (const HudLine &hl : drawn) {
@@ -544,13 +544,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(hostGallerySizeResolve().total()), false}},
                       margin, margin, false, false, false);
-        } else if (m_hudFlash.isVisible() && m_hudFlash.hasAction()) {
-            QString actionLine = m_hudFlash.actionText();
-            if (m_hudFlash.hasDetail()) {
-                actionLine += QLatin1Char(' ') + m_hudFlash.detailText();
+        } else if (m_hud.flash().isVisible() && m_hud.flash().hasAction()) {
+            QString actionLine = m_hud.flash().actionText();
+            if (m_hud.flash().hasDetail()) {
+                actionLine += QLatin1Char(' ') + m_hud.flash().detailText();
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse()) {
+        } else if (m_hud.appearance().isVisible() || m_hud.flash().isIdentityPulse()) {
             QList<HudLine> topLeft;
             if (!loadingLine.isEmpty()) {
                 topLeft.append({loadingLine, true});
@@ -590,18 +590,18 @@ void ImageView::paintHudPanels(QPainter &painter)
         // user navigation. Not during pure action flashes (slideshow start, …)
         // and not on automatic slideshow advance (pulseIdentity=false).
         const QString badge = m_slideshow.sessionBadgeText();
-        if (!badge.isEmpty() && (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse())) {
+        if (!badge.isEmpty() && (m_hud.appearance().isVisible() || m_hud.flash().isIdentityPulse())) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
         // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
-        if (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse() || !m_gallery.hoverPath().isEmpty()) {
+        if (m_hud.appearance().isVisible() || m_hud.flash().isIdentityPulse() || !m_gallery.hoverPath().isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
                 bottom.append({name, true});
             }
-            if (m_hudPrefs.isVisible()) {
+            if (m_hud.appearance().isVisible()) {
                 const QString tech = statusText();
                 if (!tech.isEmpty() && tech != name) {
                     bottom.append({tech, false});

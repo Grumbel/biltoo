@@ -132,6 +132,7 @@ set(BILTOO_LIB_SOURCES
   src/attention/attentioncontroller.cpp
   src/attention/attentioncontroller.h
   src/hud/hudmodel.cpp
+  src/hud/hudchrome.cpp
   src/hud/hudmodel.h
   src/display/displaypipelinecontroller.cpp
   src/display/displaypipelinecontroller_load.cpp
@@ -654,6 +655,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-hudmodel-test
     tests/hudmodel_test.cpp
     src/hud/hudmodel.cpp
+  src/hud/hudchrome.cpp
   )
   target_include_directories(biltoo-hudmodel-test PRIVATE src)
   target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
