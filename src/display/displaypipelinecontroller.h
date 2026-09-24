@@ -63,6 +63,9 @@ public:
     std::unique_ptr<TileLoadCoordinator> &tileCoordinator() { return m_tileCoordinator; }
     const std::unique_ptr<TileLoadCoordinator> &tileCoordinator() const { return m_tileCoordinator; }
 
+    /** Path→raster climb scheduler (parented to hostObject). */
+    PathRasterService *pathRaster() const { return m_pathRaster; }
+
     QTimer *&tileLodTimer() { return m_tileLodTimer; }
     QTimer *tileLodTimer() const { return m_tileLodTimer; }
 
@@ -299,6 +302,7 @@ private:
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
     std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
+    PathRasterService *m_pathRaster = nullptr;
     /** Stage 2: per-item tile LOD bags (owned here when attached). */
     std::unordered_map<ImageItem *, std::unique_ptr<tilelod::ItemBag>> m_tileBags;
     QTimer *m_tileLodTimer = nullptr;

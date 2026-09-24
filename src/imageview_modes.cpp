@@ -84,8 +84,8 @@ void ImageView::invalidateSessionLoads()
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     ImageCache::clear();
-    if (m_pathRaster) {
-        m_pathRaster->invalidateAll();
+    if (hostPathRaster()) {
+        hostPathRaster()->invalidateAll();
     }
     if (ThumtooCache::isAvailable()) {
         (void)ThumtooCache::bumpInterestEpoch();

@@ -47,6 +47,8 @@ DisplayPipelineController::DisplayPipelineController(DisplayPipelineHost *host)
     : m_host(host)
 {
     Q_ASSERT(m_host);
+    // Parent to host shell so lifetime tracks the ImageView that owns the pipeline.
+    m_pathRaster = new PathRasterService(m_host->hostObject());
 }
 
 void DisplayPipelineController::setActiveHost(DisplayPipelineHost *host)

@@ -311,8 +311,8 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     if (m_displayPipeline->sampleCoversNativeLogical(path, item->displayImage())) {
         return {};
     }
-    if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
-        return m_pathRaster->isGaveUp(path) ? tr("Decoding full…")
+    if (hostPathRaster() && hostPathRaster()->isClimbPending(path)) {
+        return hostPathRaster()->isGaveUp(path) ? tr("Decoding full…")
                                             : tr("Improving quality…");
     }
     if (ThumtooCache::isAvailable()) {

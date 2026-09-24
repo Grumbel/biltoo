@@ -2,13 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2486.1-own-slideshow-progress-timer** (base `7d823d8`).
+**Tip: biltoo-2487.1-own-path-raster-on-pipeline** (base `7d823d8`).
 
-### Fixes / ownership
-- HudChrome: no QWidget include (viewport update via callback) — fixes build
-- **Slideshow progress QTimer** owned by SlideshowController
+### Ownership transfer
+- **PathRasterService** on DisplayPipelineController (parented to hostObject)
+- ImageView hostPathRaster() → m_displayPipeline->pathRaster()
+
+### Residual on ImageView (intentional shell/host)
+ViewFraming, ViewMode, CanvasBackground, ViewportChrome, SessionIdentity,
+SessionBindBook, TileNeighborPrefetch, ImageModeSoftProvider, PerfStats
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2486.1-own-slideshow-progress-timer-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2487.1-own-path-raster-on-pipeline-7d823d8.bundle HEAD
 ```

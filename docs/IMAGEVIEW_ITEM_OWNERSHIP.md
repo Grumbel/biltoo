@@ -399,3 +399,6 @@ Product shell (minimal):
 28. **biltoo-2485.2 / 2486:** HudChrome drops QWidget include (callback update);
     SlideshowController owns progress QTimer (parented to ImageView).
 
+29. **biltoo-2487:** PathRasterService owned by DisplayPipelineController;
+    hostPathRaster forwards to pipeline pathRaster().
+

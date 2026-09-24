@@ -196,9 +196,9 @@ ImageView::ImageView(QWidget *parent)
                     refreshStatus();
                 }
             });
-    m_pathRaster = new PathRasterService(this);
+    // PathRasterService: created by DisplayPipelineController.
     m_displayPipeline->tileCoordinator() = std::make_unique<TileLoadCoordinator>(m_displayPipeline);
-    connect(m_pathRaster, &PathRasterService::rasterImproved, this,
+    connect(hostPathRaster(), &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 if (path.isEmpty()) {
                     return;
@@ -211,12 +211,12 @@ ImageView::ImageView(QWidget *parent)
                     && m_slideshow.phase().isPhasePath(path)) {
                     m_slideshow.onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
-                    if (m_pathRaster) {
+                    if (hostPathRaster()) {
                         const int target = m_displayPipeline->cappedDisplayEdgeForPath(
                             path, m_slideshow.slideshowTargetEdge());
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {
-                            m_pathRaster->ensure(
+                            hostPathRaster()->ensure(
                                 path, target, logicalSizeForPath(path),
                                 PathRasterService::ClimbPolicy::SoftDisplay);
                         }

@@ -151,7 +151,7 @@
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
 
-    PathRasterService *m_pathRaster = nullptr;
+    // PathRasterService: owned by DisplayPipelineController (pathRaster()).
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kMaxConcurrentGalleryDecodes = 8;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */

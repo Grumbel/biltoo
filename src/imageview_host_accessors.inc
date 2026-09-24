@@ -2,8 +2,14 @@
 // Operations: host_ops / host_crop_display / host_pipeline. Included from ImageView public.
 
     /** Display pipeline host: PreferCache / load path raster service. */
-    PathRasterService *hostPathRaster() override { return m_pathRaster; }
-    const PathRasterService *hostPathRaster() const override { return m_pathRaster; }
+    PathRasterService *hostPathRaster() override
+    {
+        return m_displayPipeline ? m_displayPipeline->pathRaster() : nullptr;
+    }
+    const PathRasterService *hostPathRaster() const override
+    {
+        return m_displayPipeline ? m_displayPipeline->pathRaster() : nullptr;
+    }
     /** Image-mode controller (classic path, enter, reload). */
     ImageController &hostImage() override { return m_image; }
     const ImageController &hostImage() const override { return m_image; }
