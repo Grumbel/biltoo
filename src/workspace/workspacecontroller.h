@@ -123,6 +123,17 @@ public:
     bool pathOnLiveCanvas(const QString &path) const;
     void selectAllCanvasItems();
 
+    // Canvas selection queries / select-by-id (MainWindow + transform targets).
+    void selectBySessionIndices(const QList<int> &indices);
+    void selectBySessionIds(const QList<SessionImageId> &ids);
+    void selectPathsByOccurrence(const QStringList &paths);
+    QList<SessionImageId> selectedSessionIds() const;
+    QList<int> selectedSessionIndices() const;
+    QList<ImageItem *> transformTargets() const;
+    bool hasTransformTargets() const;
+    bool hasSingleCropTarget() const;
+
+
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */
     void duplicateSelected(const QVector<SessionImageId> &newIds, int firstSessionIndex);
 

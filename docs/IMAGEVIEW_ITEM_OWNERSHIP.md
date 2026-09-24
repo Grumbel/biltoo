@@ -484,3 +484,9 @@ Product shell (minimal):
     pathOccurrenceCount, and selectAllCanvasItems; ImageView thin routers
     (TileNeighborPrefetchHost pathOnLiveCanvas stays on ImageView surface).
 
+48. **biltoo-2506:** WorkspaceController owns selection queries and select-by
+    (transformTargets, selectBySessionIds/Indices, selectPathsByOccurrence,
+    selectedSessionIds/Indices, hasTransformTargets/hasSingleCropTarget);
+    ImageView thin routers. validateUniqueLiveSessionIds stays on ImageView
+    (live + workspace/gallery stashes).
+

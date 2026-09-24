@@ -100,3 +100,9 @@
         return validateUniqueLiveSessionIds(context);
     }
 
+    /** Controller host: live tile bound to session list index. */
+    ImageItem *hostFindItemBySessionIndex(int sessionIndex) const
+    {
+        return findItemBySessionIndex(sessionIndex);
+    }
+

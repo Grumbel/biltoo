@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Canvas selection and transform targets.
-// Duplicate + workspace clipboard: WorkspaceController thin routers.
+// Canvas selection and transform targets — WorkspaceController thin routers.
+// validateUniqueLiveSessionIds stays on ImageView (live + both stashes).
 
 #include "imageview.h"
 #include "item/itemcomponents.h"
@@ -17,86 +17,33 @@
 
 void ImageView::selectBySessionIndices(const QList<int> &indices)
 {
-    if (!m_scene) {
-        return;
-    }
-    m_scene->clearSelection();
-    for (int idx : indices) {
-        if (ImageItem *item = findItemBySessionIndex(idx)) {
-            item->setSelected(true);
-        }
-    }
+    m_workspace.selectBySessionIndices(indices);
 }
-
 
 QList<SessionImageId> ImageView::selectedSessionIds() const
 {
-    QList<SessionImageId> out;
-    for (ImageItem *item : m_items) {
-        if (item && item->isSelected() && item->sessionId() != kInvalidSessionImageId) {
-            out.append(item->sessionId());
-        }
-    }
-    return out;
+    return m_workspace.selectedSessionIds();
 }
-
 
 void ImageView::selectBySessionIds(const QList<SessionImageId> &ids)
 {
-    if (!m_scene) {
-        return;
-    }
-    m_scene->clearSelection();
-    for (SessionImageId id : ids) {
-        if (id == kInvalidSessionImageId) {
-            continue;
-        }
-        if (ImageItem *item = findItemBySessionId(id)) {
-            item->setSelected(true);
-        }
-    }
+    m_workspace.selectBySessionIds(ids);
 }
-
 
 void ImageView::selectPathsByOccurrence(const QStringList &paths)
 {
-    if (!m_scene) {
-        return;
-    }
-    m_scene->clearSelection();
-    QHash<QString, int> nextOccurrence;
-    for (const QString &path : paths) {
-        if (path.isEmpty()) {
-            continue;
-        }
-        const int want = nextOccurrence.value(path, 0);
-        int seen = 0;
-        for (ImageItem *item : m_items) {
-            if (!item || item->path() != path) {
-                continue;
-            }
-            if (seen == want) {
-                item->setSelected(true);
-                nextOccurrence[path] = want + 1;
-                break;
-            }
-            ++seen;
-        }
-    }
+    m_workspace.selectPathsByOccurrence(paths);
 }
-
 
 bool ImageView::hasTransformTargets() const
 {
-    return !transformTargets().isEmpty();
+    return m_workspace.hasTransformTargets();
 }
-
 
 bool ImageView::hasSingleCropTarget() const
 {
-    return transformTargets().size() == 1;
+    return m_workspace.hasSingleCropTarget();
 }
-
 
 bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 {
@@ -140,19 +87,8 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 
 QList<int> ImageView::selectedSessionIndices() const
 {
-    QList<int> out;
-    for (ImageItem *item : m_items) {
-        if (!item || !item->isSelected()) {
-            continue;
-        }
-        const int idx = sessionListIndex(item);
-        if (idx >= 0) {
-            out.append(idx);
-        }
-    }
-    return out;
+    return m_workspace.selectedSessionIndices();
 }
-
 
 void ImageView::selectAllCanvasItems()
 {
@@ -162,24 +98,7 @@ void ImageView::selectAllCanvasItems()
 
 QList<ImageItem *> ImageView::transformTargets() const
 {
-    QList<ImageItem *> out;
-    if (!m_scene) {
-        return out;
-    }
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-            out.append(item);
-        }
-    }
-    if (!out.isEmpty()) {
-        return out;
-    }
-    if (isImageMode() || m_items.size() == 1) {
-        if (!m_items.isEmpty()) {
-            out.append(m_items.first());
-        }
-    }
-    return out;
+    return m_workspace.transformTargets();
 }
 
 // --- Clipboard / duplicate (was imageview_clipboard.cpp) ---
