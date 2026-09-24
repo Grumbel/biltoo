@@ -12,6 +12,7 @@
 #include <QList>
 #include <QPointF>
 #include <QRectF>
+#include <QSizeF>
 #include <QString>
 #include <QTransform>
 #include <QVector>
@@ -100,6 +101,11 @@ public:
     void placeClipboardItems(const QList<WorkspaceItemState> &items,
                              const QVector<SessionImageId> &newIds,
                              const QList<int> &sessionIndices);
+
+    /** Scene rect halo, empty placement, and session content presence. */
+    bool hasContent() const;
+    void updateSceneRect();
+    QPointF findEmptyPlacement(const QSizeF &itemSize) const;
 
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);

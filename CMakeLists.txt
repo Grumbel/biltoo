@@ -152,6 +152,7 @@ set(BILTOO_LIB_SOURCES
   src/workspace/workspace_chrome.cpp
   src/workspace/workspace_stack.cpp
   src/workspace/workspace_clipboard.cpp
+  src/workspace/workspace_scene.cpp
   src/workspace/workspacecontroller.h
   src/image/imagecontroller.cpp
   src/image/imagecontroller_framing.cpp

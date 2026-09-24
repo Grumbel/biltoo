@@ -452,3 +452,7 @@ Product shell (minimal):
     paste place (`captureSelectedClipboard` / `placeClipboardItems`); ImageView
     thin routers. `duplicateSelected` stays on ImageView (Workspace + Gallery).
 
+40. **biltoo-2498:** WorkspaceController owns scene-rect update, empty
+    placement search, and hasContent; ImageView thin routers (host
+    updateWorkspaceSceneRect / findEmptyPlacement / hasWorkspaceContent).
+
