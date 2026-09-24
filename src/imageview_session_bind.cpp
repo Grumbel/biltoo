@@ -9,15 +9,7 @@
 
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {
-    for (int bi = m_session.bindBook().bindCount() - 1; bi >= 0; --bi) {
-        const PendingSessionBind &b = m_session.bindBook().bindAt(bi);
-        if (b.path != path || b.id == kInvalidSessionImageId) {
-            continue;
-        }
-        if (findItemBySessionId(b.id)) {
-            m_session.bindBook().removeBindAt(bi);
-        }
-    }
+    m_workspace.purgeSatisfiedPendingBinds(path);
 }
 
 void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound)
@@ -33,36 +25,7 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
 bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
                                                  PendingSessionBind *out)
 {
-    if (!out || path.isEmpty() || !item) {
-        return false;
-    }
-    for (int bi = 0; bi < m_session.bindBook().bindCount(); ++bi) {
-        if (m_session.bindBook().bindAt(bi).path != path) {
-            continue;
-        }
-        const PendingSessionBind candidate = m_session.bindBook().bindAt(bi);
-        if (candidate.id != kInvalidSessionImageId) {
-            if (ImageItem *owner = findItemBySessionId(candidate.id)) {
-                if (owner != item) {
-                    m_session.bindBook().removeBindAt(bi);
-                    --bi;
-                    continue;
-                }
-            }
-        }
-        m_session.bindBook().takeBindAt(bi, out);
-        if (out->id != kInvalidSessionImageId) {
-            // List-order refresh + applied→ItemWorld migrate (2083/2084).
-            setItemSessionId(item, out->id);
-            if (sessionListIndex(item) < 0 && out->index >= 0) {
-                item->setSessionIndex(out->index);
-            }
-        } else if (out->index >= 0) {
-            item->setSessionIndex(out->index);
-        }
-        return true;
-    }
-    return false;
+    return m_workspace.takePendingSessionBindForNewItem(path, item, out);
 }
 
 void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,

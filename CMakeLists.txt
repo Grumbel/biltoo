@@ -282,6 +282,7 @@ set(BILTOO_LIB_SOURCES
   src/imageview.h
   src/imageview_types.h
   src/session/sessionappearance.cpp
+  tests/thumtoocache_appearance_stub.cpp
   src/session/sessionseedbook.cpp
   src/content/contentxform.cpp
   src/session/sessionappearance.h
@@ -680,6 +681,7 @@ if(Qt6Test_FOUND)
     tests/sessiondocument_test.cpp
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -710,6 +712,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-itemworld-test
     tests/itemworld_test.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -740,6 +743,7 @@ if(Qt6Test_FOUND)
       tests/imageview_characterization.cpp
       src/session/sessiondocument.cpp
       src/session/sessionappearance.cpp
+      tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
       src/content/contentxform.cpp
       src/color/coloradjust.cpp
@@ -754,6 +758,7 @@ if(Qt6Test_FOUND)
     tests/pathorder_dual_model_test.cpp
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -766,6 +771,7 @@ if(Qt6Test_FOUND)
     tests/packorderview_test.cpp
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -778,6 +784,7 @@ if(Qt6Test_FOUND)
     tests/packorderoverlay_test.cpp
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -790,6 +797,7 @@ if(Qt6Test_FOUND)
     tests/session_gallery_crop_scenario_test.cpp
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
@@ -801,6 +809,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
     src/session/sessionappearance.cpp
+    tests/thumtoocache_appearance_stub.cpp
     src/session/sessionseedbook.cpp
     src/session/sessiondocument.cpp
     src/content/contentxform.cpp

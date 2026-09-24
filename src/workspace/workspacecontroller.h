@@ -184,6 +184,15 @@ public:
     /** Place a newly created LoadAdd tile (Gallery neutral / drop / durable / empty). */
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);
+    /**
+     * Claim a pending session bind for a newly created tile (LoadAdd / restore).
+     * Scrubs conflicting id ownership; binds SessionImageId via ImageController.
+     */
+    bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                          PendingSessionBind *out);
+    /** Drop satisfied pending binds once a live tile owns the SessionImageId. */
+    void purgeSatisfiedPendingBinds(const QString &path);
+
 
     QList<ImageItem *> collectItemsForSessionId(SessionImageId sessionId) const;
     QStringList destroySessionIdItems(const QList<ImageItem *> &doomed);

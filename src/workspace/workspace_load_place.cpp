@@ -139,3 +139,56 @@ void WorkspaceController::placeNewLoadAddItem(ImageItem *item, const QString &pa
     s.pos = findEmptyPlacement(sz);
     m_view->applyState(item, s);
 }
+
+bool WorkspaceController::takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
+                                                           PendingSessionBind *out)
+{
+    if (!out || path.isEmpty() || !item || !m_view) {
+        return false;
+    }
+    auto &book = m_view->hostBindBook();
+    for (int bi = 0; bi < book.bindCount(); ++bi) {
+        if (book.bindAt(bi).path != path) {
+            continue;
+        }
+        const PendingSessionBind candidate = book.bindAt(bi);
+        if (candidate.id != kInvalidSessionImageId) {
+            if (ImageItem *owner = m_view->findItemBySessionId(candidate.id)) {
+                if (owner != item) {
+                    book.removeBindAt(bi);
+                    --bi;
+                    continue;
+                }
+            }
+        }
+        book.takeBindAt(bi, out);
+        if (out->id != kInvalidSessionImageId) {
+            // List-order refresh + applied→ItemWorld migrate (2083/2084).
+            m_view->hostImage().setItemSessionId(item, out->id);
+            if (m_view->sessionListIndex(item) < 0 && out->index >= 0) {
+                item->setSessionIndex(out->index);
+            }
+        } else if (out->index >= 0) {
+            item->setSessionIndex(out->index);
+        }
+        return true;
+    }
+    return false;
+}
+
+void WorkspaceController::purgeSatisfiedPendingBinds(const QString &path)
+{
+    if (!m_view || path.isEmpty()) {
+        return;
+    }
+    auto &book = m_view->hostBindBook();
+    for (int bi = book.bindCount() - 1; bi >= 0; --bi) {
+        const PendingSessionBind &b = book.bindAt(bi);
+        if (b.path != path || b.id == kInvalidSessionImageId) {
+            continue;
+        }
+        if (m_view->findItemBySessionId(b.id)) {
+            book.removeBindAt(bi);
+        }
+    }
+}
