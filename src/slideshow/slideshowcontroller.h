@@ -99,6 +99,11 @@ public:
     void onViewportLeave();
     /** Pinned HUD visibility drives the slideshow progress timer. */
     void syncProgressTimerWithHud(bool hudVisible);
+    /**
+     * Remaining slideshow quality work while progress is active: raster queue
+     * plus soft current-slide still below target edge (pendingDecodeCount).
+     */
+    int pendingQualityWorkCount() const;
     void restoreImageFramingAfterSlideshow();
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();

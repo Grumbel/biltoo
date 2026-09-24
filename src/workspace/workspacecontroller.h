@@ -50,6 +50,12 @@ public:
     void stashItems();
     void restoreStashedItems();
 
+    /**
+     * Unique live paths with no display pixels or ≤ LQIP edge (PreferCache climb
+     * still owed). Used by ImageView::pendingDecodeCount in Workspace mode.
+     */
+    int uniqueWeakPathCount() const;
+
     /** Enter Workspace mode from @p previous (setViewMode Workspace branch). */
     /** Enter Workspace mode from previous ViewMode (int = ImageView::ViewMode). */
     void enter(int previousMode);

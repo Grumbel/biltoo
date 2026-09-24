@@ -202,6 +202,8 @@ public:
      */
     void countDebugPixelMix(int *blankOut, int *lqipOut, int *softOut,
                             int *higherOut, int *climbingOut) const;
+    /** Unique blank paths still needing LQIP (pendingDecodeCount). */
+    int uniqueBlankPathCount() const;
 
     /** Packaged layout mode + grid/masonry prefs (also FreeForm for Workspace). */
     LayoutPrefs &layout() { return m_layout; }

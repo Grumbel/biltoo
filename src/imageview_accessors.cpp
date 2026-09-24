@@ -5,11 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "display/imagecache.h"
-#include "gallery/gallerydecodesm.h"
-#include "display/displayquality.h"
 
-#include <QSet>
 #include <QGraphicsItem>
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
@@ -21,52 +17,21 @@ int ImageView::pendingDecodeCount() const
 {
     // Remaining work overview — not concurrent inflight. Counting only inflight
     // flickered 1↔0 as each soft job finished before the next was claimed.
+    // Mode-specific path walks live on Gallery / Workspace / Slideshow controllers.
     int n = m_displayPipeline->loadGate().pendingWorkspaceAddCount()
           + m_displayPipeline->loadGate().pendingRestoreCount();
 
     if (isGalleryMode()) {
         // Gallery: blanks still need LQIP. LQIP-only is intentional underlay
         // (tiles own sharpness) — do not count as remaining soft work.
-        QSet<QString> blankPaths;
-        for (ImageItem *item : m_items) {
-            if (!item || item->path().isEmpty()) {
-                continue;
-            }
-            if (!item->hasDisplayPixels()) {
-                blankPaths.insert(item->path());
-            }
-        }
-        n += blankPaths.size();
+        n += m_gallery.uniqueBlankPathCount();
     } else if (isWorkspaceMode()) {
         // Workspace may still climb PreferCache for soft+ samples.
-        QSet<QString> weakPaths;
-        for (ImageItem *item : m_items) {
-            if (!item || item->path().isEmpty()) {
-                continue;
-            }
-            const int edge = item->displayPixelLongEdge();
-            if (!item->hasDisplayPixels()
-                || edge <= DisplayQuality::kLqipMaxEdge) {
-                weakPaths.insert(item->path());
-            }
-        }
-        n += weakPaths.size();
+        n += m_workspace.uniqueWeakPathCount();
     }
 
-    // Slideshow preload queue (inflight + pending neighbours).
-    if (m_slideshow.hud().isProgressActive()) {
-        n += m_slideshow.phase().rasterQueueCount();
-        if (m_slideshow.phase().hasFromPath()
-            && ImageCache::longEdge(m_slideshow.phase().fromImageRef()) > 0
-            && ImageCache::longEdge(m_slideshow.phase().fromImageRef())
-                   < (m_slideshow.slideshowTargetEdge() * 7) / 10) {
-            // Current slide still soft — count as remaining quality work once.
-            if (!m_slideshow.phase().rasterInflightContains(m_slideshow.phase().fromPathRef())
-                && !m_slideshow.phase().rasterPendingContains(m_slideshow.phase().fromPathRef())) {
-                ++n;
-            }
-        }
-    }
+    // Slideshow preload queue (inflight + pending neighbours + soft current).
+    n += m_slideshow.pendingQualityWorkCount();
     return n;
 }
 

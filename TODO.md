@@ -2,18 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2581.1-viewport-event-transform-undo** (base `7d823d8`).
+**Tip: biltoo-2582.1-pending-decode-mode-counts** (base `7d823d8`).
 
 ### Ownership transfer
-- **ViewShellChrome::handleViewportEvent** — DragEnter/Move/Drop from QOpenGLWidget viewport
-- **pushItemTransformUndo / hostPushItemTransformUndo** live next to geometry undo
-  (`item/geometryundocommand.cpp`); ImageView input TU is event routing only
-- Slimmed `imageview_input_events.cpp` (~161 → ~90 lines)
+- **GalleryController::uniqueBlankPathCount** — unique blank paths for pending decode
+- **WorkspaceController::uniqueWeakPathCount** — unique ≤LQIP / blank paths
+- **SlideshowController::pendingQualityWorkCount** — raster queue + soft current slide
+- ImageView::pendingDecodeCount only sums load-gate + mode controller counts
 
 ### Prior
+**2581.1** Viewport drag events on shell; transform undo with geometry  
 **2580.1** ImageController sticky pan leave + sticky zoom  
-**2579.1** HudChrome appearance mutators; ViewShellChrome centre progress  
-**2578.1** GalleryController owns pixel-mix / loading tile counts
+**2579.1** HudChrome appearance mutators; ViewShellChrome centre progress
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -33,5 +33,5 @@ status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2581.1-viewport-event-transform-undo-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2582.1-pending-decode-mode-counts-7d823d8.bundle HEAD
 ```

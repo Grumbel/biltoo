@@ -2521,3 +2521,20 @@ void GalleryController::countDebugPixelMix(int *blankOut, int *lqipOut, int *sof
         *climbingOut = climb;
     }
 }
+
+int GalleryController::uniqueBlankPathCount() const
+{
+    if (!m_view) {
+        return 0;
+    }
+    QSet<QString> blankPaths;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        if (!item->hasDisplayPixels()) {
+            blankPaths.insert(item->path());
+        }
+    }
+    return blankPaths.size();
+}

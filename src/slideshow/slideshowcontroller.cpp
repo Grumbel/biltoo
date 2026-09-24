@@ -2580,3 +2580,22 @@ void SlideshowController::paintSeekbar(QPainter &painter) const
     }
 }
 
+
+int SlideshowController::pendingQualityWorkCount() const
+{
+    if (!hud().isProgressActive()) {
+        return 0;
+    }
+    int n = phase().rasterQueueCount();
+    if (phase().hasFromPath()
+        && ImageCache::longEdge(phase().fromImageRef()) > 0
+        && ImageCache::longEdge(phase().fromImageRef())
+               < (slideshowTargetEdge() * 7) / 10) {
+        // Current slide still soft — count as remaining quality work once.
+        if (!phase().rasterInflightContains(phase().fromPathRef())
+            && !phase().rasterPendingContains(phase().fromPathRef())) {
+            ++n;
+        }
+    }
+    return n;
+}

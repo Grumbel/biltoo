@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2581.1-viewport-event-transform-undo**.
-Latest tip: **biltoo-2581** (+ thumtoo-338). Shell owns viewport drag events; transform undo with geometry.
+Latest agent handoff: **TODO.md → biltoo-2582.1-pending-decode-mode-counts**.
+Latest tip: **biltoo-2582** (+ thumtoo-338). Mode controllers own pending-decode path counts.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

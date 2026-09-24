@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
+#include "display/displayquality.h"
 #include "view/viewtransform.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"
@@ -885,4 +886,23 @@ void WorkspaceController::applyToolDragMode()
     m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
                             ? QGraphicsView::RubberBandDrag
                             : QGraphicsView::NoDrag);
+}
+
+int WorkspaceController::uniqueWeakPathCount() const
+{
+    if (!m_view) {
+        return 0;
+    }
+    QSet<QString> weakPaths;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const int edge = item->displayPixelLongEdge();
+        if (!item->hasDisplayPixels()
+            || edge <= DisplayQuality::kLqipMaxEdge) {
+            weakPaths.insert(item->path());
+        }
+    }
+    return weakPaths.size();
 }
