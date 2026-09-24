@@ -463,4 +463,30 @@ void adoptPathSessionIndexHint(WorkspaceItemState &s,
     }
 }
 
+bool preferDurableFreeze(SessionImageId sid,
+                         bool hasAppliedContentXform,
+                         bool hasDurableAppearance)
+{
+    return sid != kInvalidSessionImageId
+        && !hasAppliedContentXform
+        && hasDurableAppearance;
+}
+
+WorkspaceItemState durableFreezeFromParts(
+    const WorkspaceItemState &durableAppearance,
+    const ItemComponents::Placement &livePlacement,
+    const ColorAdjustments &liveColor,
+    const QString &path,
+    SessionImageId sid,
+    int sessionIndex)
+{
+    WorkspaceItemState s = durableAppearance;
+    ItemComponents::applyPlacementToState(s, livePlacement);
+    s.colorAdjust = liveColor;
+    s.path = path;
+    s.sessionId = sid;
+    s.sessionIndex = sessionIndex;
+    return s;
+}
+
 } // namespace SessionAppearance

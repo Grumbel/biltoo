@@ -9,10 +9,12 @@
 namespace ThumtooCache { struct StoredContentAppearance; }
 #include "color/coloradjust.h"
 #include "content/contentxform.h"
+#include "item/itemcomponents.h"
 
 #include <QImage>
 #include <QRect>
 #include <QSize>
+#include <QString>
 
 
 /**
@@ -220,6 +222,27 @@ void overlayAppliedContentXform(WorkspaceItemState &s,
  */
 void adoptPathSessionIndexHint(WorkspaceItemState &s,
                                const WorkspaceItemState *pathPrev);
+
+/**
+ * True when freeze should take the durable sparse path: bound SessionImageId,
+ * no mid-edit applied ContentXform, and ItemWorld has a durable appearance row.
+ */
+[[nodiscard]] bool preferDurableFreeze(SessionImageId sid,
+                                       bool hasAppliedContentXform,
+                                       bool hasDurableAppearance);
+
+/**
+ * Bound freeze from durable appearance + live pose/grade.
+ * Caller supplies sparse assembly (appearanceValue) and live overlays.
+ * Does not touch mid-edit applied ContentXform (preferDurableFreeze is false then).
+ */
+WorkspaceItemState durableFreezeFromParts(
+    const WorkspaceItemState &durableAppearance,
+    const ItemComponents::Placement &livePlacement,
+    const ColorAdjustments &liveColor,
+    const QString &path,
+    SessionImageId sid,
+    int sessionIndex);
 
 } // namespace SessionAppearance
 

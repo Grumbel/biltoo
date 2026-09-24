@@ -2,16 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2552.1-fix-hud-panels-host-access** (base `7d823d8`).
+**Tip: biltoo-2553.1-own-durable-freeze-pure** (base `7d823d8`).
 
-### Fix
-- `ViewShellChrome::paintHudPanels` — use host APIs after 2549 move:
-  - `m_view->hostPerf()` (was bare `m_hud.perf()`)
-  - `m_view->targetItem()` / `primaryItem()`
-  - `m_view->hostDisplayPipeline().pixelQualityLabel()` (private on ImageView)
+### Ownership transfer
+- **SessionAppearance::preferDurableFreeze** — pure predicate (bound, no mid-edit
+  applied ContentXform, durable row present)
+- **SessionAppearance::durableFreezeFromParts** — assemble durable appearance +
+  live pose/grade/path/sid/index
+- `ImageView::freezeItemAppearance` keeps host orchestration (ItemWorld /
+  live color / resolveContentEditSessionId); pure policy on SessionAppearance
 
 ### Prior
-**2551.1** Own edge-affordance paint policy on ImageController.
+**2552.1** Fix ViewShellChrome paintHudPanels host access.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -20,13 +22,14 @@ QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-freezeItemAppearance residual, paint orchestration (dispatch only)
+freezeItemAppearance host residual (orchestration only),
+paint orchestration (dispatch only)
 
 ### Next thinning candidates
-- freezeItemAppearance residual (host freeze; pure merges already on SessionAppearance)
 - setViewMode body (mode shell by design)
+- further freeze callers → host-only if dual surface needs it
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2552.1-fix-hud-panels-host-access-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2553.1-own-durable-freeze-pure-7d823d8.bundle HEAD
 ```

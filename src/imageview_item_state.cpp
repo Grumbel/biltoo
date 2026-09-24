@@ -77,16 +77,19 @@ WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
         return {};
     }
     const SessionImageId sid = resolveContentEditSessionId(item);
-    if (sid != kInvalidSessionImageId
-        && !itemHasAppliedContentXform(item)
-        && m_itemWorld.hasDurableAppearance(sid)) {
-        WorkspaceItemState s = sessionAppearanceValue(sid);
-        ItemComponents::applyPlacementToState(s, placementFromItem(item));
-        s.colorAdjust = itemLiveColor(item);
-        s.path = item->path();
-        s.sessionId = sid;
-        s.sessionIndex = sessionListIndex(item);
-        return s;
+    // Durable path: sparse content is authority; overlay live pose/grade only.
+    // Mid-edit applied ContentXform or unbound → full captureState.
+    if (SessionAppearance::preferDurableFreeze(
+            sid,
+            itemHasAppliedContentXform(item),
+            m_itemWorld.hasDurableAppearance(sid))) {
+        return SessionAppearance::durableFreezeFromParts(
+            sessionAppearanceValue(sid),
+            placementFromItem(item),
+            itemLiveColor(item),
+            item->path(),
+            sid,
+            sessionListIndex(item));
     }
     return captureState(item);
 }
