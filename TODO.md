@@ -2,17 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2523.1-own-gallery-open-focus-text-link** (base `7d823d8`).
+**Tip: biltoo-2525.1-own-color-grade** (base `7d823d8`).
 
 ### Ownership transfer
-- **GalleryController::emitItemFocus / emitItemOpenInImageMode** — id-safe session focus/open
-  (was ImageView; only gallery callers + double-click shell routes through m_gallery)
-- **TextLayerController::tryMousePressLink** — Image-mode page-link activation
-- **ImageController::zoomIn / zoomOut** — view zoom steps
+- **ImageController** owns interactive colour grade + deferred durable commit:
+  `setTargetColorAdjustments`, `flushColorAdjustCommit`, `applyInteractiveColorGrade`
+- ImageView keeps thin public routers (MainWindow / host surface)
 
-### Hygiene
-- Dropped dead `sessionIdMatchesPath` (inlined into gallery emit helpers)
-- framing_image / input link press: pure thin routers
+### Prior in this stack (2522–2524)
+- Transform reset signatures; attention session change
+- Gallery emitItemFocus/Open; TextLayer tryMousePressLink; zoomIn/Out
+- Workspace rotate uses PlacementLinear (drop undefined angleAt)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -21,14 +21,14 @@ QUndoStack, display pipeline, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-appearance / paint / colour-grade (next candidates)
+appearance load/apply / paint / input dispatch shell
 
 ### Next thinning candidates
+- appearance apply/commit residual → ItemWorld / pipeline hosts
+- paint / remaining input event TUs
 - setViewMode body (mode shell by design)
-- colour-grade / appearance commit bodies → ImageController
-- paint / input event TUs
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2523.1-own-gallery-open-focus-text-link-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2525.1-own-color-grade-7d823d8.bundle HEAD
 ```

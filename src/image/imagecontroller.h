@@ -10,6 +10,7 @@
 #include "session/sessionchrome.h"
 #include "view/viewframing.h"
 #include "color/coloradjustcommit.h"
+#include "session/sessionappearance.h"
 #include <QSize>
 
 class ImageView;
@@ -24,10 +25,10 @@ class QPoint;
  * Image-mode collaborator for ImageView.
  *
  * Owns the classic (single-image) path, Image-mode enter transition,
- * framing/sticky pan, edge nav, and content flip/rotate (all modes; pipeline
- * bake with mode post-steps). Gallery/Workspace leave (stash) runs in those
- * controllers' onLeave before enter is called.
- * ImageView remains the QGraphicsView shell and public API surface.
+ * framing/sticky pan, edge nav, content flip/rotate (all modes; pipeline
+ * bake with mode post-steps), and interactive colour-grade + deferred commit.
+ * Gallery/Workspace leave (stash) runs in those controllers' onLeave before
+ * enter is called. ImageView remains the QGraphicsView shell and public API.
  */
 class ImageController
 {
@@ -112,12 +113,16 @@ public:
     /** Pending durable colour-grade commit target + debounce timer. */
     ColorAdjustCommit &colorAdjustCommit() { return m_colorAdjustCommit; }
     const ColorAdjustCommit &colorAdjustCommit() const { return m_colorAdjustCommit; }
-    /** Arm debounce; timeout calls ImageView::flushColorAdjustCommit. */
+    /** Arm debounce; timeout calls flushColorAdjustCommit. */
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     void stopColorAdjustCommitTimer();
+    /** Interactive slider path + deferred durable rematerialize. */
+    void setTargetColorAdjustments(const ColorAdjustments &adj);
+    void flushColorAdjustCommit();
 
 private:
     void ensureColorAdjustCommitTimer();
+    void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
 
     ImageView *m_view = nullptr;
     ViewFraming m_framing;

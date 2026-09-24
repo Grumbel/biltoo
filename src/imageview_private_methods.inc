@@ -127,7 +127,6 @@
                                       const QString &path = QString()) const;
 
     /** Interactive grade: clamped host bake (no SQLite / filmstrip). */
-    void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
 
     /** After slider idle: durable save, filmstrip, full rematerialize if needed. */
 
