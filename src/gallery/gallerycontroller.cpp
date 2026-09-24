@@ -1228,7 +1228,7 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
         if (after <= before && had) {
             continue;
         }
-        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(item->path());
+        GalleryDecodeState &st = m_decodeBook.state(item->path());
         st.have = GalleryDecode::maxHave(st.have, after);
         item->update();
         ++installed;
@@ -1335,7 +1335,7 @@ void GalleryController::updateDecodeWindow()
         }
         seen.insert(path);
 
-        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
+        GalleryDecodeState &st = m_decodeBook.state(path);
         st.have = GalleryDecode::maxHave(st.have, item->displayPixelLongEdge());
         st.terminal = true;
 

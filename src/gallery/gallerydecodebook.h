@@ -12,6 +12,7 @@
 
 /**
  * Per-path Gallery decode-window state and related path sets.
+ * Owned by GalleryController; ImageView exposes hostGalleryDecodeBook().
  * Decode watchdog QTimer stays on ImageView.
  */
 class GalleryDecodeBook

@@ -15,6 +15,7 @@
 #include "imageview_types.h"
 #include "session/packorderview.h"
 #include "gallery/gallerysizeresolve.h"
+#include "gallery/gallerydecodebook.h"
 
 class ImageView;
 class ImageItem;
@@ -144,6 +145,10 @@ public:
     GallerySizeResolve &sizeResolve() { return m_sizeResolve; }
     const GallerySizeResolve &sizeResolve() const { return m_sizeResolve; }
 
+    /** Per-path Gallery decode-window state (pipeline host surface). */
+    GalleryDecodeBook &decodeBook() { return m_decodeBook; }
+    const GalleryDecodeBook &decodeBook() const { return m_decodeBook; }
+
     // GallerySizeResolveHost
     bool hasDefinitiveHostSize(const QString &path) const override;
     void adoptResolvedSize(const QString &path, const QSize &size) override;
@@ -171,6 +176,7 @@ private:
 
     ImageView *m_view = nullptr;
     GallerySizeResolve m_sizeResolve;
+    GalleryDecodeBook m_decodeBook;
 
     QList<ImageItem *> m_stashedItems;
     PackOrderView m_stashedPackOrder;

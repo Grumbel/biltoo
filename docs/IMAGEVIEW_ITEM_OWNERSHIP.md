@@ -351,3 +351,7 @@ Product shell (minimal):
 13. **biltoo-2471:** Complete Workspace input ownership — page-guide move/release,
     group/handle/item-drag move/release on `WorkspaceController`; ImageView thin
     routers only (closes residual after 2464–2466).
+
+14. **biltoo-2472:** GalleryDecodeBook owned by GalleryController; hostGalleryDecodeBook
+    forwards; ImageView / pipeline / shell use host surface only.
+

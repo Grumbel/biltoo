@@ -132,7 +132,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     if (isGalleryMode() && m_gallerySizeResolve.active()) {
         // Pack deferred until sizes settle. Keep items hidden so provisional
         // geometry is never painted (cold-open layout glitch).
-        if (m_items.isEmpty() && !paths.isEmpty() && !m_galleryDecodeBook.isDeferPopulate()) {
+        if (m_items.isEmpty() && !paths.isEmpty() && !hostGalleryDecodeBook().isDeferPopulate()) {
             m_gallery.ensurePlaceholders();
         }
         for (ImageItem *item : m_items) {
@@ -199,9 +199,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     if (isGalleryMode() && !paths.isEmpty()
         && m_gallerySizeResolve.startIfNeeded(paths)) {
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
-        m_galleryDecodeBook.setDeferPopulate(true);
+        hostGalleryDecodeBook().setDeferPopulate(true);
     } else {
-        m_galleryDecodeBook.setDeferPopulate(false);
+        hostGalleryDecodeBook().setDeferPopulate(false);
     }
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
@@ -215,7 +215,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // ordered prefix that already has definitive sizes (warm memo / book) so
     // masonry/flow can paint immediately — same idea as filmstrip.
     // NEVER hide existing live tiles (stash restore).
-    if (isGalleryMode() && m_galleryDecodeBook.isDeferPopulate()
+    if (isGalleryMode() && hostGalleryDecodeBook().isDeferPopulate()
         && m_gallerySizeResolve.active()) {
         // Seed any already-sized prefix, but stay hidden until gate-complete pack.
         // Showing unstacked items at the origin (previous behaviour after the

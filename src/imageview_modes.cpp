@@ -243,7 +243,7 @@ void ImageView::clearWorkspace()
     m_pendingAppearance.clear();
     m_displayPipeline->galleryDecodeResetAll();
     m_size.book().clear();
-    m_galleryDecodeBook.setDeferPopulate(false);
+    hostGalleryDecodeBook().setDeferPopulate(false);
     hostGallerySizeResolve().cancel();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();

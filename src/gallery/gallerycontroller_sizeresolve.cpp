@@ -99,7 +99,7 @@ void GalleryController::onSizeResolveGateComplete()
     if (m_view->isGalleryMode()) {
         m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
-    m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    m_decodeBook.setDeferPopulate(false);
     if (m_view->isGalleryMode() && !m_view->pathOrderIsEmpty()) {
         for (ImageItem *item : m_view->liveItems()) {
             if (item) {
@@ -133,7 +133,7 @@ void GalleryController::onSizeResolveGateComplete()
 
 void GalleryController::onSizeResolveGateCancelled()
 {
-    m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    m_decodeBook.setDeferPopulate(false);
     if (m_view->isGalleryMode() && m_view->hostCentreProgress().titleRef().isEmpty()) {
         m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }

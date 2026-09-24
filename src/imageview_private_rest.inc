@@ -148,7 +148,7 @@
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutPrefs m_layout;
-    GalleryDecodeBook m_galleryDecodeBook;
+    // GalleryDecodeBook: owned by GalleryController (hostGalleryDecodeBook).
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
 

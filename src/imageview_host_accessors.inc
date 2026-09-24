@@ -10,9 +10,9 @@
     /** Display pipeline host: slideshow controller (nav-hot, rasters, hud). */
     SlideshowController &hostSlideshow() override { return m_slideshow; }
     const SlideshowController &hostSlideshow() const override { return m_slideshow; }
-    /** Display pipeline host: gallery soft SM book. */
-    GalleryDecodeBook &hostGalleryDecodeBook() override { return m_galleryDecodeBook; }
-    const GalleryDecodeBook &hostGalleryDecodeBook() const override { return m_galleryDecodeBook; }
+    /** Display pipeline host: gallery soft SM book (owned by GalleryController). */
+    GalleryDecodeBook &hostGalleryDecodeBook() override { return m_gallery.decodeBook(); }
+    const GalleryDecodeBook &hostGalleryDecodeBook() const override { return m_gallery.decodeBook(); }
     /** Display pipeline host: pending session binds. */
     SessionBindBook &hostBindBook() override { return m_bindBook; }
     const SessionBindBook &hostBindBook() const override { return m_bindBook; }
