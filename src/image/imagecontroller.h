@@ -110,6 +110,11 @@ public:
      * ImageView persistSessionAppearanceSlot is a thin router.
      */
     void persistSessionAppearanceSlot(ImageItem *item);
+    /** Pose/path snapshot without promoting live color lag into durable Color. */
+    void rememberItemState(ImageItem *item);
+    /** Re-emit filmstrip signals + mode-specific post (gallery pack / scene / framing). */
+    void propagateSessionAppearanceToViews(ImageItem *item);
+
 
 
 

@@ -409,3 +409,59 @@ void ImageController::persistSessionAppearanceSlot(ImageItem *item)
         }
     }
 }
+
+void ImageController::rememberItemState(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    const SessionImageId editSid = m_view->hostResolveContentEditSessionId(item);
+    // Pose-only for bound: freeze carries live color lag; setAppearance would
+    // promote lag into durable Color (ECS_GUI_BYPASSES #5). Content commits
+    // go through persistSessionAppearanceSlot / crop / bake paths.
+    switch (SessionAppearance::rememberKind(
+        m_view->isImageMode(), editSid, item->sessionId())) {
+    case SessionAppearance::RememberKind::Skip:
+        return;
+    case SessionAppearance::RememberKind::WritePlacementOnly:
+        m_view->itemWorld().setPlacement(item->sessionId(),
+                                         item->placement());
+        return;
+    case SessionAppearance::RememberKind::WritePathFreeze: {
+        WorkspaceItemState s = m_view->freezeItemAppearance(item);
+        s.path = item->path();
+        m_view->itemWorld().setPathState(item->path(), s);
+        return;
+    }
+    }
+}
+
+void ImageController::propagateSessionAppearanceToViews(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    // Filmstrip: persistSessionAppearanceSlot already emits when display pixels
+    // exist. Re-emit after peer sync so soft-only tiles that gained pixels, and
+    // paths that skipped emit, still update the strip.
+    const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
+    if (sid != kInvalidSessionImageId) {
+        const QImage appearanceImage = m_view->hostSessionAppearanceImage(item);
+        if (!appearanceImage.isNull()) {
+            emit m_view->sessionAppearanceChanged(sid, item->path(), appearanceImage);
+            if (m_view->itemWorld().hasCrop(sid)
+                || m_view->itemAppliedContentXform(item).hasCrop) {
+                emit m_view->sessionCropApplied(sid, item->path(), appearanceImage,
+                                                /*hasCrop=*/true);
+            }
+        }
+    }
+
+    if (m_view->isGalleryMode()) {
+        m_view->hostGallery().onContentAppearancePropagated();
+    } else if (m_view->isWorkspaceMode()) {
+        m_view->hostWorkspace().updateSceneRect();
+    } else if (m_view->isImageMode()) {
+        onContentAppearancePropagated(item);
+    }
+}

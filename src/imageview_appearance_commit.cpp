@@ -39,32 +39,9 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
 
 void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    // Filmstrip: persistSessionAppearanceSlot already emits when display pixels
-    // exist. Re-emit after peer sync so soft-only tiles that gained pixels, and
-    // paths that skipped emit, still update the strip.
-    const SessionImageId sid = resolveContentEditSessionId(item);
-    if (sid != kInvalidSessionImageId) {
-        const QImage appearanceImage = sessionAppearanceImage(item);
-        if (!appearanceImage.isNull()) {
-            emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
-            if (m_itemWorld.hasCrop(sid)
-                || itemAppliedContentXform(item).hasCrop) {
-                emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
-            }
-        }
-    }
-
-    if (isGalleryMode()) {
-        m_gallery.onContentAppearancePropagated();
-    } else if (isWorkspaceMode()) {
-        m_workspace.updateSceneRect();
-    } else if (isImageMode()) {
-        m_image.onContentAppearancePropagated(item);
-    }
+    m_image.propagateSessionAppearanceToViews(item);
 }
+
 
 
 void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId)

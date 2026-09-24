@@ -199,27 +199,9 @@ void ImageView::applyGeometrySessionState(ImageItem *item, const ItemComponents:
 
 void ImageView::rememberItemState(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    const SessionImageId editSid = resolveContentEditSessionId(item);
-    // Pose-only for bound: freeze carries live color lag; setAppearance would
-    // promote lag into durable Color (ECS_GUI_BYPASSES #5). Content commits
-    // go through persistSessionAppearanceSlot / crop / bake paths.
-    switch (SessionAppearance::rememberKind(isImageMode(), editSid, item->sessionId())) {
-    case SessionAppearance::RememberKind::Skip:
-        return;
-    case SessionAppearance::RememberKind::WritePlacementOnly:
-        m_itemWorld.setPlacement(item->sessionId(), placementFromItem(item));
-        return;
-    case SessionAppearance::RememberKind::WritePathFreeze: {
-        WorkspaceItemState s = freezeItemAppearance(item);
-        s.path = item->path();
-        m_itemWorld.setPathState(item->path(), s);
-        return;
-    }
-    }
+    m_image.rememberItemState(item);
 }
+
 
 
 QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
