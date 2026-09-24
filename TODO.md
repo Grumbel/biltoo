@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2551.1-own-edge-affordance-paint-policy** (base `7d823d8`).
+**Tip: biltoo-2552.1-fix-hud-panels-host-access** (base `7d823d8`).
 
-### Ownership transfer
-- **ImageController::drawEdgeAffordances** — sole edge-chevron paint + suppress
-  policy (crop/attention, mode, nav flags). Matches `edgeZoneAt`.
-- `paintViewportOverlays` dispatches `m_image.drawEdgeAffordances` directly.
-- Drop ImageView thin `drawEdgeAffordances` private forward.
+### Fix
+- `ViewShellChrome::paintHudPanels` — use host APIs after 2549 move:
+  - `m_view->hostPerf()` (was bare `m_hud.perf()`)
+  - `m_view->targetItem()` / `primaryItem()`
+  - `m_view->hostDisplayPipeline().pixelQualityLabel()` (private on ImageView)
 
 ### Prior
-**2550.1** Fix const on slideshow letterbox/seekbar paint.
+**2551.1** Own edge-affordance paint policy on ImageController.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -28,5 +28,5 @@ freezeItemAppearance residual, paint orchestration (dispatch only)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2551.1-own-edge-affordance-paint-policy-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2552.1-fix-hud-panels-host-access-7d823d8.bundle HEAD
 ```

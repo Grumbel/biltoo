@@ -436,21 +436,22 @@ void ViewShellChrome::paintHudPanels(QPainter &painter) const
             if (!ssPrefetchLine.isEmpty()) {
                 topLeft.append({ssPrefetchLine, false});
             }
-            if (m_hud.perf().isEnabled()) {
+            if (m_view->hostPerf().isEnabled()) {
+                const auto &perf = m_view->hostPerf();
                 topLeft.append({
                     QCoreApplication::translate("ImageView", "FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
-                        .arg(m_hud.perf().fpsValue(), 0, 'f', 1)
-                        .arg(m_hud.perf().lastPaintUsValue() / 1000.0, 0, 'f', 1)
-                        .arg(m_hud.perf().lastDecodeWindowUsValue() / 1000.0, 0, 'f', 1)
-                        .arg(m_hud.perf().maxDecodeWindowUsValue() / 1000.0, 0, 'f', 1),
+                        .arg(perf.fpsValue(), 0, 'f', 1)
+                        .arg(perf.lastPaintUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(perf.lastDecodeWindowUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(perf.maxDecodeWindowUsValue() / 1000.0, 0, 'f', 1),
                     false});
             }
-            ImageItem *focus = targetItem();
+            ImageItem *focus = m_view->targetItem();
             if (!focus) {
-                focus = primaryItem();
+                focus = m_view->primaryItem();
             }
             if (focus) {
-                const QString q = pixelQualityLabel(focus);
+                const QString q = m_view->hostDisplayPipeline().pixelQualityLabel(focus);
                 if (!q.isEmpty()) {
                     const int edge = focus->displayPixelLongEdge();
                     const QString line = edge > 0 && !focus->hasDecodedPixels()
