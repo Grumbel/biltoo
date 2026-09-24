@@ -236,17 +236,7 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 }
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
-    if (!m_workspace.itemInteract().currentDragItem() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    pushItemTransformUndo(m_workspace.itemInteract().currentDragItem(),
-                          m_workspace.itemInteract().currentDragStartPlacement(),
-                          placementFromItem(m_workspace.itemInteract().currentDragItem()), tr("Move"));
-    m_workspace.itemInteract().endMove();
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    return false; // fall through to base class
+    return m_workspace.tryMouseReleaseItemDrag(event);
 }
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {

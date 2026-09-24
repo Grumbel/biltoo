@@ -94,6 +94,12 @@ public:
     void endGroupScale();
     void paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const;
 
+    /** Group scale/rotate + single-item handle drag (move phase). */
+    bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
+    bool tryMouseReleaseGroupDrag(QMouseEvent *event);
+    bool tryMouseReleaseHandleDrag(QMouseEvent *event);
+    bool tryMouseReleaseItemDrag(QMouseEvent *event);
+
     // Print page-guide overlay (owns PageGuideSession).
     PageGuideSession &pageGuideSession() { return m_pageGuide; }
     const PageGuideSession &pageGuideSession() const { return m_pageGuide; }
@@ -111,6 +117,10 @@ public:
     void endPageGuideResize();
     void paintPageGuideHandles(QPainter *painter) const;
     static qreal pageGuidePxPerMm();
+
+    /** Page-guide resize drag + hover cursor. */
+    bool tryMouseMovePageGuide(QMouseEvent *event);
+    bool tryMouseReleasePageGuide(QMouseEvent *event);
 
 private:
 

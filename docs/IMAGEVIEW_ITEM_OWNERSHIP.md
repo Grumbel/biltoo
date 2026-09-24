@@ -347,3 +347,7 @@ Product shell (minimal):
 11. **biltoo-2468:** ImageSizeBook + probe/remember on ImageSizeCoordinator; GallerySizeResolve host remains on ImageView.
 
 12. **biltoo-2469:** GallerySizeResolveHost + gate owned by GalleryController.
+
+13. **biltoo-2471:** Complete Workspace input ownership — page-guide move/release,
+    group/handle/item-drag move/release on `WorkspaceController`; ImageView thin
+    routers only (closes residual after 2464–2466).

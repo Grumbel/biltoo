@@ -18,6 +18,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QUndoStack>
+#include <QWidget>
 
 
 namespace {
@@ -326,5 +327,101 @@ void WorkspaceController::paintGroupSelectionChrome(QPainter *painter, const QLi
     }
 
     painter->restore();
+}
+
+bool WorkspaceController::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
+{
+    if (m_groupXform.isScaleDrag()) {
+        updateGroupScale(m_view->mapToScene(event->pos()), event->modifiers());
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+        event->accept();
+        return true;
+    }
+    if (m_groupXform.isRotateDrag()) {
+        updateGroupRotate(m_view->mapToScene(event->pos()), event->modifiers());
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+        event->accept();
+        return true;
+    }
+    if (m_itemInteract.isHandleDragging()) {
+        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(
+            m_view->mapToScene(event->pos()), event->modifiers(), m_itemInteract.handlePressRef());
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool WorkspaceController::tryMouseReleaseGroupDrag(QMouseEvent *event)
+{
+    if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag())
+        || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        if (m_groupXform.hasDragItems()) {
+            stack->beginMacro(m_groupXform.isRotateDrag()
+                                  ? m_view->tr("Rotate selection")
+                                  : m_view->tr("Scale selection"));
+            for (int i = 0; i < m_groupXform.dragCount(); ++i) {
+                ImageItem *item = m_groupXform.dragItemAt(i);
+                if (!item) {
+                    continue;
+                }
+                m_view->hostPushItemTransformUndo(
+                    item, m_groupXform.dragStartPlacementAt(i), item->placement(),
+                    m_view->tr("Transform"));
+            }
+            stack->endMacro();
+        }
+    }
+    endGroupScale();
+    if (m_view->isWorkspaceMode()) {
+        m_view->updateWorkspaceSceneRect();
+    }
+    event->accept();
+    return true;
+}
+
+bool WorkspaceController::tryMouseReleaseHandleDrag(QMouseEvent *event)
+{
+    if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
+    handleItem->endHandleInteraction(m_itemInteract.handlePressRef().handle);
+    m_view->hostPushItemTransformUndo(handleItem, m_itemInteract.currentDragStartPlacement(),
+                                      handleItem->placement(), m_view->tr("Transform"));
+    m_itemInteract.endHandleDrag();
+    if (m_view->isWorkspaceMode()) {
+        m_view->updateWorkspaceSceneRect();
+    }
+    event->accept();
+    return true;
+}
+
+bool WorkspaceController::tryMouseReleaseItemDrag(QMouseEvent *event)
+{
+    // Completes the move undo + endMove. Returns false so ImageView still
+    // delivers the release to QGraphicsView (selection / scene).
+    if (!m_itemInteract.currentDragItem() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    m_view->hostPushItemTransformUndo(m_itemInteract.currentDragItem(),
+                                      m_itemInteract.currentDragStartPlacement(),
+                                      m_itemInteract.currentDragItem()->placement(),
+                                      m_view->tr("Move"));
+    m_itemInteract.endMove();
+    if (m_view->isWorkspaceMode()) {
+        m_view->updateWorkspaceSceneRect();
+    }
+    return false;
 }
 

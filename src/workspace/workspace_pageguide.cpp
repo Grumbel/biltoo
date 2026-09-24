@@ -16,6 +16,7 @@
 #include <QPageLayout>
 #include <QPageSize>
 #include <QMouseEvent>
+#include <QWidget>
 #include <QtMath>
 
 void WorkspaceController::setPageGuideVisible(bool on)
@@ -270,8 +271,6 @@ void WorkspaceController::paintPageGuideHandles(QPainter *painter) const
     painter->restore();
 }
 
-// --- input try* (pageguide) from imageview_input.cpp ---
-
 qreal WorkspaceController::pageGuidePxPerMm()
 {
     // Workspace items use native image pixels as scene units. A 12MP photo is
@@ -279,4 +278,55 @@ qreal WorkspaceController::pageGuidePxPerMm()
     // Use 300dpi so a page is roughly photo-scale (~2480×3508 for A4) while
     // still mapping 1:1 to physical paper on print/PDF.
     return PageGuideGeometry::pixelsPerMm();
+}
+
+bool WorkspaceController::tryMouseMovePageGuide(QMouseEvent *event)
+{
+    if (m_pageGuide.isDragging()) {
+        updatePageGuideResize(m_view->mapToScene(event->pos()), event->modifiers());
+        event->accept();
+        return true;
+    }
+    if (m_view->isWorkspaceMode() && m_pageGuide.isInteractive()
+        && !(event->buttons() & Qt::LeftButton)) {
+        const int ph = pageGuideHandleAt(event->pos());
+        if (m_pageGuide.setHoverHandle(ph)) {
+            if (QWidget *vp = m_view->viewport()) {
+                vp->update();
+            }
+        }
+        if (ph >= 0) {
+            if (QWidget *vp = m_view->viewport()) {
+                switch (ph) {
+                case 0: case 4:
+                    vp->setCursor(Qt::SizeFDiagCursor);
+                    break;
+                case 2: case 6:
+                    vp->setCursor(Qt::SizeBDiagCursor);
+                    break;
+                case 1: case 5:
+                    vp->setCursor(Qt::SizeVerCursor);
+                    break;
+                case 3: case 7:
+                    vp->setCursor(Qt::SizeHorCursor);
+                    break;
+                default:
+                    break;
+                }
+            }
+            event->accept();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool WorkspaceController::tryMouseReleasePageGuide(QMouseEvent *event)
+{
+    if (!m_pageGuide.isDragging() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    endPageGuideResize();
+    event->accept();
+    return true;
 }
