@@ -172,29 +172,10 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
 }
 
 // --- from src/imageview_selection.cpp ---
-void ImageView::selectBySessionIndices(const QList<int> &indices)
-{
-    m_workspace.selectBySessionIndices(indices);
-}
-
-void ImageView::selectBySessionIds(const QList<SessionImageId> &ids)
-{
-    m_workspace.selectBySessionIds(ids);
-}
-
-void ImageView::selectPathsByOccurrence(const QStringList &paths)
-{
-    m_workspace.selectPathsByOccurrence(paths);
-}
 
 bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 {
     return m_workspace.validateUniqueLiveSessionIds(context);
-}
-
-void ImageView::selectAllCanvasItems()
-{
-    m_workspace.selectAllCanvasItems();
 }
 
 QList<ImageItem *> ImageView::transformTargets() const
@@ -203,10 +184,4 @@ QList<ImageItem *> ImageView::transformTargets() const
 }
 
 // --- Clipboard / duplicate (was imageview_clipboard.cpp) ---
-
-void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
-                                  int firstSessionIndex)
-{
-    m_workspace.duplicateSelected(newIds, firstSessionIndex);
-}
 

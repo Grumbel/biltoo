@@ -460,7 +460,7 @@ void MainWindow::applySessionOrder(const QStringList &paths,
             : LayoutMode::Masonry;
         populateGalleryCanvas();
         if (m_imageView) {
-            m_imageView->enterGallery(layout);
+            m_imageView->hostGallery().enterGallery(layout);
             if (id != kInvalidSessionImageId
                 && m_imageView->findItemBySessionId(id)) {
                 m_imageView->hostGallery().focusSessionId(id);

@@ -168,10 +168,6 @@ public:
      * document order. Returns the stamped index, or -1 when unbound/unknown.
      */
     int refreshSessionIndexCache(ImageItem *item) override;
-    void selectBySessionIndices(const QList<int> &indices);
-    void selectBySessionIds(const QList<SessionImageId> &ids);
-    /** Select live tiles matching @p paths by occurrence order (duplicate-safe). */
-    void selectPathsByOccurrence(const QStringList &paths);
     void rebindWorkspaceSession(const QStringList &sessionFiles,
                                 const QVector<SessionImageId> &sessionIds);
     // Load roles (public for DisplayPipelineController; not under public slots — moc).
@@ -190,19 +186,10 @@ public:
     // Used by ImageController / GalleryController / WorkspaceController.
     // Prefer these over reaching into ImageView internals.
     // =====================================================================
-    /**
-     * Progress HUD title/detail (archive expand, size resolve, tile load, …).
-     * Blocking messages paint centred; non-blocking (size resolve, tiles) top-left.
-     * Suppresses the empty-session invite while set. Cleared with clearCentreProgress().
-     */
-    void setCentreProgress(const QString &title, const QString &detail = QString());
-    void clearCentreProgress();
     /** Controller host: set m_viewMode + hostLayout().currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
     void invalidateSessionLoads();
-    /** Controller host: scene->clear with signals blocked (stashes already detached). */
-    void clearSceneKeepingStashes();
     /** Controller host: LoadReplace for a path (no-op if empty). */
     void scheduleReplaceLoad(const QString &path);
     /** Controller host: live canvas item list. */
@@ -211,8 +198,6 @@ public:
     QGraphicsScene *canvasScene() override { return m_scene; }
     /** Controller host: applyItemModeFlags to every live item. */
     void applyModeFlagsToLiveItems();
-    /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
-    void applyToolDragMode();
     /**
      * Logical image size for @a path (never soft-raster dimensions).
      * Lookup only: size book, then thumtoo cache. Empty if unknown.
@@ -381,9 +366,6 @@ public:
      * from UI code so chrome and shortcuts cannot diverge.
      */
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
-    /** Restore pixels + session crop metadata (used by crop undo/redo). */
-    void applyCropAppearance(ImageItem *item, const QImage &src,
-                            const WorkspaceItemState &state);
 
 
     /** Debug: paint text/link region rects for page documents (Image mode). */
@@ -405,35 +387,13 @@ public:
     /** Copy selected text to the clipboard; returns false if nothing selected. */
     bool copySelectedText();
 
-    void setBackgroundColor(const QColor &color);
     /**
      * Effective solid pad colour for slideshow letterbox (Solid mode colour,
      * else Preferences background). Used when ZoomBlur cannot run.
      */
     QColor slideshowPadColor() const;
-    void setBackgroundColorAlt(const QColor &color);
-    void setBackgroundPattern(BackgroundPattern pattern);
-    /** When true, checkerboard is used only in Workspace; other modes stay solid. */
-    void setCheckerboardWorkspaceOnly(bool on);
 
-    /**
-     * Per-Workspace background override (project state). AppDefault uses the
-     * preference colours/pattern (technical default) instead of a custom look.
-     */
-    void setWorkspaceBackground(const WorkspaceBackground &bg);
-    void clearWorkspaceBackground(); /**< AppDefault */
-    /**
-     * Temporary view of the Preferences / technical background without changing
-     * the project WorkspaceBackground override. Used by the Background Default
-     * toolbar toggle.
-     */
-    void setWorkspaceBackgroundShowDefault(bool on);
 
-    /**
-     * Session Gallery / Image canvas override (not Preferences, not project).
-     * AppDefault follows Preferences materials. Shared across Gallery and Image.
-     */
-    void setViewBackground(const WorkspaceBackground &bg);
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -445,8 +405,6 @@ public:
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
-    /** Corner marks for crop / orient / grade (default on). */
-    void setContentEditMarksVisible(bool on);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
     void setHudTextColor(const QColor &color);
@@ -461,17 +419,6 @@ public:
     // Slideshow dwell/timeline/phase/Ken Burns/pause cues: SlideshowController
     // (hostSlideshow()). Not re-exported on ImageView.
 
-    void raiseSelected();
-    void lowerSelected();
-    /** Raise/lower by scene overlap (not abstract z step). */
-    void raiseItem(ImageItem *item);
-    void lowerItem(ImageItem *item);
-    void opacityUp();
-    void opacityDown();
-    void opacityReset();
-    void resetItemScale();
-    void resetItemRotation();
-    void resetItemShear();
     /** Workspace: clone selection (same path, independent transforms). */
     /**
      * Duplicate selected tiles. @p newIds are pre-allocated session images
@@ -485,8 +432,6 @@ public:
 
 
     void setLayoutMode(LayoutMode mode);
-    /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
-    void enterGallery(LayoutMode packagedLayout);
 
 
     /**
@@ -543,9 +488,6 @@ public:
     bool hasSessionAppearance(SessionImageId id) const;
     /** Restore appearance after session undo (store only; no canvas mutate). */
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
-    void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
-    /** Flush deferred durable grade commit (timer + ImageController bag). */
-    void flushColorAdjustCommit();
 
 
     QString statusText() const;
@@ -560,8 +502,6 @@ public:
     QVector<SessionImageId> itemSessionIds() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
-    /** Select every live canvas tile (Gallery / Workspace). No-op in Image mode. */
-    void selectAllCanvasItems();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
 signals:

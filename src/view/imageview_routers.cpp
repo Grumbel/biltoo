@@ -45,47 +45,6 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 
 // --- Background settings: ViewShellChrome owns material mutators ---
 
-void ImageView::setBackgroundColor(const QColor &color)
-{
-    m_shell.setBackgroundColor(color);
-}
-
-void ImageView::setBackgroundColorAlt(const QColor &color)
-{
-    m_shell.setBackgroundColorAlt(color);
-}
-
-void ImageView::setBackgroundPattern(BackgroundPattern pattern)
-{
-    m_shell.setBackgroundPattern(pattern);
-}
-
-void ImageView::setCheckerboardWorkspaceOnly(bool on)
-{
-    m_shell.setCheckerboardWorkspaceOnly(on);
-}
-
-void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
-{
-    m_shell.setWorkspaceBackground(bg);
-}
-
-void ImageView::clearWorkspaceBackground()
-{
-    WorkspaceBackground def;
-    setWorkspaceBackground(def);
-}
-
-void ImageView::setWorkspaceBackgroundShowDefault(bool on)
-{
-    m_shell.setWorkspaceBackgroundShowDefault(on);
-}
-
-void ImageView::setViewBackground(const WorkspaceBackground &bg)
-{
-    m_shell.setViewBackground(bg);
-}
-
 // --- from src/imageview_input.cpp ---
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 {
@@ -207,11 +166,6 @@ void ImageView::takePendingWorkspacePath(const QString &path)
     emit statusChanged();
 }
 
-void ImageView::clearSceneKeepingStashes()
-{
-    m_image.clearSceneKeepingStashes();
-}
-
 void ImageView::scheduleReplaceLoad(const QString &path)
 {
     if (path.isEmpty()) {
@@ -235,11 +189,6 @@ void ImageView::applyModeFlagsToLiveItems()
             applyItemModeFlags(item);
         }
     }
-}
-
-void ImageView::applyToolDragMode()
-{
-    m_workspace.applyToolDragMode();
 }
 
 void ImageView::clearLiveCanvas()
@@ -364,11 +313,6 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         return;
     }
     m_workspace.hardReloadFromDisk();
-}
-
-void ImageView::enterGallery(LayoutMode packagedLayout)
-{
-    m_gallery.enterGallery(packagedLayout);
 }
 
 

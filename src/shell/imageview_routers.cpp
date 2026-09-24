@@ -148,11 +148,6 @@ QColor ImageView::slideshowPadColor() const
     return m_slideshow.padColorForPaint();
 }
 
-void ImageView::setContentEditMarksVisible(bool on)
-{
-    m_shell.setContentEditMarksVisible(on);
-}
-
 bool ImageView::contentEditMarksVisible() const
 {
     return ImageItem::contentEditMarksVisible();

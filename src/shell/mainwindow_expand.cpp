@@ -77,7 +77,7 @@ void MainWindow::setExpandProgressMessage(const QString &message)
     }
     if (m_imageView) {
         // Centre progress suppresses the empty-session invite during expand.
-        m_imageView->setCentreProgress(
+        m_imageView->hostShell().setCentreProgress(
             message.isEmpty() ? tr("Working…") : message);
     }
 }
@@ -98,7 +98,7 @@ void MainWindow::setExpandProgressBusy(bool busy)
         // finishApplyExpandedLoad clears busy *after* enterGalleryMode, which may
         // already own the centre HUD for size-resolve — do not wipe that.
         if (!m_imageView->hostGallerySizeResolve().active()) {
-            m_imageView->clearCentreProgress();
+            m_imageView->hostShell().clearCentreProgress();
         }
     }
 }
@@ -125,9 +125,9 @@ void MainWindow::setExpandProgress(int current, int total, const QString &messag
             : QString();
         // When message already contains N/M, avoid duplicating the detail line.
         if (!detail.isEmpty() && message.contains(QLatin1Char('/'))) {
-            m_imageView->setCentreProgress(title);
+            m_imageView->hostShell().setCentreProgress(title);
         } else {
-            m_imageView->setCentreProgress(title, detail);
+            m_imageView->hostShell().setCentreProgress(title, detail);
         }
     }
 }

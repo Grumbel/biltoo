@@ -73,13 +73,13 @@ bool GalleryController::layoutDefersPopulateUntilSizes(LayoutMode mode)
 void GalleryController::setSizeResolveProgress(const QString &title,
                                               const QString &detail)
 {
-    m_view->setCentreProgress(title, detail);
+    m_view->hostShell().setCentreProgress(title, detail);
 }
 
 void GalleryController::clearSizeResolveProgress()
 {
     if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Resolving sizes"))) {
-        m_view->clearCentreProgress();
+        m_view->hostShell().clearCentreProgress();
     }
 }
 
@@ -96,7 +96,7 @@ void GalleryController::onSizeResolveGateComplete()
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("GalleryController::onSizeResolveGateComplete");
-    m_view->clearCentreProgress();
+    m_view->hostShell().clearCentreProgress();
     if (m_view->isGalleryMode()) {
         m_view->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
@@ -159,6 +159,6 @@ void GalleryController::onSizeResolveGateCancelled()
             }
         }
     }
-    m_view->clearCentreProgress();
+    m_view->hostShell().clearCentreProgress();
     m_view->notifyGallerySizeResolveFinished();
 }

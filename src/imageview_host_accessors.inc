@@ -43,6 +43,9 @@
     }
     ViewFraming &hostFraming() override { return m_image.framing(); }
     const ViewFraming &hostFraming() const override { return m_image.framing(); }
+    ViewShellChrome &hostShell() { return m_shell; }
+    const ViewShellChrome &hostShell() const { return m_shell; }
+
     ViewportChrome &hostChrome() { return m_shell.viewport(); }
     const ViewportChrome &hostChrome() const { return m_shell.viewport(); }
     SessionNavFlags &hostSessionNav() { return m_image.sessionNav(); }

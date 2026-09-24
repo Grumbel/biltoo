@@ -379,9 +379,9 @@ void MainWindow::installProjectBackground(const ProjectDocument &doc, const QStr
                 wb.imagePath = resolved;
             }
         }
-        m_imageView->setWorkspaceBackground(wb);
+        m_imageView->hostShell().setWorkspaceBackground(wb);
     } else {
-        m_imageView->clearWorkspaceBackground();
+        m_imageView->hostShell().setWorkspaceBackground(WorkspaceBackground{});
     }
 }
 
@@ -789,8 +789,8 @@ void MainWindow::applyWorkspaceBackground(const WorkspaceBackground &bg)
     if (!m_imageView) {
         return;
     }
-    m_imageView->setWorkspaceBackgroundShowDefault(false);
-    m_imageView->setWorkspaceBackground(bg);
+    m_imageView->hostShell().setWorkspaceBackgroundShowDefault(false);
+    m_imageView->hostShell().setWorkspaceBackground(bg);
     syncWorkspaceBackgroundActions();
     markWorkspaceDirty();
 }
@@ -815,17 +815,17 @@ void MainWindow::editWorkspaceBackground()
     connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
             [this](const WorkspaceBackground &bg) {
                 if (m_imageView) {
-                    m_imageView->setWorkspaceBackground(bg);
+                    m_imageView->hostShell().setWorkspaceBackground(bg);
                 }
             });
     if (dlg.exec() != QDialog::Accepted) {
-        m_imageView->setWorkspaceBackground(before);
+        m_imageView->hostShell().setWorkspaceBackground(before);
         syncWorkspaceBackgroundActions();
         return;
     }
     const WorkspaceBackground after = dlg.background();
     // Reset to before so redo applies the accepted state once.
-    m_imageView->setWorkspaceBackground(before);
+    m_imageView->hostShell().setWorkspaceBackground(before);
     if (m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
         m_imageView->hostUndoStack()->push(
             new WorkspaceBackgroundCommand(this, before, after));
@@ -878,15 +878,15 @@ void MainWindow::editViewBackground()
     connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
             [this](const WorkspaceBackground &bg) {
                 if (m_imageView) {
-                    m_imageView->setViewBackground(bg);
+                    m_imageView->hostShell().setViewBackground(bg);
                 }
             });
     if (dlg.exec() != QDialog::Accepted) {
-        m_imageView->setViewBackground(before);
+        m_imageView->hostShell().setViewBackground(before);
         return;
     }
     const WorkspaceBackground after = dlg.background();
-    m_imageView->setViewBackground(after);
+    m_imageView->hostShell().setViewBackground(after);
     if (statusBar()) {
         QString msg;
         switch (after.mode) {
@@ -919,13 +919,13 @@ void MainWindow::workspaceBackgroundDefault(bool checked)
     // Permanent AppDefault: nothing to preview. Keep the control checked and
     // disabled via syncWorkspaceBackgroundActions (avoids a stuck toggle).
     if (m_imageView->hostCanvasBg().workspaceRef().isAppDefault()) {
-        m_imageView->setWorkspaceBackgroundShowDefault(false);
+        m_imageView->hostShell().setWorkspaceBackgroundShowDefault(false);
         syncWorkspaceBackgroundActions();
         return;
     }
     // Temporary view of the Preferences background — does not change project
     // state, undo stack, or dirty flag.
-    m_imageView->setWorkspaceBackgroundShowDefault(checked);
+    m_imageView->hostShell().setWorkspaceBackgroundShowDefault(checked);
     syncWorkspaceBackgroundActions();
     if (statusBar()) {
         statusBar()->showMessage(

@@ -14,7 +14,7 @@ class ImageView;
 
 /**
  * Undo/redo one crop Apply appearance snapshot pair (enter → after).
- * Owned by QUndoStack; applies via ImageView::applyCropAppearance.
+ * Owned by QUndoStack; applies via CropController::applyCropAppearance.
  */
 class CropAppearanceCommand : public QUndoCommand
 {

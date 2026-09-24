@@ -96,7 +96,7 @@ void MainWindow::enterGalleryMode(LayoutMode layout)
     // will not match — fall through to populate.
     const bool warmRestash = m_imageView->isImageMode()
         && !m_imageView->hostGallery().stashedItems().isEmpty();
-    m_imageView->enterGallery(layout);
+    m_imageView->hostGallery().enterGallery(layout);
     // Apply mode policy before populate. Packing itself temporarily forces
     // AlwaysOn while measuring avail (see ImageView::applyLayout) so AsNeeded
     // does not shrink the viewport mid-pack.

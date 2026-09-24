@@ -404,7 +404,7 @@ bool GalleryController::returnFromImage(int layoutMode, const QString &focusPath
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
     }
-    m_view->enterGallery(layout);
+    enterGallery(layout);
     applyPendingRestore();
     return willRestoreStash;
 }
@@ -2112,7 +2112,7 @@ void GalleryController::updateSoftProgressHud()
     if (total == 0 || blank == 0) {
         if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Loading tiles"))
             || m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
-            m_view->clearCentreProgress();
+            m_view->hostShell().clearCentreProgress();
         }
         return;
     }
@@ -2122,13 +2122,13 @@ void GalleryController::updateSoftProgressHud()
     if (blank < 2 && total > 8) {
         if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Loading tiles"))
             || m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
-            m_view->clearCentreProgress();
+            m_view->hostShell().clearCentreProgress();
         }
         return;
     }
     const QString detail =
         m_view->tr("%1 / %2 on-screen cells ready").arg(total - blank).arg(total);
-    m_view->setCentreProgress(m_view->tr("Loading tiles…"), detail);
+    m_view->hostShell().setCentreProgress(m_view->tr("Loading tiles…"), detail);
 }
 
 void GalleryController::setGridColumns(int columns)
@@ -2214,7 +2214,7 @@ void GalleryController::setLayoutMode(LayoutMode mode)
 
     // Packaged layout → Gallery only (enterGallery if needed).
     if (!m_view->isGalleryMode()) {
-        m_view->enterGallery(mode);
+        enterGallery(mode);
         return;
     }
 

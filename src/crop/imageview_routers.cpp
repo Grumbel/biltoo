@@ -23,12 +23,6 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     m_cropCtrl.restoreSessionCropAppearance(item);
 }
 
-void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
-                                    const WorkspaceItemState &state)
-{
-    m_cropCtrl.applyCropAppearance(item, src, state);
-}
-
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                         ImageItem *item, const QImage &preferredDisplay,
                                         bool hasCrop)

@@ -35,5 +35,5 @@ void CropAppearanceCommand::apply(const QImage &src, const WorkspaceItemState &s
     if (!m_view || !m_item) {
         return;
     }
-    m_view->applyCropAppearance(m_item, src, st);
+    m_view->hostCrop().applyCropAppearance(m_item, src, st);
 }

@@ -323,7 +323,7 @@ void MainWindow::createActions()
         tr("Corner marks on tiles with crop (yellow), orient/flip (cyan), or grade (coral)"));
     connect(m_toggleContentEditMarksAct, &QAction::toggled, this, [this](bool on) {
         if (m_imageView) {
-            m_imageView->setContentEditMarksVisible(on);
+            m_imageView->hostShell().setContentEditMarksVisible(on);
         }
     });
     m_showTextRegionsAct = new QAction(tr("Show &Text Regions"), this);

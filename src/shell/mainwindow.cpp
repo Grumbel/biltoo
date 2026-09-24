@@ -558,7 +558,7 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
     // Shared selection: filmstrip drives canvas selection by session slot.
     if (!m_syncingSelection && m_imageView) {
         m_syncingSelection = true;
-        m_imageView->selectBySessionIndices(sel);
+        m_imageView->hostWorkspace().selectBySessionIndices(sel);
         m_syncingSelection = false;
         if (isGalleryMode() && !sel.isEmpty() && sel.last() >= 0
             && sel.last() < m_session.paths().size()) {
@@ -1368,43 +1368,43 @@ void MainWindow::toggleThumbnailCrop()
 
 void MainWindow::raiseSelected()
 {
-    m_imageView->raiseSelected();
+    m_imageView->hostWorkspace().raiseSelected();
 }
 
 void MainWindow::lowerSelected()
 {
-    m_imageView->lowerSelected();
+    m_imageView->hostWorkspace().lowerSelected();
 }
 
 void MainWindow::opacityUp()
 {
-    m_imageView->opacityUp();
+    m_imageView->hostWorkspace().opacityUp();
 }
 
 void MainWindow::opacityDown()
 {
-    m_imageView->opacityDown();
+    m_imageView->hostWorkspace().opacityDown();
 }
 
 void MainWindow::opacityReset()
 {
-    m_imageView->opacityReset();
+    m_imageView->hostWorkspace().opacityReset();
 }
 
 void MainWindow::resetItemScale()
 {
-    m_imageView->resetItemScale();
+    m_imageView->hostWorkspace().resetItemScale();
 }
 
 void MainWindow::resetItemRotation()
 {
-    m_imageView->resetItemRotation();
+    m_imageView->hostWorkspace().resetItemRotation();
 }
 
 void MainWindow::resetItemShear()
 {
     if (m_imageView) {
-        m_imageView->resetItemShear();
+        m_imageView->hostWorkspace().resetItemShear();
     }
 }
 
@@ -1586,7 +1586,7 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
         }
         m_thumbnailBar->setSelectedIndices(all);
         if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
-            m_imageView->selectBySessionIndices(all);
+            m_imageView->hostWorkspace().selectBySessionIndices(all);
         }
     };
     if (m_imageView && m_imageView->hostGallerySizeResolve().active()) {
@@ -2376,15 +2376,15 @@ void MainWindow::showPreferences()
     }
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
     m_imageView->hostChrome().setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
-    m_imageView->setBackgroundColor(dlg.backgroundColor());
-    m_imageView->setBackgroundColorAlt(dlg.backgroundColorAlt());
+    m_imageView->hostShell().setBackgroundColor(dlg.backgroundColor());
+    m_imageView->hostShell().setBackgroundColorAlt(dlg.backgroundColorAlt());
     if (m_thumbnailBar) {
         m_thumbnailBar->setStripBackground(dlg.backgroundColor());
     }
-    m_imageView->setBackgroundPattern(
+    m_imageView->hostShell().setBackgroundPattern(
         dlg.backgroundPatternIndex() == 1 ? BackgroundPattern::Checkerboard
                                           : BackgroundPattern::Solid);
-    m_imageView->setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
+    m_imageView->hostShell().setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
     m_imageView->setHudFontPointSize(dlg.hudFontPointSize());
     m_imageView->setHudTextColor(dlg.hudTextColor());
     m_imageView->setHudPanelColor(dlg.hudPanelColor());
@@ -2441,7 +2441,7 @@ void MainWindow::selectAllThumbnails()
     // in ImageView). Filmstrip Select All remains the session multi-select when
     // focus is on the strip or we are in Image mode.
     if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
-        m_imageView->selectAllCanvasItems();
+        m_imageView->hostWorkspace().selectAllCanvasItems();
         return;
     }
     if (!m_thumbnailBar) {
@@ -3371,7 +3371,7 @@ void MainWindow::readSettings()
                 m_toggleContentEditMarksAct->setChecked(editMarks);
             }
             if (m_imageView) {
-                m_imageView->setContentEditMarksVisible(editMarks);
+                m_imageView->hostShell().setContentEditMarksVisible(editMarks);
             }
         }
         m_imageView->setHudFontPointSize(
@@ -3405,7 +3405,7 @@ void MainWindow::readSettings()
         const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),
                                                 QStringLiteral("#2a2a2a")).toString());
         if (bg.isValid()) {
-            m_imageView->setBackgroundColor(bg);
+            m_imageView->hostShell().setBackgroundColor(bg);
             if (m_thumbnailBar) {
                 m_thumbnailBar->setStripBackground(bg);
             }
@@ -3413,14 +3413,14 @@ void MainWindow::readSettings()
         const QColor bgAlt = QColor(settings.value(QStringLiteral("backgroundColorAlt"),
                                                    QStringLiteral("#303030")).toString());
         if (bgAlt.isValid()) {
-            m_imageView->setBackgroundColorAlt(bgAlt);
+            m_imageView->hostShell().setBackgroundColorAlt(bgAlt);
         }
         const QString pat = settings.value(QStringLiteral("backgroundPattern"),
                                            QStringLiteral("checkerboard")).toString();
-        m_imageView->setBackgroundPattern(
+        m_imageView->hostShell().setBackgroundPattern(
             pat == QLatin1String("solid") ? BackgroundPattern::Solid
                                           : BackgroundPattern::Checkerboard);
-        m_imageView->setCheckerboardWorkspaceOnly(
+        m_imageView->hostShell().setCheckerboardWorkspaceOnly(
             settings.value(QStringLiteral("checkerboardWorkspaceOnly"), true).toBool());
     }
     if (m_thumbnailBar) {
@@ -3759,7 +3759,7 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
                 ? kInvalidSessionImageId
                 : m_session.ids().last();
             if (sourceSid != kInvalidSessionImageId && newSid != kInvalidSessionImageId) {
-                m_imageView->copySessionAppearance(sourceSid, newSid);
+                m_imageView->hostImage().copySessionAppearance(sourceSid, newSid);
             }
             if (m_thumbnailBar) {
                 m_thumbnailBar->setSession(m_session.paths(), m_session.ids());

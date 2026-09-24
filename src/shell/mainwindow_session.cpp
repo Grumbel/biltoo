@@ -242,7 +242,7 @@ void MainWindow::newSession()
         // Drop all canvas objects and classic path so Image mode does not
         // reload the previous file after the mode switch.
         m_imageView->hostWorkspace().clearWorkspace();
-        m_imageView->clearWorkspaceBackground();
+        m_imageView->hostShell().setWorkspaceBackground(WorkspaceBackground{});
         if (!m_imageView->isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);
         }

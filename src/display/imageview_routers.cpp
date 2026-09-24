@@ -114,41 +114,6 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     m_displayPipeline->applyProbedImageSize(path, size);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void ImageView::setCentreProgress(const QString &title, const QString &detail)
-{
-    m_shell.setCentreProgress(title, detail);
-}
-
-void ImageView::clearCentreProgress()
-{
-    m_shell.clearCentreProgress();
-}
-
 // --- Logical size (was imageview_view.cpp) ---
 
 

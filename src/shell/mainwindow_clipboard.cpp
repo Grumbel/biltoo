@@ -316,10 +316,10 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
 
     // Reselect the exact source tiles by id (redo-safe with path duplicates).
     if (!sourceIds.isEmpty()) {
-        m_imageView->selectBySessionIds(sourceIds);
+        m_imageView->hostWorkspace().selectBySessionIds(sourceIds);
     } else if (!fallbackPaths.isEmpty()) {
         // Unbound tiles only — last resort.
-        m_imageView->selectPathsByOccurrence(fallbackPaths);
+        m_imageView->hostWorkspace().selectPathsByOccurrence(fallbackPaths);
     }
     if (m_imageView->selectedPaths().isEmpty()) {
         return newIds;
@@ -349,14 +349,14 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
         return {};
     }
     m_session.validateUniqueIds("applyDuplicate");
-    m_imageView->duplicateSelected(newIds, firstNew);
+    m_imageView->hostWorkspace().duplicateSelected(newIds, firstNew);
     // Copies are already id-bound; rebind refreshes path-order / membership.
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
 
     // Select the new tiles by stable id — not path occurrence or stale index.
     QList<SessionImageId> newIdList = newIds.toList();
-    m_imageView->selectBySessionIds(newIdList);
+    m_imageView->hostWorkspace().selectBySessionIds(newIdList);
 
     QList<int> newIndices;
     for (int i = firstNew; i < m_session.paths().size(); ++i) {
@@ -626,7 +626,7 @@ QVector<SessionImageId> MainWindow::applyWorkspacePaste(const QList<WorkspaceIte
         m_thumbnailBar->setMultiSelectEnabled(true);
     }
     m_imageView->hostWorkspace().placeClipboardItems(items, newIds, indices);
-    m_imageView->selectBySessionIds(selectIds);
+    m_imageView->hostWorkspace().selectBySessionIds(selectIds);
     if (m_thumbnailBar && !indices.isEmpty()) {
         m_thumbnailBar->setSelectedIndices(indices);
         m_thumbnailBar->setCurrentIndex(indices.first());

@@ -60,7 +60,7 @@ void ImageController::enter()
 
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();
-    m_view->clearSceneKeepingStashes();
+    clearSceneKeepingStashes();
 
     // No XDG-seed on Image enter (Workspace placement-only must stay unoriented).
     if (!path.isEmpty()) {
