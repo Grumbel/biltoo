@@ -68,7 +68,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             : (!item->previewImage().isNull() ? item->previewImage()
                                               : item->displayImage());
         if (!baked.isNull()) {
-            other->clearDecodedPixels();
+            clearItemDecodedPixels(other);
             // Already-baked display from the editor. Attach via the same gate
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;

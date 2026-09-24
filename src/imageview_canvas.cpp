@@ -276,7 +276,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 // alone can be applied in place via the central content path.
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
-                    existing->clearDecodedPixels();
+                    clearItemDecodedPixels(existing);
                     m_displayPipeline.galleryDecodeResetPath(path);
                     takePendingWorkspacePath(path);
 
