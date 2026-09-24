@@ -569,8 +569,6 @@ public:
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
     void setTargetColorAdjustments(const ColorAdjustments &adj);
-    /** Bake flip into pixels and session state. */
-    void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
 
 
     /**

@@ -118,9 +118,11 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3r. **Done:** Phase 6 Tier 0 — privatize pipeline-forward host methods (2437).
 3s. **Done:** `setItemIntrinsicSize` private; all writers use `hostSetIntrinsicSize` (2438).
 3t. **Done:** Tier 0 privatize `sessionIdMatchesPath`, `restoreStickyPanAnchor` (imageview-only).
+3u. **Done:** `bakeItemFlip` private; chrome/toolbar call `hostDisplayPipeline().bakeItemFlip`.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
-    bake host helpers + sticky capture + clearTextSelection public for pipeline.
+    bake host helpers + sticky capture + clearTextSelection public for pipeline;
+    `rotateContentByQuarterTurns` public (chrome + framing).
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 

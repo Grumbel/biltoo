@@ -839,9 +839,9 @@ void ImageItem::activateChromeHandle(Handle h)
             for (QGraphicsView *v : scene()->views()) {
                 if (auto *iv = qobject_cast<ImageView *>(v)) {
                     if (h == Handle::FlipH) {
-                        iv->bakeItemFlip(this, true, false);
+                        iv->hostDisplayPipeline().bakeItemFlip(this, true, false);
                     } else if (h == Handle::FlipV) {
-                        iv->bakeItemFlip(this, false, true);
+                        iv->hostDisplayPipeline().bakeItemFlip(this, false, true);
                     } else if (h == Handle::Rotate90CCW) {
                         iv->rotateContentByQuarterTurns(this, -1);
                     } else {
@@ -857,7 +857,7 @@ void ImageItem::activateChromeHandle(Handle h)
                 }
             }
         }
-        // Content chrome requires ImageView (bakeItemFlip / rotateContentByQuarterTurns
+        // Content chrome requires ImageView (pipeline bake + rotateContentByQuarterTurns
         // write sparse ItemWorld). Baking pixels alone would desync the store.
         qWarning("ImageItem::activateChromeHandle: no ImageView — content op ignored");
         break;

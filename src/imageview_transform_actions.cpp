@@ -114,7 +114,7 @@ void ImageView::flipHorizontal()
         return;
     }
     for (ImageItem *item : targets) {
-        bakeItemFlip(item, true, false);
+        m_displayPipeline.bakeItemFlip(item, true, false);
         if (m_framing.isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
@@ -132,7 +132,7 @@ void ImageView::flipVertical()
         return;
     }
     for (ImageItem *item : targets) {
-        bakeItemFlip(item, false, true);
+        m_displayPipeline.bakeItemFlip(item, false, true);
         if (m_framing.isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
