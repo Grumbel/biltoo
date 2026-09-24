@@ -271,33 +271,10 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     // once an applied ContentXform is set. Gallery soft tiles often have only
     // m_preview — using sourceImage alone left the filmstrip on the unflipped
     // ladder after Gallery flip/rotate. Placement rotation is not included.
-    QImage img = item->displayImage();
-    if (img.isNull()) {
-        return {};
-    }
-    // Placement display flips (should be empty after content bake into pixels).
-    {
-        const ItemComponents::Placement pl = item->placement();
-        if (pl.hFlip || pl.vFlip) {
-            Qt::Orientations axes;
-            if (pl.hFlip) {
-                axes |= Qt::Horizontal;
-            }
-            if (pl.vFlip) {
-                axes |= Qt::Vertical;
-            }
-            img = img.flipped(axes);
-        }
-    }
-    // Live grade only when display is still unbaked host (no applied xform).
-    // Re-applying on a materialize bake double-grades the filmstrip override.
-    if (!itemHasAppliedContentXform(item)) {
-        const ColorAdjustments adj = itemLiveColor(item);
-        if (!adj.isIdentity()) {
-            img = applyColorAdjustments(img, adj);
-        }
-    }
-    return img;
+    const ItemComponents::Placement pl = item->placement();
+    return SessionAppearance::applyLiveDisplayOverlays(
+        item->displayImage(), pl.hFlip, pl.vFlip,
+        itemHasAppliedContentXform(item), itemLiveColor(item));
 }
 
 

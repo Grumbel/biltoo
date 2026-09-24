@@ -2,15 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2561.1-own-remember-kind-pure** (base `7d823d8`).
+**Tip: biltoo-2562.1-own-live-display-overlays** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::RememberKind** / **rememberKind** — pure policy for
-  rememberItemState (Skip / WritePlacementOnly / WritePathFreeze)
-- `ImageView::rememberItemState` keeps freeze + ItemWorld writes
+- **SessionAppearance::applyLiveDisplayOverlays** — placement flips + live grade
+  when no applied ContentXform (filmstrip / soft-sample path)
+- `ImageView::sessionAppearanceImage` keeps display-image host fetch
 
 ### Prior
-**2560.1** Own applied flush pure merge on SessionAppearance.
+**2561.1** Own rememberKind pure policy on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -18,7 +18,7 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freeze / flush / remember host residual (orchestration only),
+freeze / flush / remember / sessionAppearanceImage host residual,
 drawBackground / drawForeground one-line QGraphicsView overrides,
 input event routers (QGraphicsView overrides)
 
@@ -28,5 +28,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2561.1-own-remember-kind-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2562.1-own-live-display-overlays-7d823d8.bundle HEAD
 ```

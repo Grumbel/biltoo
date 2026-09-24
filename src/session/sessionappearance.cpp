@@ -553,4 +553,31 @@ RememberKind rememberKind(bool imageMode,
     return RememberKind::WritePathFreeze;
 }
 
+
+QImage applyLiveDisplayOverlays(QImage img, bool hFlip, bool vFlip,
+                                bool hasAppliedContentXform,
+                                const ColorAdjustments &liveColor)
+{
+    if (img.isNull()) {
+        return img;
+    }
+    // Placement display flips (should be empty after content bake into pixels).
+    if (hFlip || vFlip) {
+        Qt::Orientations axes;
+        if (hFlip) {
+            axes |= Qt::Horizontal;
+        }
+        if (vFlip) {
+            axes |= Qt::Vertical;
+        }
+        img = img.flipped(axes);
+    }
+    // Live grade only when display is still unbaked host (no applied xform).
+    // Re-applying on a materialize bake double-grades the filmstrip override.
+    if (!hasAppliedContentXform && !liveColor.isIdentity()) {
+        img = applyColorAdjustments(img, liveColor);
+    }
+    return img;
+}
+
 } // namespace SessionAppearance

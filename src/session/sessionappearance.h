@@ -278,6 +278,15 @@ enum class RememberKind {
                                         SessionImageId editSessionId,
                                         SessionImageId itemSessionId);
 
+/**
+ * Filmstrip / soft-sample overlays on already-displayed pixels:
+ * placement display flips, then live grade only when no applied ContentXform
+ * (re-grading a materialize bake would double-grade).
+ */
+QImage applyLiveDisplayOverlays(QImage img, bool hFlip, bool vFlip,
+                                bool hasAppliedContentXform,
+                                const ColorAdjustments &liveColor);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H
