@@ -1897,6 +1897,32 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
 
 
 
+
+void DisplayPipelineController::clearStaleAppliedFingerprintIfNeeded(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId || !m_view->itemWorld().hasDurableAppearance(sid)) {
+        return;
+    }
+    if (!m_view->itemHasAppliedContentXform(item)) {
+        return;
+    }
+    const WorkspaceItemState st = m_view->sessionAppearanceValue(sid);
+    if (!SessionAppearance::hasContentAppearance(st)) {
+        return;
+    }
+    const ContentXform::Value want = ContentXform::Value::fromState(st);
+    if (ContentXform::equal(m_view->itemAppliedContentXform(item), want)) {
+        return;
+    }
+    // Stash may hold a stale applied fingerprint from Image-mode edits that
+    // were committed to ItemWorld while this tile was off-canvas.
+    m_view->clearLiveContentMeta(item);
+}
+
 void DisplayPipelineController::reinstallModePixelsAfterIdentityReset(
     ImageItem *item, SessionImageId sid)
 {
@@ -1987,7 +2013,7 @@ void DisplayPipelineController::rematerializeGalleryItemFromStore(ImageItem *ite
         applyContentLayoutSize(item, st);
         return;
     }
-    m_view->clearStaleAppliedFingerprintIfNeeded(item);
+    clearStaleAppliedFingerprintIfNeeded(item);
     rematerializeItemContent(item, st);
 }
 

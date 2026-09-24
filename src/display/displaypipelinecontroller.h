@@ -108,6 +108,11 @@ public:
      */
     void reinstallModePixelsAfterIdentityReset(ImageItem *item, SessionImageId sid);
     /**
+     * Drop applied ContentXform fingerprint when it no longer matches ItemWorld
+     * durable appearance (mode-stash / off-canvas edits).
+     */
+    void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
+    /**
      * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
      * Used by content bake (rotate/flip) for the pure GUI path.
      */

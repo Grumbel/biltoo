@@ -6,7 +6,6 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"
-#include "content/contentxform.h"
 
 void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
                                       const WorkspaceItemState &want,
@@ -33,27 +32,7 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
 
 void ImageView::clearStaleAppliedFingerprintIfNeeded(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId || !m_itemWorld.hasDurableAppearance(sid)) {
-        return;
-    }
-    if (!itemHasAppliedContentXform(item)) {
-        return;
-    }
-    const WorkspaceItemState st = sessionAppearanceValue(sid);
-    if (!SessionAppearance::hasContentAppearance(st)) {
-        return;
-    }
-    const ContentXform::Value want = ContentXform::Value::fromState(st);
-    if (ContentXform::equal(itemAppliedContentXform(item), want)) {
-        return;
-    }
-    // Stash may hold a stale applied fingerprint from Image-mode edits that
-    // were committed to ItemWorld while this tile was off-canvas.
-    clearLiveContentMeta(item);
+    m_displayPipeline.clearStaleAppliedFingerprintIfNeeded(item);
 }
 
 void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)

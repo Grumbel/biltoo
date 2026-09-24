@@ -108,9 +108,10 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3i. **Done:** `rematerializeGalleryItemFromStore` owned by pipeline; ImageView forward.
 3j. **Done:** interactive color-grade SoftPreview via `installInteractiveSoftPreview` on pipeline.
 3k. **Done:** `reinstallModePixelsAfterIdentityReset` (Gallery soft / Image full) on pipeline.
+3l. **Done:** `clearStaleAppliedFingerprintIfNeeded` on pipeline (pairs with gallery rematerialize).
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
-5. Residual on ImageView: bake orchestration (undo + setContentBake); clearStaleApplied fingerprint;
-    interactive grade policy + filmstrip emit.
+5. Residual on ImageView: bake orchestration (undo + setContentBake);
+    interactive grade live-grade fast path + filmstrip emit.
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 
