@@ -262,6 +262,22 @@ WorkspaceItemState mergeAppliedIntoDurable(const WorkspaceItemState &durable,
                                                   bool imageMode,
                                                   SessionImageId currentImageSid);
 
+/**
+ * How rememberItemState should persist pose/content for a live tile.
+ * Image + bound edit id → skip (Workspace pose must not be overwritten).
+ * Bound item in Workspace/Gallery → placement-only (no freeze color lag).
+ * Unbound → path-map freeze.
+ */
+enum class RememberKind {
+    Skip,
+    WritePlacementOnly,
+    WritePathFreeze,
+};
+
+[[nodiscard]] RememberKind rememberKind(bool imageMode,
+                                        SessionImageId editSessionId,
+                                        SessionImageId itemSessionId);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

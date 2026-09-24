@@ -531,4 +531,26 @@ SessionImageId resolveEditSessionId(SessionImageId itemSid,
     return kInvalidSessionImageId;
 }
 
+
+RememberKind rememberKind(bool imageMode,
+                          SessionImageId editSessionId,
+                          SessionImageId itemSessionId)
+{
+    if (imageMode) {
+        // Bound session images: appearance lives in ItemWorld sparse tables.
+        // Leave path-map placement untouched; do not last-write crop/flip by path.
+        if (editSessionId != kInvalidSessionImageId) {
+            return RememberKind::Skip;
+        }
+        // Unbound legacy tile: path map is the only store.
+        return RememberKind::WritePathFreeze;
+    }
+    // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
+    // Bound: placement by id (never pose by path — duplicates would collide).
+    if (itemSessionId != kInvalidSessionImageId) {
+        return RememberKind::WritePlacementOnly;
+    }
+    return RememberKind::WritePathFreeze;
+}
+
 } // namespace SessionAppearance

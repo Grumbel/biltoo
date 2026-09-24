@@ -2,17 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2560.1-own-applied-flush-pure** (base `7d823d8`).
+**Tip: biltoo-2561.1-own-remember-kind-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::mergeAppliedIntoDurable** — mode-leave applied→sparse merge
-  (no color promote; preserve durable crop when applied has none)
-- **SessionAppearance::resolveEditSessionId** — pure item / Image-mode current id
-- `flushAppliedContentToItemWorld` / `resolveContentEditSessionId` keep host
-  ItemWorld + live-tile orchestration
+- **SessionAppearance::RememberKind** / **rememberKind** — pure policy for
+  rememberItemState (Skip / WritePlacementOnly / WritePathFreeze)
+- `ImageView::rememberItemState` keeps freeze + ItemWorld writes
 
 ### Prior
-**2559.1** Own view-matrix shell helpers on ViewShellChrome.
+**2560.1** Own applied flush pure merge on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -20,8 +18,9 @@ ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freezeItemAppearance / flushApplied host residual (orchestration only),
-drawBackground / drawForeground one-line QGraphicsView overrides
+freeze / flush / remember host residual (orchestration only),
+drawBackground / drawForeground one-line QGraphicsView overrides,
+input event routers (QGraphicsView overrides)
 
 ### Next thinning candidates
 - setViewMode body (mode shell by design — leave/enter orchestration)
@@ -29,5 +28,5 @@ drawBackground / drawForeground one-line QGraphicsView overrides
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2560.1-own-applied-flush-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2561.1-own-remember-kind-pure-7d823d8.bundle HEAD
 ```

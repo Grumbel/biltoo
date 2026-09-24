@@ -242,32 +242,23 @@ void ImageView::rememberItemState(ImageItem *item)
     if (!item) {
         return;
     }
-    const SessionImageId sid = resolveContentEditSessionId(item);
-
-    // Image mode must not overwrite Workspace placement (pos / scale / free tilt).
-    // Bound session images: appearance lives in ItemWorld sparse tables (Stage 4b).
-    if (isImageMode()) {
-        if (sid != kInvalidSessionImageId) {
-            // Leave path-map placement untouched; do not last-write crop/flip by path.
-            return;
-        }
-        // Unbound legacy tile: path map is the only store (freeze → captureState).
+    const SessionImageId editSid = resolveContentEditSessionId(item);
+    // Pose-only for bound: freeze carries live color lag; setAppearance would
+    // promote lag into durable Color (ECS_GUI_BYPASSES #5). Content commits
+    // go through persistSessionAppearanceSlot / crop / bake paths.
+    switch (SessionAppearance::rememberKind(isImageMode(), editSid, item->sessionId())) {
+    case SessionAppearance::RememberKind::Skip:
+        return;
+    case SessionAppearance::RememberKind::WritePlacementOnly:
+        m_itemWorld.setPlacement(item->sessionId(), placementFromItem(item));
+        return;
+    case SessionAppearance::RememberKind::WritePathFreeze: {
         WorkspaceItemState s = freezeItemAppearance(item);
         s.path = item->path();
         m_itemWorld.setPathState(item->path(), s);
         return;
     }
-    // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
-    // Bound session images: placement + content live in ItemWorld sparse tables (by id).
-    // Never write pose by path — duplicates would steal each other's layout.
-    // Pose-only for bound: freeze carries live color lag; setAppearance would
-    // promote lag into durable Color (2194 / ECS_GUI_BYPASSES #5). Content commits
-    // go through persistSessionAppearanceSlot / crop / bake paths.
-    if (item->sessionId() != kInvalidSessionImageId) {
-        m_itemWorld.setPlacement(item->sessionId(), placementFromItem(item));
-        return;
     }
-    m_itemWorld.setPathState(item->path(), freezeItemAppearance(item));
 }
 
 
