@@ -60,3 +60,31 @@ void ImageView::refreshScrollBarGeometry()
     m_shell.refreshScrollBarGeometry();
 }
 
+
+// DisplayPipelineHost framing surface (thin forwards to ImageController).
+void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
+{
+    m_image.fitItem(item, mode);
+}
+
+void ImageView::captureStickyPanAnchor(ImageItem *item)
+{
+    m_image.captureStickyPanAnchor(item);
+}
+
+void ImageView::applyImageModeFraming(ImageItem *item)
+{
+    m_image.applyImageModeFraming(item);
+}
+
+void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
+                                                     const QSize &before,
+                                                     const QSize &after)
+{
+    m_image.preserveImageViewOnLogicalSizeChange(item, before, after);
+}
+
+void ImageView::syncImageModeSceneRect(ImageItem *item)
+{
+    m_image.syncImageModeSceneRect(item);
+}

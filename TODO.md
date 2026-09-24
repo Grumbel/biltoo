@@ -2,31 +2,35 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2608.1-restore-reorder-peel-rebind** (base `7d823d8`).
+**Tip: biltoo-2609.1-restore-framing-host-overrides** (base `7d823d8`).
 
 ### This tip
-- **Bugfix:** `ImageView::reorderItemsByPaths` was removed in the transform
-  peel but remains a **DisplayPipelineHost** pure virtual + public override.
-  Restored thin forward to `m_workspace.reorderItemsByPaths`.
-- **Peel:** `rebindWorkspaceSession` → `hostWorkspace().rebindSession`
-  (declaration + callers; was another declared-without-body orphan).
+Restored five **DisplayPipelineHost** thin overrides deleted by the transform
+peel (bodies lived on ImageController; host surface must stay on ImageView):
 
-### Wave C status (mode shell)
-`setViewMode` / `setLayoutMode` / `reloadFromDisk` / `hardReloadFromDisk` are
-already **thin dispatchers** (leave prep + controller enter/leave). Keep them
-on ImageView as the mode shell; do not push mode branching into MainWindow.
+- `fitItem`
+- `captureStickyPanAnchor`
+- `applyImageModeFraming`
+- `preserveImageViewOnLogicalSizeChange`
+- `syncImageModeSceneRect`
 
-### Prior (2604–2607)
-~65+ pure-forward methods peeled; SelectionGeometry include; orphan rotate /
-setWorkspaceDefaultViewScale fixed.
+Audit: all 61 host pure virtuals now have ImageView cpp or inline bodies.
 
-### Still on ImageView
-- Mode shell dispatchers (above)
-- statusText / hudFileName / loadingStatusHudLine / refreshStatus
-- DisplayPipelineHost surface + QGraphicsView overrides
-- Shell queries (itemPaths, selectedPaths, imageSize, pendingDecodeCount, …)
+### Rule going forward
+**Never delete an ImageView method that is a DisplayPipelineHost override**
+unless the virtual is removed from the host interface first. Pure-forward
+peels apply only to *non-host* public convenience API.
+
+### Wave C
+Mode shell dispatchers (`setViewMode` / `setLayoutMode` / `reload*`) stay —
+already thin.
+
+### Still open
+- statusText / hudFileName / loadingStatusHudLine gather
+- Shell query surface (itemPaths, selectedPaths, …)
+- Public-API size: header ~524 lines
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2608.1-restore-reorder-peel-rebind-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2609.1-restore-framing-host-overrides-7d823d8.bundle HEAD
 ```
