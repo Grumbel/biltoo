@@ -38,24 +38,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     } else {
         // Unbound: live applied via tileContentXform; path map may hold
         // orient extras (quarter turns / crop source).
-        const ContentXform::Value live = itemAppliedContentXform(item);
-        s.hasCrop = live.hasCrop;
-        s.cropRect = live.cropRect;
-        s.contentHFlip = live.hFlip;
-        s.contentVFlip = live.vFlip;
-        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
-            s.cropRotation = prev->cropRotation;
-            s.cropSourceSize = prev->cropSourceSize;
-            if (prev->hasCrop && !s.hasCrop) {
-                s.hasCrop = true;
-                s.cropRect = prev->cropRect;
-            }
-        } else if (live.quarterTurns != 0) {
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(live.quarterTurns);
-        }
+        SessionAppearance::fillUnboundContentFromLiveAndPath(
+            s, itemAppliedContentXform(item), m_itemWorld.getPathState(item->path()));
     }
 
     s.path = item->path();
@@ -70,31 +54,19 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         // applied fingerprint, Stage 4b sparse assembly is sole content truth —
         // no legacy live-xform gap fill.
         if (itemHasAppliedContentXform(item)) {
-            const ContentXform::Value live = itemAppliedContentXform(item);
-            s.hasCrop = live.hasCrop;
-            s.cropRect = live.cropRect;
-            s.cropSourceSize = live.cropSourceSize;
-            s.cropRotation = live.cropRotation;
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(live.quarterTurns);
-            s.contentHFlip = live.hFlip;
-            s.contentVFlip = live.vFlip;
+            SessionAppearance::overlayAppliedContentXform(
+                s, itemAppliedContentXform(item));
         }
-        // Live grade is interaction authority (slider may lead ItemWorld Color
-        // until flushColorAdjustCommit).
-        s.colorAdjust = itemLiveColor(item);
-    } else {
-        s.colorAdjust = itemLiveColor(item);
     }
+    // Live grade is interaction authority (slider may lead ItemWorld Color
+    // until flushColorAdjustCommit).
+    s.colorAdjust = itemLiveColor(item);
 
     // Path-map list-index hint: unbound tiles only. Bound ids use
     // sessionListIndex / SessionDocument — do not adopt a stale path-book index.
     if (s.sessionIndex < 0 && item->sessionId() == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
-            if (prev->sessionIndex >= 0) {
-                s.sessionIndex = prev->sessionIndex;
-            }
-        }
+        SessionAppearance::adoptPathSessionIndexHint(
+            s, m_itemWorld.getPathState(item->path()));
     }
     return s;
 }

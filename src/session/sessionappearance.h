@@ -203,6 +203,24 @@ bool fillStoredContentAppearance(ThumtooCache::StoredContentAppearance *stored,
 WorkspaceItemState appearanceCopyWithIdentityPose(const WorkspaceItemState &src,
                                                   SessionImageId toId);
 
+/**
+ * Unbound capture: fill content orient/crop from live applied xform and optional
+ * path-map slot (path holds quarter turns / crop source extras).
+ */
+void fillUnboundContentFromLiveAndPath(WorkspaceItemState &s,
+                                       const ContentXform::Value &live,
+                                       const WorkspaceItemState *pathPrev);
+
+/** Mid-edit applied ContentXform overlays sparse content fields on @p s. */
+void overlayAppliedContentXform(WorkspaceItemState &s,
+                                const ContentXform::Value &live);
+
+/**
+ * When @p s has no sessionIndex and is unbound, adopt path-map list-index hint.
+ */
+void adoptPathSessionIndexHint(WorkspaceItemState &s,
+                               const WorkspaceItemState *pathPrev);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

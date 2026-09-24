@@ -2,13 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2543.1-own-appearance-copy-identity-pose** (base `7d823d8`).
+**Tip: biltoo-2544.1-own-capture-state-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::appearanceCopyWithIdentityPose** — pure content copy with
-  identity free-placement pose for drop-duplicate / filmstrip fork
-- ImageView::copySessionAppearance uses the pure helper; keeps donor resolve +
-  filmstrip emits
+- **SessionAppearance::fillUnboundContentFromLiveAndPath** — unbound capture orient/crop
+- **SessionAppearance::overlayAppliedContentXform** — mid-edit applied overlay
+- **SessionAppearance::adoptPathSessionIndexHint** — path-map list-index hint
+- ImageView::captureState stays host (ItemWorld + live grade/pose/session index)
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -17,13 +17,13 @@ QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
-freeze/capture state / paint / remaining status composition
+freezeItemAppearance / paint / remaining status composition
 
 ### Next thinning candidates
-- freezeItemAppearance / captureState residual
+- freezeItemAppearance residual
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2543.1-own-appearance-copy-identity-pose-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2544.1-own-capture-state-pure-7d823d8.bundle HEAD
 ```

@@ -415,4 +415,52 @@ WorkspaceItemState appearanceCopyWithIdentityPose(const WorkspaceItemState &src,
     return dst;
 }
 
+
+void fillUnboundContentFromLiveAndPath(WorkspaceItemState &s,
+                                       const ContentXform::Value &live,
+                                       const WorkspaceItemState *pathPrev)
+{
+    s.hasCrop = live.hasCrop;
+    s.cropRect = live.cropRect;
+    s.contentHFlip = live.hFlip;
+    s.contentVFlip = live.vFlip;
+    if (pathPrev) {
+        s.contentQuarterTurns =
+            ContentXform::normalizeQuarterTurns(pathPrev->contentQuarterTurns);
+        s.cropRotation = pathPrev->cropRotation;
+        s.cropSourceSize = pathPrev->cropSourceSize;
+        if (pathPrev->hasCrop && !s.hasCrop) {
+            s.hasCrop = true;
+            s.cropRect = pathPrev->cropRect;
+        }
+    } else if (live.quarterTurns != 0) {
+        s.contentQuarterTurns =
+            ContentXform::normalizeQuarterTurns(live.quarterTurns);
+    }
+}
+
+void overlayAppliedContentXform(WorkspaceItemState &s,
+                                const ContentXform::Value &live)
+{
+    s.hasCrop = live.hasCrop;
+    s.cropRect = live.cropRect;
+    s.cropSourceSize = live.cropSourceSize;
+    s.cropRotation = live.cropRotation;
+    s.contentQuarterTurns =
+        ContentXform::normalizeQuarterTurns(live.quarterTurns);
+    s.contentHFlip = live.hFlip;
+    s.contentVFlip = live.vFlip;
+}
+
+void adoptPathSessionIndexHint(WorkspaceItemState &s,
+                               const WorkspaceItemState *pathPrev)
+{
+    if (s.sessionIndex >= 0 || !pathPrev) {
+        return;
+    }
+    if (pathPrev->sessionIndex >= 0) {
+        s.sessionIndex = pathPrev->sessionIndex;
+    }
+}
+
 } // namespace SessionAppearance
