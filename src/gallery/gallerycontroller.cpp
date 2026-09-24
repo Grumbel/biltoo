@@ -325,9 +325,15 @@ void GalleryController::reassertViewport()
     if (!m_view->isGalleryMode()) {
         return;
     }
-    // Prefer scrollbar pixels. Scene centre from leave-for-Image is invalid
-    // after restash/repack (crop aspect change, ContentChange pack) and was
-    // jumping the overview when returning after a crop.
+    // Prefer scene centre: scrollbar pixel values shift when AlwaysOn↔AsNeeded
+    // (or one bar vs two) changes the viewport size between leave and return.
+    // Snapshot comment already notes centre is robust across bar policy; pixel
+    // restore was leaving Gallery a bar-width off-centre after Image return.
+    // Scroll pixels remain a fallback when centre was never captured.
+    if (m_haveViewCenter) {
+        m_view->centerOn(m_viewCenter);
+        return;
+    }
     if (m_haveScroll) {
         if (m_view->horizontalScrollBar()) {
             m_view->horizontalScrollBar()->setValue(m_scrollH);
@@ -335,10 +341,6 @@ void GalleryController::reassertViewport()
         if (m_view->verticalScrollBar()) {
             m_view->verticalScrollBar()->setValue(m_scrollV);
         }
-        return;
-    }
-    if (m_haveViewCenter) {
-        m_view->centerOn(m_viewCenter);
     }
 }
 
@@ -1561,6 +1563,15 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("GalleryController::applyLayout");
+    // User-driven relayout: drop Image→Gallery restore snapshots so a deferred
+    // applyPendingRestore / singleShot cannot snap the view back off-centre.
+    // EnterGallery without a pending return is the same (setLayoutMode in-Gallery).
+    if (reason == GalleryPackReason::ExplicitLayout
+        || (reason == GalleryPackReason::EnterGallery && !m_pendingRestore)) {
+        m_pendingRestore = false;
+        m_haveScroll = false;
+        m_haveViewCenter = false;
+    }
     if (m_layoutApply.active()) {
         return;
     }
@@ -1668,6 +1679,10 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     // Restore AsNeeded/Off only after sceneRect is clamped to the measured pack
     // size. Still under hostLayoutApply so policy-driven resize does not repack.
     packVp.restore();
+    // Policy toggle can leave AsNeeded bars with a stale range until forced.
+    if (m_pendingRestore || preserveView) {
+        m_view->refreshScrollBarGeometry();
+    }
     m_view->hostFraming().armFit();
     // Progressive packs during the size gate fire every ~16–40ms. Emitting
     // statusChanged each time runs MainWindow::updateStatus (TOC/metadata/
@@ -1681,7 +1696,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         emit m_view->statusChanged();
     }
     // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
-    // Re-apply scroll after m_view->centerOn(0,0) above when returning from Image.
+    // Re-apply scene centre (preferred) after bar policy settles — returning from Image.
     applyPendingRestore();
     if (preserveView) {
         if (keptScrollH >= 0 && m_view->horizontalScrollBar()) {

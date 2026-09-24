@@ -407,12 +407,15 @@ void MainWindow::returnToGallery()
     }
     if (m_imageView) {
         m_imageView->hostGallery().applyPendingRestore();
-        QTimer::singleShot(0, this, [this, focusPath, focusId]() {
+        // After the event loop settles (scrollbar policy / sceneRect geometry),
+        // re-centre once. Do not re-arm pendingRestore — that kept the leave
+        // snapshot alive so an ExplicitLayout that looked correct was snapped
+        // back off-centre a tick later.
+        QTimer::singleShot(0, this, [this]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;
             }
-            m_imageView->hostGallery().restoreViewport(focusPath, focusId);
-            m_imageView->hostGallery().applyPendingRestore();
+            m_imageView->hostGallery().reassertViewport();
         });
     }
 
