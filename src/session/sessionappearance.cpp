@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "session/sessionappearance.h"
+#include <QPointF>
 #include "content/contentxform.h"
 #include "crop/cropgeometry.h"
 #include "view/viewtransform.h"
@@ -396,6 +397,22 @@ bool fillStoredContentAppearance(ThumtooCache::StoredContentAppearance *stored,
         stored->gradeInvert = state.colorAdjust.invert;
     }
     return !stored->isIdentity();
+}
+
+
+WorkspaceItemState appearanceCopyWithIdentityPose(const WorkspaceItemState &src,
+                                                   SessionImageId toId)
+{
+    WorkspaceItemState dst = src;
+    dst.sessionId = toId;
+    dst.pos = QPointF();
+    dst.scale = 1.0;
+    dst.scaleY = 1.0;
+    dst.shear = 0.0;
+    dst.rotation = 0.0;
+    dst.opacity = 1.0;
+    dst.z = 0.0;
+    return dst;
 }
 
 } // namespace SessionAppearance

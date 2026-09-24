@@ -195,6 +195,14 @@ bool fillStoredContentAppearance(ThumtooCache::StoredContentAppearance *stored,
                                  const WorkspaceItemState &state,
                                  bool writeCrop);
 
+/**
+ * Copy content fields from @p src for a new SessionImageId @p toId with
+ * identity free-placement pose (pos, scale, shear, rotation, opacity, z).
+ * Used by drop-duplicate / filmstrip row fork.
+ */
+WorkspaceItemState appearanceCopyWithIdentityPose(const WorkspaceItemState &src,
+                                                  SessionImageId toId);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H
