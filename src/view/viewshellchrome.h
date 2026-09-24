@@ -14,6 +14,7 @@ class QDragEnterEvent;
 class QDragMoveEvent;
 class QDropEvent;
 class QPainter;
+class QRectF;
 
 /**
  * Shell view chrome: transient viewport pointer state + canvas materials +
@@ -52,10 +53,16 @@ public:
     void paintHudPanels(QPainter &painter) const;
     /**
      * Viewport-device-pixel overlay pass (text rubber, crop/attention, workspace
-     * chrome, slideshow letterbox/seekbar, edges, HUD). Called from drawForeground
+     * chrome, slideshow letterbox/seekbar, edges, HUD). Called from paintForeground
      * after identity transform.
      */
     void paintViewportOverlays(QPainter &painter);
+    /**
+     * Full QGraphicsView drawForeground body: scene chrome (page guide, text,
+     * gallery frames), bare-Gallery early-out, DPR identity transform, then
+     * paintViewportOverlays.
+     */
+    void paintForeground(QPainter *painter, const QRectF &rect);
 
 private:
     ImageView *m_view = nullptr;

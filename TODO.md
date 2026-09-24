@@ -2,17 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2556.1-own-scene-foreground-chrome** (base `7d823d8`).
+**Tip: biltoo-2557.1-own-draw-foreground** (base `7d823d8`).
 
 ### Ownership transfer
-- **TextLayerController::paintSceneOverlays** — search hits, selection fill,
-  region/link outlines (Image mode, scene space)
-- **WorkspaceController::paintPageGuideOutline** — page outline + margin
-  (Workspace, scene space)
-- `drawForeground` dispatches controllers + gallery frames + shell viewport overlays
+- **ViewShellChrome::paintForeground** — full drawForeground body: scene chrome
+  (page guide, text overlays, gallery frames), bare-Gallery early-out, DPR
+  identity transform, paintViewportOverlays
+- `ImageView::drawForeground` is a one-line shell dispatch
 
 ### Prior
-**2555.1** Own viewport overlay paint on ViewShellChrome.
+**2556.1** Own scene foreground chrome on Text and Workspace controllers.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -22,14 +21,14 @@ setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 refreshScrollBarGeometry (view-matrix shell),
 freezeItemAppearance host residual (orchestration only),
-drawForeground dispatch + bare-Gallery early-out + DPR transform setup
+drawForeground one-line dispatch (QGraphicsView override)
 
 ### Next thinning candidates
 - setViewMode body (mode shell by design)
 - public thin routers (MainWindow API surface — keep until dual/callers migrate)
-- drawForeground early-out / DPR setup → ViewShellChrome if dual needs it
+- drawBackground / canvas background residual
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2556.1-own-scene-foreground-chrome-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2557.1-own-draw-foreground-7d823d8.bundle HEAD
 ```

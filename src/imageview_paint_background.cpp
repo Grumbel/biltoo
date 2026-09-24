@@ -196,39 +196,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     GUI_BUDGET("ImageView::drawForeground");
-    // Scene-space chrome owned by mode/text controllers.
-    m_workspace.paintPageGuideOutline(painter, rect);
-    m_textCtrl.paintSceneOverlays(painter);
-
-    // Viewport-space overlays on the same painter as the scene (required for
-    // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
-    if (!painter) {
-        return;
-    }
-    // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
-    // is not invalidated on select or scroll (was painted inside ImageItem::paint).
-    if (isGalleryMode()) {
-        m_gallery.paintSelectionFrames(painter, rect);
-    }
-    // Bare Gallery: skip HUD/edges/slideshow overlay pass.
-    if (isGalleryMode() && !m_hud.appearance().isVisible() && !m_hud.flash().isVisible() && !m_hud.flash().isIdentityPulse()
-        && !m_slideshow.hud().isPausedHud() && !hostGallerySizeResolve().active()
-        && m_hud.centreProgress().titleRef().isEmpty()
-        && hostHoverEdge() == EdgeZone::None && !m_cropCtrl.session().active()
-        && !m_slideshow.dwell().isMotionActive() 
-        ) {
-        return;
-    }
-    painter->save();
-    painter->resetTransform();
-    if (viewport()) {
-        const qreal dpr = viewport()->devicePixelRatioF();
-        if (!qFuzzyCompare(dpr, 1.0)) {
-            painter->scale(dpr, dpr);
-        }
-    }
-    m_shell.paintViewportOverlays(*painter);
-    painter->restore();
+    m_shell.paintForeground(painter, rect);
 }
 
 // --- Background settings (was imageview_background.cpp) ---

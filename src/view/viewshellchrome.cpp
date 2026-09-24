@@ -522,3 +522,47 @@ void ViewShellChrome::paintViewportOverlays(QPainter &painter)
     paintHudPanels(painter);
     m_view->hostSlideshow().paintSeekbar(painter);
 }
+
+void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
+{
+    if (!m_view) {
+        return;
+    }
+    // Scene-space chrome owned by mode/text controllers.
+    m_view->hostWorkspace().paintPageGuideOutline(painter, rect);
+    m_view->hostText().paintSceneOverlays(painter);
+
+    // Viewport-space overlays on the same painter as the scene (required for
+    // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
+    if (!painter) {
+        return;
+    }
+    // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
+    // is not invalidated on select or scroll (was painted inside ImageItem::paint).
+    if (m_view->isGalleryMode()) {
+        m_view->hostGallery().paintSelectionFrames(painter, rect);
+    }
+    // Bare Gallery: skip HUD/edges/slideshow overlay pass.
+    if (m_view->isGalleryMode()
+        && !m_view->hostHudPrefs().isVisible()
+        && !m_view->hostHudFlash().isVisible()
+        && !m_view->hostHudFlash().isIdentityPulse()
+        && !m_view->hostSlideshow().hud().isPausedHud()
+        && !m_view->hostGallerySizeResolve().active()
+        && m_view->hostCentreProgress().titleRef().isEmpty()
+        && m_view->hostHoverEdge() == ImageView::EdgeZone::None
+        && !m_view->hostCrop().session().active()
+        && !m_view->hostSlideshow().dwell().isMotionActive()) {
+        return;
+    }
+    painter->save();
+    painter->resetTransform();
+    if (QWidget *vp = m_view->viewport()) {
+        const qreal dpr = vp->devicePixelRatioF();
+        if (!qFuzzyCompare(dpr, 1.0)) {
+            painter->scale(dpr, dpr);
+        }
+    }
+    paintViewportOverlays(*painter);
+    painter->restore();
+}
