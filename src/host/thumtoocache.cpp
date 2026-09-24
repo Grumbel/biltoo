@@ -7,6 +7,7 @@
 #include "tilelod/tile_painter.hpp"
 #include "host/imageloader.h"
 #include "display/imagecache.h"
+#include "display/displayquality.h"
 #include "util/biltoo_thread.h"
 
 #include "host/archivepath.h"
@@ -744,11 +745,26 @@ void noteCachedSize(const QString &path, const QSize &size)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
 #endif
 
+/** True when ImageCache already holds a gallery-usable underlay (LQIP/EMB band). */
+static bool hasUsableUnderlaySample(const QString &path)
+{
+    if (path.isEmpty() || !ImageCache::has(path)) {
+        return false;
+    }
+    const QImage img = ImageCache::get(path);
+    if (img.isNull()) {
+        return false;
+    }
+    // PreferCache soft (512) is not gallery underlay; underlay installs clamp to
+    // kEmbeddedUnderlayMaxEdge but only when something ≤ that band is present.
+    return ImageCache::longEdge(img) <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+}
+
 /** Prefer EXIF/container JPEG underlay over ThumbHash LQIP; never tiles. */
 static void putEmbeddedOrLqipUnderlay(const QString &path,
                                       const thumtoo::SizeReply &reply)
 {
-    if (path.isEmpty() || ImageCache::has(path)) {
+    if (path.isEmpty() || hasUsableUnderlaySample(path)) {
         return;
     }
     if (reply.embedded && !reply.embedded->bytes.empty()) {
@@ -946,13 +962,97 @@ QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)
 
 QImage cachedLqipImage(const QString &path)
 {
-    // Process ImageCache only. Never Store get_lqip / LQIP generation.
-    // Underlay is seeded solely from request_size SizeReply (EMB/LQIP blob
-    // stored with the size row) via finishProbeSlot → ImageCache::put.
     if (path.isEmpty()) {
         return {};
     }
-    return ImageCache::get(path);
+    // Prefer process underlay when already seeded.
+    if (const QImage cached = ImageCache::get(path); !cached.isNull()
+        && ImageCache::longEdge(cached) <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        return cached;
+    }
+    // GUI: no Store I/O — scheduleStoreUnderlaySeed fills the cache off-thread.
+    if (QThread::isMainThread()) {
+        return ImageCache::get(path);
+    }
+    ASSERT_NOT_GUI_THREAD();
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    // EMB first (sharper container thumb), then ThumbHash/Handsum LQIP.
+    try {
+        if (auto emb = c->get_embedded_preview(uri); emb && !emb->bytes.empty()) {
+            QImage img;
+            if (img.loadFromData(emb->bytes.data(),
+                                 static_cast<int>(emb->bytes.size()), "JPEG")
+                && !img.isNull()) {
+                ImageCache::put(path, img, QStringLiteral("EMB"));
+                return img;
+            }
+        }
+    } catch (...) {
+    }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+    try {
+        if (auto blob = c->get_lqip(uri); blob && !blob->empty()) {
+            const QImage lqip = qimageFromLqipBlob(*blob);
+            if (!lqip.isNull()) {
+                ImageCache::put(path, lqip, QStringLiteral("LQIP"));
+                return lqip;
+            }
+        }
+    } catch (...) {
+    }
+#endif
+    return {};
+}
+
+void scheduleStoreUnderlaySeed(const QString &path)
+{
+    if (path.isEmpty() || hasUsableUnderlaySample(path)) {
+        return;
+    }
+    static std::mutex seedMu;
+    static QSet<QString> seedQueued;
+    {
+        std::lock_guard lock(seedMu);
+        if (seedQueued.contains(path)) {
+            return;
+        }
+        seedQueued.insert(path);
+    }
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        // Tile prepare writes LQIP into the Store; SizeReply warm hits may leave
+        // process ImageCache empty. Pull EMB/LQIP without opening the source.
+        const QImage under = cachedLqipImage(pathCopy);
+        {
+            std::lock_guard lock(seedMu);
+            seedQueued.remove(pathCopy);
+        }
+        if (under.isNull()) {
+            return;
+        }
+        const QSize sz = cachedSize(pathCopy, /*scheduleRevalidate=*/false);
+        if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
+            return;
+        }
+        // sizeReady → tryInstallGalleryUnderlay when definitive size is known.
+        QMetaObject::invokeMethod(
+            bridge(),
+            [pathCopy, sz]() { emit bridge()->sizeReady(pathCopy, sz); },
+            Qt::QueuedConnection);
+    });
 }
 
 QImage cachedEmbeddedPreviewImage(const QString &path)

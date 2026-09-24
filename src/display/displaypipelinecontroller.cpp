@@ -1421,8 +1421,16 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
         return false;
     }
     QImage under = ImageCache::get(path);
-    if (under.isNull()) {
-        return false;
+    // Prefer underlay-band samples (LQIP/EMB). A larger PreferCache soft in
+    // ImageCache still works after clamp below; null means Store seed needed.
+    if (under.isNull()
+        || ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        // Durable tiles often imply Store LQIP from prepare, but process
+        // ImageCache may never have been seeded (warm size-only memo).
+        if (under.isNull()) {
+            ThumtooCache::scheduleStoreUnderlaySeed(path);
+            return false;
+        }
     }
     if (ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
         const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;

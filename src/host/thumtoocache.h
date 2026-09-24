@@ -107,9 +107,9 @@ void noteCachedSize(const QString &path, const QSize &size);
 bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs);
 
 /**
- * Process ImageCache underlay only (LQIP/EMB already seeded).
- * Never Store get_lqip and never schedules LQIP generation/encode.
- * Underlay is seeded from request_size SizeReply via finishProbeSlot.
+ * Process ImageCache underlay sample when already seeded (LQIP/EMB).
+ * GUI: ImageCache only. Worker: if process cache misses, may read Store
+ * get_lqip / get_embedded_preview (no generation) and seed ImageCache.
  */
 QImage cachedLqipImage(const QString &path);
 
@@ -118,6 +118,13 @@ QImage cachedLqipImage(const QString &path);
  * Empty if missing — does not open the source. Prefer over LQIP when both exist.
  */
 QImage cachedEmbeddedPreviewImage(const QString &path);
+
+/**
+ * Gallery underlay miss: load Store EMB/LQIP into ImageCache on a worker, then
+ * emit sizeReady so the GUI can tryInstallGalleryUnderlay. No-op when a usable
+ * underlay is already cached. Deduped per path. Never opens the source file.
+ */
+void scheduleStoreUnderlaySeed(const QString &path);
 
 /**
  * Cache-only: thumtoo reported ContentStatus::Unsupported for this locator.

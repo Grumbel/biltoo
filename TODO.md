@@ -2,18 +2,20 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2632.1-hud-quality-status** (base `0d34dd8`).
+**Tip: biltoo-2633.1-gallery-lqip-store-seed** (base `08fe2d1`).
 
-### This tip — HUD quality line
-Status was `show Npx · need Mpx · have Npx` (plus a duplicated edge). After
-tiles-everywhere, show≡have often; jargon was meaningless in the status bar.
+### This tip — Gallery LQIP missing despite tile cache
+LQIP/EMB underlay was only seeded from SizeReply → ImageCache. After tile
+prepare, Store has LQIP but process ImageCache often does not (warm size memo
+skips request_size when something is cached, or size-only warm). Gallery cells
+stayed blank until tiles painted — and cells ≤32px screen never request tiles.
 
-- Gallery under-need: `Preview · 128px (need 512px)`
-- Gallery covered: tier only
-- Image partial: `High quality · 1200px of 4000px`
-- Multi-item assembler no longer appends `(Npx)` when quality already has `px`
+- `cachedLqipImage`: worker may read Store get_embedded / get_lqip
+- `scheduleStoreUnderlaySeed`: async seed + sizeReady for GUI install
+- `tryInstallGalleryUnderlay`: on miss, schedule Store seed
+- `putEmbeddedOrLqipUnderlay`: only skip when underlay-band sample exists
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2632.1-hud-quality-status-0d34dd8.bundle HEAD
+git pull --ff-only …/biltoo-2633.1-gallery-lqip-store-seed-08fe2d1.bundle HEAD
 ```
