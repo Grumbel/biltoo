@@ -19,6 +19,9 @@ private slots:
     void emptyCanvas_ready();
     void emptyCanvas_gallery();
     void multiItemHeader_gallery();
+    void formatMultiItemStatus_basic();
+    void formatImageModeStatus_basic();
+    void formatImageModeStatus_editedFlip();
 };
 
 void HudModelTest::qualityTiers_labels()
@@ -95,6 +98,51 @@ void HudModelTest::multiItemHeader_gallery()
     QVERIFY(s.contains(QStringLiteral("42")));
     QVERIFY(s.contains(QStringLiteral("100")));
 }
+
+
+void HudModelTest::formatMultiItemStatus_basic()
+{
+    const QString s = HudModel::formatMultiItemStatusLine(
+        /*gallery*/ true, /*count*/ 3, /*zoom*/ 100,
+        /*quality*/ QStringLiteral("Preview"), /*edge*/ 512, QSize(4000, 3000),
+        /*galleryDbg*/ false, 0, 0, 0, 0, 0,
+        /*pending*/ 0, /*loading*/ {},
+        /*wsSel*/ false, 1.0, 1.0, 0.0,
+        /*edited*/ false, /*dbg*/ {});
+    QVERIFY(s.contains(QStringLiteral("Gallery")));
+    QVERIFY(s.contains(QStringLiteral("3")));
+    QVERIFY(s.contains(QStringLiteral("Preview")));
+    QVERIFY(s.contains(QStringLiteral("4000")));
+    QVERIFY(!s.contains(QStringLiteral("Edited")));
+}
+
+void HudModelTest::formatImageModeStatus_basic()
+{
+    const QString s = HudModel::formatImageModeStatusLine(
+        1920, 1080, 50,
+        QStringLiteral("High quality"), 960, /*appendEdge*/ true,
+        /*climb*/ {},
+        /*rot*/ 0, false, false,
+        /*edited*/ false, /*dbg*/ {});
+    QVERIFY(s.contains(QStringLiteral("1920")));
+    QVERIFY(s.contains(QStringLiteral("1080")));
+    QVERIFY(s.contains(QStringLiteral("50")));
+    QVERIFY(s.contains(QStringLiteral("High quality")));
+}
+
+void HudModelTest::formatImageModeStatus_editedFlip()
+{
+    const QString s = HudModel::formatImageModeStatusLine(
+        800, 600, 100,
+        QStringLiteral("Full"), 800, false,
+        {},
+        90.0, true, false,
+        true, {});
+    QVERIFY(s.contains(QStringLiteral("Edited")));
+    // rotation / flip suffix present when non-zero
+    QVERIFY(s.contains(QStringLiteral("90")) || s.contains(QStringLiteral("Flip")));
+}
+
 
 QTEST_MAIN(HudModelTest)
 #include "hudmodel_test.moc"
