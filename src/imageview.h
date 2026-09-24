@@ -6,6 +6,7 @@
 #include "imageview_types.h"
 #include "gallery/gallerysizeresolve.h"
 #include "display/tileneighborprefetch.h"
+#include "display/displaypipelinehost.h"
 #include "crop/cropsession.h"
 #include "crop/cropgeometry.h"
 #include "crop/cropflash.h"
@@ -101,7 +102,8 @@ class CropAppearanceCommand;
 
 class ImageView : public QGraphicsView,
                   private GallerySizeResolveHost,
-                  private TileNeighborPrefetchHost
+                  private TileNeighborPrefetchHost,
+                  public DisplayPipelineHost
 {
 
     Q_OBJECT
@@ -217,9 +219,9 @@ public:
     /** Controller host: LoadReplace for a path (no-op if empty). */
     void scheduleReplaceLoad(const QString &path);
     /** Controller host: live canvas item list. */
-    QList<ImageItem *> &liveItems() { return m_items; }
-    const QList<ImageItem *> &liveItems() const { return m_items; }
-    QGraphicsScene *canvasScene() { return m_scene; }
+    QList<ImageItem *> &liveItems() override { return m_items; }
+    const QList<ImageItem *> &liveItems() const override { return m_items; }
+    QGraphicsScene *canvasScene() override { return m_scene; }
     /** Controller host: applyItemModeFlags to every live item. */
     void applyModeFlagsToLiveItems();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
@@ -246,8 +248,8 @@ public:
      * Pack-order host mutators live in imageview_host_pipeline.inc
      * (pathOrderClear / SetOrder / currentPackOrder; AppendRow is private).
      */
-    ItemWorld &itemWorld() { return m_itemWorld; }
-    const ItemWorld &itemWorld() const { return m_itemWorld; }
+    ItemWorld &itemWorld() override { return m_itemWorld; }
+    const ItemWorld &itemWorld() const override { return m_itemWorld; }
     /**
      * Bind SessionDocument seed book (required before hostSeedBook()).
      * Content appearance is ItemWorld sparse tables — not this store.
@@ -264,7 +266,7 @@ public:
     {
         m_sessionDoc = doc;
     }
-    SessionDocument *sessionDocument() const { return m_sessionDoc; }
+    SessionDocument *sessionDocument() const override { return m_sessionDoc; }
     void takePendingWorkspacePath(const QString &path);
 
 
@@ -278,9 +280,11 @@ public:
 
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
     void prepareImageModeCanvas();
-    bool isImageMode() const { return m_viewMode == ViewMode::Image; }
-    bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }
-    bool isWorkspaceMode() const { return m_viewMode == ViewMode::Workspace; }
+    bool isImageMode() const override { return m_viewMode == ViewMode::Image; }
+    bool isGalleryMode() const override { return m_viewMode == ViewMode::Gallery; }
+    bool isWorkspaceMode() const override { return m_viewMode == ViewMode::Workspace; }
+    /** DisplayPipelineHost: QGraphicsView viewport for update/geometry. */
+    QWidget *viewportWidget() override { return viewport(); }
 
 
     /**

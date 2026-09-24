@@ -2,8 +2,8 @@
 // Operations: host_ops / host_crop_display / host_pipeline. Included from ImageView public.
 
     /** Display pipeline host: PreferCache / load path raster service. */
-    PathRasterService *hostPathRaster() { return m_pathRaster; }
-    const PathRasterService *hostPathRaster() const { return m_pathRaster; }
+    PathRasterService *hostPathRaster() override { return m_pathRaster; }
+    const PathRasterService *hostPathRaster() const override { return m_pathRaster; }
     /** Image-mode controller (classic path, enter, reload). */
     ImageController &hostImage() { return m_image; }
     const ImageController &hostImage() const { return m_image; }
@@ -14,10 +14,10 @@
     GalleryDecodeBook &hostGalleryDecodeBook() { return m_galleryDecodeBook; }
     const GalleryDecodeBook &hostGalleryDecodeBook() const { return m_galleryDecodeBook; }
     /** Display pipeline host: pending session binds. */
-    SessionBindBook &hostBindBook() { return m_bindBook; }
-    const SessionBindBook &hostBindBook() const { return m_bindBook; }
-    ImageSizeBook &hostSizeBook() { return m_sizeBook; }
-    const ImageSizeBook &hostSizeBook() const { return m_sizeBook; }
+    SessionBindBook &hostBindBook() override { return m_bindBook; }
+    const SessionBindBook &hostBindBook() const override { return m_bindBook; }
+    ImageSizeBook &hostSizeBook() override { return m_sizeBook; }
+    const ImageSizeBook &hostSizeBook() const override { return m_sizeBook; }
     ViewFraming &hostFraming() { return m_framing; }
     const ViewFraming &hostFraming() const { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }
@@ -68,20 +68,20 @@
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
 
-    SessionSeedBook &hostSeedBook()
+    SessionSeedBook &hostSeedBook() override
     {
         Q_ASSERT(m_seedBook);
         return *m_seedBook;
     }
-    const SessionSeedBook &hostSeedBook() const
+    const SessionSeedBook &hostSeedBook() const override
     {
         Q_ASSERT(m_seedBook);
         return *m_seedBook;
     }
     CanvasBackground &hostCanvasBg() { return m_canvasBg; }
     const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
-    SessionIdentity &hostSessionId() { return m_sessionId; }
-    const SessionIdentity &hostSessionId() const { return m_sessionId; }
+    SessionIdentity &hostSessionId() override { return m_sessionId; }
+    const SessionIdentity &hostSessionId() const override { return m_sessionId; }
     /**
      * First SessionImageId for @p path from the MainWindow SessionDocument when
      * bound (slideshow / identity). View path-order book is multiplicity only —

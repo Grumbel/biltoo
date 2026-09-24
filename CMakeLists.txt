@@ -136,6 +136,7 @@ set(BILTOO_LIB_SOURCES
   src/display/displaypipeline_jobs.cpp
   src/display/displaypipeline_jobs.h
   src/display/displaypipelinecontroller.h
+  src/display/displaypipelinehost.h
   src/gallery/gallerycontroller.h
   src/gallery/gallerysizeresolve.cpp
   src/gallery/gallerysizeresolve.h
