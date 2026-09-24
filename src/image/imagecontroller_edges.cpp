@@ -176,3 +176,30 @@ void ImageController::drawEdgeAffordances(QPainter &painter) const
         });
     }
 }
+
+
+void ImageController::setImageModeNavigationEnabled(bool on)
+{
+    if (!sessionNav().setImageModeNav(on)) {
+        return;
+    }
+    if (!on && m_hoverEdge != EdgeNavPolicy::Zone::GalleryReturn) {
+        clearHoverEdge();
+    }
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}
+
+void ImageController::setGalleryReturnAvailable(bool on)
+{
+    if (!sessionNav().setGalleryReturnAvailable(on)) {
+        return;
+    }
+    if (!on && m_hoverEdge == EdgeNavPolicy::Zone::GalleryReturn) {
+        clearHoverEdge();
+    }
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}

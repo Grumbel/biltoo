@@ -4,6 +4,7 @@
 // View zoom, fit/fill, sticky zoom enable, zoom-region. Image-mode framing: ImageController.
 
 #include "imageview.h"
+#include "imageitem.h"
 #include "view/viewtransform.h"
 
 #include <QScrollBar>
@@ -39,7 +40,9 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 void ImageView::ensureVisibleItem(ImageItem *item)
 {
     if (item) {
-        ensureVisible(item, 32, 32);
+        ensureVisible(static_cast<const QGraphicsItem *>(item),
+                      ViewTransform::kEnsureVisibleMargin,
+                      ViewTransform::kEnsureVisibleMargin);
     }
 }
 

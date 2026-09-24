@@ -109,6 +109,10 @@ public:
     /** Image-mode edge/session nav flags (prev/next + gallery return). */
     SessionNavFlags &sessionNav() { return m_sessionNav; }
     const SessionNavFlags &sessionNav() const { return m_sessionNav; }
+    /** Enable Image-mode edge prev/next; clears non-return hover when disabling. */
+    void setImageModeNavigationEnabled(bool on);
+    /** Enable top-edge Gallery/Workspace return affordance. */
+    void setGalleryReturnAvailable(bool on);
 
     /** Pending durable colour-grade commit target + debounce timer. */
     ColorAdjustCommit &colorAdjustCommit() { return m_colorAdjustCommit; }

@@ -2,16 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2526.1-own-link-hover-select-all** (base `7d823d8`).
+**Tip: biltoo-2527.1-fix-ensureVisible-own-session-nav** (base `7d823d8`).
+
+### Build fix
+- `ensureVisibleItem`: include `imageitem.h` + `QGraphicsItem` cast (incomplete type after
+  framing TU thin); use `ViewTransform::kEnsureVisibleMargin`
 
 ### Ownership transfer
-- **TextLayerController::updateMouseMoveLinkHover** — Image-mode page-link hover tip + cursor
-- **WorkspaceController::tryKeyPressSelectAll** — Gallery/Workspace Ctrl/Cmd+A
-- ImageView input dispatch routes directly (no residual wrappers)
-
-### Prior in this stack (2522–2525)
-- Transform reset; attention session change; gallery open/focus; text link press
-- zoomIn/Out; angleAt → PlacementLinear; colour grade on ImageController
+- **ImageController::setImageModeNavigationEnabled / setGalleryReturnAvailable**
+  — session-nav flags + hover clear + viewport update (ImageView thin routers)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -24,11 +23,11 @@ appearance load/apply / paint / status composition / pan shell
 
 ### Next thinning candidates
 - appearance apply/commit residual
-- status text composition
-- paint / pan / remaining input shell
+- status text composition (HudModel already pure)
+- wheel zoom / pan shell
 - setViewMode body (mode shell by design)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2526.1-own-link-hover-select-all-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2527.1-fix-ensureVisible-own-session-nav-7d823d8.bundle HEAD
 ```
