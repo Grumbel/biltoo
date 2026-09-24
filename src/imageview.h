@@ -248,8 +248,23 @@ public:
      * Pack-order host mutators live in imageview_host_pipeline.inc
      * (pathOrderClear / SetOrder / currentPackOrder; AppendRow is private).
      */
-    ItemWorld &itemWorld() override { return m_itemWorld; }
-    const ItemWorld &itemWorld() const override { return m_itemWorld; }
+    ItemWorld &itemWorld() override
+    {
+        return m_sharedItemWorld ? *m_sharedItemWorld : m_itemWorld;
+    }
+    const ItemWorld &itemWorld() const override
+    {
+        return m_sharedItemWorld ? *m_sharedItemWorld : m_itemWorld;
+    }
+    /**
+     * Dual ImageView Stage 2c: share durable appearance across hosts.
+     * @p world non-null — host methods use that world (must already bind
+     * path/size books). @p world null — revert to this view's owned ItemWorld.
+     * Does not transfer ownership.
+     */
+    void bindSharedItemWorld(ItemWorld *world) { m_sharedItemWorld = world; }
+    /** Non-null when this host is using an external shared ItemWorld. */
+    ItemWorld *sharedItemWorld() const { return m_sharedItemWorld; }
     /**
      * Bind SessionDocument seed book (required before hostSeedBook()).
      * Content appearance is ItemWorld sparse tables — not this store.

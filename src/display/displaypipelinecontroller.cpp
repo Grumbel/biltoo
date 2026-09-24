@@ -46,6 +46,14 @@
 DisplayPipelineController::DisplayPipelineController(DisplayPipelineHost *host)
     : m_host(host)
 {
+    Q_ASSERT(m_host);
+}
+
+void DisplayPipelineController::setActiveHost(DisplayPipelineHost *host)
+{
+    ASSERT_GUI_THREAD();
+    Q_ASSERT(host);
+    m_host = host;
 }
 
 DisplayPipelineController::~DisplayPipelineController()

@@ -136,10 +136,13 @@
     /** Unbound content + placement (bound content is ItemWorld sparse). */
     PathItemStateBook m_pathStateBook;
     /**
-     * Phase 7 Stage 0: non-owning facade over appearance + path + size books.
+     * Phase 7 Stage 0: owned facade over appearance + path + size books.
      * Bound in the ImageView ctor (path/size) and bindSessionSeedBook.
+     * Dual ImageView: optional external world via bindSharedItemWorld().
      */
     ItemWorld m_itemWorld;
+    /** Non-owning; when set, itemWorld() returns *m_sharedItemWorld. */
+    ItemWorld *m_sharedItemWorld = nullptr;
     SessionSeedBook *m_seedBook = nullptr;
     /** Non-owning SessionDocument (MainWindow); preferred for membership queries. */
     SessionDocument *m_sessionDoc = nullptr;

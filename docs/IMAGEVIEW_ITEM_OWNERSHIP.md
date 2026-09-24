@@ -248,11 +248,32 @@ and sticky pan stay per-surface.
 - Constructor is `DisplayPipelineController(DisplayPipelineHost *host)` only.
 - ImageView still constructs the pipeline with `this` (implements host).
 
-### Stage 2c (next)
+### Stage 2c.0 (landed — biltoo-2455)
 
-- Active-host / dual-pane product shell (two hosts sharing ItemWorld + optional
-  shared or per-surface pipeline).
-- PreferCache / focus surface rules when two panes show different SessionImageIds.
+Infrastructure only (no dual-pane product UI yet):
+
+- `DisplayPipelineController::setActiveHost(DisplayPipelineHost *)` — GUI-thread
+  switch of the host that owns live items / viewport for PreferCache installs
+  and tile coordinator queries. Does **not** reparent QTimers (they stay on the
+  `hostObject()` used at creation time).
+- `ImageView::bindSharedItemWorld(ItemWorld *)` — non-owning share of durable
+  appearance across hosts. Null reverts to the view-owned `ItemWorld`. External
+  world must already have path/size books bound by its owner.
+- Single-pane path unchanged: ctor still constructs pipeline with `this`;
+  `itemWorld()` returns the owned world when no share is bound.
+
+### Stage 2c (remaining)
+
+- Dual-pane product shell (two hosts, shared ItemWorld, optional shared pipeline
+  with `setActiveHost` on focus change).
+- PreferCache / focus surface rules when two panes show different SessionImageIds:
+  - PreferCache climb targets the **active** host's primary/target item.
+  - Inactive host may still paint already-installed samples; do not run a second
+    parallel PreferCache for the same SessionImageId.
+  - Tile coordinator viewport is the active host's `mapViewportToScene()`.
+  - Framing / sticky pan remain **per host** (ViewFraming on each surface).
+- QTimer / async lifetime: either reparent timers on host switch, or own them on
+  a neutral shell QObject so they outlive focus changes.
 
 ### Residual on single ImageView (ok to keep)
 

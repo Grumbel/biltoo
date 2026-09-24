@@ -39,7 +39,18 @@ public:
     explicit DisplayPipelineController(DisplayPipelineHost *host);
     ~DisplayPipelineController();
 
+    /**
+     * Surface that currently owns live items / viewport for install + tile ticks.
+     * Dual ImageView (Stage 2c): switch which host receives PreferCache installs
+     * and coordinator viewport queries. Does not reparent QTimers (those stay on
+     * the hostObject() used when the timer was created).
+     */
     DisplayPipelineHost *host() const { return m_host; }
+    /**
+     * Set the active DisplayPipelineHost (GUI thread). @p host must be non-null
+     * and remain alive for the rest of the pipeline's use of it.
+     */
+    void setActiveHost(DisplayPipelineHost *host);
 
     SessionLoadGate &loadGate() { return m_loadGate; }
     const SessionLoadGate &loadGate() const { return m_loadGate; }
