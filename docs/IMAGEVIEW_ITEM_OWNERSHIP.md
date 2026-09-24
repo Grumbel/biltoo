@@ -341,3 +341,5 @@ Product shell (minimal):
 - [TILE_LOD.md](TILE_LOD.md) / [TILE_LOAD_COORDINATOR.md](TILE_LOAD_COORDINATOR.md)
 - [RELEASE_0.2.0.md](RELEASE_0.2.0.md) §4.8 (0.3 dual ImageView depends on this)
 - `src/display/displaypipelinehost.h`
+
+10. **biltoo-2467:** Image-mode framing/sticky pan behaviour on ImageController; ViewFraming bag stays on host.

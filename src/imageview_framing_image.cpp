@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// View zoom, fit/fill, sticky zoom/pan, and image-mode framing.
+// View zoom, fit/fill, sticky zoom enable, zoom-region. Image-mode framing: ImageController.
 
 #include "imageview.h"
 #include "util/biltoo_thread.h"
@@ -52,156 +52,6 @@ static bool itemHasReliableFrameSize(const ImageItem *item)
     return s.width() > 8 && s.height() > 8;
 }
 
-void ImageView::captureStickyPanAnchor(ImageItem *item)
-{
-    // Sample scale + pan when leaving an image so free navigation (and mode
-    // leave/enter) can keep the same zoom and relative position.
-    if (!item || !viewport() || !m_scene) {
-        return;
-    }
-    if (!m_items.contains(item) || item->scene() != m_scene) {
-        return;
-    }
-    // Do not clobber a good preserved scale with a 1×1-placeholder frame.
-    if (!itemHasReliableFrameSize(item)) {
-        return;
-    }
-    const qreal sx = ViewTransform::scaleFrom(transform());
-    if (!qIsFinite(sx) || sx <= 1e-6) {
-        return;
-    }
-    // Refuse absurd scales (fit-on-1×1 residue or transform corruption).
-    if (sx > 50.0) {
-        return;
-    }
-    m_framing.clearStickyPan();
-    m_framing.clearPreservedViewScale();
-    m_framing.setPreservedViewScale(sx);
-    const QRectF r = item->sceneBoundingRect();
-    if (r.width() < 1.0 || r.height() < 1.0) {
-        return;
-    }
-    const QPointF vc = mapToScene(viewport()->rect().center());
-    m_framing.setStickyPanFromScene(vc, r);
-}
-
-
-void ImageView::restoreStickyPanAnchor(ImageItem *item)
-{
-    if (!m_framing.hasStickyPan() || !item || !m_scene || !viewport()) {
-        return;
-    }
-    if (!m_items.contains(item) || item->scene() != m_scene) {
-        return;
-    }
-    const QRectF r = item->sceneBoundingRect();
-    if (r.width() < 1.0 || r.height() < 1.0) {
-        return;
-    }
-    centerOn(m_framing.sceneFromStickyPan(r));
-}
-
-
-void ImageView::applyImageModeFraming(ImageItem *item)
-{
-    GUI_BUDGET("ImageView::applyImageModeFraming");
-    if (!item || !isImageMode()) {
-        return;
-    }
-    // Defer framing until the item has a real layout size. Fitting a 1×1
-    // placeholder yields multi-thousand-percent view scale and poisons
-    // preserved zoom for later images.
-    if (!itemHasReliableFrameSize(item)) {
-        return;
-    }
-    if (m_framing.isStickyZoomEnabled()) {
-        // Fit: unique home pose (centred). Fill / 1:1: frame, then best-effort
-        // restore viewport centre in image-normalized coords (prev/next compare).
-        // Always restore *after* setSceneRect/refreshScrollBarGeometry — those
-        // often reset QAbstractScrollArea scroll position.
-        switch (m_framing.currentStickyZoomKind()) {
-        case StickyZoomKind::Fill:
-            m_framing.setFillMode();
-            fitItem(item, Qt::KeepAspectRatioByExpanding);
-            break;
-        case StickyZoomKind::Actual:
-            m_framing.clearFitFill();
-            {
-                ItemComponents::Placement pl = item->placement();
-                pl.scale = 1.0;
-                pl.scaleY = 1.0;
-                item->applyPlacement(pl);
-            }
-            resetTransform();
-            centerOn(item);
-            break;
-        case StickyZoomKind::Fit:
-        default:
-            m_framing.setFitOnly();
-            fitItem(item, Qt::KeepAspectRatio);
-            break;
-        }
-        syncImageModeSceneRect(item);
-        refreshScrollBarGeometry();
-        if (!m_framing.isStickyFit()) {
-            restoreStickyPanAnchor(item);
-            // Scroll ranges often settle after this returns — restore again.
-            // QPointer so a destroy mid-navigation cancels the callback safely.
-            const QPointer<ImageView> guard(this);
-            QTimer::singleShot(0, this, [guard]() {
-                ImageView *const view = guard.data();
-                if (!view || !view->m_framing.isStickyZoomEnabled()
-                    || view->m_framing.isStickyFit()
-                    || !view->m_scene || !view->viewport()) {
-                    return;
-                }
-                if (ImageItem *cur = view->targetItem()) {
-                    view->restoreStickyPanAnchor(cur);
-                }
-            });
-        }
-        return;
-    }
-    // Non-sticky: keep the previous view scale + relative pan (prev/next at the
-    // same zoom). Cold open with no prior capture still defaults to Fit.
-    if (m_framing.hasPreservedViewScale()) {
-        const qreal sx = m_framing.currentPreservedViewScale();
-        if (!qIsFinite(sx) || sx <= 1e-6 || sx > 50.0) {
-            m_framing.clearPreservedViewScale();
-            m_framing.setFitOnly();
-            fitItem(item, Qt::KeepAspectRatio);
-            return;
-        }
-        m_framing.clearFitFill();
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        resetTransform();
-        scale(sx, sx);
-        syncImageModeSceneRect(item);
-        refreshScrollBarGeometry();
-        restoreStickyPanAnchor(item);
-        const QPointer<ImageView> guard(this);
-        QTimer::singleShot(0, this, [guard]() {
-            ImageView *const view = guard.data();
-            if (!view || view->m_framing.isStickyZoomEnabled() || !view->m_scene
-                || !view->viewport()) {
-                return;
-            }
-            if (ImageItem *cur = view->targetItem()) {
-                view->restoreStickyPanAnchor(cur);
-            }
-        });
-        return;
-    }
-    m_framing.setFitOnly();
-    fitItem(item, Qt::KeepAspectRatio);
-}
-
-
 void ImageView::cancelZoomRegion()
 {
     m_zoomRegion.disarm();
@@ -213,74 +63,6 @@ void ImageView::cancelZoomRegion()
 }
 
 
-
-
-void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
-                                                     const QSize &before,
-                                                     const QSize &after)
-{
-    if (!item || !viewport()) {
-        return;
-    }
-    if (!after.isValid() || after.width() < 1 || after.height() < 1) {
-        return;
-    }
-    const bool beforeOk = before.isValid() && before.width() > 1 && before.height() > 1;
-    const bool aspectShifted = !beforeOk || ContentXform::aspectChanged(before, after);
-    if (aspectShifted) {
-        if (m_slideshow.hud().isProgressActive() && m_slideshow.settings().isMotionOff()) {
-            m_slideshow.applySlideshowZoomFraming(item);
-        } else if (!m_slideshow.hud().isProgressActive()) {
-            // Sticky or preserved free-zoom: full framing path. fitItem alone
-            // would drop a leave/enter captured scale after a 1×1 placeholder.
-            if (m_framing.isStickyZoomEnabled() || m_framing.hasPreservedViewScale()) {
-                applyImageModeFraming(item);
-            } else {
-                fitItem(item, currentFitAspectMode());
-            }
-        }
-    } else if (beforeOk && before != after && !m_slideshow.hud().isProgressActive()) {
-        // Same aspect, larger/smaller logical size: scale the view so the image
-        // keeps the same on-screen footprint (soft→native must not zoom).
-        // Slideshow pure-phase paints via m_slideshow.paintMotionCover(logical size) and
-        // does not use the view matrix for framing.
-        const qreal factor = ContentXform::footprintScaleFactor(before, after);
-        if (factor > 0.0 && qIsFinite(factor) && !qFuzzyCompare(factor, 1.0)) {
-            const QPointF sceneCenter = mapToScene(viewport()->rect().center());
-            const QGraphicsView::ViewportAnchor saved =
-                transformationAnchor();
-            setTransformationAnchor(QGraphicsView::NoAnchor);
-            // Scale about the viewport centre in scene space.
-            QTransform t = transform();
-            t.translate(sceneCenter.x(), sceneCenter.y());
-            t.scale(factor, factor);
-            t.translate(-sceneCenter.x(), -sceneCenter.y());
-            setTransform(t, false);
-            setTransformationAnchor(saved);
-            centerOn(sceneCenter);
-        }
-    }
-    syncImageModeSceneRect(item);
-}
-
-
-void ImageView::syncImageModeSceneRect(ImageItem *item)
-{
-    if (!item || !m_scene || !isImageMode()) {
-        return;
-    }
-    // Tight margin only: Image mode pans the view when zoomed past fit, not a
-    // free Workspace-style halo. Stale larger/null rects (mode switch, resize
-    // fitItem without this, provisional size race) cause intermittent free or
-    // asymmetric scroll range.
-    const QRectF bounds = item->sceneBoundingRect().adjusted(-8, -8, 8, 8);
-    if (!bounds.isValid() || bounds.isEmpty()) {
-        return;
-    }
-    if (m_scene->sceneRect() != bounds) {
-        m_scene->setSceneRect(bounds);
-    }
-}
 
 
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
@@ -577,4 +359,34 @@ void ImageView::armZoomRegion()
     setCursor(Qt::CrossCursor);
     emit statusChanged();
     viewport()->update();
+}
+
+
+// --- Image-mode framing: owned by ImageController (thin host forwards) ---
+
+void ImageView::captureStickyPanAnchor(ImageItem *item)
+{
+    m_image.captureStickyPanAnchor(item);
+}
+
+void ImageView::restoreStickyPanAnchor(ImageItem *item)
+{
+    m_image.restoreStickyPanAnchor(item);
+}
+
+void ImageView::applyImageModeFraming(ImageItem *item)
+{
+    m_image.applyImageModeFraming(item);
+}
+
+void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
+                                                     const QSize &before,
+                                                     const QSize &after)
+{
+    m_image.preserveImageViewOnLogicalSizeChange(item, before, after);
+}
+
+void ImageView::syncImageModeSceneRect(ImageItem *item)
+{
+    m_image.syncImageModeSceneRect(item);
 }

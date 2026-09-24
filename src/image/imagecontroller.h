@@ -7,6 +7,7 @@
 #include <QString>
 
 class ImageView;
+class ImageItem;
 class QKeyEvent;
 class QMouseEvent;
 
@@ -40,6 +41,15 @@ public:
     void reloadFromDisk();
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
+
+    // Image-mode framing / sticky pan (ViewFraming state remains on the host).
+    void captureStickyPanAnchor(ImageItem *item);
+    void restoreStickyPanAnchor(ImageItem *item);
+    void applyImageModeFraming(ImageItem *item);
+    void preserveImageViewOnLogicalSizeChange(ImageItem *item,
+                                              const QSize &before,
+                                              const QSize &after);
+    void syncImageModeSceneRect(ImageItem *item);
 
 private:
     ImageView *m_view = nullptr;

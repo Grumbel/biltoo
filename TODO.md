@@ -2,19 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2466.1-own-workspace-chrome** (base `7d823d8`).
+**Tip: biltoo-2467.1-own-image-mode-framing** (base `7d823d8`).
 
 ### Ownership transfer
-- **2464:** group transform → WorkspaceController
-- **2465:** page guide → WorkspaceController
-- **2466:** Workspace chrome input + `ItemInteractSession` → WorkspaceController
-  (`workspace_chrome.cpp`). ImageView input router calls `m_workspace.try*`.
+- **2464–2466:** Workspace group / page-guide / chrome + ItemInteract
+- **2467:** Image-mode framing + sticky pan capture/restore → `ImageController`
+  (`imagecontroller_framing.cpp`). ImageView keeps thin host forwards + zoom chrome.
 
 ### Next
-- paint collaborator / size-book (optional)
+- size-book coordinator (optional)
 - Dual PreferCache coordination (optional)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2466.1-own-workspace-chrome-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2467.1-own-image-mode-framing-7d823d8.bundle HEAD
 ```
