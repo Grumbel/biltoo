@@ -2,20 +2,17 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2587.1-workspace-canvas-place** (base `7d823d8`).
+**Tip: biltoo-2588.1-reset-content-appearance** (base `7d823d8`).
 
 ### Ownership transfer
-- **WorkspaceController** owns multi-item canvas add/place:
-  - `addImageForSession`
-  - `placeOrMoveImageAt`
-- New TU: `workspace/workspace_canvas_place.cpp`
-- `hostPathOrderAppendRow` for Explicit pathOrder growth from place/add
-- ImageView public APIs are thin routers
+- **ImageController::resetContentAppearanceForTargets** — clear XDG/sparse content,
+  identity live meta, restore native layout size, reinstall mode pixels, filmstrip emit
+- ImageView public API is a thin router
 
 ### Prior
+**2587.1** Workspace owns addImageForSession + placeOrMoveImageAt  
 **2586.1** Workspace owns LoadAdd footprint + placement  
-**2585.1** Pipeline owns applyProbedImageSize  
-**2584.1** Pipeline owns blocking export display materialize
+**2585.1** Pipeline owns applyProbedImageSize
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -33,10 +30,10 @@ status host orchestration; setHudVisible still syncs slideshow timer
 ### Next thinning candidates
 - setViewMode body remains mode shell
 - contentLayoutSize (SessionAppearance + size book host gather)
-- resetContentAppearanceForTargets (appearance host residual)
+- persistSessionAppearanceSlot / captureState (appearance host residual)
 - slideshow coupling on setHudVisible
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2587.1-workspace-canvas-place-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2588.1-reset-content-appearance-7d823d8.bundle HEAD
 ```

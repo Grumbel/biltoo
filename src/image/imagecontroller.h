@@ -82,6 +82,12 @@ public:
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
     void rotateLeft();
     void rotateRight();
+    /**
+     * Reset content ops (crop/bake/color/XDG) on transform targets; reinstall
+     * mode-appropriate identity pixels. ImageView public API is a thin router.
+     * @return number of items reset.
+     */
+    int resetContentAppearanceForTargets();
 
     /** Image-mode framing / sticky pan (per-view; dual-safe). */
     ViewFraming &framing() { return m_framing; }
