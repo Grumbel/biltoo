@@ -11,20 +11,12 @@
 
 void ImageView::setStickyZoomEnabled(bool on)
 {
-    if (!m_image.framing().setStickyZoomEnabled(on)) {
-        return;
-    }
-    emit stickyZoomChanged();
-    emit statusChanged();
+    m_image.setStickyZoomEnabled(on);
 }
 
 void ImageView::releaseStickyZoom()
 {
-    if (!m_image.framing().setStickyZoomEnabled(false)) {
-        return;
-    }
-    emit stickyZoomChanged();
-    emit statusChanged();
+    m_image.releaseStickyZoom();
 }
 
 void ImageView::cancelZoomRegion()

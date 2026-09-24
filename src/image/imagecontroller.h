@@ -89,6 +89,14 @@ public:
 
     void captureStickyPanAnchor(ImageItem *item);
     void restoreStickyPanAnchor(ImageItem *item);
+    /**
+     * Image leave: capture sticky pan/zoom before underlay destroy when
+     * @p previousMode is Image and live tiles exist. Called from setViewMode.
+     */
+    void maybeCaptureStickyPanOnLeave(int previousMode);
+    /** Sticky zoom preference + ImageView stickyZoomChanged / statusChanged. */
+    void setStickyZoomEnabled(bool on);
+    void releaseStickyZoom();
     void applyImageModeFraming(ImageItem *item);
     /** Fit item in view (Image-mode layout + crop-draft rules). */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode);

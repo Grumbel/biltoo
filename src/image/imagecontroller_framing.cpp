@@ -12,6 +12,7 @@
 #include "item/itemcomponents.h"
 #include "view/viewtransform.h"
 #include "view/viewframing.h"
+#include "view/viewmodeflags.h"
 
 #include <QScrollBar>
 #include "image/toolpolicy.h"
@@ -40,6 +41,34 @@ static bool itemHasReliableFrameSize(const ImageItem *item)
     const QSize s = item->imageSize();
     // QSize(1,1) placeholders produced ~5000% view scale via fitInView.
     return s.width() > 8 && s.height() > 8;
+}
+
+void ImageController::maybeCaptureStickyPanOnLeave(int previousMode)
+{
+    if (!m_view
+        || !ViewModeFlags::shouldCaptureStickyPanOnLeave(
+            previousMode, !m_view->liveItems().isEmpty())) {
+        return;
+    }
+    if (ImageItem *cur = m_view->targetItem()) {
+        captureStickyPanAnchor(cur);
+    } else {
+        captureStickyPanAnchor(m_view->liveItems().first());
+    }
+}
+
+void ImageController::setStickyZoomEnabled(bool on)
+{
+    if (!m_framing.setStickyZoomEnabled(on)) {
+        return;
+    }
+    emit m_view->stickyZoomChanged();
+    emit m_view->statusChanged();
+}
+
+void ImageController::releaseStickyZoom()
+{
+    setStickyZoomEnabled(false);
 }
 
 void ImageController::captureStickyPanAnchor(ImageItem *item)

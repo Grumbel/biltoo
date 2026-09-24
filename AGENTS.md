@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2579.1-hud-appearance-centre-progress**.
-Latest tip: **biltoo-2579** (+ thumtoo-338). HudChrome appearance mutators; shell owns centre progress.
+Latest agent handoff: **TODO.md → biltoo-2580.1-image-sticky-pan-zoom**.
+Latest tip: **biltoo-2580** (+ thumtoo-338). ImageController owns sticky pan leave + sticky zoom.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
