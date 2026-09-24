@@ -9,6 +9,14 @@
 - Residual ImageView `clearDecodedPixels` call sites fixed (appearance_commit, canvas)
 - Host surface public; crop/gallery no longer friends
 
+### Verification (2026-09-24, agent session)
+- Static: only `friend class DisplayPipelineController` on ImageItem
+- Static: all `item->clearDecodedPixels` / `setSourceImage*` / `setIntrinsicSize` call sites are inside `displaypipelinecontroller.cpp`
+- Static: ImageView routes via `clearItemDecodedPixels` → `hostClearDecodedPixels`; crop/gallery/workspace use view hosts only
+- Static: residual sites in `imageview_appearance_commit.cpp` and `imageview_canvas.cpp` use `clearItemDecodedPixels` (not private mutator)
+- Docs: `docs/IMAGEVIEW_ITEM_OWNERSHIP.md` matches code (extraction backlog 1–3b marked Done)
+- Full `nix build` / characterization **not run** in this sandbox (no Nix store)
+
 ### Next (product)
 - Dual ImageView (0.3) — separate track
 
