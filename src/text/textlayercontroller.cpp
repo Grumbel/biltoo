@@ -445,3 +445,47 @@ bool TextLayerController::tryMousePressLink(QMouseEvent *event)
     event->accept();
     return true;
 }
+
+
+void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
+{
+    // Link hover: pointing hand + status tip (Image mode page docs).
+    if (m_view->isImageMode() && !m_view->hostCrop().active()
+        && !m_view->hostAttention().active() && !session().isRubberbanding()
+        && !m_view->hostChrome().isPanning() && event->buttons() == Qt::NoButton
+        && PagePath::isPageRef(m_view->hostImage().classicPath())) {
+        if (!session().hasLayerRegions()
+            || session().layerPathRef() != m_view->hostImage().classicPath()) {
+            const ThumtooCache::PageTextLayer cached =
+                ThumtooCache::cachedPageTextLayer(m_view->hostImage().classicPath());
+            if (!cached.regions.isEmpty()) {
+                session().setLayerContent(cached, m_view->hostImage().classicPath());
+            }
+        }
+        int page = 0;
+        QString uri;
+        QString tip;
+        if (hitLinkAt(event->pos(), &page, &uri)) {
+            m_view->setCursor(Qt::PointingHandCursor);
+            if (page > 0) {
+                tip = m_view->tr("Link → page %1").arg(page);
+            }
+            if (!uri.isEmpty()) {
+                tip = tip.isEmpty() ? uri : (tip + QStringLiteral(" · ") + uri);
+            }
+            if (tip.isEmpty()) {
+                tip = m_view->tr("Link");
+            }
+        } else if (m_view->hostHoverEdge() == ImageView::EdgeZone::None) {
+            m_view->setCursor(m_view->hostChrome().isImageModeLeftDragPan()
+                                  ? Qt::OpenHandCursor
+                                  : Qt::ArrowCursor);
+        }
+        if (session().setLinkHoverTip(tip)) {
+            emit m_view->statusChanged();
+        }
+    } else if (session().hasLinkHoverTip() && event->buttons() == Qt::NoButton) {
+        session().clearLinkHoverTip();
+        emit m_view->statusChanged();
+    }
+}

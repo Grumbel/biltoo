@@ -75,44 +75,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
     QGraphicsView::mousePressEvent(event);
 }
-void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
-{
-    // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && !m_textCtrl.session().isRubberbanding()
-        && !m_shell.viewport().isPanning() && event->buttons() == Qt::NoButton
-        && PagePath::isPageRef(m_image.classicPath())) {
-        if (!m_textCtrl.session().hasLayerRegions() || m_textCtrl.session().layerPathRef() != m_image.classicPath()) {
-            const ThumtooCache::PageTextLayer cached =
-                ThumtooCache::cachedPageTextLayer(m_image.classicPath());
-            if (!cached.regions.isEmpty()) {
-                m_textCtrl.session().setLayerContent(cached, m_image.classicPath());
-            }
-        }
-        int page = 0;
-        QString uri;
-        QString tip;
-        if (hitTextLinkAt(event->pos(), &page, &uri)) {
-            setCursor(Qt::PointingHandCursor);
-            if (page > 0) {
-                tip = tr("Link → page %1").arg(page);
-            }
-            if (!uri.isEmpty()) {
-                tip = tip.isEmpty() ? uri : (tip + QStringLiteral(" · ") + uri);
-            }
-            if (tip.isEmpty()) {
-                tip = tr("Link");
-            }
-        } else if (hostHoverEdge() == EdgeZone::None) {
-            setCursor(m_shell.viewport().isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
-        }
-        if (m_textCtrl.session().setLinkHoverTip(tip)) {
-            emit statusChanged();
-        }
-    } else if (m_textCtrl.session().hasLinkHoverTip() && event->buttons() == Qt::NoButton) {
-        m_textCtrl.session().clearLinkHoverTip();
-        emit statusChanged();
-    }
-}
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
 {
     if (!m_shell.viewport().isPanning()) {
@@ -148,7 +110,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     if (tryMouseMoveTextRubber(event)) {
         return;
     }
-    updateMouseMoveLinkHover(event);
+    m_textCtrl.updateMouseMoveLinkHover(event);
     if (m_attentionCtrl.tryMouseMoveAttention(event)
         || m_cropCtrl.tryMouseMoveCropDrag(event)
         || tryMouseMovePan(event)
@@ -242,19 +204,6 @@ bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 {
     return m_image.tryKeyPressZoomRegion(event);
 }
-bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
-{
-    // Gallery / Workspace: Ctrl+A selects every live tile (standard multi-select).
-    if (!(isGalleryMode() || isWorkspaceMode())
-        || event->key() != Qt::Key_A
-        || !(event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
-        || (event->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))) {
-        return false;
-    }
-    selectAllCanvasItems();
-    event->accept();
-    return true;
-}
 
 
 
@@ -264,7 +213,7 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     if (m_attentionCtrl.tryKeyPressAttention(event)
         || m_cropCtrl.tryKeyPressCrop(event)
         || tryKeyPressZoomRegion(event)
-        || tryKeyPressSelectAll(event)
+        || m_workspace.tryKeyPressSelectAll(event)
         || m_image.tryKeyPressNavigate(event)
         || m_gallery.tryKeyPressGallery(event)
         || m_workspace.tryKeyPressShear(event)

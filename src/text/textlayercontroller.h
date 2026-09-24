@@ -44,6 +44,8 @@ public:
     bool tryMouseReleaseRubber(QMouseEvent *event);
     /** Image-mode page-link activation (left click, no modifiers). */
     bool tryMousePressLink(QMouseEvent *event);
+    /** Image-mode page-link hover tip + cursor (no-button move). */
+    void updateMouseMoveLinkHover(QMouseEvent *event);
     /** Map a page text region bbox into content-display image coords. */
     QRectF regionImageRect(const ThumtooCache::TextRegion &region) const;
 

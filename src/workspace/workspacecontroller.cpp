@@ -582,6 +582,20 @@ bool WorkspaceController::tryKeyPressShear(QKeyEvent *event)
     return true;
 }
 
+bool WorkspaceController::tryKeyPressSelectAll(QKeyEvent *event)
+{
+    // Gallery / Workspace: Ctrl+A selects every live tile (standard multi-select).
+    if (!(m_view->isGalleryMode() || m_view->isWorkspaceMode())
+        || event->key() != Qt::Key_A
+        || !(event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
+        || (event->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))) {
+        return false;
+    }
+    selectAllCanvasItems();
+    event->accept();
+    return true;
+}
+
 
 // --- Workspace selection pack layout ---
 

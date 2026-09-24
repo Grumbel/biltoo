@@ -67,6 +67,8 @@ public:
     bool tryMousePressSelect(QMouseEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
     bool tryKeyPressShear(QKeyEvent *event);
+    /** Gallery / Workspace: Ctrl/Cmd+A selects every live tile. */
+    bool tryKeyPressSelectAll(QKeyEvent *event);
     bool layoutItems(const GalleryLayout::Params &userParams,
                      const QList<ImageItem *> &itemsIn = {});
     /** ImageView::setLayoutMode(FreeForm) body — Workspace only. */

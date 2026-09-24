@@ -192,7 +192,6 @@
 
     // mouseMoveEvent phases
     bool tryMouseMoveTextRubber(QMouseEvent *event);
-    void updateMouseMoveLinkHover(QMouseEvent *event);
     bool tryMouseMovePan(QMouseEvent *event);
     bool tryMouseMoveZoomRegion(QMouseEvent *event);
     bool tryMouseMovePageGuide(QMouseEvent *event);
@@ -211,7 +210,6 @@
 
     // keyPressEvent phases
     bool tryKeyPressZoomRegion(QKeyEvent *event);
-    bool tryKeyPressSelectAll(QKeyEvent *event);
 
     // wheelEvent phases
     void wheelZoomViewAboutCursor(QWheelEvent *event);
