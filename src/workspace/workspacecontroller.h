@@ -20,6 +20,7 @@
 #include "workspace/grouptransformsession.h"
 #include "item/iteminteractsession.h"
 #include "workspace/pageguidesession.h"
+#include "session/sessionbindbook.h"
 
 class ImageView;
 class ImageItem;
@@ -165,6 +166,17 @@ public:
     void prunePathOrdersAfterSessionRemove(const QStringList &removedPaths);
     void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
                                           const QPointF &keptCenter, int scrollH, int scrollV);
+    /**
+     * LoadAdd / drop: install full pixels while preserving free-form footprint.
+     * ImageView host override is a thin router (DisplayPipelineHost).
+     */
+    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
+    /** Explicit drop pose from PendingSessionBind.scenePos. */
+    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
+    /** Place a newly created LoadAdd tile (Gallery neutral / drop / durable / empty). */
+    void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
+                             bool haveBound, const PendingSessionBind &bound);
+
     QList<ImageItem *> collectItemsForSessionId(SessionImageId sessionId) const;
     QStringList destroySessionIdItems(const QList<ImageItem *> &doomed);
     /** Teardown live/stash tile (pipeline bags, scene, undo). */

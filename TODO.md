@@ -2,18 +2,21 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2585.1-probed-size-pipeline** (base `7d823d8`).
+**Tip: biltoo-2586.1-workspace-load-place** (base `7d823d8`).
 
 ### Ownership transfer
-- **DisplayPipelineController::applyProbedImageSize** — live-tile layout size from
-  probe, gallery cell fixup, Image framing, pack, slideshow atlas
-- ImageView::applyProbedImageSize is a thin router
-- Slimmed `imageview_modes.cpp` includes (only mode shell needs)
+- **WorkspaceController** owns LoadAdd / drop placement:
+  - `installFullPreservingWorkspaceFootprint`
+  - `applyPendingBindScenePos`
+  - `placeNewLoadAddItem`
+- New TU: `workspace/workspace_load_place.cpp`
+- ImageView session-bind host methods are thin routers
+- `takePendingSessionBindForNewItem` / `purgeSatisfiedPendingBinds` stay (session book)
 
 ### Prior
+**2585.1** Pipeline owns applyProbedImageSize; modes includes slimmed  
 **2584.1** Pipeline owns blocking export display materialize  
-**2583.1** Fix hostCentreProgress dup; pad colour + edit marks on chrome  
-**2582.1** Mode controllers own pending-decode path counts
+**2583.1** Fix hostCentreProgress dup; pad colour + edit marks on chrome
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -30,11 +33,11 @@ status host orchestration; setHudVisible still syncs slideshow timer
 
 ### Next thinning candidates
 - setViewMode body remains mode shell
-- public thin routers beyond materials (keep until dual/callers migrate)
-- slideshow coupling on setHudVisible (SlideshowController host)
-- placeOrMoveImageAt / addImageForSession (Workspace/session host residual)
+- placeOrMoveImageAt / addImageForSession (still large host residual)
+- contentLayoutSize (SessionAppearance + size book host gather)
+- slideshow coupling on setHudVisible
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2585.1-probed-size-pipeline-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2586.1-workspace-load-place-7d823d8.bundle HEAD
 ```
