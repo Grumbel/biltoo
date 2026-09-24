@@ -151,6 +151,42 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 ~217 (exit target &lt;1000 lines, &lt;260 public). Further privatizations are optional
 polish; remaining public surface is largely host API for controllers/pipeline.
 
+
+## Dual ImageView (0.3) prerequisites
+
+Prerequisite for [RELEASE_0.2.0.md](RELEASE_0.2.0.md) §4.8: two focused Image-mode
+surfaces **share** pipeline + ItemWorld rather than forking the façade.
+
+### Already satisfied (Phase 5)
+
+| Prerequisite | Status |
+|--------------|--------|
+| Sole ImageItem pixel friend = DisplayPipelineController | Done |
+| No ImageView pixel thin-forward layer | Done (bake + rematerialize TUs gone) |
+| Controllers install via `hostDisplayPipeline()` | Done |
+| Content bake on pipeline | Done |
+| Intrinsic sole writer `hostSetIntrinsicSize` | Done |
+| ItemWorld as sparse durable appearance | Done (Stage 4b+) |
+| `imageview.h` / public surface within Tier 0 exit | Done (~693 lines / ~217 public) |
+
+### Still required for dual surface
+
+1. **Two live Image-mode canvases** without double-owning `m_items` / mode stashes —
+   likely one shell with two scene roots, or two thin views over shared controllers.
+2. **Shared** `DisplayPipelineController` + `ItemWorld` + session id book — not two
+   pipelines writing the same SessionImageId.
+3. **Focus / selection model** that can target left vs right without path-only
+   ambiguity (prefer SessionImageId).
+4. **Framing** per surface (`ViewFraming` / sticky pan) independent while content
+   bake remains session-global.
+5. **Do not** reintroduce ImageView pixel mutator friendship or parallel install paths.
+
+### Residual on single ImageView (ok to keep)
+
+- `applyInteractiveColorGrade` live-grade + filmstrip emit (view policy / signals)
+- Bake host helpers (`captureContentBakeBeforeState`, undo push, persist) for pipeline
+- `rotateContentByQuarterTurns` (pipeline bake + this-surface framing)
+
 ## Related
 
 - [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md)
