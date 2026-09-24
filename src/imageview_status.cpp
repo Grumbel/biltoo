@@ -170,7 +170,7 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     int galleryNeed = 0;
     int galleryHave = 0;
     if (isGalleryMode()) {
-        galleryNeed = m_displayPipeline.galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        galleryNeed = m_displayPipeline->galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
         const GalleryDecodeState *st = m_galleryDecodeBook.get(item->path());
         galleryHave = st ? GalleryDecode::maxHave(st->have, edge) : edge;
     }
@@ -309,12 +309,12 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     if (have <= 0) {
         return tr("Loading…");
     }
-    const int need = m_displayPipeline.imageModeOnScreenNeedEdge();
+    const int need = m_displayPipeline->imageModeOnScreenNeedEdge();
     // Strict cover (DisplayEdgePolicy::coversEdge): have >= need.
     if (need > 0 && have >= need) {
         return {};
     }
-    if (m_displayPipeline.sampleCoversNativeLogical(path, item->displayImage())) {
+    if (m_displayPipeline->sampleCoversNativeLogical(path, item->displayImage())) {
         return {};
     }
     if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
@@ -322,7 +322,7 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
                                             : tr("Improving quality…");
     }
     if (ThumtooCache::isAvailable()) {
-        const int want = m_displayPipeline.cappedDisplayEdgeForPath(path, need);
+        const int want = m_displayPipeline->cappedDisplayEdgeForPath(path, need);
         if (ThumtooCache::isPixelsPending(path, want)
             || ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge)
             || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge)) {

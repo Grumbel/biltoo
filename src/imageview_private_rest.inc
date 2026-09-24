@@ -125,8 +125,14 @@
     WorkspaceController m_workspace;
     /** Image-mode collaborator (enter transition). */
     ImageController m_image;
-    /** Phase 6 Tier 5a: load gate, surfaces, tile LOD timers/coordinator. */
-    DisplayPipelineController m_displayPipeline;
+    /**
+     * Phase 6 Tier 5a / Dual Stage 2c.1: display pipeline.
+     * Default: owned unique_ptr. Dual pane: secondary host binds external via
+     * bindSharedDisplayPipeline() and releases ownership of m_ownedPipeline.
+     */
+    std::unique_ptr<DisplayPipelineController> m_ownedPipeline;
+    /** Non-null after ctor; points at owned or shared external pipeline. */
+    DisplayPipelineController *m_displayPipeline = nullptr;
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.

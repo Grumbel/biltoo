@@ -41,7 +41,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         // Gallery/Workspace: seed orient/flip/grade from path XDG when empty.
         // Image mode: ItemWorld only (session open already seeded).
         if (!isImageMode()) {
-            m_displayPipeline.seedSessionAppearanceFromState(sid, item->path());
+            m_displayPipeline->seedSessionAppearanceFromState(sid, item->path());
         }
         if (m_itemWorld.hasDurableAppearance(sid)) {
             // Always copy through sessionAppearanceValue so sparse Crop/Color/…
@@ -76,14 +76,14 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
         || app->contentQuarterTurns != 0;
     if (needsFullSource) {
-        const QImage full = m_displayPipeline.fullRasterForEdit(item->path());
+        const QImage full = m_displayPipeline->fullRasterForEdit(item->path());
         if (!full.isNull()) {
-            m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+            m_displayPipeline->installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                  sid);
             return;
         }
     }
-    m_displayPipeline.rematerializeItemContent(item, *app);
+    m_displayPipeline->rematerializeItemContent(item, *app);
 }
 
 

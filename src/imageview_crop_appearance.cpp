@@ -85,18 +85,18 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         return;
     }
     const QString path = item->path();
-    const QImage full = m_displayPipeline.fullRasterForEdit(path);
+    const QImage full = m_displayPipeline->fullRasterForEdit(path);
     if (!full.isNull() && !path.isEmpty()) {
         ImageCache::put(path, full);
     }
     CropSession::applyItemPlacementFromState(item, app, isImageMode());
     if (full.isNull()) {
-        m_displayPipeline.rematerializeItemContent(item, app);
-    } else if (!m_displayPipeline.tryRematerializeFromHost(item, app)) {
-        m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        m_displayPipeline->rematerializeItemContent(item, app);
+    } else if (!m_displayPipeline->tryRematerializeFromHost(item, app)) {
+        m_displayPipeline->installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
         if (!ContentXform::equal(itemAppliedContentXform(item),
                                  ContentXform::Value::fromState(app))) {
-            m_displayPipeline.rematerializeItemContent(item, app);
+            m_displayPipeline->rematerializeItemContent(item, app);
         }
     }
     m_cropCtrl.fitImageOrUpdateWorkspace(item);
@@ -110,7 +110,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     }
     // Undo/redo after-image: pixels are already content-baked — attach only.
     if (!src.isNull()) {
-        m_displayPipeline.attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
+        m_displayPipeline->attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
     } else {
         syncLiveContentMetaFromState(item, state);
     }

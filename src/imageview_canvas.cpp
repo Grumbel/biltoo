@@ -105,8 +105,8 @@ QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &pat
 void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 {
     for (ImageItem *item : doomed) {
-        m_displayPipeline.galleryDecodeResetPath(item->path());
-        m_displayPipeline.loadGate().removePendingWorkspacePath(item->path());
+        m_displayPipeline->galleryDecodeResetPath(item->path());
+        m_displayPipeline->loadGate().removePendingWorkspacePath(item->path());
         destroyCanvasItem(item);
     }
 }
@@ -276,8 +276,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 // alone can be applied in place via the central content path.
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
-                    m_displayPipeline.hostClearDecodedPixels(existing);
-                    m_displayPipeline.galleryDecodeResetPath(path);
+                    m_displayPipeline->hostClearDecodedPixels(existing);
+                    m_displayPipeline->galleryDecodeResetPath(path);
                     takePendingWorkspacePath(path);
 
                     PendingSessionBind b;
@@ -286,12 +286,12 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     b.index = i;
                     m_bindBook.append(b);
                     if (isGalleryMode()) {
-                        m_displayPipeline.scheduleGalleryDecode(path);
+                        m_displayPipeline->scheduleGalleryDecode(path);
                     } else {
-                        m_displayPipeline.scheduleImageLoad(path, LoadAdd);
+                        m_displayPipeline->scheduleImageLoad(path, LoadAdd);
                     }
                 } else if (SessionAppearance::hasContentAppearance(app)) {
-                    m_displayPipeline.rematerializeItemContent(existing, app);
+                    m_displayPipeline->rematerializeItemContent(existing, app);
                 }
             }
             continue;
@@ -312,7 +312,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             // (GalleryController::syncVirtualWindow). Do not create N items here.
             continue;
         } else {
-            m_displayPipeline.scheduleImageLoad(path, LoadAdd);
+            m_displayPipeline->scheduleImageLoad(path, LoadAdd);
         }
     }
     TtfpTrace::mark("after_createPlaceholders");

@@ -262,10 +262,31 @@ Infrastructure only (no dual-pane product UI yet):
 - Single-pane path unchanged: ctor still constructs pipeline with `this`;
   `itemWorld()` returns the owned world when no share is bound.
 
+### Stage 2c.1 (landed — biltoo-2456)
+
+Shared pipeline ownership plumbing (still no dual-pane product UI):
+
+- `DisplayPipelineController` is held as `unique_ptr` (`m_ownedPipeline`) with a
+  non-owning `m_displayPipeline *` used by all ImageView TUs.
+- `ImageView::bindSharedDisplayPipeline(pipeline)` releases the owned controller
+  and points at an external one (shell or primary host remains lifetime owner).
+- `hasSharedDisplayPipeline()` detects external bind.
+- Single-pane: ctor `make_unique<DisplayPipelineController>(this)` — behaviour
+  unchanged aside from pointer indirection.
+
+**Wire order for a future dual shell**
+
+1. Create primary `ImageView` (owns pipeline + ItemWorld by default).
+2. Create secondary `ImageView`.
+3. `secondary->bindSharedItemWorld(&primary->itemWorld())` — or both bind to a
+   shell-owned ItemWorld (preferred when path/size books are also shared).
+4. `secondary->bindSharedDisplayPipeline(&primary->hostDisplayPipeline())`.
+5. On pane focus: `pipeline.setActiveHost(focusedHost)`.
+
 ### Stage 2c (remaining)
 
-- Dual-pane product shell (two hosts, shared ItemWorld, optional shared pipeline
-  with `setActiveHost` on focus change).
+- Dual-pane product shell in MainWindow (two hosts, shared ItemWorld + pipeline,
+  focus → `setActiveHost`).
 - PreferCache / focus surface rules when two panes show different SessionImageIds:
   - PreferCache climb targets the **active** host's primary/target item.
   - Inactive host may still paint already-installed samples; do not run a second

@@ -35,7 +35,7 @@ QImage ImageView::blockingExportDisplayForItem(const ImageItem *item) const
         return {};
     }
     const QString path = item->path();
-    const WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, item->sessionId());
+    const WorkspaceItemState want = m_displayPipeline->wantAppearanceForItem(item, item->sessionId());
     const QImage fallback = item->displayImage();
 
     struct Shared {

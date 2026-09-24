@@ -45,8 +45,8 @@ int ImageView::pendingDecodeCount() const
 {
     // Remaining work overview — not concurrent inflight. Counting only inflight
     // flickered 1↔0 as each soft job finished before the next was claimed.
-    int n = m_displayPipeline.loadGate().pendingWorkspaceAddCount()
-          + m_displayPipeline.loadGate().pendingRestoreCount();
+    int n = m_displayPipeline->loadGate().pendingWorkspaceAddCount()
+          + m_displayPipeline->loadGate().pendingRestoreCount();
 
     if (isGalleryMode()) {
         // Gallery: blanks still need LQIP. LQIP-only is intentional underlay

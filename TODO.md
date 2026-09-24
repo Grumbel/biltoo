@@ -2,33 +2,33 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2455.1-stage-2c0-active-host-shared-itemworld** (base `7d823d8`).
+**Tip: biltoo-2456.1-stage-2c1-shared-pipeline-ptr** (base `7d823d8`).
 
 ### Ownership refactor status
 - **Phase 5 pixel/layout/bake: CLOSED**
-- **Dual ImageView Stage 0–2b: LANDED** — pipeline bound only to DisplayPipelineHost
-- **Stage 2c.0: LANDED** — `setActiveHost` + `bindSharedItemWorld` (no dual UI yet)
+- **Dual ImageView Stage 0–2b: LANDED**
+- **Stage 2c.0: LANDED** — `setActiveHost` + `bindSharedItemWorld`
+- **Stage 2c.1: LANDED** — pipeline `unique_ptr` + `bindSharedDisplayPipeline`
 
-### Stage 2c.0 summary
-- `DisplayPipelineController::setActiveHost(DisplayPipelineHost *)`
-- `ImageView::bindSharedItemWorld(ItemWorld *)` / `sharedItemWorld()`
-- Docs: PreferCache rules sketch for two panes (see IMAGEVIEW_ITEM_OWNERSHIP.md)
+### Stage 2c.1 summary
+- `m_ownedPipeline` + `m_displayPipeline *` (all TUs use pointer)
+- `bindSharedDisplayPipeline` / `hasSharedDisplayPipeline`
+- Dual shell wire order documented (IMAGEVIEW_ITEM_OWNERSHIP.md)
 
 ### Verification (static)
 | Check | Result |
 |-------|--------|
-| Pipeline `m_view` / `view()` | still removed |
-| setActiveHost | GUI-thread, non-null host |
-| itemWorld() | shared pointer or owned |
-| Dual-pane shell | **not started** |
+| `m_displayPipeline.` residual | none (all `->`) |
+| Single-pane ctor | owns unique_ptr pipeline |
+| Dual-pane shell in MainWindow | **not started** |
 | Runtime / nix build | not run in sandbox |
 
 ### Next
-- Stage 2c: dual-pane shell (two ImageViews, shared ItemWorld, focus → setActiveHost)
+- Stage 2c.2: dual-pane shell in MainWindow (splitter, focus → setActiveHost)
 - QTimer lifetime policy for host switch
 - Optional: paint/input Host extraction
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2455.1-stage-2c0-active-host-shared-itemworld-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2456.1-stage-2c1-shared-pipeline-ptr-7d823d8.bundle HEAD
 ```

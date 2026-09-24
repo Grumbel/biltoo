@@ -286,7 +286,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
         m_scene->addItem(copy);
         m_items.append(copy);
         // Attach already-baked display; do not put into ImageCache.
-        m_displayPipeline.attachDisplaySample(copy, display, content, kind);
+        m_displayPipeline->attachDisplaySample(copy, display, content, kind);
         if (isWorkspaceMode()) {
             ItemComponents::Placement pl = src->placement();
             pl.pos += QPointF(40.0, 40.0); // visible beside the original

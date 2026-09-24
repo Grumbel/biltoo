@@ -330,17 +330,17 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !m_sizeBook.isProvisional(path)) {
             const SessionImageId sid = resolveContentEditSessionId(item);
-            const WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
+            const WorkspaceItemState want = m_displayPipeline->wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                m_displayPipeline.hostSetIntrinsicSize(item, lay);
+                m_displayPipeline->hostSetIntrinsicSize(item, lay);
             }
         }
     } else if (cropDraft && !path.isEmpty()) {
         const WorkspaceItemState orientOnly = SessionAppearance::withoutCrop(
-            m_displayPipeline.wantAppearanceForItem(
+            m_displayPipeline->wantAppearanceForItem(
                 item, resolveContentEditSessionId(item)));
-        m_displayPipeline.applyContentLayoutSize(item, orientOnly);
+        m_displayPipeline->applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {
         {
@@ -399,7 +399,7 @@ void ImageView::zoomViewBy(qreal factor)
     if (isGalleryMode()) {
         m_gallery.scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowScrollMs);
     } else {
-        m_displayPipeline.scheduleTileLodAfterInteraction(50);
+        m_displayPipeline->scheduleTileLodAfterInteraction(50);
     }
     emit statusChanged();
 }

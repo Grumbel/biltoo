@@ -39,7 +39,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     }
 
     // SoftPreview install for content-baked tiles while dragging — pipeline owns pixels.
-    if (!m_displayPipeline.installInteractiveSoftPreview(item, want)) {
+    if (!m_displayPipeline->installInteractiveSoftPreview(item, want)) {
         syncLiveColorFromState(item, want.colorAdjust);
         item->update();
         return;
@@ -97,7 +97,7 @@ void ImageView::flushColorAdjustCommit()
     // Full rematerialize from host (async when multi-MP). Do **not** write
     // grade into path-keyed XDG on every slider tick — ItemWorld Color + project
     // own durable grade; XDG is for orient/flip seed, not slider spam.
-    m_displayPipeline.rematerializeItemContent(item, want);
+    m_displayPipeline->rematerializeItemContent(item, want);
     // Gallery: same session id may be stashed while Image mode edits — the
     // live tile update covers Image/Gallery focus; filmstrip uses the emit.
     const QImage appearance = sessionAppearanceImage(item);

@@ -6,7 +6,7 @@
     void clearTextSelection() override;
     bool matchesLoadGeneration(quint64 gen) const
     {
-        return m_displayPipeline.loadGate().accepts(gen);
+        return m_displayPipeline->loadGate().accepts(gen);
     }
     void refreshTextLayer() override;
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange) override;

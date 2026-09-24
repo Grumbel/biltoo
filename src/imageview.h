@@ -266,6 +266,18 @@ public:
     /** Non-null when this host is using an external shared ItemWorld. */
     ItemWorld *sharedItemWorld() const { return m_sharedItemWorld; }
     /**
+     * Dual ImageView Stage 2c.1: share one DisplayPipelineController across hosts.
+     * Releases any owned pipeline and points at @p pipeline (non-owning).
+     * Caller remains the lifetime owner. Does not call setActiveHost — the shell
+     * should setActiveHost on focus change.
+     */
+    void bindSharedDisplayPipeline(DisplayPipelineController *pipeline);
+    /** Non-null when pipeline is external (not m_ownedPipeline). */
+    bool hasSharedDisplayPipeline() const
+    {
+        return m_displayPipeline && m_displayPipeline != m_ownedPipeline.get();
+    }
+    /**
      * Bind SessionDocument seed book (required before hostSeedBook()).
      * Content appearance is ItemWorld sparse tables — not this store.
      */

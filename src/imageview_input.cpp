@@ -126,7 +126,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
     // Per-notch climb+tick was heavy on the GUI thread (set_viewport, cancel,
     // issue_requests). Paint uses the last plan + soft until the debounce fires.
-    m_displayPipeline.scheduleTileLodAfterInteraction(50);
+    m_displayPipeline->scheduleTileLodAfterInteraction(50);
     viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
     event->accept();
@@ -145,9 +145,9 @@ void ImageView::resizeEvent(QResizeEvent *event)
         return;
     }
     if (isImageMode() && !m_slideshow.hud().isProgressActive()) {
-        m_displayPipeline.maybeClimbImageModePixelsForView();
+        m_displayPipeline->maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
-        m_displayPipeline.ensureWorkspaceQualityClimb();
+        m_displayPipeline->ensureWorkspaceQualityClimb();
     }
     // Gallery: never repack from resize (session delete looked like auto-layout).
     // Still refresh the decode window: open often packs at 0×0, soft arrives

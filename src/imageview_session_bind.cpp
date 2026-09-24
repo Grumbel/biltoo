@@ -54,7 +54,7 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
     }
-    m_displayPipeline.loadGate().removePendingScenePos(item->path());
+    m_displayPipeline->loadGate().removePendingScenePos(item->path());
     // Pose-only persist (explicit drop); content stays on session id / path map.
     persistGeometrySessionState(item, item->placement());
 }
@@ -81,7 +81,7 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
     const qreal footH = before.height() * sy0;
     // Leave Gallery pack geometry on Workspace tiles.
     item->setGalleryCellSize({});
-    m_displayPipeline.installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
+    m_displayPipeline->installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
                          item->sessionId());
     const QSize after = item->imageSize();
     const bool grew = before.isValid() && after.isValid()
@@ -183,7 +183,7 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         return;
     }
     QPointF pos;
-    if (m_displayPipeline.loadGate().takePendingScenePos(path, &pos)) {
+    if (m_displayPipeline->loadGate().takePendingScenePos(path, &pos)) {
         {
             ItemComponents::Placement pl;
             pl.pos = pos;
@@ -231,9 +231,9 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         removedPaths.append(path);
         // Drop in-flight decodes so a late LoadAdd cannot create a tile or
         // call applyLayout after this session image is gone.
-        m_displayPipeline.loadGate().removePendingWorkspacePath(path);
-        m_displayPipeline.galleryDecodeResetPath(path);
-        m_displayPipeline.loadGate().removePendingScenePos(path);
+        m_displayPipeline->loadGate().removePendingWorkspacePath(path);
+        m_displayPipeline->galleryDecodeResetPath(path);
+        m_displayPipeline->loadGate().removePendingScenePos(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
         // persistState=false: caller already removeAppearance for this id —

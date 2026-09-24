@@ -67,7 +67,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             : (!item->previewImage().isNull() ? item->previewImage()
                                               : item->displayImage());
         if (!baked.isNull()) {
-            m_displayPipeline.hostClearDecodedPixels(other);
+            m_displayPipeline->hostClearDecodedPixels(other);
             // Already-baked display from the editor. Attach via the same gate
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;
@@ -81,9 +81,9 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             const auto kind = !src.isNull()
                 ? SessionAppearance::PixelKind::FullSource
                 : SessionAppearance::PixelKind::SoftPreview;
-            m_displayPipeline.attachDisplaySample(other, baked, want, kind);
+            m_displayPipeline->attachDisplaySample(other, baked, want, kind);
         } else if (sessionId != kInvalidSessionImageId) {
-            m_displayPipeline.applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
+            m_displayPipeline->applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
         }
         {
             ItemComponents::Placement pl = other->placement();
@@ -330,7 +330,7 @@ int ImageView::resetContentAppearanceForTargets()
             }
             if (native.isValid() && native.width() > 1 && native.height() > 1
                 && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
-                m_displayPipeline.hostSetIntrinsicSize(item, native);
+                m_displayPipeline->hostSetIntrinsicSize(item, native);
             }
         }
 
@@ -347,7 +347,7 @@ int ImageView::resetContentAppearanceForTargets()
         // oriented pixels — Gallery + filmstrip stayed flipped while Image mode
         // (FullSource install) looked correct. Always drop pixels first.
         // Mode-appropriate identity pixels — pipeline owns soft vs full install.
-        m_displayPipeline.reinstallModePixelsAfterIdentityReset(item, sid);
+        m_displayPipeline->reinstallModePixelsAfterIdentityReset(item, sid);
 
         if (isImageMode() && m_framing.isFitMode()) {
             fitItem(item, currentFitAspectMode());

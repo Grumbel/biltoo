@@ -85,7 +85,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
             pathOrderAppendRow(path, kInvalidSessionImageId);
         }
     }
-    m_displayPipeline.scheduleImageLoad(path, LoadAdd);
+    m_displayPipeline->scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;
 }
@@ -158,7 +158,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         pathOrderAppendRow(path, kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
-    m_displayPipeline.loadGate().setPendingScenePos(path, scenePos);
+    m_displayPipeline->loadGate().setPendingScenePos(path, scenePos);
 
     // Immediate placeholder at the drop point so placement does not depend on
     // async decode ordering (and so archive ladder delays still show a tile).
@@ -193,7 +193,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         }
         m_items.append(ph);
         applyItemModeFlags(ph);
-        m_displayPipeline.registerItemDisplaySurface(ph);
+        m_displayPipeline->registerItemDisplaySurface(ph);
         // Immediate content-baked soft when session/XDG want is known — do not
         // wait for LoadAdd with an unrotated host painted into an oriented box
         // (looked like stretch + missing rotation on filmstrip drop).
@@ -202,7 +202,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                    sessionAppearanceValue(sessionId))) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
-                m_displayPipeline.installDisplayPixels(
+                m_displayPipeline->installDisplayPixels(
                     ph, host, SessionAppearance::PixelKind::SoftPreview, sessionId);
             }
         }

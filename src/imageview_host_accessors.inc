@@ -54,8 +54,16 @@
     const CentreProgress &hostCentreProgress() const { return m_centreProgress; }
     QUndoStack *hostUndoStack() { return m_undoStack; }
     const QUndoStack *hostUndoStack() const { return m_undoStack; }
-    DisplayPipelineController &hostDisplayPipeline() { return m_displayPipeline; }
-    const DisplayPipelineController &hostDisplayPipeline() const { return m_displayPipeline; }
+    DisplayPipelineController &hostDisplayPipeline()
+    {
+        Q_ASSERT(m_displayPipeline);
+        return *m_displayPipeline;
+    }
+    const DisplayPipelineController &hostDisplayPipeline() const
+    {
+        Q_ASSERT(m_displayPipeline);
+        return *m_displayPipeline;
+    }
 
     /** Display pipeline host: crop controller (draft freeze). */
     CropController &hostCrop() override { return m_cropCtrl; }
@@ -102,10 +110,10 @@
     const HudFlash &hostHudFlash() const { return m_hudFlash; }
     QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
     QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
-    DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline.displaySurfaces(); }
-    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline.displaySurfaces(); }
+    DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline->displaySurfaces(); }
+    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline->displaySurfaces(); }
     TileNeighborPrefetch &hostTileNeighborPrefetch() override { return m_tileNeighborPrefetch; }
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const override { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
-    SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
-    const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
+    SessionLoadGate &hostLoadGate() { return m_displayPipeline->loadGate(); }
+    const SessionLoadGate &hostLoadGate() const { return m_displayPipeline->loadGate(); }

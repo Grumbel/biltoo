@@ -53,12 +53,12 @@ void ImageView::invalidateSessionLoads()
     // New Open / History session: cancel every in-flight decode and drop the
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
-    m_displayPipeline.loadGate().bumpGeneration();
-    if (m_displayPipeline.tileCoordinator()) {
-        m_displayPipeline.tileCoordinator()->clearPreferCancelled();
+    m_displayPipeline->loadGate().bumpGeneration();
+    if (m_displayPipeline->tileCoordinator()) {
+        m_displayPipeline->tileCoordinator()->clearPreferCancelled();
     }
-    m_displayPipeline.loadGate().clearPending();
-    m_displayPipeline.galleryDecodeResetAll();
+    m_displayPipeline->loadGate().clearPending();
+    m_displayPipeline->galleryDecodeResetAll();
     m_slideshow.phase().clearRasterQueues();
     m_slideshow.phase().bumpPhaseUpgradeGeneration();
     m_slideshow.dwell().bumpAtlasRebuildGeneration();
@@ -82,7 +82,7 @@ void ImageView::invalidateSessionLoads()
     // Workspace; Gallery Open only hits invalidateSessionLoads.
     m_tileNeighborPrefetch.clear();
     // Stashed Gallery/Workspace items can still hold SharedPathTiles.
-    m_displayPipeline.dropAllTileLodSessions();
+    m_displayPipeline->dropAllTileLodSessions();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     ImageCache::clear();
@@ -96,7 +96,7 @@ void ImageView::invalidateSessionLoads()
 
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
-    if (!m_displayPipeline.loadGate().takePendingWorkspacePath(path)) {
+    if (!m_displayPipeline->loadGate().takePendingWorkspacePath(path)) {
         return;
     }
     // Status bar / HUD pending count (even when the caller also emits).
@@ -143,7 +143,7 @@ void ImageView::scheduleReplaceLoad(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    m_displayPipeline.scheduleImageLoad(path, LoadReplace);
+    m_displayPipeline->scheduleImageLoad(path, LoadReplace);
 }
 
 void ImageView::scheduleRestoreLoad(const QString &path)
@@ -151,7 +151,7 @@ void ImageView::scheduleRestoreLoad(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    m_displayPipeline.scheduleImageLoad(path, LoadRestore);
+    m_displayPipeline->scheduleImageLoad(path, LoadRestore);
 }
 
 void ImageView::applyModeFlagsToLiveItems()
@@ -238,16 +238,16 @@ void ImageView::clearWorkspace()
     m_workspace.discardStash();
     m_gallery.discardStash();
     m_workspace.savedItems().clear();
-    m_displayPipeline.loadGate().clearPending();
+    m_displayPipeline->loadGate().clearPending();
     m_bindBook.clear();
     m_pendingAppearance.clear();
-    m_displayPipeline.galleryDecodeResetAll();
+    m_displayPipeline->galleryDecodeResetAll();
     m_sizeBook.clear();
     m_galleryDecodeBook.setDeferPopulate(false);
     m_gallerySizeResolve.cancel();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();
-    m_displayPipeline.dropAllTileLodSessions();
+    m_displayPipeline->dropAllTileLodSessions();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     pathOrderClear();
@@ -260,7 +260,7 @@ void ImageView::clearWorkspace()
     m_image.clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).
-    m_displayPipeline.loadGate().bumpGeneration();
+    m_displayPipeline->loadGate().bumpGeneration();
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

@@ -261,7 +261,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         // Probe is authoritative file-native size. Layout = ContentXform
         // (turns + crop), not a simple axis swap.
         const SessionImageId sid = resolveContentEditSessionId(item);
-        WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
+        WorkspaceItemState want = m_displayPipeline->wantAppearanceForItem(item, sid);
         QSize layoutSize = ContentXform::layoutSize(size, want);
         if (!(layoutSize.width() > 1 && layoutSize.height() > 1)) {
             layoutSize = size;
@@ -270,7 +270,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (cur == layoutSize) {
             continue;
         }
-        m_displayPipeline.hostSetIntrinsicSize(item, layoutSize);
+        m_displayPipeline->hostSetIntrinsicSize(item, layoutSize);
         any = true;
         // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
         // cropping the updated contentRect until the next pack.

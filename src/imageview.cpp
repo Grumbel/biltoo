@@ -62,7 +62,8 @@ ImageView::ImageView(QWidget *parent)
     , m_attentionCtrl(this)
     , m_workspace(this)
     , m_image(this)
-    , m_displayPipeline(this)
+    , m_ownedPipeline(std::make_unique<DisplayPipelineController>(this))
+    , m_displayPipeline(m_ownedPipeline.get())
     , m_gallerySizeResolve(this, this)
     , m_tileNeighborPrefetch(this, this)
 {
@@ -130,7 +131,7 @@ ImageView::ImageView(QWidget *parent)
                     near, {}, ThumtooCache::kBatchOverviewEdge,
                     ThumtooCache::kGalleryLadderEdge, primary,
                     ThumtooCache::kImageLadderEdge);
-                m_displayPipeline.ensureWorkspaceQualityClimb();
+                m_displayPipeline->ensureWorkspaceQualityClimb();
             }
         }
         emit statusChanged();
@@ -168,12 +169,12 @@ ImageView::ImageView(QWidget *parent)
                             }
                             const SessionImageId sid = item->sessionId();
                             const WorkspaceItemState want =
-                                m_displayPipeline.wantAppearanceForItem(item, sid);
+                                m_displayPipeline->wantAppearanceForItem(item, sid);
                             const QSize lay = ContentXform::layoutSize(size, want);
                             if (isPositiveSize(lay) && lay.width() > 1) {
-                                m_displayPipeline.hostSetIntrinsicSize(item, lay);
+                                m_displayPipeline->hostSetIntrinsicSize(item, lay);
                             }
-                            m_displayPipeline.tryInstallGalleryUnderlay(item);
+                            m_displayPipeline->tryInstallGalleryUnderlay(item);
                         }
                     }
                 }
@@ -195,7 +196,7 @@ ImageView::ImageView(QWidget *parent)
                 }
             });
     m_pathRaster = new PathRasterService(this);
-    m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(&m_displayPipeline);
+    m_displayPipeline->tileCoordinator() = std::make_unique<TileLoadCoordinator>(m_displayPipeline);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 if (path.isEmpty()) {
@@ -210,7 +211,7 @@ ImageView::ImageView(QWidget *parent)
                     m_slideshow.onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
-                        const int target = m_displayPipeline.cappedDisplayEdgeForPath(
+                        const int target = m_displayPipeline->cappedDisplayEdgeForPath(
                             path, m_slideshow.slideshowTargetEdge());
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {
@@ -225,23 +226,23 @@ ImageView::ImageView(QWidget *parent)
                     && path == m_image.classicPath()) {
                     // Event-driven ImageFocus: DisplaySurface::decide (not a
                     // quality watchdog). Soft→full via Attach* / async / climb.
-                    m_displayPipeline.driveImageFocusSurface();
+                    m_displayPipeline->driveImageFocusSurface();
                     emit statusChanged();
                 }
                 // Gallery: soft may land in ImageCache via noteDelivery while the
                 // tile still shows LQIP — mirror ladderReady install.
                 if (isGalleryMode()) {
-                    m_displayPipeline.onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
+                    m_displayPipeline->onImagePreviewLoaded(path, img, m_displayPipeline->loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
                 if (isWorkspaceMode()) {
-                    m_displayPipeline.onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
+                    m_displayPipeline->onImagePreviewLoaded(path, img, m_displayPipeline->loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int maxEdge, const QImage &image) {
-                m_displayPipeline.onLadderReady(path, maxEdge, image);
+                m_displayPipeline->onLadderReady(path, maxEdge, image);
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
             [this](const QString &path) {
@@ -252,7 +253,7 @@ ImageView::ImageView(QWidget *parent)
                     return;
                 }
                 // Pyramid appeared mid-session; start tile pump if already in band.
-                m_displayPipeline.tickPrimaryTileLod(8);
+                m_displayPipeline->tickPrimaryTileLod(8);
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
@@ -296,7 +297,7 @@ ImageView::ImageView(QWidget *parent)
     connect(m_slideshow.progressTimer(), &QTimer::timeout, this, [this]() {
         if (m_slideshow.hud().isProgressActive()) {
             // Pump shared path tiles for phase slides (paint uses TileLodController).
-            m_displayPipeline.tickPrimaryTileLod(8);
+            m_displayPipeline->tickPrimaryTileLod(8);
             if (viewport()) {
                 viewport()->update();
             }
@@ -349,7 +350,7 @@ ImageView::ImageView(QWidget *parent)
             : GalleryDecode::kDecodeWindowImageMs);
         // Hand pan ticks on a separate coalesced path; skip double work here.
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            m_displayPipeline.scheduleTileLodAfterInteraction(32);
+            m_displayPipeline->scheduleTileLodAfterInteraction(32);
         }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
@@ -358,7 +359,7 @@ ImageView::ImageView(QWidget *parent)
             ? GalleryDecode::kDecodeWindowSettleMs
             : GalleryDecode::kDecodeWindowImageMs);
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            m_displayPipeline.scheduleTileLodAfterInteraction(32);
+            m_displayPipeline->scheduleTileLodAfterInteraction(32);
         }
     });
 
@@ -379,13 +380,33 @@ ImageView::ImageView(QWidget *parent)
     m_galleryDecodeWatchdog->start();
 }
 
+void ImageView::bindSharedDisplayPipeline(DisplayPipelineController *pipeline)
+{
+    ASSERT_GUI_THREAD();
+    Q_ASSERT(pipeline);
+    if (m_displayPipeline == pipeline) {
+        return;
+    }
+    // Drop owned pipeline; external owner keeps lifetime.
+    m_ownedPipeline.reset();
+    m_displayPipeline = pipeline;
+}
+
+
 ImageView::~ImageView()
 {
     // Complete type required for unique_ptr<TileLodController> (fwd-declared in header).
     m_slideshow.phase().clearTiles();
 
-    // Invalidate any queued onImageLoaded invocations from the thread pool.
-    m_displayPipeline.loadGate().bumpGeneration();
+    // Only the pipeline owner may invalidate generation / release bags / reset
+    // gallery decode. A secondary host that bindSharedDisplayPipeline() must not
+    // tear down the shared controller still used by the primary.
+    const bool ownsPipeline = static_cast<bool>(m_ownedPipeline);
+
+    if (ownsPipeline && m_displayPipeline) {
+        // Invalidate any queued onImageLoaded invocations from the thread pool.
+        m_displayPipeline->loadGate().bumpGeneration();
+    }
 
     if (m_hudFlashTimer) {
         m_hudFlashTimer->stop();
@@ -402,16 +423,20 @@ ImageView::~ImageView()
     // scene down here while ImageView is still fully constructed.
     m_gallery.discardStash();
 
-    // Stage 2: detach pipeline tile bags while ImageItems are still alive.
-    m_displayPipeline.releaseAllTileBags();
+    if (ownsPipeline && m_displayPipeline) {
+        // Stage 2: detach pipeline tile bags while ImageItems are still alive.
+        m_displayPipeline->releaseAllTileBags();
+    }
 
     if (m_scene) {
         disconnect(m_scene, nullptr, this, nullptr);
         m_scene->blockSignals(true);
         m_scene->clear();
         m_items.clear();
-        m_displayPipeline.loadGate().clearPendingWorkspacePaths();
-        m_displayPipeline.galleryDecodeResetAll();
+        if (ownsPipeline && m_displayPipeline) {
+            m_displayPipeline->loadGate().clearPendingWorkspacePaths();
+            m_displayPipeline->galleryDecodeResetAll();
+        }
         setScene(nullptr);
         delete m_scene;
         m_scene = nullptr;
