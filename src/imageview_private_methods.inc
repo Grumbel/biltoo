@@ -38,7 +38,7 @@
 
     /**
      * Pack-order append (Explicit; seed from doc when promoting out of FollowDocument).
-     * Place/addImageForSession only — not a controller host API.
+     * Place/add via hostPathOrderAppendRow (WorkspaceController).
      */
     void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
     {

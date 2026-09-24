@@ -170,6 +170,14 @@ public:
      * LoadAdd / drop: install full pixels while preserving free-form footprint.
      * ImageView host override is a thin router (DisplayPipelineHost).
      */
+    /**
+     * Multi-item canvas: add by session id/index (Gallery/Workspace) or move/place
+     * at scene pos (Workspace drop). ImageView public API is thin routers.
+     */
+    bool addImageForSession(const QString &path, SessionImageId sessionId, int sessionIndex);
+    bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
+                            SessionImageId sessionId, int sessionIndex);
+
     bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
     /** Explicit drop pose from PendingSessionBind.scenePos. */
     void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);

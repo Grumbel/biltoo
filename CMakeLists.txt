@@ -155,6 +155,7 @@ set(BILTOO_LIB_SOURCES
   src/workspace/workspace_clipboard.cpp
   src/workspace/workspace_scene.cpp
   src/workspace/workspace_load_place.cpp
+  src/workspace/workspace_canvas_place.cpp
   src/workspace/workspace_paths.cpp
   src/workspace/workspace_selection.cpp
   src/workspace/workspace_destroy.cpp

@@ -32,9 +32,15 @@
      * Pack-order overlay mutators (not SessionDocument).
      * clear → Explicit empty (never FollowDocument while doc still has rows).
      * setOrder → Explicit then optional collapse when aligned with bound doc.
-     * append is private (pathOrderAppendRow) — only ImageView place/add paths.
+     * append via hostPathOrderAppendRow (Workspace place/add).
      */
     void pathOrderClear() { m_session.pathOrder().clearExplicit(); }
+    /** Place/add: grow Explicit pathOrder (id-aware rows for duplicate paths). */
+    void hostPathOrderAppendRow(const QString &path,
+                                SessionImageId id = kInvalidSessionImageId)
+    {
+        pathOrderAppendRow(path, id);
+    }
     void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
         m_session.pathOrder().setExplicit(paths, ids);
