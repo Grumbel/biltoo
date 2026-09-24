@@ -95,7 +95,23 @@ public:
      */
     void handleResize();
 
+    /**
+     * Canvas material mutators (Preferences / project / session view override).
+     * Update CanvasBackground, load tile pixmaps when needed, apply QGraphicsView
+     * brush + viewport update. ImageView public setters are thin routers here.
+     */
+    void setBackgroundColor(const QColor &color);
+    void setBackgroundColorAlt(const QColor &color);
+    void setBackgroundPattern(BackgroundPattern pattern);
+    void setCheckerboardWorkspaceOnly(bool on);
+    void setWorkspaceBackground(const WorkspaceBackground &bg);
+    void setWorkspaceBackgroundShowDefault(bool on);
+    void setViewBackground(const WorkspaceBackground &bg);
+
 private:
+    /** After a material change: update viewport (and solid brush when primary changes). */
+    void refreshViewportAfterMaterialChange(bool updateSolidBrush = false);
+
     ImageView *m_view = nullptr;
     ViewportChrome m_viewport;
     CanvasBackground m_canvasBg;

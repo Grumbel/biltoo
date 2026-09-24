@@ -19,6 +19,7 @@
 #include <QFont>
 #include <QPainter>
 #include <cmath>
+#include <QBrush>
 #include <QPixmap>
 #include <QtMath>
 #include <cstdlib>
@@ -913,5 +914,92 @@ void ViewShellChrome::handleResize()
         return;
     }
     m_view->hostImage().onViewResized();
+}
+
+void ViewShellChrome::refreshViewportAfterMaterialChange(bool updateSolidBrush)
+{
+    if (!m_view) {
+        return;
+    }
+    if (updateSolidBrush) {
+        m_view->setBackgroundBrush(QBrush(m_canvasBg.primaryColor()));
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void ViewShellChrome::setBackgroundColor(const QColor &color)
+{
+    if (!m_canvasBg.setColor(color)) {
+        return;
+    }
+    refreshViewportAfterMaterialChange(true);
+}
+
+void ViewShellChrome::setBackgroundColorAlt(const QColor &color)
+{
+    if (!m_canvasBg.setColorAlt(color)) {
+        return;
+    }
+    refreshViewportAfterMaterialChange();
+}
+
+void ViewShellChrome::setBackgroundPattern(BackgroundPattern pattern)
+{
+    if (!m_canvasBg.setPattern(pattern)) {
+        return;
+    }
+    refreshViewportAfterMaterialChange();
+}
+
+void ViewShellChrome::setCheckerboardWorkspaceOnly(bool on)
+{
+    if (!m_canvasBg.setCheckerWorkspaceOnly(on)) {
+        return;
+    }
+    refreshViewportAfterMaterialChange();
+}
+
+void ViewShellChrome::setWorkspaceBackground(const WorkspaceBackground &bg)
+{
+    // No-op when durable fields match: leave temporary "show default" preview
+    // alone so the toolbar toggle does not desync from paint.
+    if (!m_canvasBg.setWorkspace(bg)) {
+        return;
+    }
+    if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
+        if (!m_canvasBg.workspaceTilePathMatches(bg.imagePath)) {
+            QPixmap px(bg.imagePath);
+            if (!px.isNull()) {
+                m_canvasBg.setWorkspaceTile(px, bg.imagePath);
+            }
+        }
+    }
+    refreshViewportAfterMaterialChange();
+}
+
+void ViewShellChrome::setWorkspaceBackgroundShowDefault(bool on)
+{
+    if (!m_canvasBg.setWorkspaceShowDefault(on)) {
+        return;
+    }
+    refreshViewportAfterMaterialChange();
+}
+
+void ViewShellChrome::setViewBackground(const WorkspaceBackground &bg)
+{
+    if (!m_canvasBg.setView(bg)) {
+        return;
+    }
+    if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
+        if (!m_canvasBg.viewTilePathMatches(bg.imagePath)) {
+            QPixmap px(bg.imagePath);
+            if (!px.isNull()) {
+                m_canvasBg.setViewTile(px, bg.imagePath);
+            }
+        }
+    }
+    refreshViewportAfterMaterialChange();
 }
 
