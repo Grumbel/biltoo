@@ -8,9 +8,6 @@
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "item/itemcomponents.h"
-#include "host/thumtoocache.h"
-#include "display/imagecache.h"
-#include "host/imageloader.h"
 #include "display/displayquality.h"
 
 #include <QImage>
@@ -46,33 +43,6 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     // Pixel path owned by DisplayPipelineController (try / soft / async).
     // Never stack incremental transforms on display (ECS_GUI_BYPASSES #7).
     m_displayPipeline.rematerializeItemContent(item, want);
-    // Cold cache residual: disk soft so chrome is not blank until async lands.
-    if (!item->hasDisplayPixels()) {
-        const QString path = item->path();
-        if (!path.isEmpty()) {
-            QImage disk = ImageLoader::loadThumbnail(
-                path, ThumtooCache::kGalleryLadderEdge);
-            if (disk.isNull()) {
-                disk = ImageLoader::loadThumbnail(path, 512);
-            }
-            if (!disk.isNull()) {
-                ImageCache::put(path, disk);
-                QImage soft = disk;
-                if (ContentXform::longEdge(disk.size())
-                    > ContentXform::kGuiMaterializeMaxEdge) {
-                    soft = ImageCache::clampToMaxEdge(
-                        disk, ContentXform::kGuiMaterializeMaxEdge);
-                }
-                const QImage display = SessionAppearance::materializeDisplay(
-                    soft, want, SessionAppearance::PixelKind::SoftPreview);
-                if (!display.isNull()) {
-                    clearItemDecodedPixels(item);
-                    attachDisplaySample(item, display, want,
-                                        SessionAppearance::PixelKind::SoftPreview);
-                }
-            }
-        }
-    }
     applyContentLayoutSize(item, want);
 
     // Write ContentXform absolute state first — before commitItemSessionEdit
@@ -175,32 +145,6 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     // Install applied ContentXform fingerprint, then pipeline rematerialize.
     syncLiveContentMetaFromState(item, want);
     m_displayPipeline.rematerializeItemContent(item, want);
-    if (!item->hasDisplayPixels()) {
-        const QString path = item->path();
-        if (!path.isEmpty()) {
-            QImage disk = ImageLoader::loadThumbnail(
-                path, ThumtooCache::kGalleryLadderEdge);
-            if (disk.isNull()) {
-                disk = ImageLoader::loadThumbnail(path, 512);
-            }
-            if (!disk.isNull()) {
-                ImageCache::put(path, disk);
-                QImage soft = disk;
-                if (ContentXform::longEdge(disk.size())
-                    > ContentXform::kGuiMaterializeMaxEdge) {
-                    soft = ImageCache::clampToMaxEdge(
-                        disk, ContentXform::kGuiMaterializeMaxEdge);
-                }
-                const QImage display = SessionAppearance::materializeDisplay(
-                    soft, want, SessionAppearance::PixelKind::SoftPreview);
-                if (!display.isNull()) {
-                    clearItemDecodedPixels(item);
-                    attachDisplaySample(item, display, want,
-                                        SessionAppearance::PixelKind::SoftPreview);
-                }
-            }
-        }
-    }
     applyContentLayoutSize(item, want);
 
     if (sid != kInvalidSessionImageId) {

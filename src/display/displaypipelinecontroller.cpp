@@ -1830,9 +1830,35 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
     }
     const SessionImageId sid = resolveItemSessionId(item);
     if (raw.isNull()) {
-        // No unoriented host: schedule async; do not claim applied yet.
-        if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {
-            scheduleAsyncHostRematerialize(path, sid, want);
+        // Cold cache: optional disk soft so interactive bake/open is not blank.
+        // scheduleAsync no-ops when the only host is ≤ GUI edge (soft stand-in).
+        if (!path.isEmpty()) {
+            QImage disk = ImageLoader::loadThumbnail(
+                path, ThumtooCache::kGalleryLadderEdge);
+            if (disk.isNull()) {
+                disk = ImageLoader::loadThumbnail(path, 512);
+            }
+            if (!disk.isNull()) {
+                ImageCache::put(path, disk);
+                QImage soft = disk;
+                if (ContentXform::longEdge(disk.size())
+                    > ContentXform::kGuiMaterializeMaxEdge) {
+                    soft = ImageCache::clampToMaxEdge(
+                        disk, ContentXform::kGuiMaterializeMaxEdge);
+                }
+                const QImage display = SessionAppearance::materializeDisplay(
+                    soft, want, SessionAppearance::PixelKind::SoftPreview);
+                if (!display.isNull()) {
+                    if (item->hasDecodedPixels()) {
+                        hostClearDecodedPixels(item);
+                    }
+                    attachDisplaySample(item, display, want,
+                                        SessionAppearance::PixelKind::SoftPreview);
+                }
+            }
+            if (SessionAppearance::hasContentAppearance(want)) {
+                scheduleAsyncHostRematerialize(path, sid, want);
+            }
         }
         return;
     }
