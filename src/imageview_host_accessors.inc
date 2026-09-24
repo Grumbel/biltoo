@@ -42,8 +42,8 @@
     /** Print page-guide session (Workspace overlay). */
     PageGuideSession &hostPageGuide() { return m_workspace.pageGuideSession(); }
     const PageGuideSession &hostPageGuide() const { return m_workspace.pageGuideSession(); }
-    GallerySizeResolve &hostGallerySizeResolve() override { return m_gallerySizeResolve; }
-    const GallerySizeResolve &hostGallerySizeResolve() const override { return m_gallerySizeResolve; }
+    GallerySizeResolve &hostGallerySizeResolve() override { return m_gallery.sizeResolve(); }
+    const GallerySizeResolve &hostGallerySizeResolve() const override { return m_gallery.sizeResolve(); }
     /** Display pipeline host: layout prefs (free-form check). */
     LayoutPrefs &hostLayout() override { return m_layout; }
     const LayoutPrefs &hostLayout() const override { return m_layout; }

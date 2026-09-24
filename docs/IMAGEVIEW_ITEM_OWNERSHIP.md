@@ -345,3 +345,5 @@ Product shell (minimal):
 10. **biltoo-2467:** Image-mode framing/sticky pan behaviour on ImageController; ViewFraming bag stays on host.
 
 11. **biltoo-2468:** ImageSizeBook + probe/remember on ImageSizeCoordinator; GallerySizeResolve host remains on ImageView.
+
+12. **biltoo-2469:** GallerySizeResolveHost + gate owned by GalleryController.

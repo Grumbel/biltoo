@@ -111,6 +111,7 @@ private:
 
 GalleryController::GalleryController(ImageView *view)
     : m_view(view)
+    , m_sizeResolve(this, view)
 {
 }
 

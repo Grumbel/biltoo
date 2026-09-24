@@ -146,149 +146,29 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 }
 
 
-bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
-{
-    // FreeForm: no pack gate.
-    // Every other Gallery layout: sizes first (gate active). Tiles must not
-    // compete with ProbeSize. Grid no longer packs on stand-ins while the
-    // session is still resolving — that showed real pixels before sizes landed.
-    if (mode == LayoutMode::FreeForm) {
-        return false;
-    }
-    return true;
-}
-
-
-
-
-
-void ImageView::adoptResolvedSize(const QString &path, const QSize &size)
-{
-    rememberImageSize(path, size);
-    applyProbedImageSize(path, size);
-}
-
-
-void ImageView::adoptSizeProbeFailed(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    m_size.book().markFailed(path);
-    // Apply error-cell layout so ordered pack can place this row.
-    if (const QSize native = m_size.book().contains(path)
-            ? logicalSizeForPath(path)
-            : QSize(256, 256);
-        isPositiveSize(native)) {
-        applyProbedImageSize(path, native);
-    }
-    // Surface failure on any live tile for this path.
-    for (ImageItem *item : m_items) {
-        if (item && item->path() == path) {
-            item->setToolTip(tr("Failed to read image size:\n%1").arg(path));
-        }
-    }
-}
-
-void ImageView::onSizeResolvePathSettled(const QString &path)
-{
-    Q_UNUSED(path);
-    if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
-        return;
-    }
-    // Full pack still only on gate complete (avoids continuous reflow).
-    // Coalesced plan/window refresh so virtual cells can show SizeReply underlay
-    // as sizes land without waiting for the whole session.
-    m_gallery.scheduleSizeGatePlanRefresh();
-}
 
 
 
 
 
 
-void ImageView::clearSizeResolveProgress()
-{
-    if (m_centreProgress.matchesTitlePrefix(tr("Resolving sizes"))) {
-        clearCentreProgress();
-    }
-}
 
-void ImageView::onSizeResolveGateComplete()
-{
-    ASSERT_GUI_THREAD();
-    GUI_BUDGET("ImageView::onSizeResolveGateComplete");
-    clearCentreProgress();
-    if (isGalleryMode()) {
-        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-    }
-    // Always create remaining tiles when sizes are known. deferPopulate can be
-    // cleared by populateGalleryCanvas while the gate is still active (one
-    // progressive cell already live → needPlaceholders false → defer false).
-    // Gate complete then skipped ensure and left a single-cell Gallery until
-    // an explicit relayout.
-    m_galleryDecodeBook.setDeferPopulate(false);
-    if (isGalleryMode() && !pathOrderIsEmpty()) {
-        // Stay hidden while placeholders are created (chunked). Pack once, then show.
-        for (ImageItem *item : m_items) {
-            if (item) {
-                item->setVisible(false);
-            }
-        }
-        const bool more = m_gallery.ensurePlaceholders();
-        if (!more && !m_items.isEmpty() && !m_layout.isFreeForm()) {
-            m_gallery.applyLayout(GalleryPackReason::EnterGallery);
-            for (ImageItem *item : m_items) {
-                if (item) {
-                    item->setVisible(true);
-                }
-            }
-            m_gallery.updateDecodeWindow();
-            QTimer::singleShot(0, this, [this]() {
-                if (isGalleryMode() && !m_items.isEmpty()) {
-                    m_gallery.updateDecodeWindow();
-                }
-            });
-        }
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
-    emit statusChanged();
-    emit gallerySizeResolveFinished();
-}
 
-void ImageView::onSizeResolveGateCancelled()
-{
-    m_galleryDecodeBook.setDeferPopulate(false);
-    if (isGalleryMode() && m_centreProgress.titleRef().isEmpty()) {
-        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-    }
-    // Size-resolve hides live tiles under defer. Cancel without complete must
-    // not leave them invisible forever (Gallery "images disappeared").
-    if (isGalleryMode()) {
-        int hidden = 0;
-        for (ImageItem *item : m_items) {
-            if (item && !item->isVisible()) {
-                item->setVisible(true);
-                ++hidden;
-            }
-        }
-        if (m_items.isEmpty() && !pathOrderIsEmpty()) {
-            m_gallery.ensurePlaceholders();
-            biltooModeDbg("sizeResolve CANCEL ensurePlaceholders items=%d pathOrder=%d",
-                          itemCount(), static_cast<int>(currentPackOrder().size()));
-        } else if (hidden > 0) {
-            biltooModeDbg("sizeResolve CANCEL unhide n=%d items=%d",
-                          hidden, itemCount());
-            if (viewport()) {
-                viewport()->update();
-            }
-        }
-    }
-    clearSizeResolveProgress();
-    emit gallerySizeResolveFinished();
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void ImageView::setCentreProgress(const QString &title, const QString &detail)
 {
@@ -303,7 +183,7 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
     // Size-resolve is interactive (corner HUD) but still needs reliable redraws
     // while placeholders exist — BoundingRect alone can skip the HUD region.
     // “Improving previews…” keeps BoundingRect (many tiles + frequent updates).
-    if (m_items.isEmpty() || m_gallerySizeResolve.active()) {
+    if (m_items.isEmpty() || hostGallerySizeResolve().active()) {
         setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     }
     if (viewport()) {
@@ -317,7 +197,7 @@ void ImageView::clearCentreProgress()
         return;
     }
     m_centreProgress.clear();
-    if (isGalleryMode() && !m_gallerySizeResolve.active()) {
+    if (isGalleryMode() && !hostGallerySizeResolve().active()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     if (viewport()) {

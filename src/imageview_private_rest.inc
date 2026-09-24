@@ -23,36 +23,6 @@
      */
     void primeGalleryGeometryFromCache(const QStringList &paths);
 
-    // --- GallerySizeResolveHost -------------------------------------------------
-    bool hasDefinitiveHostSize(const QString &path) const override
-    {
-        return m_size.book().hasDefinitive(path);
-    }
-    void adoptResolvedSize(const QString &path, const QSize &size) override;
-    void adoptSizeProbeFailed(const QString &path) override;
-    void scheduleSizeProbeBatch(const QStringList &paths) override
-    {
-        ThumtooCache::scheduleProbeBatch(paths);
-    }
-    /** Pack order for TTFP probes — overlay resolve (Explicit book). */
-    QStringList sizeResolvePathOrder() const override
-    {
-        return currentPackOrder().paths();
-    }
-    bool sizeResolveLayoutDefersPopulate() const override
-    {
-        return layoutDefersPopulateUntilSizes(m_layout.currentMode());
-    }
-    void setSizeResolveProgress(const QString &title,
-                                 const QString &detail) override
-    {
-        setCentreProgress(title, detail);
-    }
-    void clearSizeResolveProgress() override;
-    void onSizeResolveGateComplete() override;
-    void onSizeResolveGateCancelled() override;
-    void onSizeResolvePathSettled(const QString &path) override;
-
     // --- TileNeighborPrefetchHost ------------------------------------------
     bool pathOnLiveCanvas(const QString &path) const override;
     QSize viewportWidgetSize() const override
@@ -74,7 +44,6 @@
         return m_slideshow.hud().isNavHot();
     }
 
-    void applyProbedImageSize(const QString &path, const QSize &size);
     /** True when pack needs every aspect before the first layout (Fill modes). */
     static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
     const WorkspaceItemState *resolveStoredAppearance(ImageItem *item,
@@ -153,7 +122,6 @@
     /** Centre HUD progress (expand / size resolve / sort). */
     CentreProgress m_centreProgress;
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
-    GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     /** Session path list + parallel SessionImageId order (IDENTITY). */
     /**

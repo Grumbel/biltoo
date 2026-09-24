@@ -65,7 +65,6 @@ ImageView::ImageView(QWidget *parent)
     , m_image(this)
     , m_ownedPipeline(std::make_unique<DisplayPipelineController>(this))
     , m_displayPipeline(m_ownedPipeline.get())
-    , m_gallerySizeResolve(this, this)
     , m_tileNeighborPrefetch(this, this)
 {
     // Phase 7 Stage 0: path/size books are owned here; appearance binds later
@@ -179,7 +178,7 @@ ImageView::ImageView(QWidget *parent)
                         }
                     }
                 }
-                m_gallerySizeResolve.noteProbeSettled(path, valid);
+                hostGallerySizeResolve().noteProbeSettled(path, valid);
             });
 
     // Soft preview: install better ladder pixels; clear inflight when matched.
@@ -250,7 +249,7 @@ ImageView::ImageView(QWidget *parent)
                 Q_UNUSED(path);
                 // Warm durable discovery can fire during the Gallery size gate —
                 // do not start tile I/O while probes own the Store/CPU.
-                if (m_gallerySizeResolve.active()) {
+                if (hostGallerySizeResolve().active()) {
                     return;
                 }
                 // Pyramid appeared mid-session; start tile pump if already in band.
@@ -275,7 +274,7 @@ ImageView::ImageView(QWidget *parent)
             && m_layoutDebounce.take(&reason)) {
             // Coalesce create+pack: ensurePlaceholders was O(session) per
             // sizeReady; run once with the pack so progressive open stays smooth.
-            if (m_gallerySizeResolve.active()) {
+            if (hostGallerySizeResolve().active()) {
                 m_gallery.ensurePlaceholders();
             }
             m_gallery.applyLayout(reason);

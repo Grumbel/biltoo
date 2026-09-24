@@ -15,7 +15,7 @@ class QTimer;
 
 /**
  * Host callbacks for the Gallery packaged-layout size gate.
- * ImageView implements this; GallerySizeResolve owns pending set and progress.
+ * GalleryController implements this; GallerySizeResolve owns pending set and progress.
  */
 class GallerySizeResolveHost
 {

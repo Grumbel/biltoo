@@ -14,6 +14,7 @@
 #include <QStringList>
 #include "imageview_types.h"
 #include "session/packorderview.h"
+#include "gallery/gallerysizeresolve.h"
 
 class ImageView;
 class ImageItem;
@@ -28,10 +29,11 @@ class QPoint;
  * Gallery-mode collaborator for ImageView.
  *
  * Owns Gallery-private state (tile stash, viewport snapshot, selection anchor,
- * hover path) and the Gallery enter / leave / return transition helpers.
+ * hover path), the packaged-layout size gate (GallerySizeResolve), and enter/
+ * leave / return transition helpers.
  * ImageView remains the QGraphicsView shell and public API surface.
  */
-class GalleryController
+class GalleryController : public GallerySizeResolveHost
 {
 public:
     explicit GalleryController(ImageView *view);
@@ -138,6 +140,25 @@ public:
         m_haveScroll = true;
     }
 
+
+    GallerySizeResolve &sizeResolve() { return m_sizeResolve; }
+    const GallerySizeResolve &sizeResolve() const { return m_sizeResolve; }
+
+    // GallerySizeResolveHost
+    bool hasDefinitiveHostSize(const QString &path) const override;
+    void adoptResolvedSize(const QString &path, const QSize &size) override;
+    void adoptSizeProbeFailed(const QString &path) override;
+    void scheduleSizeProbeBatch(const QStringList &paths) override;
+    QStringList sizeResolvePathOrder() const override;
+    bool sizeResolveLayoutDefersPopulate() const override;
+    void setSizeResolveProgress(const QString &title, const QString &detail) override;
+    void clearSizeResolveProgress() override;
+    void onSizeResolveGateComplete() override;
+    void onSizeResolveGateCancelled() override;
+    void onSizeResolvePathSettled(const QString &path) override;
+
+    static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
+
 private:
 
     // Soft install / HUD / canvas helpers (no external callers)
@@ -149,6 +170,7 @@ private:
     void setPathOrderFromLiveItems();
 
     ImageView *m_view = nullptr;
+    GallerySizeResolve m_sizeResolve;
 
     QList<ImageItem *> m_stashedItems;
     PackOrderView m_stashedPackOrder;

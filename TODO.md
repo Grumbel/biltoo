@@ -2,20 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2468.1-own-image-size-coordinator** (base `7d823d8`).
+**Tip: biltoo-2469.1-own-gallery-size-resolve** (base `7d823d8`).
 
 ### Ownership transfer
-- **2464–2466:** Workspace group / page-guide / chrome + ItemInteract
-- **2467:** Image-mode framing → ImageController
-- **2468:** ImageSizeBook + probe/remember policy → `ImageSizeCoordinator`
-  (`item/imagesizecoordinator.*`). GallerySizeResolve host + applyProbedImageSize
-  stay on ImageView (canvas apply).
+- **2464–2468:** Workspace / framing / ImageSizeCoordinator
+- **2469:** `GallerySizeResolveHost` + `GallerySizeResolve` owned by
+  `GalleryController` (`gallerycontroller_sizeresolve.cpp`). ImageView is no
+  longer the size-gate host; `hostGallerySizeResolve()` forwards to gallery.
 
 ### Next
-- GallerySizeResolveHost → GalleryController (optional)
+- paint collaborator (optional)
 - Dual PreferCache coordination (optional)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2468.1-own-image-size-coordinator-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2469.1-own-gallery-size-resolve-7d823d8.bundle HEAD
 ```

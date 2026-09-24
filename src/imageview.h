@@ -102,7 +102,6 @@ class QPainter;
 class CropAppearanceCommand;
 
 class ImageView : public QGraphicsView,
-                  private GallerySizeResolveHost,
                   private TileNeighborPrefetchHost,
                   public DisplayPipelineHost
 {
@@ -657,6 +656,7 @@ signals:
     void statusChanged();
     /** Packaged Gallery: all session size probes settled (or timed out). */
     void gallerySizeResolveFinished();
+    void notifyGallerySizeResolveFinished() { emit gallerySizeResolveFinished(); }
     void mouseInfoChanged(const ImageMouseInfo &info);
     /** Emitted when items are removed from the workspace (e.g. Delete key). */
     void workspacePathsChanged();

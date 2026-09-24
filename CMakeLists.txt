@@ -124,6 +124,7 @@ set(BILTOO_LIB_SOURCES
   src/imageview_accessors.cpp
   src/imageview_size_book.cpp
   src/gallery/gallerycontroller.cpp
+  src/gallery/gallerycontroller_sizeresolve.cpp
   src/slideshow/slideshowcontroller.cpp
   src/slideshow/slideshowcontroller.h
   src/crop/cropcontroller.cpp

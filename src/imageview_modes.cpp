@@ -66,7 +66,7 @@ void ImageView::invalidateSessionLoads()
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
     m_size.book().clear();
-    m_gallerySizeResolve.cancel();
+    hostGallerySizeResolve().cancel();
     // Drop host size-probe FIFO + bump generation so previous-session Store
     // size callbacks cannot emit sizeReady or refill ImageCache after clear.
     ThumtooCache::cancelSizeProbes();
@@ -244,7 +244,7 @@ void ImageView::clearWorkspace()
     m_displayPipeline->galleryDecodeResetAll();
     m_size.book().clear();
     m_galleryDecodeBook.setDeferPopulate(false);
-    m_gallerySizeResolve.cancel();
+    hostGallerySizeResolve().cancel();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();
     m_displayPipeline->dropAllTileLodSessions();
