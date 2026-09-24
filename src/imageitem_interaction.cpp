@@ -868,9 +868,9 @@ void ImageItem::activateChromeHandle(Handle h)
             for (QGraphicsView *v : scene()->views()) {
                 if (auto *iv = qobject_cast<ImageView *>(v)) {
                     if (h == Handle::Raise) {
-                        iv->raiseItem(this);
+                        iv->hostWorkspace().raiseItem(this);
                     } else {
-                        iv->lowerItem(this);
+                        iv->hostWorkspace().lowerItem(this);
                     }
                     break;
                 }

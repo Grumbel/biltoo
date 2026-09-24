@@ -4,6 +4,9 @@
 // ImageView thin routers co-located with view/ ownership.
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
+#include "util/biltoo_logging.h"
+#include "view/viewmodeflags.h"
 #include <QPainter>
 #include <QPaintEvent>
 #include <QResizeEvent>

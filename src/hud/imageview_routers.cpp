@@ -53,7 +53,7 @@ QString ImageView::hudFileName() const
     }
     if (item) {
         return HudModel::fileNameWithModifiedSuffix(
-            PagePath::displayName(item->path()), targetHasContentAppearance());
+            PagePath::displayName(item->path()), hostImage().targetHasContentAppearance());
     }
     if (m_image.hasClassicPath() && isImageMode()) {
         return PagePath::displayName(m_image.classicPath());
@@ -107,7 +107,7 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         const ItemComponents::Placement pl = item->placement();
         text += HudModel::workspaceSelectedItemScaleSuffix(pl.scale, pl.scaleY, pl.rotation);
     }
-    text += HudModel::editedStatusSuffix(targetHasContentAppearance());
+    text += HudModel::editedStatusSuffix(hostImage().targetHasContentAppearance());
     appendThumtooDebugStatus(&text, item);
     return text;
 }
@@ -127,7 +127,7 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
         const ItemComponents::Placement pl = item->placement();
         text += HudModel::placementFlipRotationSuffix(pl.rotation, pl.hFlip, pl.vFlip);
     }
-    text += HudModel::editedStatusSuffix(targetHasContentAppearance());
+    text += HudModel::editedStatusSuffix(hostImage().targetHasContentAppearance());
     appendThumtooDebugStatus(&text, item);
     return text;
 }
