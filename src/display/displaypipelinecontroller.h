@@ -80,6 +80,10 @@ public:
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
+    /** Pixel host for ImageView (no longer a friend of ImageItem). */
+    void hostClearDecodedPixels(ImageItem *item);
+    void hostSetIntrinsicSize(ImageItem *item, const QSize &size);
+    void hostSetPreviewImage(ImageItem *item, const QImage &preview);
     /**
      * Gallery underlay from ImageCache only (SizeReply EMB/LQIP).
      * Scales to EMB band, installDisplayPixels + setItemPreviewImage fallback.

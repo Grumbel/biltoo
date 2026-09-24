@@ -66,13 +66,14 @@ ImageItem `tileLodBag()` asserts a pipeline-owned bag (Stage 2). Orphan static b
 | Workspace chrome drag | Item interaction → `applyPlacement` |
 | Durable pose | Workspace `WorkspaceItemState` / ItemWorld as documented |
 
-## ImageView `friend class ImageItem` — residual
+## ImageView is not a friend of ImageItem
 
-`ImageView` remains a full friend so historical call sites compile. **Policy:**
+**Done (2417+):** `friend class ImageView` removed.
 
-1. New code must use the host wrappers (`clearItemDecodedPixels`, `setItemIntrinsicSize`, `setItemSessionId`, `attachDisplaySample`, pipeline install).
-2. Direct private calls inside ImageView `*.cpp` are **tech debt**; route through wrappers when touching a file.
-3. End state: drop `friend class ImageView` once all mutators go through pipeline + narrow host APIs (or a dedicated `ItemPixelHost`).
+1. Canvas host surface is **public** on `ImageItem` (pose, session bind, mode chrome, applied xform, colour).
+2. Pixel mutators stay **private**; only pipeline / crop / gallery friends.
+3. ImageView reaches pixels only via `DisplayPipelineController::hostClearDecodedPixels` /
+   `hostSetIntrinsicSize` / `hostSetPreviewImage` / `attachDisplaySample` / `installDisplayPixels`.
 
 ## Mode vs item (pointer ownership)
 
@@ -86,7 +87,7 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 
 1. **Done:** graph written; ImageView clear/intrinsic via host wrappers.
 2. **Done:** `attachDisplaySample` implementation on `DisplayPipelineController`; view one-line forward.
-3. Narrow `friend class ImageView` to an explicit host interface (or remove friend).
+3. **Done:** `friend class ImageView` removed; public host surface + pipeline pixel hosts.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade.
 
 ## Related

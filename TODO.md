@@ -2,19 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2417-attach-display-pipeline** (base `d80d461`).
+**Tip: biltoo-2418-no-imageview-friend** (base `d80d461`).
 
-### Phase 5 ownership — slice 2
-- `DisplayPipelineController::attachDisplaySample` owns setPreview / setSourceReady
-  + layout/meta sync (calls view host for layout/color)
-- `ImageView::attachDisplaySample` is a one-line forward
-- Doc backlog updated in IMAGEVIEW_ITEM_OWNERSHIP.md
+### Phase 5 ownership — slice 3
+- Removed `friend class ImageView` from `ImageItem`
+- Public **canvas host surface**: pose, session, mode chrome, applied xform, colour
+- Pixel ops only via pipeline friends + `hostClearDecodedPixels` /
+  `hostSetIntrinsicSize` / `hostSetPreviewImage`
 
 ### Next
-3. Narrow / remove `friend class ImageView` on ImageItem
-4. Dual ImageView (0.3)
+4. Dual ImageView (0.3) on thin façade
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2417.1-attach-display-pipeline-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2418.1-no-imageview-friend-d80d461.bundle HEAD
 ```

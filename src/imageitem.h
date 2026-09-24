@@ -29,9 +29,10 @@
  * Owns display pixels, applied ContentXform fingerprint, and live placement
  * (pose). Durable content lives in ItemWorld sparse tables —
  * ImageView::sessionAppearanceValue is the store-read path. All mutators are
- * private (friends: ImageView, DisplayPipelineController, CropSession,
- * GalleryController, GalleryLayout helpers). Public surface is readers,
- * interaction handlers, and paint chrome for the view.
+ * private for pixels (friends: DisplayPipelineController, CropSession,
+ * GalleryController, GalleryLayout helpers). Canvas host surface (pose,
+ * session, mode chrome) is public. Readers, interaction handlers, and paint
+ * chrome remain on the public API.
  *
  * Ownership graph (who may create, install pixels, own tile bags):
  *   docs/IMAGEVIEW_ITEM_OWNERSHIP.md
@@ -196,6 +197,38 @@ public:
     bool tileLodWanted() const;
     /** Live TileLodController when pipeline bag is attached; else nullptr. */
     tilelod::TileLodController *tileLodController() const;
+
+    // --- Canvas host surface (ImageView / mode controllers; not pixel authority) ---
+    void setSessionId(SessionImageId id) { m_sessionId = id; }
+    void setSessionIndex(int index) { m_sessionIndex = index; }
+    void setInteractive(bool on);
+    void setGallerySelectable(bool on);
+    void invalidateDeviceCache();
+    void setScaleHandlesEnabled(bool on);
+    void setHoverHandle(Handle h);
+    void setGalleryCellSize(const QSizeF &sceneSize);
+    void applyPlacement(const ItemComponents::Placement &pl);
+    static void setContentEditMarksVisible(bool on);
+    static bool contentEditMarksVisible();
+    void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
+    void setColorAdjustments(const ColorAdjustments &adj);
+    void setColorAdjustmentsRecord(const ColorAdjustments &adj);
+    ContentXform::Value liveContentXformForPaint() const;
+    ColorAdjustments liveColorForPaint() const;
+    void setAppliedContentXform(const ContentXform::Value &x)
+    {
+        m_appliedContentXform = x;
+        m_hasAppliedContentXform = true;
+        clearTileGradedCache();
+    }
+    void clearAppliedContentXform()
+    {
+        m_appliedContentXform = {};
+        m_hasAppliedContentXform = false;
+        clearTileGradedCache();
+    }
+
+
     /** True when pipeline bag is suppressed (crop draft, etc.). */
     bool tileLodSuppressed() const
     {
@@ -255,24 +288,8 @@ private:
     friend class GalleryController;
     friend void GalleryLayout::setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
     friend void GalleryLayout::applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl);
-    // Content-meta / color install — ImageView syncLive* helpers.
-    friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
     void setPath(const QString &path);
-    /** Valid ids: only ImageView::setItemSessionId (list-order + applied migrate). */
-    void setSessionId(SessionImageId id) { m_sessionId = id; }
-    void setSessionIndex(int index) { m_sessionIndex = index; }
-    void setInteractive(bool on);
-    void setGallerySelectable(bool on);
-    void invalidateDeviceCache();
-    /** Corner scale handles on/off (packaged layouts leave off). */
-    void setScaleHandlesEnabled(bool on);
-    void setHoverHandle(Handle h);
-    void setGalleryCellSize(const QSizeF &sceneSize);
-    void applyPlacement(const ItemComponents::Placement &pl);
-    static void setContentEditMarksVisible(bool on);
-    static bool contentEditMarksVisible();
-    void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);
     void setSourceImageReady(const QImage &image);
@@ -280,28 +297,6 @@ private:
     /** Clear display pixels; keeps applied ContentXform fingerprint. */
     void clearDecodedPixels();
 
-    void setColorAdjustments(const ColorAdjustments &adj);
-    /** Store grade without rebuilding the display pixmap. */
-    void setColorAdjustmentsRecord(const ColorAdjustments &adj);
-    /**
-     * Paint / tile LOD: prefer ImageView host helpers when on a view (ItemWorld
-     * when bound); fall back to item mirrors when detached.
-     */
-    ContentXform::Value liveContentXformForPaint() const;
-    ColorAdjustments liveColorForPaint() const;
-
-    void setAppliedContentXform(const ContentXform::Value &x)
-    {
-        m_appliedContentXform = x;
-        m_hasAppliedContentXform = true;
-        clearTileGradedCache();
-    }
-    void clearAppliedContentXform()
-    {
-        m_appliedContentXform = {};
-        m_hasAppliedContentXform = false;
-        clearTileGradedCache();
-    }
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();

@@ -1712,3 +1712,24 @@ void DisplayPipelineController::attachDisplaySample(ImageItem *item, const QImag
     }
 }
 
+
+void DisplayPipelineController::hostClearDecodedPixels(ImageItem *item)
+{
+    if (item) {
+        item->clearDecodedPixels();
+    }
+}
+
+void DisplayPipelineController::hostSetIntrinsicSize(ImageItem *item, const QSize &size)
+{
+    if (item) {
+        item->setIntrinsicSize(size);
+    }
+}
+
+void DisplayPipelineController::hostSetPreviewImage(ImageItem *item, const QImage &preview)
+{
+    if (item) {
+        item->setPreviewImage(preview);
+    }
+}
