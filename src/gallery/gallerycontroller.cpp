@@ -717,7 +717,7 @@ bool GalleryController::tryMousePressGalleryRight(QMouseEvent *event)
         m_view->canvasScene()->clearSelection();
         hit->setSelected(true);
         setSelectionAnchor(hit);
-        m_view->emitGalleryItemFocus(hit);
+        emitItemFocus(hit);
         emit m_view->statusChanged();
     }
     event->accept();
@@ -769,7 +769,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
                 m_view->viewport()->update();
             }
             emit m_view->canvasSelectionChanged();
-            m_view->emitGalleryItemFocus(hit);
+            emitItemFocus(hit);
             m_dragArmed = true;
             m_dragStartViewPos = event->pos();
             m_dragPressItem = hit;
@@ -791,7 +791,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             }
             hit->invalidateDeviceCache();
             emit m_view->canvasSelectionChanged();
-            m_view->emitGalleryItemFocus(hit);
+            emitItemFocus(hit);
             if (hit->isSelected()) {
                 m_dragArmed = true;
                 m_dragStartViewPos = event->pos();
@@ -832,7 +832,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             }
             emit m_view->canvasSelectionChanged();
             setSelectionAnchor(hit);
-            m_view->emitGalleryItemFocus(hit);
+            emitItemFocus(hit);
             // Arm reorder drag for the new single selection.
             m_dragArmed = true;
             m_dragStartViewPos = event->pos();
@@ -1028,7 +1028,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
 
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         if (ImageItem *item = m_view->selectedOrFirstGalleryItem()) {
-            m_view->emitItemOpenInImageMode(item);
+            emitItemOpenInImageMode(item);
             event->accept();
             return true;
         }
@@ -1040,7 +1040,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
                               ? m_view->liveItems().first()
                               : m_view->liveItems().last();
         m_view->focusGalleryItem(item);
-        m_view->emitGalleryItemFocus(item);
+        emitItemFocus(item);
         event->accept();
         return true;
     }
@@ -1078,7 +1078,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
         return false;
     }
     m_view->focusGalleryItem(best);
-    m_view->emitGalleryItemFocus(best);
+    emitItemFocus(best);
     event->accept();
     return true;
 }

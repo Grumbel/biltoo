@@ -86,6 +86,8 @@ public:
     void zoomFill();
     void zoomReset();
     void zoomViewBy(qreal factor);
+    void zoomIn();
+    void zoomOut();
     /** Workspace overview scale ≈ four zoom-out steps (41%). */
     void setWorkspaceDefaultViewScale();
     void preserveImageViewOnLogicalSizeChange(ImageItem *item,

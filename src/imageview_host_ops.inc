@@ -24,14 +24,6 @@
     ImageItem *findItemForPath(const QString &path) const;
     /** Gallery: selected tile, else first live item (keyboard open / focus). */
     ImageItem *selectedOrFirstGalleryItem() const;
-    /** Emit sessionImageFocused / sessionSlotFocused / galleryItemFocused for @p item. */
-    void emitGalleryItemFocus(ImageItem *item);
-    /**
-     * Open @p item in Image mode: SessionImageId → list index → path.
-     * Gallery: when unbound without list cache, live canvas index is a pack-aligned
-     * slot hint (after reorderItemsByPaths). Path open remains last resort.
-     */
-    void emitItemOpenInImageMode(ImageItem *item);
     /** Page-guide selection chrome (Workspace print frame). */
     void setPageGuideSelected(bool on);
     ImageItem *targetItem() const override;

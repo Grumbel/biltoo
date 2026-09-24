@@ -90,6 +90,16 @@ public:
     void focusItem(ImageItem *item);
     void focusSessionId(SessionImageId sessionId);
     void focusSessionPath(const QString &path);
+    /**
+     * Emit session/gallery focus signals for @p item (id-safe path guard).
+     * Prefer SessionImageId when it still matches the tile path in the document.
+     */
+    void emitItemFocus(ImageItem *item);
+    /**
+     * Request open of @p item in Image mode (id-safe path guard).
+     * Prefer SessionImageId when it still matches the tile path in the document.
+     */
+    void emitItemOpenInImageMode(ImageItem *item);
     void revealPath(const QString &path);
     void revealSessionId(SessionImageId sessionId);
     /** Enter Gallery mode (or switch packaged layout if already Gallery). */

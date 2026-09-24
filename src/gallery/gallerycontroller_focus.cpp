@@ -6,6 +6,7 @@
 
 #include "gallery/gallerycontroller.h"
 #include "imageview.h"
+#include "session/sessiondocument.h"
 #include "imageitem.h"
 #include "view/viewtransform.h"
 
@@ -119,4 +120,96 @@ void GalleryController::enterGallery(LayoutMode packagedLayout)
     // Preserve requested layout for setViewMode's Gallery branch.
     m_view->hostLayout().setMode(packagedLayout);
     m_view->setViewMode(ImageView::ViewMode::Gallery);
+}
+
+
+void GalleryController::emitItemFocus(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Same path↔id guard as emitItemOpenInImageMode: a scrubbed/stale SessionImageId
+    // must not move the session cursor to another document row.
+    SessionDocument *doc = m_view->sessionDocument();
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        bool idMatchesPath = true;
+        if (doc) {
+            const int docIdx = doc->indexOfId(sid);
+            if (docIdx < 0) {
+                idMatchesPath = false;
+            } else if (!item->path().isEmpty()) {
+                idMatchesPath = (doc->paths().at(docIdx) == item->path());
+            }
+        }
+        if (idMatchesPath) {
+            emit m_view->sessionImageFocused(sid);
+            return;
+        }
+    }
+    // Unbound or id/path conflict: list-order cache, then Gallery live index.
+    int listIdx = m_view->sessionListIndex(item);
+    if (listIdx < 0 && m_view->isGalleryMode()) {
+        const int live = m_view->liveItems().indexOf(item);
+        if (live >= 0 && (!doc || live < doc->size())) {
+            listIdx = live;
+        }
+    }
+    if (listIdx < 0 && doc && !item->path().isEmpty()) {
+        listIdx = doc->indexOfPathPreferId(item->path());
+    }
+    if (listIdx >= 0) {
+        emit m_view->sessionSlotFocused(listIdx);
+        return;
+    }
+    if (!item->path().isEmpty()) {
+        emit m_view->galleryItemFocused(item->path());
+    }
+}
+
+void GalleryController::emitItemOpenInImageMode(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Prefer SessionImageId only when it still matches this tile's path in the
+    // session document. After setItemSessionId conflict scrub, a tile can keep
+    // a stale id that belongs to another path — opening by that id would load
+    // the wrong file while classicPath may still be set from a prior pin.
+    SessionDocument *doc = m_view->sessionDocument();
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        bool idMatchesPath = true;
+        if (doc) {
+            const int docIdx = doc->indexOfId(sid);
+            if (docIdx < 0) {
+                idMatchesPath = false;
+            } else if (!item->path().isEmpty()) {
+                idMatchesPath = (doc->paths().at(docIdx) == item->path());
+            }
+        }
+        if (idMatchesPath) {
+            emit m_view->sessionImageOpenRequested(sid);
+            return;
+        }
+    }
+    int listIdx = m_view->sessionListIndex(item);
+    // Gallery pack order aligns live canvas with session rows after reorder.
+    if (listIdx < 0 && m_view->isGalleryMode()) {
+        const int live = m_view->liveItems().indexOf(item);
+        if (live >= 0 && (!doc || live < doc->size())) {
+            listIdx = live;
+        }
+    }
+    // Unbound or id/path conflict: prefer document row by list cache, then path.
+    if (listIdx < 0 && doc && !item->path().isEmpty()) {
+        listIdx = doc->indexOfPathPreferId(item->path());
+    }
+    if (listIdx >= 0) {
+        emit m_view->sessionSlotOpenRequested(listIdx);
+        return;
+    }
+    if (!item->path().isEmpty()) {
+        emit m_view->galleryItemOpenRequested(item->path());
+    }
 }

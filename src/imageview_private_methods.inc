@@ -133,7 +133,6 @@
 
 
     SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
-    bool sessionIdMatchesPath(SessionImageId id, const QString &path) const;
 
 
     void appendThumtooDebugStatus(QString *text, ImageItem *item) const;

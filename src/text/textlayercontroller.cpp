@@ -376,8 +376,8 @@ bool TextLayerController::copySelectedText()
 
 bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
 {
-    if (!m_view->isImageMode() || m_view->hostCrop().session().active()
-        || m_view->hostAttention().session().active()
+    if (!m_view->isImageMode() || m_view->hostCrop().active()
+        || m_view->hostAttention().active()
         || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
@@ -415,6 +415,33 @@ bool TextLayerController::tryMouseReleaseRubber(QMouseEvent *event)
     m_session.updateRubber(event->pos());
     finishRubberBand();
     m_view->unsetCursor();
+    event->accept();
+    return true;
+}
+
+
+bool TextLayerController::tryMousePressLink(QMouseEvent *event)
+{
+    if (!m_view->isImageMode() || m_view->hostCrop().active()
+        || m_view->hostAttention().active()
+        || event->button() != Qt::LeftButton
+        || event->modifiers() != Qt::NoModifier
+        || !PagePath::isPageRef(m_view->hostImage().classicPath())) {
+        return false;
+    }
+    if (!session().hasLayerRegions()
+        || session().layerPathRef() != m_view->hostImage().classicPath()) {
+        const bool hadShow = session().showsRegions();
+        session().setShowRegions(true);
+        refresh();
+        session().setShowRegions(hadShow);
+    }
+    int page = 0;
+    QString uri;
+    if (!hitLinkAt(event->pos(), &page, &uri)) {
+        return false;
+    }
+    emit m_view->linkActivated(page, uri);
     event->accept();
     return true;
 }

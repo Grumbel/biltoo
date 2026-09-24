@@ -157,26 +157,7 @@ bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 }
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
-    if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
-        || event->button() != Qt::LeftButton
-        || event->modifiers() != Qt::NoModifier
-        || !PagePath::isPageRef(m_image.classicPath())) {
-        return false;
-    }
-    if (!m_textCtrl.session().hasLayerRegions() || m_textCtrl.session().layerPathRef() != m_image.classicPath()) {
-        const bool hadShow = m_textCtrl.session().showsRegions();
-        m_textCtrl.session().setShowRegions(true);
-        refreshTextLayer();
-        m_textCtrl.session().setShowRegions(hadShow);
-    }
-    int page = 0;
-    QString uri;
-    if (!hitTextLinkAt(event->pos(), &page, &uri)) {
-        return false;
-    }
-    emit linkActivated(page, uri);
-    event->accept();
-    return true;
+    return m_textCtrl.tryMousePressLink(event);
 }
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {

@@ -4,18 +4,9 @@
 // View zoom, fit/fill, sticky zoom enable, zoom-region. Image-mode framing: ImageController.
 
 #include "imageview.h"
-#include "util/biltoo_thread.h"
-#include "imageitem.h"
-#include "item/itemcomponents.h"
 #include "view/viewtransform.h"
-#include "view/viewframing.h"
 
 #include <QScrollBar>
-#include "image/toolpolicy.h"
-#include <QPointer>
-#include <QTimer>
-#include "content/contentxform.h"
-#include "session/sessionappearance.h"
 
 void ImageView::setStickyZoomEnabled(bool on)
 {
@@ -26,7 +17,6 @@ void ImageView::setStickyZoomEnabled(bool on)
     emit statusChanged();
 }
 
-
 void ImageView::releaseStickyZoom()
 {
     if (!m_image.framing().setStickyZoomEnabled(false)) {
@@ -36,24 +26,15 @@ void ImageView::releaseStickyZoom()
     emit statusChanged();
 }
 
-
-
-
-
-
 void ImageView::cancelZoomRegion()
 {
     m_image.cancelZoomRegion();
 }
 
-
-
-
 void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
 {
     m_image.fitItem(item, mode);
 }
-
 
 void ImageView::ensureVisibleItem(ImageItem *item)
 {
@@ -62,13 +43,10 @@ void ImageView::ensureVisibleItem(ImageItem *item)
     }
 }
 
-// --- View zoom / fit / fill (was imageview_framing.cpp) ---
-
 qreal ImageView::viewScale() const
 {
     return ViewTransform::scaleFrom(transform());
 }
-
 
 void ImageView::zoomViewBy(qreal factor)
 {
@@ -77,22 +55,18 @@ void ImageView::zoomViewBy(qreal factor)
 
 void ImageView::zoomIn()
 {
-    // View-level zoom in Image mode and free-form Workspace
-    zoomViewBy(1.25);
+    m_image.zoomIn();
 }
-
 
 void ImageView::zoomOut()
 {
-    zoomViewBy(1.0 / 1.25);
+    m_image.zoomOut();
 }
-
 
 void ImageView::setWorkspaceDefaultViewScale()
 {
     m_image.setWorkspaceDefaultViewScale();
 }
-
 
 void ImageView::zoomReset()
 {
@@ -114,7 +88,6 @@ void ImageView::refreshScrollBarGeometry()
     }
 }
 
-
 void ImageView::zoomFit()
 {
     m_image.zoomFit();
@@ -129,9 +102,6 @@ void ImageView::armZoomRegion()
 {
     m_image.armZoomRegion();
 }
-
-
-// --- Image-mode framing: owned by ImageController (thin host forwards) ---
 
 void ImageView::captureStickyPanAnchor(ImageItem *item)
 {

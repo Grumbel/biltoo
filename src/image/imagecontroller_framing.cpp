@@ -480,6 +480,18 @@ void ImageController::zoomViewBy(qreal factor)
     emit m_view->statusChanged();
 }
 
+
+void ImageController::zoomIn()
+{
+    // View-level zoom in Image mode and free-form Workspace
+    zoomViewBy(1.25);
+}
+
+void ImageController::zoomOut()
+{
+    zoomViewBy(1.0 / 1.25);
+}
+
 void ImageController::setWorkspaceDefaultViewScale()
 {
     // Workspace is an overview canvas for multiple pages. Match four toolbar
