@@ -419,9 +419,6 @@ public:
     QString loadingStatusHudLine() const;
     QSize imageSize() const;
     int itemCount() const override;
-    QStringList itemPaths() const;
-    /** Live canvas SessionImageIds (parallel to itemPaths; invalid when unbound). */
-    QVector<SessionImageId> itemSessionIds() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */

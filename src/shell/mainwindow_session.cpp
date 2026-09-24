@@ -403,11 +403,17 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
     }
 
     // Workspace selection restore after setFiles: prefer SessionImageId (duplicates).
-    const QStringList workspacePaths =
-        isWorkspaceMode() && m_imageView ? m_imageView->itemPaths() : QStringList();
-    const QVector<SessionImageId> workspaceIds =
-        isWorkspaceMode() && m_imageView ? m_imageView->itemSessionIds()
-                                         : QVector<SessionImageId>();
+    QStringList workspacePaths;
+    QVector<SessionImageId> workspaceIds;
+    if (isWorkspaceMode() && m_imageView) {
+        for (ImageItem *item : m_imageView->liveItems()) {
+            if (!item) {
+                continue;
+            }
+            workspacePaths.append(item->path());
+            workspaceIds.append(item->sessionId());
+        }
+    }
 
     auto finish = [this, currentId, currentPath, workspacePaths, workspaceIds]() {
         finishExpandedAppendChrome(currentId, currentPath, workspacePaths, workspaceIds);

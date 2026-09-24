@@ -102,25 +102,6 @@ int ImageView::itemCount() const
     return m_items.size();
 }
 
-QStringList ImageView::itemPaths() const
-{
-    QStringList paths;
-    for (ImageItem *item : m_items) {
-        paths.append(item->path());
-    }
-    return paths;
-}
-
-QVector<SessionImageId> ImageView::itemSessionIds() const
-{
-    QVector<SessionImageId> ids;
-    ids.reserve(m_items.size());
-    for (ImageItem *item : m_items) {
-        ids.append(item ? item->sessionId() : kInvalidSessionImageId);
-    }
-    return ids;
-}
-
 QStringList ImageView::selectedPaths() const
 {
     QStringList paths;
