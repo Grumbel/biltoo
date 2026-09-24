@@ -2,17 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2571.1-own-live-color-bind-native-pure** (base `7d823d8`).
+**Tip: biltoo-2572.1-own-input-dispatch** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::preferLiveColor** — lag vs item grade for paint/status
-- **SessionAppearance::BindLagAction** / **bindLiveColorLagAction** — bind lag
-  stamp policy (no identity row pollution)
-- **SessionAppearance::isPlaceholderProbeSize** / **isUsableNativeSize**
-- Host keeps ItemWorld lag table and intrinsic size writes
+- **ViewShellChrome::handleMousePress/Move/Release** — full try* dispatch chains
+- **ViewShellChrome::handleKeyPress** / **handleMouseDoubleClick** / **handleLeave**
+- ImageView QGraphicsView overrides are thin shell + base-class fallthrough
 
 ### Prior
-**2570.1** Own mode-leave sticky pan, HUD modified suffix, session index pure.
+**2571.1** Own live color bind and usable native pure policy.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -21,14 +19,15 @@ QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
 setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
 freeze / flush / remember / persist / crop-restore host residual,
-drawBackground / drawForeground one-line QGraphicsView overrides,
-input event routers (QGraphicsView overrides)
+drawBackground / drawForeground / input one-line QGraphicsView overrides,
+thin private try* routers (still used by shell via host controllers)
 
 ### Next thinning candidates
 - setViewMode body (mode shell by design — leave/enter orchestration)
 - public thin routers (MainWindow API surface — keep until dual/callers migrate)
+- drop ImageView thin private try* if no remaining callers
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2571.1-own-live-color-bind-native-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2572.1-own-input-dispatch-7d823d8.bundle HEAD
 ```

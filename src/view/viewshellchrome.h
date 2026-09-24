@@ -14,6 +14,8 @@ class QDragEnterEvent;
 class QDragMoveEvent;
 class QDropEvent;
 class QPainter;
+class QKeyEvent;
+class QEvent;
 class QRectF;
 
 /**
@@ -71,6 +73,17 @@ public:
     void refreshScrollBarGeometry();
     /** Gallery → BoundingRect updates; Image/Workspace → FullViewportUpdate. */
     void applyModeViewportPolicy(int viewMode);
+
+    /**
+     * Input dispatch chains (controllers + pan). @return true when the event
+     * was handled and QGraphicsView default must not run.
+     */
+    bool handleMousePress(QMouseEvent *event);
+    bool handleMouseMove(QMouseEvent *event);
+    bool handleMouseRelease(QMouseEvent *event);
+    bool handleKeyPress(QKeyEvent *event);
+    bool handleMouseDoubleClick(QMouseEvent *event);
+    void handleLeave();
 
 private:
     ImageView *m_view = nullptr;

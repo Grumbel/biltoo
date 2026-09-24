@@ -57,22 +57,9 @@
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    if (m_slideshow.tryMousePressSlideshowSeek(event)
-        || m_attentionCtrl.tryMousePressAttention(event)
-        || m_cropCtrl.tryMousePressCrop(event)
-        || tryMousePressZoomRegion(event)
-        || m_workspace.tryMousePressWorkspaceChrome(event)
-        || tryMousePressImageLink(event)
-        || tryMousePressTextRubber(event)
-        || m_image.tryMousePressEdges(event)
-        || m_shell.tryMousePressPan(event)
-        || m_workspace.tryMousePressWorkspaceRotate(event)
-        || m_gallery.tryMousePressGalleryRight(event)
-        || m_gallery.tryMousePressGalleryLeft(event)
-        || m_workspace.tryMousePressSelect(event)) {
+    if (m_shell.handleMousePress(event)) {
         return;
     }
-
     QGraphicsView::mousePressEvent(event);
 }
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
@@ -81,34 +68,9 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 }
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
-    if (tryMouseMoveTextRubber(event)) {
+    if (m_shell.handleMouseMove(event)) {
         return;
     }
-    m_textCtrl.updateMouseMoveLinkHover(event);
-    if (m_attentionCtrl.tryMouseMoveAttention(event)
-        || m_cropCtrl.tryMouseMoveCropDrag(event)
-        || m_shell.tryMouseMovePan(event)
-        || m_cropCtrl.tryMouseMoveCropHover(event)
-        || tryMouseMoveZoomRegion(event)
-        || m_gallery.tryMouseMoveGalleryDrag(event)) {
-        return;
-    }
-    m_shell.updateMouseInfo(event->pos());
-    if (tryMouseMovePageGuide(event)
-        || tryMouseMoveGroupAndHandleDrag(event)
-        || m_workspace.tryMouseMoveWorkspaceRotate(event)) {
-        return;
-    }
-
-    if (isImageMode()) {
-        updateHoverEdge(event->pos());
-    }
-
-    m_shell.viewport().setHoverViewPos(event->pos());
-    m_slideshow.updateMouseMoveSlideshowSeek(event);
-    m_gallery.updateGalleryHoverAt(m_shell.viewport().hoverViewPos());
-    m_workspace.updateMouseMoveWorkspaceChromeHover(event);
-
     QGraphicsView::mouseMoveEvent(event);
 }
 void ImageView::restoreToolCursor()
@@ -146,20 +108,9 @@ bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 }
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (m_slideshow.tryMouseReleaseSlideshowSeek(event)
-        || tryMouseReleaseTextRubber(event)
-        || m_attentionCtrl.tryMouseReleaseAttention(event)
-        || m_cropCtrl.tryMouseReleaseCrop(event)
-        || tryMouseReleaseZoomRegion(event)
-        || tryMouseReleasePageGuide(event)
-        || tryMouseReleaseGroupDrag(event)
-        || tryMouseReleaseHandleDrag(event)
-        || m_workspace.tryMouseReleaseWorkspaceRotate(event)
-        || m_shell.tryMouseReleasePan(event)) {
+    if (m_shell.handleMouseRelease(event)) {
         return;
     }
-    m_gallery.clearGalleryDragArm();
-    tryMouseReleaseItemDrag(event);
     QGraphicsView::mouseReleaseEvent(event);
 }
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
@@ -172,15 +123,7 @@ bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
-    if (m_attentionCtrl.tryKeyPressAttention(event)
-        || m_cropCtrl.tryKeyPressCrop(event)
-        || tryKeyPressZoomRegion(event)
-        || m_workspace.tryKeyPressSelectAll(event)
-        || m_image.tryKeyPressNavigate(event)
-        || m_gallery.tryKeyPressGallery(event)
-        || m_workspace.tryKeyPressShear(event)
-        || m_gallery.tryKeyPressDeleteSelection(event)
-        || m_workspace.tryKeyPressDeleteSelection(event)) {
+    if (m_shell.handleKeyPress(event)) {
         return;
     }
     QGraphicsView::keyPressEvent(event);
@@ -190,9 +133,7 @@ void ImageView::keyPressEvent(QKeyEvent *event)
 
 void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (m_image.tryMouseDoubleClick(event)
-        || m_gallery.tryMouseDoubleClick(event)
-        || m_workspace.tryMouseDoubleClick(event)) {
+    if (m_shell.handleMouseDoubleClick(event)) {
         return;
     }
     QGraphicsView::mouseDoubleClickEvent(event);
@@ -200,10 +141,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ImageView::leaveEvent(QEvent *event)
 {
-    m_shell.onLeave();
-    m_image.onViewportLeave();
-    m_gallery.onViewportLeave();
-    m_slideshow.onViewportLeave();
+    m_shell.handleLeave();
     QGraphicsView::leaveEvent(event);
 }
 

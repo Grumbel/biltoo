@@ -39,6 +39,8 @@
 #include "display/displaypipelinecontroller.h"
 
 #include <QMouseEvent>
+#include <QEvent>
+#include <QKeyEvent>
 #include <QScrollBar>
 
 bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
@@ -756,4 +758,118 @@ void ViewShellChrome::applyModeViewportPolicy(int viewMode)
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+}
+
+bool ViewShellChrome::handleMousePress(QMouseEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    return m_view->hostSlideshow().tryMousePressSlideshowSeek(event)
+        || m_view->hostAttention().tryMousePressAttention(event)
+        || m_view->hostCrop().tryMousePressCrop(event)
+        || m_view->hostImage().tryMousePressZoomRegion(event)
+        || m_view->hostWorkspace().tryMousePressWorkspaceChrome(event)
+        || m_view->hostText().tryMousePressLink(event)
+        || m_view->hostText().tryMousePressRubber(event)
+        || m_view->hostImage().tryMousePressEdges(event)
+        || tryMousePressPan(event)
+        || m_view->hostWorkspace().tryMousePressWorkspaceRotate(event)
+        || m_view->hostGallery().tryMousePressGalleryRight(event)
+        || m_view->hostGallery().tryMousePressGalleryLeft(event)
+        || m_view->hostWorkspace().tryMousePressSelect(event);
+}
+
+bool ViewShellChrome::handleMouseMove(QMouseEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    if (m_view->hostText().tryMouseMoveRubber(event)) {
+        return true;
+    }
+    m_view->hostText().updateMouseMoveLinkHover(event);
+    if (m_view->hostAttention().tryMouseMoveAttention(event)
+        || m_view->hostCrop().tryMouseMoveCropDrag(event)
+        || tryMouseMovePan(event)
+        || m_view->hostCrop().tryMouseMoveCropHover(event)
+        || m_view->hostImage().tryMouseMoveZoomRegion(event)
+        || m_view->hostGallery().tryMouseMoveGalleryDrag(event)) {
+        return true;
+    }
+    updateMouseInfo(event->pos());
+    if (m_view->hostWorkspace().tryMouseMovePageGuide(event)
+        || m_view->hostWorkspace().tryMouseMoveGroupAndHandleDrag(event)
+        || m_view->hostWorkspace().tryMouseMoveWorkspaceRotate(event)) {
+        return true;
+    }
+
+    if (m_view->isImageMode()) {
+        m_view->hostImage().updateHoverEdge(event->pos());
+    }
+
+    m_viewport.setHoverViewPos(event->pos());
+    m_view->hostSlideshow().updateMouseMoveSlideshowSeek(event);
+    m_view->hostGallery().updateGalleryHoverAt(m_viewport.hoverViewPos());
+    m_view->hostWorkspace().updateMouseMoveWorkspaceChromeHover(event);
+    return false;
+}
+
+bool ViewShellChrome::handleMouseRelease(QMouseEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    if (m_view->hostSlideshow().tryMouseReleaseSlideshowSeek(event)
+        || m_view->hostText().tryMouseReleaseRubber(event)
+        || m_view->hostAttention().tryMouseReleaseAttention(event)
+        || m_view->hostCrop().tryMouseReleaseCrop(event)
+        || m_view->hostImage().tryMouseReleaseZoomRegion(event)
+        || m_view->hostWorkspace().tryMouseReleasePageGuide(event)
+        || m_view->hostWorkspace().tryMouseReleaseGroupDrag(event)
+        || m_view->hostWorkspace().tryMouseReleaseHandleDrag(event)
+        || m_view->hostWorkspace().tryMouseReleaseWorkspaceRotate(event)
+        || tryMouseReleasePan(event)) {
+        return true;
+    }
+    m_view->hostGallery().clearGalleryDragArm();
+    m_view->hostWorkspace().tryMouseReleaseItemDrag(event);
+    return false;
+}
+
+bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    return m_view->hostAttention().tryKeyPressAttention(event)
+        || m_view->hostCrop().tryKeyPressCrop(event)
+        || m_view->hostImage().tryKeyPressZoomRegion(event)
+        || m_view->hostWorkspace().tryKeyPressSelectAll(event)
+        || m_view->hostImage().tryKeyPressNavigate(event)
+        || m_view->hostGallery().tryKeyPressGallery(event)
+        || m_view->hostWorkspace().tryKeyPressShear(event)
+        || m_view->hostGallery().tryKeyPressDeleteSelection(event)
+        || m_view->hostWorkspace().tryKeyPressDeleteSelection(event);
+}
+
+bool ViewShellChrome::handleMouseDoubleClick(QMouseEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    return m_view->hostImage().tryMouseDoubleClick(event)
+        || m_view->hostGallery().tryMouseDoubleClick(event)
+        || m_view->hostWorkspace().tryMouseDoubleClick(event);
+}
+
+void ViewShellChrome::handleLeave()
+{
+    if (!m_view) {
+        return;
+    }
+    onLeave();
+    m_view->hostImage().onViewportLeave();
+    m_view->hostGallery().onViewportLeave();
+    m_view->hostSlideshow().onViewportLeave();
 }
