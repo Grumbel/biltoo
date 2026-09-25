@@ -2,16 +2,16 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2674.1-tile-overlap-paint-all-paths` (base `2e49220`).
-**thumtoo:** `thumtoo-340.1-tile-overlap-5e47314` (257 encode).
+**Tip:** `biltoo-2675.1-overlap-exact-only-expand` (base `2e49220`).
+**thumtoo:** `thumtoo-340.1-tile-overlap-5e47314`.
 
-### Overlap paint coverage
-- `paint_draw_plan` (cover / slideshow / TileLodController::paint): expand dest + full UV for ExactTile
-- `imageitem_interaction` Image/Workspace/Gallery path: same expand
-- `parent_uv_for_child`: maps into exclusive portion of parent (not the +1 strip)
-- Grid step still 256; ES2 may crop 257→256 and accept seams
+### Re-verify (2675)
+- Dest expand **ExactTile only** (CoarserTile was wrongly expanding from parent 257 size).
+- `paint_draw_plan` + `imageitem_interaction` both gated.
+- `parent_uv_for_child` maps exclusive 256 of parent.
+- thumtoo all cut sites use `tile_cell_pixel_rect` (no remaining `min(kTileSize)` cuts).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2674.1-tile-overlap-paint-all-paths-2e49220.bundle HEAD
+git pull --ff-only …/biltoo-2675.1-overlap-exact-only-expand-2e49220.bundle HEAD
 ```

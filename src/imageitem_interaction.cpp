@@ -1198,9 +1198,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (img.isNull()) {
                         continue;
                     }
-                    // Overlap tiles (257²): expand content dest so bilinear
-                    // samples the shared strip; old 256² bitmaps unchanged.
-                    {
+                    // ExactTile only: expand dest for +kTileOverlap bitmaps.
+                    // CoarserTile: keep exclusive fine dst + parent UV as planned.
+                    tilelod::RectF uv = cmd.src_uv;
+                    if (cmd.kind == tilelod::DrawKind::ExactTile) {
                         const int sc = cmd.src_key.scale;
                         const int factor = (sc > 0) ? (1 << sc) : 1;
                         const int exclW = qMax(1, int(qRound(srcBox.width()
@@ -1217,10 +1218,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         }
                         srcBox = srcBox.intersected(
                             QRectF(0, 0, native.width(), native.height()));
-                    }
-                    // Prefer full bitmap UV when exact (includes overlap strip).
-                    tilelod::RectF uv = cmd.src_uv;
-                    if (cmd.kind == tilelod::DrawKind::ExactTile) {
                         uv = {0, 0, double(img.width()), double(img.height())};
                     }
                     QImage patch = extractUv(img, uv);

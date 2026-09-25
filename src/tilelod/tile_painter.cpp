@@ -87,9 +87,10 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (img.isNull()) {
       continue;
     }
-    // 257 overlap cells: expand exclusive content dest so bilinear samples the
-    // shared strip. Legacy 256× bitmaps leave dst unchanged.
-    {
+    // ExactTile only: expand exclusive dest when bitmap has +kTileOverlap.
+    // CoarserTile uses parent UV into a subrect — must not expand from parent size.
+    QRectF src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
+    if (cmd.kind == DrawKind::ExactTile) {
       int const sc = cmd.src_key.scale;
       int const factor = (sc > 0) ? (1 << sc) : 1;
       int const exclW =
@@ -103,9 +104,6 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
         dst.setHeight(dst.height()
                       + double(img.height() - exclH) * double(factor));
       }
-    }
-    QRectF src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
-    if (cmd.kind == DrawKind::ExactTile) {
       src = QRectF(0, 0, img.width(), img.height());
     }
     painter->drawImage(dst, img, src);
