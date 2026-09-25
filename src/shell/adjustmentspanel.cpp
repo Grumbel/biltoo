@@ -138,10 +138,25 @@ void AdjustmentsPanel::buildUi()
         emitIfChanged();
     });
     m_resetBtn = new QPushButton(tr("Reset"), gradeBox);
-    form->addRow(QString(), m_resetBtn);
+    m_applySelectionBtn = new QPushButton(tr("Apply to selection"), gradeBox);
+    m_applySelectionBtn->setToolTip(
+        tr("Push these colour settings onto all selected Gallery or Workspace tiles. "
+           "Sliders only edit the current target until you apply."));
+    m_applySelectionBtn->setEnabled(false);
+    {
+        auto *row = new QWidget(gradeBox);
+        auto *hl = new QHBoxLayout(row);
+        hl->setContentsMargins(0, 0, 0, 0);
+        hl->addWidget(m_resetBtn);
+        hl->addWidget(m_applySelectionBtn, 1);
+        form->addRow(QString(), row);
+    }
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
         setAdjustments(ColorAdjustments{});
         emit adjustmentsChanged(adjustments());
+    });
+    connect(m_applySelectionBtn, &QPushButton::clicked, this, [this]() {
+        emit applyToSelectionRequested(adjustments());
     });
     layout->addWidget(gradeBox);
     auto *histBox = new QGroupBox(tr("Histogram"), inner);
@@ -203,3 +218,10 @@ void AdjustmentsPanel::clearPreview()
 }
 
 void AdjustmentsPanel::setEnabledControls(bool on) { setEnabled(on); }
+
+void AdjustmentsPanel::setApplyToSelectionEnabled(bool on)
+{
+    if (m_applySelectionBtn) {
+        m_applySelectionBtn->setEnabled(on);
+    }
+}

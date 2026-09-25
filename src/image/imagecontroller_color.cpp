@@ -13,6 +13,30 @@
 #include <QTimer>
 #include <QObject>
 #include <QImage>
+#include <QUndoStack>
+
+namespace {
+
+struct ContentUndoMacro {
+    QUndoStack *stack = nullptr;
+    explicit ContentUndoMacro(QUndoStack *s, const QString &text, int targetCount)
+        : stack(s && targetCount > 1 ? s : nullptr)
+    {
+        if (stack) {
+            stack->beginMacro(text);
+        }
+    }
+    ~ContentUndoMacro()
+    {
+        if (stack) {
+            stack->endMacro();
+        }
+    }
+    ContentUndoMacro(const ContentUndoMacro &) = delete;
+    ContentUndoMacro &operator=(const ContentUndoMacro &) = delete;
+};
+
+} // namespace
 
 void ImageController::ensureColorAdjustCommitTimer()
 {
@@ -130,6 +154,27 @@ void ImageController::flushColorAdjustCommit()
     }
 }
 
+void ImageController::installColorAdjustmentsOnItem(ImageItem *item, const ColorAdjustments &adj)
+{
+    if (!item) {
+        return;
+    }
+    const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
+    WorkspaceItemState slot = m_view->freezeItemAppearance(item);
+    slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
+    slot.path = item->path().isEmpty() ? slot.path : item->path();
+    slot.colorAdjust = adj;
+    if (sid != kInvalidSessionImageId) {
+        ItemComponents::Color c;
+        c.grade = adj;
+        m_view->itemWorld().setColor(sid, c);
+    }
+    applyInteractiveColorGrade(item, slot);
+    if (sid != kInvalidSessionImageId || !item->path().isEmpty()) {
+        scheduleColorAdjustCommit(sid, item->path());
+    }
+}
+
 void ImageController::setTargetColorAdjustments(const ColorAdjustments &adj)
 {
     ImageItem *item = m_view->targetItem();
@@ -139,23 +184,55 @@ void ImageController::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (!item) {
         return;
     }
-    const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
-    // Stage 2: freeze policy for grade slot seed.
-    WorkspaceItemState slot = m_view->freezeItemAppearance(item);
-    slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
-    slot.path = item->path().isEmpty() ? slot.path : item->path();
-    slot.colorAdjust = adj;
-    if (sid != kInvalidSessionImageId) {
-        // ItemWorld Color is persistence authority (sparse-only). Live grade is
-        // installed below via applyInteractiveColorGrade → syncLiveColorFromState.
-        ItemComponents::Color c;
-        c.grade = adj;
-        m_view->itemWorld().setColor(sid, c);
-    }
-    // Fast path while dragging: live grade + optional host bake (no SQLite).
-    applyInteractiveColorGrade(item, slot);
-    if (sid != kInvalidSessionImageId || !item->path().isEmpty()) {
-        scheduleColorAdjustCommit(sid, item->path());
-    }
+    // Slider path: primary target only (batch uses applyColorAdjustmentsToTargets).
+    installColorAdjustmentsOnItem(item, adj);
     emit m_view->statusChanged();
+}
+
+int ImageController::applyColorAdjustmentsToTargets(const ColorAdjustments &adj)
+{
+    QList<ImageItem *> targets = m_view->transformTargets();
+    if (targets.isEmpty()) {
+        ImageItem *item = m_view->targetItem();
+        if (!item && m_view->isImageMode() && !m_view->liveItems().isEmpty()) {
+            item = m_view->liveItems().first();
+        }
+        if (item) {
+            targets.append(item);
+        }
+    }
+    if (targets.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Colour grade (%1)").arg(targets.size()),
+        targets.size());
+
+    int n = 0;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        const QImage beforeSrc = item->sourceImage().copy();
+        WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+        ItemComponents::applyPlacementToState(beforeSt, item->placement());
+        beforeSt.colorAdjust = m_view->itemLiveColor(item);
+
+        installColorAdjustmentsOnItem(item, adj);
+
+        WorkspaceItemState afterSt = m_view->captureContentBakeBeforeState(item);
+        ItemComponents::applyPlacementToState(afterSt, item->placement());
+        afterSt.colorAdjust = adj;
+        afterSt.sessionId = beforeSt.sessionId;
+        m_view->pushItemContentCommand(
+            m_view->tr("Colour grade"), item, beforeSrc,
+            item->sourceImage().copy(), beforeSt, afterSt);
+        ++n;
+    }
+    if (n > 0) {
+        emit m_view->statusChanged();
+    }
+    return n;
 }

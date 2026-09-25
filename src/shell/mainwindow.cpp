@@ -343,6 +343,18 @@ MainWindow::MainWindow(QWidget *parent)
             updateAdjustmentsPanel();
         }
     });
+    connect(m_adjustmentsPanel, &AdjustmentsPanel::applyToSelectionRequested,
+            this, [this](const ColorAdjustments &adj) {
+                if (!m_imageView) {
+                    return;
+                }
+                const int n = m_imageView->hostImage().applyColorAdjustmentsToTargets(adj);
+                if (n > 0 && statusBar()) {
+                    statusBar()->showMessage(
+                        tr("Colour grade applied to %n image(s)", "", n), 4000);
+                }
+                updateAdjustmentsPanel();
+            });
     connect(m_adjustmentsPanel, &AdjustmentsPanel::adjustmentsChanged,
             this, [this](const ColorAdjustments &adj) {
                 if (m_imageView) {
@@ -2652,6 +2664,8 @@ void MainWindow::updateAdjustmentsPanel()
         return;
     }
     m_adjustmentsPanel->setEnabledControls(true);
+    m_adjustmentsPanel->setApplyToSelectionEnabled(
+        m_imageView->transformTargets().size() > 1);
     {
         QSignalBlocker b(m_adjustmentsPanel);
         m_adjustmentsPanel->setAdjustments(m_imageView->itemLiveColor(item));

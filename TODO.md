@@ -2,20 +2,19 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2646.1-batch-orient-undo-macro` (base `bbfdf32`).
+**Tip:** `biltoo-2647.1-batch-colour-apply` (base `3e9067c`).
 
 ### Done
-- Orient multi-apply already used `transformTargets()` (Gallery/Workspace selection).
-- **Undo bag:** `ContentUndoMacro` groups flip/rotate content undos when N>1.
-- **Reset content appearance:** before/after snapshot + `pushItemContentCommand`
-  under the same macro (was not undoable before).
+- Orient multi-apply + undo macro (2646).
+- **Colour multi-apply:** Adjustments panel **Apply to selection** →
+  `applyColorAdjustmentsToTargets` with undo macro. Sliders still edit current
+  target only. Button enabled when `transformTargets().size() > 1`.
 
-### Next (batch appearance)
-1. Colour multi-apply to targets (AdjustmentsPanel).
-2. Crop panel (manual / autocrop+threshold / margins / reset).
-3. Template page + stack preview later.
+### Next
+1. Crop panel (manual / autocrop+threshold / margins / reset).
+2. Expand targets beyond live items; template/stack later.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2646.1-batch-orient-undo-macro-bbfdf32.bundle HEAD
+git pull --ff-only …/biltoo-2647.1-batch-colour-apply-3e9067c.bundle HEAD
 ```

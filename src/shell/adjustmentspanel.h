@@ -19,8 +19,10 @@ public:
     void setPreviewImage(const QImage &image);
     void clearPreview();
     void setEnabledControls(bool on);
+    void setApplyToSelectionEnabled(bool on);
 signals:
     void adjustmentsChanged(const ColorAdjustments &adj);
+    void applyToSelectionRequested(const ColorAdjustments &adj);
 private:
     void buildUi();
     void emitIfChanged();
@@ -36,6 +38,7 @@ private:
     QLabel *m_gammaVal = nullptr;
     QCheckBox *m_invertCheck = nullptr;
     QPushButton *m_resetBtn = nullptr;
+    QPushButton *m_applySelectionBtn = nullptr;
     ImageHistogramWidget *m_histogram = nullptr;
     VectorScopeWidget *m_scope = nullptr;
     bool m_block = false;

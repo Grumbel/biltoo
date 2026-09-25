@@ -186,13 +186,19 @@ public:
     /** Arm debounce; timeout calls flushColorAdjustCommit. */
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     void stopColorAdjustCommitTimer();
-    /** Interactive slider path + deferred durable rematerialize. */
+    /** Interactive slider path + deferred durable rematerialize (current target only). */
     void setTargetColorAdjustments(const ColorAdjustments &adj);
+    /**
+     * Apply the same grade to all transformTargets (or the single Image item).
+     * One undo macro when N>1. Sliders still use setTargetColorAdjustments.
+     */
+    int applyColorAdjustmentsToTargets(const ColorAdjustments &adj);
     void flushColorAdjustCommit();
 
 private:
     void ensureColorAdjustCommitTimer();
     void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
+    void installColorAdjustmentsOnItem(ImageItem *item, const ColorAdjustments &adj);
 
     ImageView *m_view = nullptr;
     ViewFraming m_framing;
