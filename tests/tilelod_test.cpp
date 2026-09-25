@@ -349,8 +349,8 @@ void test_edge_tile_content_rect()
   CHECK_EQ(r1.w, 44);
 }
 
-/// Floor-half level size vs step 256×2^s left a content strip uncovered before
-/// last-tile extension (RESEARCH_TILE_OVERLAP).
+/// Tiles abut without overlap; may leave a small floor-half remainder uncovered
+/// (we no longer stretch the last column to force full coverage).
 void test_content_coverage_odd_widths()
 {
   int const widths[] = {513, 1025, 2052, 4097};
@@ -362,18 +362,21 @@ void test_content_coverage_odd_widths()
       }
       int covered = 0;
       int prev_right = 0;
+      int const factor = 1 << s;
       for (int x = 0; x < nx; ++x) {
         auto r = tilelod::tile_content_rect(cw, cw, {s, x, 0});
         CHECK(!r.empty());
         CHECK_EQ(r.x, prev_right);
+        CHECK(r.w <= tilelod::kTileSize * factor);
         covered += r.w;
         prev_right = r.x + r.w;
       }
-      CHECK_EQ(covered, cw);
-      CHECK_EQ(prev_right, cw);
+      CHECK(covered <= cw);
+      CHECK(prev_right <= cw);
+      // Remainder is smaller than one content step.
+      CHECK(cw - covered < tilelod::kTileSize * factor);
     }
   }
-  // Out-of-grid key is empty
   CHECK(tilelod::tile_content_rect(513, 513, {1, 99, 0}).empty());
 }
 
