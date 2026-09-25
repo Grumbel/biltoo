@@ -889,11 +889,14 @@ soft/PreferCache base is not painted. Soft path uses `drawPixmap` (no
 tile completions are pumped.
 
 
-## Tile paint transform (biltoo-1087)
+## Tile paint transform (biltoo-1087 / 2677)
 
-`SmoothPixmapTransform` is off for ExactTile-only plans when device zoom of the
-target scale is near an integer ≥1 (nearest-neighbour, cheaper). Parent stand-ins
-still use smooth filtering.
+`SmoothPixmapTransform` is off for ExactTile-only plans only when tile→device
+density is near **1:1 or 2:1** (pixel-perfect 100% / 200%, including common
+retina cases). Parent stand-ins still use smooth filtering.
+
+Earlier builds treated *any* near-integer density ≥1 as nearest-neighbour, which
+made high zooms (e.g. 4700%) snap to blocky pixels at discrete stop values.
 
 
 ## Underlay plan commands (biltoo-1086)

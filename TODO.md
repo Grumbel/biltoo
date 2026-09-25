@@ -2,17 +2,20 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2676.1-tile-seam-overdraw` (base `2e49220`).
+**Tip:** `biltoo-2677.1-smooth-only-1x-2x` (base `932ed5c`).
 
-### Seams after cache clear
-Overlap (257) helps bilinear continuity but **JPEG encodes each cell
-independently** — the shared column still diverges after decode (worst when
-coarse tiles are upscaled). QPainter can also leave **subpixel hairlines**.
+### Filtering vanished at 4700% (and other zooms)
+`tilePaintNeedsSmooth` treated **any** near-integer tile→device density ≥1 as
+nearest-neighbour. At high zoom (scale 0, dpp ≈ zoom%) that hit every integer
+percent stop (4700%, 300%, …) and dropped bilinear filtering.
 
-2676: sort paint L→R/T→B; overdraw ~0.75 device-px in content space on both
-paint_draw_plan and ImageItem paths. ExactTile still expands for +1 overlap.
+**2677:** skip Smooth only for true **1:1 / 2:1** density (ε=0.04); keep smooth
+for 3× and above. Docs: `docs/TILE_LOD.md` paint-transform note.
+
+### Prior tip (already on origin)
+2676 seam overdraw — still relevant; JPEG independent encode residual remains.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2676.1-tile-seam-overdraw-2e49220.bundle HEAD
+git pull --ff-only …/biltoo-2677.1-smooth-only-1x-2x-932ed5c.bundle HEAD
 ```

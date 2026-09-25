@@ -51,8 +51,13 @@ bool tilePlanDebugOverlayEnabled()
     return e && e[0] && e[0] != '0';
 }
 
-/** SmoothPixmapTransform is expensive; skip at near-integer device zoom of the
- *  target scale (1:1 / 2:1 tile pixels). Parent stand-ins still need smooth. */
+/** SmoothPixmapTransform is expensive; skip only at true pixel-perfect
+ *  1:1 or 2:1 tile→device mapping. Parent stand-ins still need smooth.
+ *
+ *  Do not treat every integer dpp (3×, 47×, …) as nearest-neighbour: at high
+ *  zoom (e.g. 4700%) ExactTile plans would otherwise snap to blocky pixels
+ *  only at certain stop values while neighbouring zooms stay filtered.
+ */
 bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
                           const tilelod::DrawPlan &plan)
 {
@@ -67,7 +72,9 @@ bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
     const int s = qMin(targetScale, 12);
     const double dpp = devicePerContent * static_cast<double>(1 << s);
     const double nearest = std::round(dpp);
-    if (nearest >= 1.0 && std::abs(dpp - nearest) < 0.08) {
+    // Only 100% / 200% tile-pixel density (and retina 1 content → 2 device).
+    if ((nearest == 1.0 || nearest == 2.0)
+        && std::abs(dpp - nearest) < 0.04) {
         return false;
     }
     return true;
