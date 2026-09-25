@@ -2,21 +2,21 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2662.1-find-debug-env` (base `931af49`).
-**Upstream:** origin/master at `931af49` (SessionSearchIndex + block_id Find already landed).
+**Tip:** `biltoo-2663.1-open-selection-content-snap` (base `2e49220`).
+**Thumtoo:** flake.lock pins `5e47314` (//pdfimage Client + cmake summary align).
 
 ### This tip
-- Gate informational `[find]` logs behind `BILTOO_DEBUG_FIND`.
-- `ensurePageTextLayer: ok …` no longer spams every page during doc scan.
-- Same gate for exportText / query / docScan summary lines in MainWindow.
-- Failure paths (no client, empty URI, extract failed) still always `qWarning`.
+- Open Selection snapshots: transfer **content** appearance only
+  (`hasContentEditComponents` / attention), not Workspace pose-only durable.
+- Pose-only no longer skips `freezeItemAppearance` (committed crop path).
+- Docs: SRC layout already landed for 0.2.0; §4.5 matrix updated.
 
-### Prior (already on master)
-- `SessionSearchIndex` — sparse Find tags by SessionImageId (+ path fallback).
-- Filmstrip / gallery Find hit chrome; generation guard; unit tests.
+### Pre-0.2.0 remaining (human RC)
+- Smoke: crop Apply → Gallery select → Open Selection in New Window keeps crop.
+- Smoke matrix in docs/RELEASE_0.2.0.md §3 (reorder, export, PDF pages, shortcuts).
+- Tag: VERSION → 0.2.0 when RC green (not this tip).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2662.1-find-debug-env-931af49.bundle HEAD
-# optional: BILTOO_DEBUG_FIND=1 biltoo …
+git pull --ff-only …/biltoo-2663.1-open-selection-content-snap-2e49220.bundle HEAD
 ```

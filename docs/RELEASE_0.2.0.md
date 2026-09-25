@@ -129,10 +129,9 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
 
 ## 3a. Source tree layout (in scope for 0.2.0)
 
-Flat `src/` is ~250 translation units with a single subdirectory (`src/tilelod/`).
-After the identity / controller / export refactor, **moving code into domain
-subdirectories is planned for 0.2.0**, not deferred to 0.3. Accept a short slip
-of the tag (days, not weeks) to land this cleanly.
+Domain subdirectories under `src/` are **landed** (phases 1–31; see
+[SRC_LAYOUT.md](SRC_LAYOUT.md)). Root holds façades only (`imageview*`,
+`imageitem*`, `main.cpp`). No further mass moves required for the 0.2.0 tag.
 
 ### Goals
 
@@ -374,15 +373,14 @@ actions such as **Open Selection in New Window**.
 
 | Case | Risk |
 |------|------|
-| Crop **draft** not committed | Only live crop chrome; ItemWorld has no durable crop yet |
-| `hasSessionAppearance` true but **content-empty** | Snapshot may copy a sparse pose-only slot and skip live freeze |
+| Crop **draft** not committed | Only live crop chrome; ItemWorld has no durable crop yet — commit before Open Selection |
+| Placement-only durable | Fixed: `sessionSelectionSnapshots` uses content/attention sparse tables (or live freeze), not pose-only `hasDurableAppearance` |
 | Image mode primary vs multi-select | Wrong id / unbound primary when selection is filmstrip-only |
 | Mode switch / reload / hard reload | Appearance path vs id mismatches (IDENTITY) |
-| Location `loadFiles` replace | New session; old ids gone — expected unless user re-opens same files with Store-only orient (crop is id-scoped, not path XDG) |
+| Location `loadFiles` replace | New session; old ids gone — expected (crop is id-scoped, not path XDG) |
 
-**0.2.0 expectation:** treat as **must-test** before tag; if Open Selection still
-drops **committed** crop, that is a **release bug** (fix before 0.2.0). Uncommitted
-draft loss is acceptable if documented (commit crop before Open Selection).
+**0.2.0 expectation:** RC smoke **crop Apply → Open Selection in New Window** still
+required. Uncommitted draft loss is acceptable (commit crop first).
 
 Suggested smoke: crop in Image → Apply → Gallery → select → Open Selection in
 New Window → crop still applied; undo stack in source window unchanged.

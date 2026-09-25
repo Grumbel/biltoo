@@ -1673,10 +1673,22 @@ QList<SessionEntrySnapshot> MainWindow::sessionSelectionSnapshots() const
         snap.path = m_session.pathAt(idx);
         snap.id = m_session.idAt(idx);
         if (m_imageView && snap.id != kInvalidSessionImageId) {
-            if (m_imageView->itemWorld().hasDurableAppearance(snap.id)) {
+            // Transfer content appearance only (crop / bake / colour / attention).
+            // hasDurableAppearance also includes Workspace placement — pose-only
+            // must not set hasAppearance and skip freezeItemAppearance (that was
+            // the Open Selection "lost crop" path when sparse lag or draft applied).
+            const bool durableContent =
+                m_imageView->itemWorld().hasContentEditComponents(snap.id)
+                || m_imageView->itemWorld().hasAttention(snap.id);
+            if (durableContent) {
                 snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
-                snap.hasAppearance = true;
-            } else {
+                snap.hasAppearance =
+                    SessionAppearance::hasContentAppearance(snap.appearance)
+                    || snap.appearance.hasCrop
+                    || snap.appearance.hasAttention
+                    || !snap.appearance.attentionPoints.isEmpty();
+            }
+            if (!snap.hasAppearance) {
                 ImageItem *item = m_imageView->findItemBySessionId(snap.id);
                 if (!item && isImageMode()) {
                     item = m_imageView->primaryItem();
