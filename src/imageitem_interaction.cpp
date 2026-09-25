@@ -12,7 +12,6 @@
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
-#include "tilelod/lod_math.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "content/contentxform.h"
@@ -1207,26 +1206,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (img.isNull()) {
                         continue;
                     }
-                    // ExactTile only: expand dest for +kTileOverlap bitmaps.
-                    // CoarserTile: keep exclusive fine dst + parent UV as planned.
+                    // Exclusive content dest (srcBox). ExactTile: full bitmap
+                    // including +kTileOverlap so SmoothPixmapTransform filters
+                    // toward the shared edge; do not expand dest. CoarserTile:
+                    // parent UV only (exclusive region of parent).
                     tilelod::RectF uv = cmd.src_uv;
                     if (cmd.kind == tilelod::DrawKind::ExactTile) {
-                        const int sc = cmd.src_key.scale;
-                        const int factor = (sc > 0) ? (1 << sc) : 1;
-                        const int exclW = qMax(1, int(qRound(srcBox.width()
-                            / double(factor))));
-                        const int exclH = qMax(1, int(qRound(srcBox.height()
-                            / double(factor))));
-                        if (img.width() > exclW) {
-                            srcBox.setWidth(srcBox.width()
-                                + double(img.width() - exclW) * double(factor));
-                        }
-                        if (img.height() > exclH) {
-                            srcBox.setHeight(srcBox.height()
-                                + double(img.height() - exclH) * double(factor));
-                        }
-                        srcBox = srcBox.intersected(
-                            QRectF(0, 0, native.width(), native.height()));
                         uv = {0, 0, double(img.width()), double(img.height())};
                     }
                     QImage patch = extractUv(img, uv);
@@ -1326,27 +1311,21 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tileLodBag().controller->session()->target_scale(), plan);
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
 
-                // Right→left, bottom→top: +overlap / +gap is on right/bottom, so
-                // the lower-x / lower-y cell must paint last or the neighbour
-                // exclusive rect erases the shared strip (see tile_painter).
+                // Exclusive dests — stable L→R / T→B for determinism only.
                 std::stable_sort(paintCmds.begin(), paintCmds.end(),
                                  [](const TilePaintCmd &a, const TilePaintCmd &b) {
                                      if (a.dst.y() != b.dst.y()) {
-                                         return a.dst.y() > b.dst.y();
+                                         return a.dst.y() < b.dst.y();
                                      }
-                                     return a.dst.x() > b.dst.x();
+                                     return a.dst.x() < b.dst.x();
                                  });
-                const qreal dpc = tileDevicePerContent();
-                const qreal gap = static_cast<qreal>(
-                    tilelod::paint_seam_overdraw_content(static_cast<double>(dpc)));
 
                 for (TilePaintCmd &pc : paintCmds) {
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    // Right/bottom only — matches kTileOverlap expand direction.
-                    QRectF d = pc.dst.adjusted(0.0, 0.0, gap, gap);
-                    painter->drawImage(d, pc.patch);
+                    // Dest = exclusive cell; patch may be 257² (overlap in source).
+                    painter->drawImage(pc.dst, pc.patch);
                 }
                 (void)under;
 

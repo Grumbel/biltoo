@@ -13,7 +13,7 @@ namespace tilelod {
 
 /// Matches thumtoo::kTileSize / Galapix tile grid.
 inline constexpr int kTileSize = 256;
-/// Matches thumtoo::kTileOverlap — right/bottom shared strip for bilinear seams.
+/// Matches thumtoo::kTileOverlap — right/bottom shared strip; host maps full bitmap into exclusive dest.
 inline constexpr int kTileOverlap = 1;
 
 /// Grid cell identity at a pyramid scale.

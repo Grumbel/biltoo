@@ -244,3 +244,21 @@ symmetric `±gap`, the next cell also overwrote ~0.75 content px of the previous
 exclusive rect (“disappearing lines” on the grid).
 
 **2680:** sort **R→L / B→T**; apply overdraw only as `dst.adjust(0,0,+gap,+gap)`.
+
+## 15. Correct QPainter model (biltoo-2681) — no dest expand / no overdraw
+
+Dest expansion and device-pixel overdraw were the wrong tool for QPainter.
+
+**Intended model**
+- Grid dest = exclusive **W×H** content rect (`tile_content_rect`).
+- Bitmap may be **(W+1)×(H+1)** with the extra column/row = shared edge.
+- `drawImage(exclusive_dest, full_bitmap)` maps the whole source into W×H so
+  `SmoothPixmapTransform` filters toward that extra line at the cell edge.
+- Adjacent exclusive dests **abut**; they must not overlap in dest space.
+
+Expanding dest by +1 and/or overdrawing fought that: shared dest strips, wrong
+paint-order fights, and “disappearing lines” where the next cell ate the previous
+exclusive edge.
+
+**2681:** remove dest expand and seam overdraw; ExactTile uses full source →
+exclusive dest only.
