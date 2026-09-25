@@ -465,8 +465,9 @@ bool CropController::enterCropModeFromUi()
         WorkspaceItemState enterSt = m_view->captureState(item);
         session().beginEnterSession(item, enterSrc, enterSt,
                                  !enterSrc.isNull() || item->hasDisplayPixels());
-        // Stage 2: freeze tile LOD via pipeline (cleared on leave / abort).
-        m_view->hostDisplayPipeline().setItemTileLodSuppressed(item, true);
+        // Sample freeze still blocks soft/ladder install thrash. Tile LOD stays
+        // on so crop draft paints the same grid as Image/Workspace (soft ≤512
+        // underlay only until tiles cover).
         cancelPathRasterForCrop(session().draftPathRef());
     }
     // Workspace: displayed image centre so the crop frame can stay fixed.

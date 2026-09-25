@@ -87,7 +87,9 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
         if (!ii || ii->path().isEmpty()) {
             continue;
         }
-        if (m_pipeline->host()->hostCrop().isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
+        // Crop draft: sample freeze blocks soft install, not tiles. Same paint
+        // path as Image/Workspace. Only explicit suppress skips the grid.
+        if (ii->tileLodSuppressed()) {
             continue;
         }
         // Gallery packed cell: screen long edge without re-entering tileLodWanted.

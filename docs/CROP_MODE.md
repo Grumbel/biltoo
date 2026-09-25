@@ -51,6 +51,9 @@ Preconditions: single subject, `hasDisplayPixels()`.
    freeze (not `m_cropMode` alone). `m_cropMode` stays false until after the
    first draft attach so crop chrome does not paint on the old bake for a frame.
    Cleared when leaving crop (`leaveCropModeInternal`).
+7. **Tile LOD stays active** during the draft. Soft/GUI materialize may be
+   ≤512 as underlay; sharpness comes from the same tile paint path as Image /
+   Workspace. Do not suppress tile LOD solely because crop is active.
 
 Gallery: does not host crop UI. Open the subject in Image mode, then enter
 (`hasDisplayPixels` is enough — soft is OK).
@@ -165,5 +168,5 @@ pipeline entry points below. Prefer those names when reading or extending crop.
 - Enter: `setCropMode(true)` → `enterCropModeFromUi` → `prepareCropModeFullImage`
 - Apply: `applyCrop` → `leaveCropModeInternal(true)` → `applyCropCommit`
 - Cancel: `cancelCrop` / `leaveCropModeInternal(false)` → `restoreSessionCropAppearance` when showing full
-- Leave always clears draft freeze, PathRaster suspend, and tile LOD suppress inside `leaveCropModeInternal` (no separate `clearCropModeState`)
+- Leave always clears draft freeze and PathRaster suspend inside `leaveCropModeInternal` (tile LOD is not suppressed for crop; leave still clears any residual suppress flag)
 
