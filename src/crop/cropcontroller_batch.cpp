@@ -11,11 +11,12 @@
 #include "item/itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "display/displaypipelinecontroller.h"
-#include "display/imagecache.h"
 #include "host/thumtoocache.h"
 #include "item/imagesizebook.h"
 #include "gallery/gallerycontroller.h"
 
+#include <QPointer>
+#include <QPixmap>
 #include <QUndoStack>
 
 namespace {
@@ -94,14 +95,39 @@ QSize logicalSizeForCrop(ImageView *view, ImageItem *item)
     return {};
 }
 
-QImage sampleForAutocrop(ImageItem *item, const QString &path)
+/**
+ * Pixels for autocrop: live item only (deep copy). Do not touch ImageCache here —
+ * concurrent put/get while iterating a large selection has shown QHash SEGV in
+ * qHash(path) under load; item pixels are sufficient for GIMP-style trim.
+ */
+QImage sampleForAutocrop(ImageItem *item)
 {
-    QImage src = CropSession::pickAutoCropSourcePixels(item);
-    if (!src.isNull()) {
-        return src;
+    if (!item) {
+        return {};
     }
-    return ImageCache::get(path);
+    QImage src = item->sourceImage();
+    if (src.isNull()) {
+        const QPixmap pm = item->pixmap();
+        if (!pm.isNull()) {
+            src = pm.toImage();
+        }
+    }
+    if (src.isNull()) {
+        return {};
+    }
+    // Detach from any shared buffers before autoTrim walks pixels.
+    return src.copy();
 }
+
+struct PlannedCrop {
+    QPointer<ImageItem> item;
+    QString path;
+    SessionImageId sid = kInvalidSessionImageId;
+    QSize logical;
+    QRect crop;
+    WorkspaceItemState beforeSt;
+    QImage beforeSrc;
+};
 
 } // namespace
 
@@ -117,12 +143,10 @@ int CropController::applyCropRecipeToItems(const CropPanelRecipe &recipe,
         return 0;
     }
 
-    ContentUndoMacro macro(
-        m_view->hostUndoStack(),
-        m_view->tr("Crop (%1)").arg(targets.size()),
-        targets.size());
-
-    int n = 0;
+    // Phase 1: pure plan — no ItemWorld / pixel mutation (avoids destroying or
+    // reshuffling live items while we still hold raw ImageItem*).
+    QList<PlannedCrop> plan;
+    plan.reserve(targets.size());
     for (ImageItem *item : targets) {
         if (!item) {
             continue;
@@ -134,7 +158,7 @@ int CropController::applyCropRecipeToItems(const CropPanelRecipe &recipe,
 
         QImage sample;
         if (recipe.mode == CropPanelRecipe::Mode::Autocrop) {
-            sample = sampleForAutocrop(item, item->path());
+            sample = sampleForAutocrop(item);
             if (sample.isNull()) {
                 continue;
             }
@@ -145,32 +169,59 @@ int CropController::applyCropRecipeToItems(const CropPanelRecipe &recipe,
             continue;
         }
 
-        const QImage beforeSrc = item->sourceImage().copy();
-        WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
-        ItemComponents::applyPlacementToState(beforeSt, item->placement());
+        PlannedCrop p;
+        p.item = item;
+        p.path = item->path();
+        p.sid = m_view->hostResolveContentEditSessionId(item);
+        p.logical = logical;
+        p.crop = crop;
+        p.beforeSrc = item->sourceImage().copy();
+        p.beforeSt = m_view->captureContentBakeBeforeState(item);
+        ItemComponents::applyPlacementToState(p.beforeSt, item->placement());
+        plan.append(p);
+    }
+
+    if (plan.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Crop (%1)").arg(plan.size()),
+        plan.size());
+
+    int n = 0;
+    for (PlannedCrop &p : plan) {
+        ImageItem *item = p.item.data();
+        if (!item) {
+            continue;
+        }
 
         WorkspaceItemState afterSt = m_view->freezeItemAppearance(item);
         ItemComponents::applyPlacementToState(afterSt, item->placement());
         afterSt.hasCrop = true;
-        afterSt.cropRect = crop;
-        afterSt.cropSourceSize = logical;
+        afterSt.cropRect = p.crop;
+        afterSt.cropSourceSize = p.logical;
         afterSt.cropRotation = 0.0;
-        afterSt.sessionId = m_view->hostResolveContentEditSessionId(item);
-        afterSt.path = item->path();
+        afterSt.sessionId = p.sid != kInvalidSessionImageId
+            ? p.sid
+            : m_view->hostResolveContentEditSessionId(item);
+        afterSt.path = p.path.isEmpty() ? item->path() : p.path;
 
+        // Store + rematerialize once; undo push redo re-applies the same state.
         applyCropAppearance(item, QImage(), afterSt);
         m_view->hostDisplayPipeline().rematerializeItemContent(item, afterSt);
 
         WorkspaceItemState afterSnap = m_view->captureContentBakeBeforeState(item);
         ItemComponents::applyPlacementToState(afterSnap, item->placement());
         afterSnap.hasCrop = true;
-        afterSnap.cropRect = crop;
-        afterSnap.cropSourceSize = logical;
+        afterSnap.cropRect = p.crop;
+        afterSnap.cropSourceSize = p.logical;
         afterSnap.sessionId = afterSt.sessionId;
 
         m_view->pushItemContentCommand(
-            m_view->tr("Crop"), item, beforeSrc,
-            item->sourceImage().copy(), beforeSt, afterSnap);
+            m_view->tr("Crop"), item, p.beforeSrc,
+            item->sourceImage().copy(), p.beforeSt, afterSnap);
         ++n;
     }
 
@@ -194,12 +245,15 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
         return 0;
     }
 
-    ContentUndoMacro macro(
-        m_view->hostUndoStack(),
-        m_view->tr("Reset crop (%1)").arg(targets.size()),
-        targets.size());
+    struct PlannedReset {
+        QPointer<ImageItem> item;
+        SessionImageId sid = kInvalidSessionImageId;
+        WorkspaceItemState beforeSt;
+        QImage beforeSrc;
+    };
 
-    int n = 0;
+    QList<PlannedReset> plan;
+    plan.reserve(targets.size());
     for (ImageItem *item : targets) {
         if (!item) {
             continue;
@@ -212,14 +266,36 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
                 continue;
             }
         }
+        PlannedReset p;
+        p.item = item;
+        p.sid = sid;
+        p.beforeSt = beforeSt;
+        p.beforeSrc = item->sourceImage().copy();
+        plan.append(p);
+    }
 
-        const QImage beforeSrc = item->sourceImage().copy();
-        WorkspaceItemState afterSt = beforeSt;
+    if (plan.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Reset crop (%1)").arg(plan.size()),
+        plan.size());
+
+    int n = 0;
+    for (PlannedReset &p : plan) {
+        ImageItem *item = p.item.data();
+        if (!item) {
+            continue;
+        }
+
+        WorkspaceItemState afterSt = p.beforeSt;
         afterSt.hasCrop = false;
         afterSt.cropRect = QRect();
         afterSt.cropSourceSize = QSize();
         afterSt.cropRotation = 0.0;
-        afterSt.sessionId = sid;
+        afterSt.sessionId = p.sid;
         afterSt.path = item->path();
 
         applyCropAppearance(item, QImage(), afterSt);
@@ -233,8 +309,8 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
         afterSnap.sessionId = afterSt.sessionId;
 
         m_view->pushItemContentCommand(
-            m_view->tr("Reset crop"), item, beforeSrc,
-            item->sourceImage().copy(), beforeSt, afterSnap);
+            m_view->tr("Reset crop"), item, p.beforeSrc,
+            item->sourceImage().copy(), p.beforeSt, afterSnap);
         ++n;
     }
 
