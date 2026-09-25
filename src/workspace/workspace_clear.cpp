@@ -95,6 +95,11 @@ void WorkspaceController::clearWorkspace()
     m_view->hostSizeBook().clear();
     m_view->hostGalleryDecodeBook().setDeferPopulate(false);
     m_view->hostGallerySizeResolve().cancel();
+    // Size-resolve cancel only clears HUD when the gate was active.
+    // "Loading tiles…" comes from the decode soft HUD and survives an empty
+    // session otherwise (File → New stuck chip).
+    m_view->hostGallery().stopDecodeWatchdog();
+    m_view->hostShell().clearCentreProgress();
     ImageCache::clear();
     m_view->hostTileNeighborPrefetch().clear();
     m_view->hostDisplayPipeline().dropAllTileLodSessions();

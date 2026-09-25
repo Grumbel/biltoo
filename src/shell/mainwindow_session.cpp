@@ -240,13 +240,16 @@ void MainWindow::newSession()
     m_workspaceReturnActive = false;
     if (m_imageView) {
         // Drop all canvas objects and classic path so Image mode does not
-        // reload the previous file after the mode switch.
+        // reload the previous file after the mode switch. clearWorkspace also
+        // clears centre progress ("Loading tiles…") and stops the decode HUD.
         m_imageView->hostWorkspace().clearWorkspace();
         m_imageView->hostShell().setWorkspaceBackground(WorkspaceBackground{});
         if (!m_imageView->isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);
         }
         m_imageView->prepareImageModeCanvas();
+        // Belt-and-braces: mode switch must not leave a sticky load chip.
+        m_imageView->hostShell().clearCentreProgress();
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
