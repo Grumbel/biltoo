@@ -66,6 +66,18 @@ KeyboardShortcutsDialog::KeyboardShortcutsDialog(const QList<QAction *> &actions
 
     auto *root = new QVBoxLayout(this);
 
+    auto *note = new QLabel(
+        tr("<p style='margin:0 0 6px 0'><b>Viewer chords</b> such as "
+           "<code>R</code>, <code>C</code>, <code>H</code>, <code>Z</code>, "
+           "<code>Q</code>, and <code>Space</code> apply when the image view "
+           "has focus — not while typing in the Location or Search bar. "
+           "<code>Esc</code> cancels crop, leaves slideshow, exits fullscreen, "
+           "then returns from Image mode.</p>"),
+        this);
+    note->setWordWrap(true);
+    note->setTextFormat(Qt::RichText);
+    root->addWidget(note);
+
     auto *filterRow = new QHBoxLayout;
     filterRow->addWidget(new QLabel(tr("Filter:"), this));
     m_filter = new QLineEdit(this);

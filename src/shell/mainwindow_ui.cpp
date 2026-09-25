@@ -109,12 +109,12 @@ void MainWindow::createActions()
         tr("Workspace: write a single-page PDF using the app page size"));
     connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
 
-    m_exportSessionImagesAct = new QAction(tr("Export &Images…"), this);
+    m_exportSessionImagesAct = new QAction(tr("Export &Session Images…"), this);
     m_exportSessionImagesAct->setIcon(
         themeIcon(QStringLiteral("document-save"), QStyle::SP_DialogSaveButton));
     m_exportSessionImagesAct->setStatusTip(
-        tr("Export session images as folder, CBZ, or PDF (appearance applied; "
-           "sources never overwritten)"));
+        tr("Session: export images as folder, CBZ, or multi-page PDF "
+           "(appearance applied; sources never overwritten)"));
     connect(m_exportSessionImagesAct, &QAction::triggered, this,
             &MainWindow::exportSessionImages);
 
@@ -165,7 +165,8 @@ void MainWindow::createActions()
     // Fast in/out viewer: plain Q plus platform Quit (Ctrl+Q on X11).
     m_quitAct->setShortcuts({QKeySequence(Qt::Key_Q), QKeySequence::Quit});
     m_quitAct->setIcon(themeIcon(QStringLiteral("application-exit"), QStyle::SP_DialogCloseButton));
-    m_quitAct->setStatusTip(tr("Quit Biltoo (Q or Ctrl+Q; prompts if the Workspace has unsaved images)"));
+    m_quitAct->setStatusTip(
+        tr("Quit Biltoo (Q when the view has focus, or Ctrl+Q; prompts if Workspace has unsaved images)"));
     // Only closeEvent confirms unsaved Workspace — calling confirm here and
     // then close() would show the dialog twice (Discard leaves dirty true).
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
@@ -191,11 +192,12 @@ void MainWindow::createActions()
     connect(m_zoom1to1Act, &QAction::triggered, this, &MainWindow::zoomReset);
 
     m_zoomFitAct = new QAction(tr("&Fit to Window"), this);
+    m_zoomFitAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
+    m_zoomFitAct->setShortcutContext(Qt::WindowShortcut);
     // F is reserved for fullscreen (common image-viewer convention)
     m_zoomFitAct->setCheckable(true);
     m_zoomFitAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
-    m_zoomFitAct->setStatusTip(
-        tr("Fit in window (sticky while checked; click again or zoom ± to release)"));
+    m_zoomFitAct->setStatusTip(tr("Fit image to the window (Ctrl+Shift+F)"));
     connect(m_zoomFitAct, &QAction::triggered, this, &MainWindow::zoomFit);
 
     m_zoomFillAct = new QAction(tr("Zoom to F&ill"), this);
@@ -223,7 +225,7 @@ void MainWindow::createActions()
     m_dualCompareAct->setObjectName(QStringLiteral("dualCompare"));
     m_dualCompareAct->setCheckable(true);
     m_dualCompareAct->setChecked(false);
-    m_dualCompareAct->setStatusTip(tr("Side-by-side Image-mode compare (Ctrl+Shift+2)"));
+    m_dualCompareAct->setStatusTip(tr("Side-by-side Image-mode compare (Ctrl+Shift+2; experimental)"));
     m_dualCompareAct->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_2));
     connect(m_dualCompareAct, &QAction::toggled, this, &MainWindow::setDualCompareEnabled);
 
@@ -240,7 +242,7 @@ void MainWindow::createActions()
     m_rotateLeftAct->setShortcuts({QKeySequence(Qt::Key_Less),
                                    QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R)});
     m_rotateLeftAct->setIcon(themeIcon(QStringLiteral("object-rotate-left"), QStyle::SP_ArrowBack));
-    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise (< or Ctrl+Shift+R)"));
+    m_rotateLeftAct->setStatusTip(tr("Rotate 90° counter-clockwise (< or Ctrl+Shift+R; when the view has focus)"));
     connect(m_rotateLeftAct, &QAction::triggered, this, &MainWindow::rotateLeft);
 
     m_rotateRightAct = new QAction(tr("Rotate &Right"), this);
@@ -248,19 +250,19 @@ void MainWindow::createActions()
                                     QKeySequence(Qt::CTRL | Qt::Key_R),
                                     QKeySequence(Qt::Key_R)});
     m_rotateRightAct->setIcon(themeIcon(QStringLiteral("object-rotate-right"), QStyle::SP_ArrowForward));
-    m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise (> , R, or Ctrl+R)"));
+    m_rotateRightAct->setStatusTip(tr("Rotate 90° clockwise (>, R, or Ctrl+R; when the view has focus)"));
     connect(m_rotateRightAct, &QAction::triggered, this, &MainWindow::rotateRight);
 
     m_flipHAct = new QAction(tr("Flip &Horizontal"), this);
     m_flipHAct->setShortcut(Qt::CTRL | Qt::Key_H);
     m_flipHAct->setIcon(themeIcon(QStringLiteral("object-flip-horizontal"), QStyle::SP_BrowserReload));
-    m_flipHAct->setStatusTip(tr("Flip image horizontally"));
+    m_flipHAct->setStatusTip(tr("Flip horizontally (Ctrl+H; when the view has focus)"));
     connect(m_flipHAct, &QAction::triggered, this, &MainWindow::flipHorizontal);
 
     m_flipVAct = new QAction(tr("Flip &Vertical"), this);
     m_flipVAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_H);
     m_flipVAct->setIcon(themeIcon(QStringLiteral("object-flip-vertical"), QStyle::SP_BrowserReload));
-    m_flipVAct->setStatusTip(tr("Flip image vertically"));
+    m_flipVAct->setStatusTip(tr("Flip vertically (Ctrl+Shift+H; when the view has focus)"));
     connect(m_flipVAct, &QAction::triggered, this, &MainWindow::flipVertical);
 
     m_resetContentAppearanceAct = new QAction(tr("Reset Content &Appearance…"), this);
@@ -283,7 +285,7 @@ void MainWindow::createActions()
                                : bundled);
     }
     m_cropAct->setStatusTip(
-        tr("Crop mode (Image/Workspace); in Gallery opens the selection in Image mode"));
+        tr("Crop mode (C when the view has focus); in Gallery opens the selection in Image mode"));
     m_cropAct->setToolTip(tr("Crop mode"));
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 
@@ -313,7 +315,7 @@ void MainWindow::createActions()
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
     m_toggleHudAct->setShortcut(Qt::Key_H);
     m_toggleHudAct->setCheckable(true);
-    m_toggleHudAct->setStatusTip(tr("Show an on-image overlay with filename, zoom and size"));
+    m_toggleHudAct->setStatusTip(tr("Toggle HUD overlay (H when the view has focus)"));
     connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
 
     m_toggleContentEditMarksAct = new QAction(tr("Show content &edit marks"), this);
@@ -391,7 +393,8 @@ void MainWindow::createActions()
     m_slideshowAct->setIcon(themeIcon(QStringLiteral("media-playback-start"), QStyle::SP_MediaPlay));
     m_slideshowAct->setCheckable(true);
     m_slideshowAct->setStatusTip(
-        tr("Space: pause/resume · Esc: leave slideshow. Unavailable in Workspace mode."));
+        tr("Space: start/pause (view focus) · Esc: leave slideshow. "
+           "Unavailable in Workspace mode."));
     connect(m_slideshowAct, &QAction::triggered, this, &MainWindow::toggleSlideshow);
 
     m_slideshowSettingsAct = new QAction(tr("Slideshow &Settings…"), this);
@@ -414,10 +417,12 @@ void MainWindow::createActions()
     connect(m_slideshowSlowerAct, &QAction::triggered, this, &MainWindow::slideshowSlower);
 
     m_workspaceModeAct = new QAction(tr("&Workspace Mode"), this);
+    m_workspaceModeAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_W);
+    m_workspaceModeAct->setShortcutContext(Qt::WindowShortcut);
     m_workspaceModeAct->setCheckable(true);
     m_workspaceModeAct->setChecked(false);
     m_workspaceModeAct->setIcon(resourceIcon(QStringLiteral("workspace-mode")));
-    m_workspaceModeAct->setStatusTip(tr("Free-form canvas for comparing images"));
+    m_workspaceModeAct->setStatusTip(tr("Free-form canvas for comparing images (Ctrl+Shift+W)"));
     connect(m_workspaceModeAct, &QAction::triggered, this, &MainWindow::toggleWorkspaceMode);
 
     m_selectToolAct = new QAction(tr("&Select"), this);
@@ -553,8 +558,8 @@ void MainWindow::createActions()
 
     m_backToGalleryAct = new QAction(tr("&Back"), this);
     m_backToGalleryAct->setIcon(themeIcon(QStringLiteral("go-up"), QStyle::SP_ArrowUp));
-    m_backToGalleryAct->setStatusTip(tr("Return to Gallery or Workspace"));
-    m_backToGalleryAct->setToolTip(tr("Return to Gallery or Workspace"));
+    m_backToGalleryAct->setStatusTip(tr("Return to Gallery or Workspace (Esc from Image mode)"));
+    m_backToGalleryAct->setToolTip(tr("Return to Gallery or Workspace (Esc)"));
     m_backToGalleryAct->setEnabled(false);
     connect(m_backToGalleryAct, &QAction::triggered, this, &MainWindow::returnFromImageMode);
 
@@ -865,7 +870,7 @@ void MainWindow::createActions()
     m_pdfEmbeddedImagesAct->setToolTip(
         tr("Open the current PDF as native embedded images (//pdfimages)"));
     m_pdfEmbeddedImagesAct->setStatusTip(
-        tr("Replace the session with //pdfimage:N leaves from the current PDF"));
+        tr("Re-open the current PDF as embedded images (experimental; page-render remains the primary path)"));
     connect(m_pdfEmbeddedImagesAct, &QAction::triggered, this,
             &MainWindow::openPdfAsEmbeddedImages);
     m_preferencesAct->setIcon(themeIcon(QStringLiteral("preferences-system"), QStyle::SP_FileDialogInfoView));
@@ -979,10 +984,12 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_printAct);
     m_fileMenu->addAction(m_printPreviewAct);
     m_fileMenu->addAction(m_pageSetupAct);
-    m_fileMenu->addAction(m_exportPngAct);
-    m_fileMenu->addAction(m_exportPdfAct);
+    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exportSessionImagesAct);
     m_fileMenu->addAction(m_exportTextAct);
+    m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_exportPngAct);
+    m_fileMenu->addAction(m_exportPdfAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);
 
@@ -997,10 +1004,11 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_cutWorkspaceAct);
     m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addAction(m_duplicateAct);
-    m_editMenu->addAction(m_reorderSessionAct);
     m_editMenu->addSeparator();
+    m_editMenu->addAction(m_reorderSessionAct);
     m_editMenu->addAction(m_prepareTileCacheAct);
     // Sort Session lives under Gallery + toolbar (not duplicated here).
+    m_editMenu->addSeparator();
     m_editMenu->addAction(m_preferencesAct);
 
     // Content transforms: dedicated Image menu (not Edit, not View).
@@ -1015,8 +1023,10 @@ void MainWindow::createMenus()
     m_imageMenu->addAction(m_cropAct);
     m_imageMenu->addAction(m_attentionAct);
     m_imageMenu->addSeparator();
-    m_imageMenu->addAction(m_epubLayoutAct);
-    m_imageMenu->addAction(m_pdfEmbeddedImagesAct);
+    auto *documentMenu = m_imageMenu->addMenu(tr("&Document"));
+    documentMenu->setStatusTip(tr("Document-specific tools (EPUB, PDF)"));
+    documentMenu->addAction(m_epubLayoutAct);
+    documentMenu->addAction(m_pdfEmbeddedImagesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
@@ -1062,17 +1072,21 @@ void MainWindow::createMenus()
     auto *galleryMenu = menuBar()->addMenu(tr("&Gallery"));
     galleryMenu->addAction(m_backToGalleryAct);
     galleryMenu->addSeparator();
-    galleryMenu->addAction(m_layoutSideBySideAct);
-    galleryMenu->addAction(m_layoutVerticalAct);
-    galleryMenu->addAction(m_layoutGridAct);
+    auto *galleryLayoutMenu = galleryMenu->addMenu(tr("&Layout"));
+    galleryLayoutMenu->setStatusTip(tr("Gallery pack layouts"));
+    galleryLayoutMenu->addAction(m_layoutSideBySideAct);
+    galleryLayoutMenu->addAction(m_layoutVerticalAct);
+    galleryLayoutMenu->addAction(m_layoutGridAct);
     // Grid Crop stays in the action group but is hidden until re-enabled.
-    galleryMenu->addAction(m_layoutMasonryAct);
-    galleryMenu->addAction(m_layoutMasonryRowsAct);
-    galleryMenu->addAction(m_layoutMasonryFillAct);
-    galleryMenu->addAction(m_layoutMasonryRowsFillAct);
-    galleryMenu->addAction(m_layoutFlowAct);
-    galleryMenu->addAction(m_layoutFlowFillAct);
-    galleryMenu->addAction(m_layoutFacingAct);
+    galleryLayoutMenu->addSeparator();
+    galleryLayoutMenu->addAction(m_layoutMasonryAct);
+    galleryLayoutMenu->addAction(m_layoutMasonryRowsAct);
+    galleryLayoutMenu->addAction(m_layoutMasonryFillAct);
+    galleryLayoutMenu->addAction(m_layoutMasonryRowsFillAct);
+    galleryLayoutMenu->addSeparator();
+    galleryLayoutMenu->addAction(m_layoutFlowAct);
+    galleryLayoutMenu->addAction(m_layoutFlowFillAct);
+    galleryLayoutMenu->addAction(m_layoutFacingAct);
     galleryMenu->addSeparator();
     galleryMenu->addAction(m_reorderSessionAct);
     auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));

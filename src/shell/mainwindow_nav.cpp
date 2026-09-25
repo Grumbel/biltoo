@@ -73,6 +73,21 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     const bool canSlideshow = hasFiles && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
+    if (m_slideshowAct) {
+        m_slideshowAct->setEnabled(canSlideshow);
+        m_slideshowAct->setProperty(
+            "biltooDisabledHelp",
+            tr("Slideshow is unavailable in Workspace mode and needs a non-empty session."));
+    }
+    if (m_slideshowSettingsAct) {
+        m_slideshowSettingsAct->setEnabled(canSlideshow);
+    }
+    if (m_slideshowFasterAct) {
+        m_slideshowFasterAct->setEnabled(canSlideshow);
+    }
+    if (m_slideshowSlowerAct) {
+        m_slideshowSlowerAct->setEnabled(canSlideshow);
+    }
     const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");
     if (m_previousAct) {
         m_previousAct->setProperty("biltooDisabledHelp", imageNavReason);

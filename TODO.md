@@ -2,29 +2,25 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2656.2-even-odd-batch-targets` (base `9740316`).
+**Tip:** `biltoo-2657.1-menu-shortcut-polish` (base `9740316`).
 
 ### Done
-- BatchTargets for crop, colour, orient (2653–2655).
-- **2656.1**
-  - `BatchTargets::EvenIndices` / `OddIndices` (session list parity).
-  - Crop + Adjustments panels expose Even / Odd in Targets.
-  - Reset content appearance returns correct non-live clear count.
+- Batch targets through 2656.2.
+- **2657.1 Menu / shortcut / enablement polish**
+  - File: Export Session Images first; page PNG/PDF grouped after separator.
+  - Image → Document submenu (EPUB / PDF Embedded; experimental tip).
+  - Gallery → Layout submenu (grouped pack modes).
+  - Edit: clipboard vs session separators.
+  - Tips for letter-key chords (R/C/H/Q/Space); Esc on Back; Fit Ctrl+Shift+F;
+    Workspace Ctrl+Shift+W.
+  - Shortcuts dialog intro (viewer chords + Esc chain).
+  - Enablement: page print/export Workspace-only; session export needs files;
+    slideshow actions disabled in Workspace.
 
-### Verify (agent)
-- Static symbol + enum + panel wiring checks: **pass**.
-- Full compile not possible in this sandbox (no nix/Qt). Host must build.
-
-### Host smoke
-1. `git pull` this bundle; `cmake --build` / `nix build`.
-2. Filmstrip multi-select → Flip / Colour Apply / Crop Apply.
-3. Targets → Even indices → Apply crop/colour across session.
-
-### Next
-- Template-from-page crop recipe (optional product).
-- Stack/sum preview (later).
+### Verify
+- Host build + open File/Image/Gallery menus; Esc from Image; slideshow grey in Workspace.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2656.2-even-odd-batch-targets-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2657.1-menu-shortcut-polish-9740316.bundle HEAD
 ```

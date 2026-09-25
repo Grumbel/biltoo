@@ -773,6 +773,23 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_viewBackgroundAct->setVisible(true);
         m_viewBackgroundAct->setEnabled(bgOk);
     }
+    // Page exports are Workspace-primary (page guide / content bounds).
+    for (QAction *act : {m_exportPngAct, m_exportPdfAct, m_pageSetupAct, m_printAct, m_printPreviewAct}) {
+        if (act) {
+            act->setEnabled(workspace);
+            act->setProperty(
+                "biltooDisabledHelp",
+                tr("Page print/export tools are available in Workspace mode."));
+        }
+    }
+    // Session export remains available with a non-empty session in any mode.
+    if (m_exportSessionImagesAct) {
+        const bool canExportSession = !m_session.paths().isEmpty();
+        m_exportSessionImagesAct->setEnabled(canExportSession);
+        m_exportSessionImagesAct->setProperty(
+            "biltooDisabledHelp",
+            tr("Export Session Images requires a non-empty session."));
+    }
     updateThumbnailBarForMode();
     updateLayoutPanelForMode();
     updateScrollBarPolicyForMode();
