@@ -235,3 +235,12 @@ dpc=0.1 → ±7.5 content px overdraw per cell edge
 3. **Tests** — `test_content_coverage_odd_widths`, `test_paint_seam_overdraw_clamp`.
 
 JPEG dual-encode residual is unchanged.
+
+## 14. Implemented (biltoo-2680) — paint order was inverted
+
+Expand and overdraw grow the dest on **right/bottom**. Sorting **L→R / T→B**
+painted the *next* exclusive cell last, so it erased the shared strip. With
+symmetric `±gap`, the next cell also overwrote ~0.75 content px of the previous
+exclusive rect (“disappearing lines” on the grid).
+
+**2680:** sort **R→L / B→T**; apply overdraw only as `dst.adjust(0,0,+gap,+gap)`.

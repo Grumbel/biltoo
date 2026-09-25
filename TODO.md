@@ -2,28 +2,28 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2679.1-coverage-overdraw-clamp` (base `932ed5c`).
+**Tip:** `biltoo-2680.1-seam-paint-order` (base `932ed5c`).
 
-### Implemented (from RESEARCH_TILE_OVERLAP)
-1. **Last-tile content rect** — `tile_content_rect` extends last column/row to
-   native AABB so scale>0 no longer leaves 1–N content px uncovered (odd widths
-   after floor-half).
-2. **Overdraw clamp** — `paint_seam_overdraw_content`: min(0.75/dpc, 1.0 content
-   unit) on ImageItem + `paint_draw_plan`.
-3. **Tests** — odd-width full coverage; overdraw clamp.
+### 2680 — paint order + directional overdraw
+Root cause of remaining grid seams / “disappearing lines”:
+- ExactTile expands **right/bottom**, but paint sorted **L→R / T→B**, so the
+  *next* exclusive tile was painted last and **erased** the shared strip.
+- Symmetric `±gap` overdraw let the next cell eat ~0.75–1 content px into the
+  previous exclusive rect (detail lines near x=256k vanished).
 
-Research: [docs/RESEARCH_TILE_OVERLAP.md](docs/RESEARCH_TILE_OVERLAP.md) §13.
+**Fix:** sort **R→L / B→T**; overdraw only `+right/+bottom` (both ImageItem and
+`paint_draw_plan`).
+
+### Prior in stack
+- 2679 last-tile coverage + overdraw clamp
+- 2678 research doc
+- 2677 smooth only at 1×/2×
 
 ### Residual
-- JPEG independent encode of the shared 257 strip (visual seam at coarse/upscale).
-- Runtime QA of lower-zoom edges after this tip.
-
-### Stack (base `932ed5c`)
-- 2677 smooth only at 1×/2× density
-- 2678 research doc
-- 2679 coverage + overdraw clamp
+- JPEG dual-encode of the 257 shared strip (colour step at seam, not a gap).
+- Re-prepare tiles if Store still has pre-overlap 256× cells mixed with 257.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2679.1-coverage-overdraw-clamp-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2680.1-seam-paint-order-932ed5c.bundle HEAD
 ```
