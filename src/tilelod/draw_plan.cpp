@@ -30,8 +30,7 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      // Exclusive level pixels only (matches content rect / 2^scale). Cap to
-      // bitmap size so legacy 257 cells still crop to exclusive.
+      // Exclusive level pixels (content rect / 2^scale), capped to bitmap.
       {
         int const factor = (key.scale > 0) ? (1 << key.scale) : 1;
         int ew = cr.w / factor;

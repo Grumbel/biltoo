@@ -174,22 +174,8 @@ namespace tilelod {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  // Overlap payloads (kTileSize+kTileOverlap): map exclusive content into the
-  // first exclusive columns/rows only.
   int map_w = parent_pixel_w;
   int map_h = parent_pixel_h;
-  if (kTileOverlap > 0 && parent_pixel_w > kTileSize) {
-    map_w = parent_pixel_w - kTileOverlap;
-  }
-  if (kTileOverlap > 0 && parent_pixel_h > kTileSize) {
-    map_h = parent_pixel_h - kTileOverlap;
-  }
-  if (map_w < 1) {
-    map_w = parent_pixel_w;
-  }
-  if (map_h < 1) {
-    map_h = parent_pixel_h;
-  }
   double const u0 = (static_cast<double>(fine_cr.x - parent_cr.x)
                      / static_cast<double>(parent_cr.w))
                     * static_cast<double>(map_w);

@@ -83,7 +83,7 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (img.isNull()) {
       continue;
     }
-    // Exclusive src_uv from plan (not full 257→256 scale).
+    // Exclusive src_uv from plan.
     QRectF const src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
     painter->drawImage(dst, img, src);
   }

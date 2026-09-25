@@ -13,9 +13,8 @@ namespace tilelod {
 
 /// Matches thumtoo::kTileSize / Galapix tile grid.
 inline constexpr int kTileSize = 256;
-/// Matches thumtoo::kTileOverlap. Encode may store +1 right/bottom; paint
-/// always uses exclusive src_uv (first kTileSize), never 257→256 scale.
-inline constexpr int kTileOverlap = 1;
+/// Always 0 (matches thumtoo). No edge strip; exclusive cells only.
+inline constexpr int kTileOverlap = 0;
 
 /// Grid cell identity at a pyramid scale.
 struct TileKey {
