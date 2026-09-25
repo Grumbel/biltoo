@@ -63,6 +63,23 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
 - Fresh `SessionImageId`s; preserves selection order (no re-sort)
 - Status feedback with counts
 
+### Batch appearance (multi-select)
+
+| Surface | Behaviour |
+|---------|-----------|
+| **Adjustments** | Apply colour grade to Current / Selection (canvas ∪ filmstrip) / index range / even / odd indices |
+| **Crop panel** | Manual margins or autocrop (+ soft-sample wait); same target modes; live preview on current |
+| **Orient** | Flip / rotate / reset content appearance use the same expanded targets |
+| **Undo** | Multi-target ops group under one undo macro when N > 1 |
+
+### Menu and shortcut polish
+
+- File: **Export Session Images…** distinguished from Workspace page PNG/PDF export
+- Image → **Document** submenu (EPUB Layout, PDF Embedded Images — experimental)
+- Gallery → **Layout** submenu; Edit clipboard vs session separators
+- Shortcuts dialog notes viewer letter chords; Fit **Ctrl+Shift+F**, Workspace **Ctrl+Shift+W**
+- Esc chain: crop cancel → leave slideshow → leave fullscreen → leave Image mode
+
 ### Other stability in this cycle
 
 - Public APIs for undoable session reorder (QUndoCommand-safe)

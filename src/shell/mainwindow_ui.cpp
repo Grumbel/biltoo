@@ -1757,7 +1757,7 @@ void MainWindow::populateActionHelpTexts()
         "<p>Export extracted text when the current document provides it "
         "(e.g. some PDF/EPUB flows).</p>"));
     setHelp(m_exportSessionImagesAct, tr(
-        "<p>Export session images with content appearance applied (crop, flip, "
+        "<p><b>Export Session Images</b> — session deliverable (not page PNG/PDF). Appearance applied (crop, flip, "
         "rotation, colour grade). Choose a folder of JPEG/PNG files, a .cbz comic "
         "archive, or a multi-page PDF. Sources are never overwritten.</p>"
         "<p>Scope can be the entire session or the current selection. Settings "
@@ -1767,7 +1767,7 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable).</p>"));
     setHelp(m_zoomOutAct, tr("<p>Zoom the view out.</p>"));
     setHelp(m_zoomFitAct, tr(
-        "<p>Scale so the content fits inside the viewport (letterboxed if aspects differ).</p>"
+        "<p>Scale so the content fits inside the viewport (letterboxed if aspects differ). Shortcut: <b>Ctrl+Shift+F</b> (distinct from Fullscreen F / F11).</p>"
         "<p><b>Image mode:</b> sticky Fit stays active across ←/→ until released. "
         "<b>Gallery / Workspace:</b> one-shot fit of the whole pack or canvas — sticky "
         "zoom is Image-only.</p>"));
@@ -1903,8 +1903,7 @@ void MainWindow::populateActionHelpTexts()
 
     // --- Workspace ---
     setHelp(m_workspaceModeAct, tr(
-        "<p>Enter or leave <b>Workspace</b> mode. See Help → Guides → Workspace Mode for "
-        "the full model (free placement, snapshot, layout panel, page guide).</p>"
+        "<p>Enter or leave <b>Workspace</b> mode (<b>Ctrl+Shift+W</b>). See Help → Guides → Workspace Mode for the full model (free placement, snapshot, layout panel, page guide).</p>"
         "<p>Entering from Gallery restores the durable Workspace snapshot; it does not "
         "import Gallery packing as free poses.</p>"));
     setHelp(m_pageGuideAct, tr(

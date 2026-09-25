@@ -73,21 +73,6 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     const bool canSlideshow = hasFiles && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
-    if (m_slideshowAct) {
-        m_slideshowAct->setEnabled(canSlideshow);
-        m_slideshowAct->setProperty(
-            "biltooDisabledHelp",
-            tr("Slideshow is unavailable in Workspace mode and needs a non-empty session."));
-    }
-    if (m_slideshowSettingsAct) {
-        m_slideshowSettingsAct->setEnabled(canSlideshow);
-    }
-    if (m_slideshowFasterAct) {
-        m_slideshowFasterAct->setEnabled(canSlideshow);
-    }
-    if (m_slideshowSlowerAct) {
-        m_slideshowSlowerAct->setEnabled(canSlideshow);
-    }
     const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");
     if (m_previousAct) {
         m_previousAct->setProperty("biltooDisabledHelp", imageNavReason);
@@ -143,10 +128,11 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
         m_lastAct->setEnabled(imageNav);
         m_lastAct->setProperty("biltooDisabledHelp", imageNavReason);
     }
-    m_slideshowAct->setEnabled(canSlideshow);
     if (m_slideshowAct) {
+        m_slideshowAct->setEnabled(canSlideshow);
         if (canSlideshow) {
-            m_slideshowAct->setStatusTip(tr("Space: pause/resume · Esc: leave slideshow and fullscreen"));
+            m_slideshowAct->setStatusTip(
+                tr("Space: start/pause when the view has focus · Esc: leave slideshow"));
             m_slideshowAct->setProperty("biltooDisabledHelp", QString());
         } else if (m_imageView && m_imageView->isWorkspaceMode()) {
             const QString r = tr("Slideshow is not available in Workspace mode.");
@@ -157,6 +143,15 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
             m_slideshowAct->setStatusTip(r);
             m_slideshowAct->setProperty("biltooDisabledHelp", r);
         }
+    }
+    if (m_slideshowSettingsAct) {
+        m_slideshowSettingsAct->setEnabled(canSlideshow);
+    }
+    if (m_slideshowFasterAct) {
+        m_slideshowFasterAct->setEnabled(canSlideshow);
+    }
+    if (m_slideshowSlowerAct) {
+        m_slideshowSlowerAct->setEnabled(canSlideshow);
     }
     if (m_imageView) {
         m_imageView->hostImage().setImageModeNavigationEnabled(imageNav);

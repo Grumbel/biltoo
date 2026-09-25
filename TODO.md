@@ -2,25 +2,25 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2657.1-menu-shortcut-polish` (base `9740316`).
+**Tip:** `biltoo-2657.2-menu-polish-docs` (base `9740316`).
 
 ### Done
-- Batch targets through 2656.2.
-- **2657.1 Menu / shortcut / enablement polish**
-  - File: Export Session Images first; page PNG/PDF grouped after separator.
-  - Image → Document submenu (EPUB / PDF Embedded; experimental tip).
-  - Gallery → Layout submenu (grouped pack modes).
-  - Edit: clipboard vs session separators.
-  - Tips for letter-key chords (R/C/H/Q/Space); Esc on Back; Fit Ctrl+Shift+F;
-    Workspace Ctrl+Shift+W.
-  - Shortcuts dialog intro (viewer chords + Esc chain).
-  - Enablement: page print/export Workspace-only; session export needs files;
-    slideshow actions disabled in Workspace.
+- **2657.1** Menu/shortcut/enablement polish.
+- **2657.2** Deduped slideshow enablement; Help texts for Fit/Workspace/Export;
+  `RELEASE_0.2.0.md` records batch appearance + menu polish as landed.
 
-### Verify
-- Host build + open File/Image/Gallery menus; Esc from Image; slideshow grey in Workspace.
+### Host before 0.2.0 tag
+1. Build green.
+2. Smoke: reorder, Export Session Images, Open Selection + committed crop.
+3. Smoke: Esc chain; Workspace greys page export + slideshow; Fit/Workspace keys.
+4. Batch: filmstrip multi-select orient/colour/crop; Even indices.
+
+### Next (post-tag / 0.2.x)
+- Shared BatchTargetPicker widget (crop + adjustments).
+- Template-from-page crop; stack preview.
+- Location bar navigate-vs-replace semantics.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2657.1-menu-shortcut-polish-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2657.2-menu-polish-docs-9740316.bundle HEAD
 ```
