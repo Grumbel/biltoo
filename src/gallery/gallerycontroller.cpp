@@ -626,7 +626,8 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
         return false;
     }
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
-    m_view->hostImage().releaseStickyZoom();
+    // Gallery inspection zoom is view-local. Do not release Image sticky-zoom
+    // preference — that is owned by Image framing and must survive Gallery.
     m_view->hostFraming().clearFitFill();
     // Interactive zoom must not be followed by onScrollBarRangeChanged →
     // centerOn(viewport centre) / reassertViewport — that cancels under-mouse
