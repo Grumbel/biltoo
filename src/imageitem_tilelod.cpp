@@ -197,13 +197,13 @@ QSize ImageItem::tileNativeSize() const
     if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
         return cached;
     }
-    // Layout imageSize() is *oriented* content size. Tile grid is always
-    // file-native. Using layout as native when ContentXform has quarter-turns
-    // makes plan densites and UV maps mismatch the oriented contentRect
-    // (tiles look unrotated / wrong aspect inside a correct box).
+    // Layout imageSize() is *oriented* / post-crop content size. Tile grid is
+    // always file-native. Orient or crop makes layout ≠ native (UV / density
+    // mismatch → squished tiles in a correct crop box).
     const ContentXform::Value x = liveContentXformForPaint();
     if (ContentXform::normalizeQuarterTurns(x.quarterTurns) != 0
-        || x.hFlip || x.vFlip) {
+        || x.hFlip || x.vFlip
+        || (x.hasCrop && !x.cropRect.isEmpty())) {
         return {};
     }
     // Identity xform only: layout size matches native probe.
@@ -226,7 +226,8 @@ bool ImageItem::tileLodWanted() const
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         const ContentXform::Value x = liveContentXformForPaint();
         if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
-            && !x.hFlip && !x.vFlip) {
+            && !x.hFlip && !x.vFlip
+            && !(x.hasCrop && !x.cropRect.isEmpty())) {
             native = imageSize();
         }
     }
@@ -287,7 +288,8 @@ void ImageItem::prepareTileLodPlan()
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         const ContentXform::Value x = liveContentXformForPaint();
         if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
-            && !x.hFlip && !x.vFlip) {
+            && !x.hFlip && !x.vFlip
+            && !(x.hasCrop && !x.cropRect.isEmpty())) {
             native = imageSize();
         }
     }

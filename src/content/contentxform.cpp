@@ -453,12 +453,16 @@ QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
     }
     QSize orientedSize = swapsAspect(x) ? QSize(native.height(), native.width())
                                         : native;
+    // Same basis as mapSourceRectToDisplay / tile paint: crop in oriented
+    // full-native space (scale cropSourceSize → page native for PDF soft crops).
+    const QRect cropOriented =
+        (x.hasCrop && !x.cropRect.isEmpty()) ? orientedCropRect(native, x)
+                                             : QRect{};
     QPointF orientedPts[4];
-    if (x.hasCrop && !x.cropRect.isEmpty() && hasFreeCropRotation(x)) {
-        const QRect crop = x.cropRect.normalized();
-        const qreal dw = crop.width();
-        const qreal dh = crop.height();
-        const QPointF srcCenter(crop.center());
+    if (!cropOriented.isEmpty() && hasFreeCropRotation(x)) {
+        const qreal dw = cropOriented.width();
+        const qreal dh = cropOriented.height();
+        const QPointF srcCenter(cropOriented.center());
         // Inverse of materialize free-rot: from display → oriented.
         QTransform inv;
         inv.translate(srcCenter.x(), srcCenter.y());
@@ -475,9 +479,8 @@ QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
         }
     } else {
         QRectF oriented = displayRect;
-        if (x.hasCrop && !x.cropRect.isEmpty()) {
-            const QRect crop = x.cropRect.normalized();
-            oriented = displayRect.translated(crop.x(), crop.y());
+        if (!cropOriented.isEmpty()) {
+            oriented = displayRect.translated(cropOriented.x(), cropOriented.y());
         }
         orientedPts[0] = oriented.topLeft();
         orientedPts[1] = oriented.topRight();

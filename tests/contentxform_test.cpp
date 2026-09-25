@@ -44,6 +44,7 @@ private slots:
     void scaleCropRect_identity();
     void orientedCropRect_softToNative();
     void orientedCropRect_identityBasis();
+    void mapDisplayRectToSource_softCrop();
     void mapCropRect_oneStepMatchesTrueMatrix();
     void mapCropThrough_updatesSourceSizeAndRotation();
     void layoutSize_cropThenMappedRotate();
@@ -429,6 +430,21 @@ void ContentXformTest::orientedCropRect_identityBasis()
     QCOMPARE(ContentXform::orientedCropRect(QSize(400, 300), x),
              QRect(10, 20, 100, 80));
 }
+
+void ContentXformTest::mapDisplayRectToSource_softCrop()
+{
+    // Soft-recorded crop must round-trip display → source on page native.
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(100, 50, 80, 60);
+    x.cropSourceSize = QSize(400, 300);
+    const QSize native(4000, 3000);
+    // Full crop window in display space is (0,0)-(800,600) after scale.
+    const QRectF display(0, 0, 800, 600);
+    const QRectF source = ContentXform::mapDisplayRectToSource(display, native, x);
+    QCOMPARE(source.toRect(), QRect(1000, 500, 800, 600));
+}
+
 
 
 void ContentXformTest::mapCropRect_oneStepMatchesTrueMatrix()
