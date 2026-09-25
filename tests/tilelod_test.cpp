@@ -349,8 +349,8 @@ void test_edge_tile_content_rect()
   CHECK_EQ(r1.w, 44);
 }
 
-/// Exact level→content mapping: tiles abut; coverage equals level_w * 2^s
-/// (may be short of content_w by a floor-half remainder at s>0).
+/// Content mapping: tiles abut; last column stretches to native edge so
+/// total coverage equals content_w (no floor-half residual ring).
 void test_content_coverage_odd_widths()
 {
   int const widths[] = {300, 513, 1025, 2052, 4097};
@@ -361,19 +361,21 @@ void test_content_coverage_odd_widths()
         continue;
       }
       int const factor = 1 << s;
-      int const level_w = tilelod::dim_at_tile_scale(cw, s);
       int covered = 0;
       int prev_right = 0;
       for (int x = 0; x < nx; ++x) {
         auto r = tilelod::tile_content_rect(cw, cw, {s, x, 0});
         CHECK(!r.empty());
         CHECK_EQ(r.x, prev_right);
-        CHECK_EQ(r.w % factor, 0);
+        // Interior tiles stay level*2^s (multiple of factor). Trailing edge
+        // may stretch by a floor-half residual and need not be.
+        if (x + 1 < nx) {
+          CHECK_EQ(r.w % factor, 0);
+        }
         covered += r.w;
         prev_right = r.x + r.w;
       }
-      CHECK_EQ(covered, level_w * factor);
-      CHECK(covered <= cw);
+      CHECK_EQ(covered, cw);
     }
   }
   CHECK(tilelod::tile_content_rect(513, 513, {1, 99, 0}).empty());

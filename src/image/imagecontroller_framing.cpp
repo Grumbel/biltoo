@@ -191,6 +191,18 @@ void ImageController::applyImageModeFraming(ImageItem *item)
     }
     // Non-sticky: keep the previous view scale + relative pan (prev/next at the
     // same zoom). Cold open with no prior capture still defaults to Fit.
+    // Always identity item scale — view matrix owns zoom (same as sticky path).
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        pl.pos = QPointF(0, 0);
+        pl.rotation = 0.0;
+        pl.shear = 0.0;
+        pl.hFlip = false;
+        pl.vFlip = false;
+        item->applyPlacement(pl);
+    }
     if (m_framing.hasPreservedViewScale()) {
         const qreal sx = m_framing.currentPreservedViewScale();
         if (!qIsFinite(sx) || sx <= 1e-6 || sx > 50.0) {
@@ -200,12 +212,6 @@ void ImageController::applyImageModeFraming(ImageItem *item)
             return;
         }
         m_framing.clearFitFill();
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
         m_view->resetTransform();
         m_view->scale(sx, sx);
         syncImageModeSceneRect(item);

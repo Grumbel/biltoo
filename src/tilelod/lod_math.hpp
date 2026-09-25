@@ -189,7 +189,8 @@ namespace tilelod {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  // Parent bitmap is exclusive level pixels (same size as parent_cr / 2^ps).
+  // Parent bitmap is exclusive level pixels. parent_cr may be edge-stretched
+  // to the native AABB; map UV proportionally onto the exclusive payload.
   int const map_w = parent_pixel_w;
   int const map_h = parent_pixel_h;
   double const u0 =
