@@ -284,12 +284,15 @@ int ImageController::resetContentAppearanceForTargets()
         befores.append(snap);
     }
     if (befores.isEmpty()) {
-        return 0;
+        if (nonLiveCleared > 0) {
+            emit m_view->statusChanged();
+        }
+        return nonLiveCleared;
     }
 
     ContentUndoMacro macro(
         m_view->hostUndoStack(),
-        m_view->tr("Reset content appearance (%1)").arg(befores.size()),
+        m_view->tr("Reset content appearance (%1)").arg(befores.size() + nonLiveCleared),
         befores.size());
 
     int n = 0;
