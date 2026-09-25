@@ -493,9 +493,10 @@ bool WorkspaceController::tryMouseDoubleClick(QMouseEvent *event)
     if (selected.size() == 1) {
         ImageItem *item = selected.first();
         HandlePressScratch press;
-        if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
-            && press.hasContinuousHandle()) {
-            m_itemInteract.beginHandleDrag(item, item->placement(), press);
+        if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)) {
+            if (press.hasContinuousHandle()) {
+                m_itemInteract.beginHandleDrag(item, item->placement(), press);
+            }
             event->accept();
             return true;
         }

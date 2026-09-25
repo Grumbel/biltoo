@@ -170,7 +170,8 @@ public:
      */
     /**
      * Start continuous handle drag. Writes press scratch to @p outPress when
-     * a scale/shear/rotate/opacity handle is armed (outPress->hasContinuousHandle()).
+     * true if any handle hit. Continuous drag when outPress->hasContinuousHandle();
+     * chrome (flip/90°) activates immediately and has no continuous handle.
      * One-shot chrome buttons (flip/raise/…) return true without arming drag.
      */
     bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,

@@ -48,9 +48,16 @@ bool WorkspaceController::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // pointer is over another tile's pixmap (handles are drawn on top).
         ImageItem *item = selected.first();
         HandlePressScratch press;
-        if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
-            && press.hasContinuousHandle()) {
-            m_itemInteract.beginHandleDrag(item, (item ? item->placement() : ItemComponents::Placement{}), press);
+        // Chrome (flip/rotate90/…) activates inside beginHandleInteraction and
+        // leaves press without a continuous handle — still consume the event so
+        // QGraphicsView does not clear selection (toolbar rotate does not).
+        if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)) {
+            if (press.hasContinuousHandle()) {
+                m_itemInteract.beginHandleDrag(
+                    item,
+                    (item ? item->placement() : ItemComponents::Placement{}),
+                    press);
+            }
             setPageGuideSelected(false);
             event->accept();
             return true;
