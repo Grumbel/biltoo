@@ -2,18 +2,14 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2688.1-overlap-zero` (base `932ed5c`).
+**Tip:** `biltoo-2689.1-gallery-wheel-zoom-cursor` (base `932ed5c`).
 
-### 2688 — biltoo kTileOverlap = 0
-Match thumtoo. Parent UV still strips one column/row when bitmap > 256
-(legacy Store). Removed dead `paint_seam_overdraw_content`.
-
-### Content size grow/shrink during generation
-Usually **soft/LQIP ladder** (different long edges installing on the item), not
-tile overlap. Intrinsic size should stay native; if a path still resizes the
-item from sample long-edge, that is separate from 257.
+### 2689 — Gallery Ctrl+wheel zooms about cursor
+`onScrollBarRangeChanged` was `centerOn(viewport centre)` after zoom-induced
+range changes, cancelling `AnchorUnderMouse`. Suppress bar-range recenter
+during wheel zoom; zoom with NoAnchor + translate delta under cursor.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2688.1-overlap-zero-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2689.1-gallery-wheel-zoom-cursor-932ed5c.bundle HEAD
 ```

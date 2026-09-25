@@ -628,9 +628,32 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
     m_view->hostImage().releaseStickyZoom();
     m_view->hostFraming().clearFitFill();
-    m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    // Interactive zoom must not be followed by onScrollBarRangeChanged →
+    // centerOn(viewport centre) / reassertViewport — that cancels under-mouse
+    // zoom (Image/Workspace do not run that Gallery bar-range path).
+    m_suppressBarRangeRecenter = true;
+    m_haveViewCenter = false;
+    m_haveScroll = false;
+    m_barRangeHaveCenter = false;
+    // Explicit about-cursor zoom: AnchorUnderMouse alone loses to AlignCenter
+    // + scrollbar range churn in Gallery.
+    const QPoint viewPos = event->position().toPoint();
+    const QPointF sceneBefore = m_view->mapToScene(viewPos);
+    m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
+    m_view->setResizeAnchor(QGraphicsView::NoAnchor);
     m_view->scale(factor, factor);
+    const QPointF sceneAfter = m_view->mapToScene(viewPos);
+    const QPointF delta = sceneAfter - sceneBefore;
+    m_view->translate(delta.x(), delta.y());
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    m_view->setResizeAnchor(QGraphicsView::AnchorViewCenter);
+    QPointer<ImageView> guard(m_view);
+    QTimer::singleShot(0, m_view, [this, guard]() {
+        if (!guard) {
+            return;
+        }
+        m_suppressBarRangeRecenter = false;
+    });
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
     // every high-res underlay, freezing the UI while zooming out.
@@ -1233,7 +1256,7 @@ void GalleryController::onScrollBarRangeChanged()
     // not shift when AsNeeded bars eat viewport pixels.
     // See also: https://stackoverflow.com/questions/38254367
     if (!m_view || !m_view->isGalleryMode() || m_layoutApply.active()
-        || m_barRangeGuard) {
+        || m_barRangeGuard || m_suppressBarRangeRecenter) {
         return;
     }
     if (m_view->viewport()) {

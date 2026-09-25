@@ -282,6 +282,8 @@ private:
 
     /** Guard re-entrancy from scroll-bar rangeChanged → centerOn. */
     bool m_barRangeGuard = false;
+    /// Skip bar-range centerOn after Ctrl+wheel zoom (keeps cursor anchor).
+    bool m_suppressBarRangeRecenter = false;
     /** Scene centre captured when a bar range first changes (pre-layout). */
     QPointF m_barRangeKeepCenter;
     bool m_barRangeHaveCenter = false;
