@@ -2,13 +2,13 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2643.1-glossary` (base `d06c25a`).
+**Tip:** `biltoo-2644.1-batch-appearance-brainstorm` (base `0c8c9c0`).
 
 ### Docs
-- [GLOSSARY.md](GLOSSARY.md) — project vocabulary (domain, identity, pixels, Gallery, Qt surface, …)
-- [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md) — HyperCard / Nelson napkin
+- [docs/BATCH_APPEARANCE_BRAINSTORM.md](docs/BATCH_APPEARANCE_BRAINSTORM.md) — multi-page crop/autocrop/stack preview
+- [GLOSSARY.md](GLOSSARY.md), [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2643.1-glossary-d06c25a.bundle HEAD
+git pull --ff-only …/biltoo-2644.1-batch-appearance-brainstorm-0c8c9c0.bundle HEAD
 ```
