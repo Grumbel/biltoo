@@ -2,14 +2,20 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2645.1-batch-appearance-panel-plan` (base `dedfa58`).
+**Tip:** `biltoo-2646.1-batch-orient-undo-macro` (base `bbfdf32`).
 
-### Docs
-[docs/BATCH_APPEARANCE_BRAINSTORM.md](docs/BATCH_APPEARANCE_BRAINSTORM.md) —
-agreed order: orient/reset → colour → crop panel; crop panel like AdjustmentsPanel;
-template-page UI options later.
+### Done
+- Orient multi-apply already used `transformTargets()` (Gallery/Workspace selection).
+- **Undo bag:** `ContentUndoMacro` groups flip/rotate content undos when N>1.
+- **Reset content appearance:** before/after snapshot + `pushItemContentCommand`
+  under the same macro (was not undoable before).
+
+### Next (batch appearance)
+1. Colour multi-apply to targets (AdjustmentsPanel).
+2. Crop panel (manual / autocrop+threshold / margins / reset).
+3. Template page + stack preview later.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2645.1-batch-appearance-panel-plan-dedfa58.bundle HEAD
+git pull --ff-only …/biltoo-2646.1-batch-orient-undo-macro-bbfdf32.bundle HEAD
 ```

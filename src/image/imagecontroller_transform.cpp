@@ -16,6 +16,31 @@
 #include "content/contentxform.h"
 #include "color/coloradjust.h"
 #include <QDebug>
+#include <QUndoStack>
+
+namespace {
+
+/** Group N content undos into one stack entry when the user multi-selected. */
+struct ContentUndoMacro {
+    QUndoStack *stack = nullptr;
+    explicit ContentUndoMacro(QUndoStack *s, const QString &text, int targetCount)
+        : stack(s && targetCount > 1 ? s : nullptr)
+    {
+        if (stack) {
+            stack->beginMacro(text);
+        }
+    }
+    ~ContentUndoMacro()
+    {
+        if (stack) {
+            stack->endMacro();
+        }
+    }
+    ContentUndoMacro(const ContentUndoMacro &) = delete;
+    ContentUndoMacro &operator=(const ContentUndoMacro &) = delete;
+};
+
+} // namespace
 
 void ImageController::flipHorizontal()
 {
@@ -23,6 +48,9 @@ void ImageController::flipHorizontal()
     if (targets.isEmpty()) {
         return;
     }
+    ContentUndoMacro macro(m_view->hostUndoStack(),
+                           m_view->tr("Flip horizontal (%1)").arg(targets.size()),
+                           targets.size());
     for (ImageItem *item : targets) {
         m_view->hostDisplayPipeline().bakeItemFlip(item, true, false);
         if (m_framing.isFitMode() && m_view->isImageMode()) {
@@ -41,6 +69,9 @@ void ImageController::flipVertical()
     if (targets.isEmpty()) {
         return;
     }
+    ContentUndoMacro macro(m_view->hostUndoStack(),
+                           m_view->tr("Flip vertical (%1)").arg(targets.size()),
+                           targets.size());
     for (ImageItem *item : targets) {
         m_view->hostDisplayPipeline().bakeItemFlip(item, false, true);
         if (m_framing.isFitMode() && m_view->isImageMode()) {
@@ -80,6 +111,9 @@ void ImageController::rotateLeft()
     if (targets.isEmpty()) {
         return;
     }
+    ContentUndoMacro macro(m_view->hostUndoStack(),
+                           m_view->tr("Rotate left (%1)").arg(targets.size()),
+                           targets.size());
     for (ImageItem *item : targets) {
         rotateContentByQuarterTurns(item, -1);
     }
@@ -97,6 +131,9 @@ void ImageController::rotateRight()
     if (targets.isEmpty()) {
         return;
     }
+    ContentUndoMacro macro(m_view->hostUndoStack(),
+                           m_view->tr("Rotate right (%1)").arg(targets.size()),
+                           targets.size());
     for (ImageItem *item : targets) {
         rotateContentByQuarterTurns(item, 1);
     }
@@ -114,11 +151,37 @@ int ImageController::resetContentAppearanceForTargets()
     if (targets.isEmpty()) {
         return 0;
     }
-    int n = 0;
+
+    struct BeforeSnap {
+        ImageItem *item = nullptr;
+        QImage src;
+        WorkspaceItemState state;
+    };
+    QList<BeforeSnap> befores;
+    befores.reserve(targets.size());
     for (ImageItem *item : targets) {
         if (!item) {
             continue;
         }
+        BeforeSnap snap;
+        snap.item = item;
+        snap.src = item->sourceImage().copy();
+        snap.state = m_view->captureContentBakeBeforeState(item);
+        ItemComponents::applyPlacementToState(snap.state, item->placement());
+        befores.append(snap);
+    }
+    if (befores.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Reset content appearance (%1)").arg(befores.size()),
+        befores.size());
+
+    int n = 0;
+    for (const BeforeSnap &snap : befores) {
+        ImageItem *item = snap.item;
         const QString path = item->path();
         const SessionImageId sid = m_view->hostResolveContentEditSessionId(item);
 
@@ -175,6 +238,16 @@ int ImageController::resetContentAppearanceForTargets()
                 emit m_view->sessionAppearanceChanged(sid, path, appearance);
             }
         }
+
+        // Undo bag: one ContentCommand per target (macro groups them).
+        // push calls redo() which re-applies after — idempotent after reset.
+        WorkspaceItemState afterSt = m_view->captureContentBakeBeforeState(item);
+        ItemComponents::applyPlacementToState(afterSt, item->placement());
+        afterSt.sessionId = snap.state.sessionId;
+        m_view->pushItemContentCommand(
+            m_view->tr("Reset content appearance"), item, snap.src,
+            item->sourceImage().copy(), snap.state, afterSt);
+
         ++n;
     }
     if (n > 0 && m_view->isGalleryMode()) {
