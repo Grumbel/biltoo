@@ -984,6 +984,39 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // yet painted (nav-hot skips tile paint).
         const bool galleryLqipOnlyUnderTiles =
             tilesWanted && !m_galleryCellSize.isEmpty();
+        // When crop is durable, samples may still be host-raw full frame (LQIP,
+        // late ladder, or bake skipped). Stretching full into crop contentRect
+        // squishes; UV-crop from cropSourceSize → sample size matches tile paint.
+        auto sampleSrcRectForCrop = [&](const QSize &sampleSize) -> QRect {
+            const ContentXform::Value x = liveContentXformForPaint();
+            if (!x.hasCrop || x.cropRect.isEmpty()
+                || sampleSize.width() < 1 || sampleSize.height() < 1) {
+                return {};
+            }
+            // Already crop-baked: sample aspect ≈ layout contentRect.
+            const QRectF box = contentRect();
+            if (box.width() > 1.0 && box.height() > 1.0) {
+                const qreal sampleAr = qreal(sampleSize.width())
+                    / qreal(sampleSize.height());
+                const qreal boxAr = box.width() / box.height();
+                if (qAbs(sampleAr - boxAr) < 0.08) {
+                    return {}; // stretch full sample
+                }
+            }
+            // Scale crop into this sample's pixel space (same as materializeDisplay).
+            QSize basis = (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0)
+                              ? x.cropSourceSize
+                              : sampleSize;
+            QRect c = x.cropRect.normalized();
+            if (basis != sampleSize) {
+                c = ContentXform::scaleCropRect(c, basis, sampleSize);
+            }
+            c = c.intersected(QRect(0, 0, sampleSize.width(), sampleSize.height()));
+            if (c.width() < 1 || c.height() < 1) {
+                return {};
+            }
+            return c;
+        };
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
@@ -993,7 +1026,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 return;
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-            painter->drawImage(box, img);
+            const QRect src = sampleSrcRectForCrop(img.size());
+            if (!src.isEmpty()) {
+                painter->drawImage(box, img, src);
+            } else {
+                painter->drawImage(box, img);
+            }
         };
         if (drawLqipBase) {
             const QRectF box = contentRect();
@@ -1024,7 +1062,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     // leave underlay to LQIP branch / placeholder
                 } else {
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-                painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                {
+                    const QRect src = sampleSrcRectForCrop(pixmap().size());
+                    if (!src.isEmpty()) {
+                        painter->drawImage(box, pixmap().toImage(), src);
+                    } else {
+                        painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                    }
+                }
                 }
             } else if (!m_source.isNull() && !m_previewPixels) {
                 if (galleryLqipOnlyUnderTiles
