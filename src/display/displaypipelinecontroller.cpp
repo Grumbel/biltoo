@@ -1858,16 +1858,17 @@ void DisplayPipelineController::rematerializeItemContent(ImageItem *item,
     }
     const SessionImageId sid = resolveItemSessionId(item);
     if (raw.isNull()) {
-        // Cold cache: optional disk soft so interactive bake/open is not blank.
-        // scheduleAsync no-ops when the only host is ≤ GUI edge (soft stand-in).
+        // Cold cache: host RAM only on GUI — never ImageLoader::loadThumbnail here
+        // (ASSERT_NOT_GUI). ImageCache::ensure schedules async loadThumbnail off-thread.
         if (!path.isEmpty()) {
-            QImage disk = ImageLoader::loadThumbnail(
-                path, ThumtooCache::kGalleryLadderEdge);
+            QImage disk = ImageCache::get(path, ThumtooCache::kGalleryLadderEdge);
             if (disk.isNull()) {
-                disk = ImageLoader::loadThumbnail(path, 512);
+                disk = ImageCache::get(path);
             }
-            if (!disk.isNull()) {
-                ImageCache::put(path, disk);
+            if (disk.isNull()) {
+                // Kick async fill; may still be empty this turn.
+                (void)ImageCache::ensure(path, ThumtooCache::kGalleryLadderEdge);
+            } else {
                 QImage soft = disk;
                 if (ContentXform::longEdge(disk.size())
                     > ContentXform::kGuiMaterializeMaxEdge) {
@@ -1962,23 +1963,37 @@ void DisplayPipelineController::reinstallModePixelsAfterIdentityReset(
         hostClearDecodedPixels(item);
         return;
     }
-    // Gallery → soft ladder; Image/Workspace → full on-disk decode.
+    // Gallery → soft from host cache only; Image/Workspace → full when cached.
+    // Never ImageLoader::loadThumbnail / load on the GUI thread (ASSERT_NOT_GUI).
     // Always drop pixels first so SoftPreview is not ignored while FullSource remains.
     if (m_host->isGalleryMode()) {
         galleryDecodeResetPath(path);
         hostClearDecodedPixels(item);
         const int softEdge = ThumtooCache::kGalleryLadderEdge;
-        QImage soft = ImageLoader::loadThumbnail(path, softEdge);
+        QImage soft = ImageCache::get(path, softEdge);
+        if (soft.isNull()) {
+            soft = ImageCache::get(path);
+        }
         if (!soft.isNull()) {
+            if (ImageCache::longEdge(soft) > softEdge) {
+                soft = ImageCache::clampToMaxEdge(soft, softEdge);
+            }
             installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview, sid);
         }
-        // else: decode window will refill after soft state reset
+        // Async refill: decode window (onContentAppearanceReset) + explicit schedule.
+        (void)scheduleGalleryDecode(path);
     } else {
         const QImage full = fullRasterForEdit(path);
         if (!full.isNull()) {
             installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
         } else {
             hostClearDecodedPixels(item);
+            // Cache miss: climb off-GUI (PathRaster / tiles). Do not block GUI.
+            if (m_host->isImageMode()) {
+                ensureImageModeQualityClimb(path, QImage());
+            } else {
+                ensureWorkspaceQualityClimb();
+            }
         }
     }
 }

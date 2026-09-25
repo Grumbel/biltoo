@@ -141,8 +141,9 @@ public:
      */
     bool installInteractiveSoftPreview(ImageItem *item, const WorkspaceItemState &want);
     /**
-     * After Reset Content Appearance: Gallery soft ladder stand-in, or
-     * Image/Workspace full raster. Drops existing pixels first when needed.
+     * After Reset Content Appearance: Gallery soft from ImageCache (or schedule
+     * decode window), Image/Workspace full when cached else PathRaster climb.
+     * GUI-safe: never ImageLoader::loadThumbnail / load on this path.
      */
     void reinstallModePixelsAfterIdentityReset(ImageItem *item, SessionImageId sid);
     /**
