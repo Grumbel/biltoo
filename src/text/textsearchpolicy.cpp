@@ -213,7 +213,7 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
                         const qreal charW = a.width() / qMax(1, normalizeForSearch(texts.at(prevRi)).size());
                         // Gap smaller than ~1.25 em → likely same word / tight run.
                         // Only glue when boxes almost touch (PDF mid-glyph splits).
-                        tightJoin = sameLine && gap >= 0 && gap < qMax(1.5, 0.35 * charW);
+                        tightJoin = sameLine && gap < qMax(1.5, 0.35 * charW);
                     }
                 }
             }

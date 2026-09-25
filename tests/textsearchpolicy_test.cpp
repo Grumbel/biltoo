@@ -14,6 +14,7 @@ private slots:
     void crossRegion_noFalseJoin();
     void fuzzy_fullBox();
     void midWordSplit_tightBoxes();
+    void midWordSplit_overlappingBoxes();
     void multiOccurrence_sameRegion();
     void emptyQuery_noHits();
 };
@@ -72,6 +73,15 @@ void TextSearchPolicyTest::midWordSplit_tightBoxes()
     QCOMPARE(hits.size(), 2);
     QCOMPARE(hits.at(0).regionIndex, 0);
     QCOMPARE(hits.at(1).regionIndex, 1);
+}
+
+void TextSearchPolicyTest::midWordSplit_overlappingBoxes()
+{
+    QVector<QString> texts{QStringLiteral("hel"), QStringLiteral("lo")};
+    QVector<QRectF> boxes{QRectF(0, 0, 30, 10), QRectF(28, 0, 20, 10)}; // overlap
+    const auto hits = TextSearchPolicy::findHits(
+        texts, boxes, QStringLiteral("hello"), false);
+    QCOMPARE(hits.size(), 2);
 }
 
 void TextSearchPolicyTest::multiOccurrence_sameRegion()
