@@ -377,18 +377,6 @@ void test_content_coverage_odd_widths()
   CHECK(tilelod::tile_content_rect(513, 513, {1, 99, 0}).empty());
 }
 
-void test_paint_seam_overdraw_clamp()
-{
-  // High zoom: ~0.75 device px in content units
-  double g1 = tilelod::paint_seam_overdraw_content(1.0);
-  CHECK(g1 > 0.74 && g1 < 0.76);
-  // Low zoom must not overdraw many content pixels
-  double g_low = tilelod::paint_seam_overdraw_content(0.1);
-  CHECK(g_low <= 1.0 + 1e-9);
-  CHECK(g_low >= 0.99);
-  double g_hi = tilelod::paint_seam_overdraw_content(10.0);
-  CHECK(g_hi > 0.07 && g_hi < 0.08);
-}
 
 
 void test_shared_cache_two_sessions()
@@ -917,7 +905,6 @@ int main()
   test_cancel_on_viewport_change();
   test_edge_tile_content_rect();
   test_content_coverage_odd_widths();
-  test_paint_seam_overdraw_clamp();
   test_shared_cache_two_sessions();
   test_scale_hold_adjacent();
   test_coverage_fully_covered();

@@ -2,16 +2,18 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2687.1-chrome-keep-selection` (base `932ed5c`).
+**Tip:** `biltoo-2688.1-overlap-zero` (base `932ed5c`).
 
-### 2687 — workspace chrome flip/rotate keeps selection
-`beginHandleInteraction` activates flip/90° chrome and returns true without a
-continuous handle. `tryMousePressWorkspaceChrome` required
-`hasContinuousHandle()`, so the press fell through and QGraphicsView cleared
-selection. Toolbar rotate/flip never go through that path. Fix: accept the
-event on any successful handle interaction.
+### 2688 — biltoo kTileOverlap = 0
+Match thumtoo. Parent UV still strips one column/row when bitmap > 256
+(legacy Store). Removed dead `paint_seam_overdraw_content`.
+
+### Content size grow/shrink during generation
+Usually **soft/LQIP ladder** (different long edges installing on the item), not
+tile overlap. Intrinsic size should stay native; if a path still resizes the
+item from sample long-edge, that is separate from 257.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2687.1-chrome-keep-selection-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2688.1-overlap-zero-932ed5c.bundle HEAD
 ```

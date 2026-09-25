@@ -30,9 +30,8 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      // Exclusive level pixels only — never map 257→256 dest (that scales the
-      // cell and breaks phase on regular patterns / checkerboards). Overlap
-      // column stays in the bitmap for encode/GL; QPainter uses exclusive src.
+      // Exclusive level pixels only (matches content rect / 2^scale). Cap to
+      // bitmap size so legacy 257 cells still crop to exclusive.
       {
         int const factor = (key.scale > 0) ? (1 << key.scale) : 1;
         int ew = cr.w / factor;

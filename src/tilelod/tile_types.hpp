@@ -13,8 +13,9 @@ namespace tilelod {
 
 /// Matches thumtoo::kTileSize / Galapix tile grid.
 inline constexpr int kTileSize = 256;
-/// Matches thumtoo::kTileOverlap — right/bottom shared strip in the bitmap; host paints exclusive src→dest.
-inline constexpr int kTileOverlap = 1;
+/// Matches thumtoo::kTileOverlap (0). Legacy Store may still hold 257-wide
+/// cells; paint uses exclusive src_uv only.
+inline constexpr int kTileOverlap = 0;
 
 /// Grid cell identity at a pyramid scale.
 struct TileKey {

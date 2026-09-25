@@ -37,12 +37,12 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 | Symbol | Meaning |
 |--------|---------|
 | `kTileSize` | **256** |
-| `kTileOverlap` | **1** in bitmap only; QPainter uses exclusive src→dest (no 257→256 scale) |
+| `kTileOverlap` | **0** (thumtoo match). Legacy 257 Store tiles: exclusive crop only |
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |
 | Last content rect | Last column/row extends to native AABB (floor-half remainder) |
-| Paint | Exclusive W×H dest **and** exclusive W×H source (overlap column not drawn) |
+| Paint | Exclusive W×H dest and exclusive source (per-tile drawImage) |
 
 Independent JPEG per cell still limits seam quality (especially upscaled
 coarse scales). See [RESEARCH_TILE_OVERLAP.md](RESEARCH_TILE_OVERLAP.md).

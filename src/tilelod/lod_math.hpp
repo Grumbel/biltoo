@@ -92,18 +92,6 @@ namespace tilelod {
   return {x0, y0, x1 - x0, y1 - y0};
 }
 
-/// Content-space half-gap for QPainter seam overdraw (~0.75 device px).
-/// Capped at 1 content unit so low zoom does not overdraw large bands.
-[[nodiscard]] inline double paint_seam_overdraw_content(
-    double device_per_content) noexcept
-{
-  if (!(device_per_content > 1e-9) || !std::isfinite(device_per_content)) {
-    return 0.5;
-  }
-  double const gap = 0.75 / device_per_content;
-  return gap < 1.0 ? gap : 1.0;
-}
-
 /// Parent cell at coarser scale (key.scale + delta), delta >= 1.
 [[nodiscard]] inline TileKey parent_key(TileKey const& key, int delta) noexcept
 {
@@ -186,15 +174,15 @@ namespace tilelod {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  // Overlap bitmaps (257): exclusive content maps into the first kTileSize
-  // columns/rows; the extra strip is only for exact-tile seam expand.
+  // Legacy 257 Store tiles: map exclusive content into the first kTileSize
+  // columns/rows (strip the trailing overlap column/row when present).
   int map_w = parent_pixel_w;
   int map_h = parent_pixel_h;
-  if (kTileOverlap > 0 && parent_pixel_w > kTileSize) {
-    map_w = parent_pixel_w - kTileOverlap;
+  if (parent_pixel_w > kTileSize) {
+    map_w = parent_pixel_w - 1;
   }
-  if (kTileOverlap > 0 && parent_pixel_h > kTileSize) {
-    map_h = parent_pixel_h - kTileOverlap;
+  if (parent_pixel_h > kTileSize) {
+    map_h = parent_pixel_h - 1;
   }
   if (map_w < 1) {
     map_w = parent_pixel_w;
