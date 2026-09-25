@@ -76,6 +76,10 @@
                                 const QImage &beforeSrc, const QImage &afterSrc,
                                 const WorkspaceItemState &before,
                                 const WorkspaceItemState &after) override;
+    /** ItemWorld content undo when the tile is not live (Gallery virtual / filmstrip). */
+    void pushSessionContentCommand(const QString &text, SessionImageId sid, const QString &path,
+                                   const WorkspaceItemState &before,
+                                   const WorkspaceItemState &after);
 
     void refreshScrollBarGeometry();
 

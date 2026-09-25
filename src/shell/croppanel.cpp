@@ -45,6 +45,34 @@ void CropPanel::buildUi()
     });
     layout->addWidget(modeBox);
 
+    auto *targetBox = new QGroupBox(tr("Targets"), inner);
+    auto *targetForm = new QFormLayout(targetBox);
+    m_targetMode = new QComboBox(targetBox);
+    m_targetMode->addItem(tr("Current page"), int(BatchTargets::Mode::Current));
+    m_targetMode->addItem(tr("Selection (canvas + filmstrip)"), int(BatchTargets::Mode::Selection));
+    m_targetMode->addItem(tr("Session index range"), int(BatchTargets::Mode::IndexRange));
+    m_targetMode->setCurrentIndex(1); // Selection default
+    targetForm->addRow(tr("Apply to"), m_targetMode);
+    m_rangeBox = new QGroupBox(tr("Index range (0-based)"), targetBox);
+    auto *rangeForm = new QFormLayout(m_rangeBox);
+    m_rangeFrom = new QSpinBox(m_rangeBox);
+    m_rangeTo = new QSpinBox(m_rangeBox);
+    m_rangeFrom->setRange(0, 0);
+    m_rangeTo->setRange(0, 0);
+    rangeForm->addRow(tr("From"), m_rangeFrom);
+    rangeForm->addRow(tr("To"), m_rangeTo);
+    targetForm->addRow(m_rangeBox);
+    m_rangeBox->setVisible(false);
+    connect(m_targetMode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+        const bool range = m_targetMode
+            && m_targetMode->currentData().toInt() == int(BatchTargets::Mode::IndexRange);
+        if (m_rangeBox) {
+            m_rangeBox->setVisible(range);
+        }
+        emitIfChanged();
+    });
+    layout->addWidget(targetBox);
+
     m_manualBox = new QGroupBox(tr("Manual margins"), inner);
     auto *manForm = new QFormLayout(m_manualBox);
     auto addMarginRow = [&](const QString &name, QSpinBox **px, QDoubleSpinBox **norm) {
@@ -310,5 +338,48 @@ void CropPanel::setApplyToSelectionEnabled(bool on)
     }
     if (m_resetSelectionBtn) {
         m_resetSelectionBtn->setEnabled(on);
+    }
+}
+
+BatchTargets::Mode CropPanel::targetMode() const
+{
+    if (!m_targetMode) {
+        return BatchTargets::Mode::Selection;
+    }
+    return static_cast<BatchTargets::Mode>(m_targetMode->currentData().toInt());
+}
+
+void CropPanel::setTargetMode(BatchTargets::Mode mode)
+{
+    if (!m_targetMode) {
+        return;
+    }
+    const int idx = m_targetMode->findData(int(mode));
+    if (idx >= 0) {
+        m_targetMode->setCurrentIndex(idx);
+    }
+}
+
+int CropPanel::rangeFrom() const
+{
+    return m_rangeFrom ? m_rangeFrom->value() : 0;
+}
+
+int CropPanel::rangeTo() const
+{
+    return m_rangeTo ? m_rangeTo->value() : 0;
+}
+
+void CropPanel::setSessionLength(int n)
+{
+    const int max = qMax(0, n - 1);
+    if (m_rangeFrom) {
+        m_rangeFrom->setRange(0, max);
+    }
+    if (m_rangeTo) {
+        m_rangeTo->setRange(0, max);
+        if (m_rangeTo->value() < m_rangeFrom->value()) {
+            m_rangeTo->setValue(max);
+        }
     }
 }

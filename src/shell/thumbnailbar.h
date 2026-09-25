@@ -146,6 +146,10 @@ public:
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
     int currentIndex() const;
+    /** Multi-selected filmstrip rows as SessionImageIds (skips invalid). */
+    QList<SessionImageId> selectedSessionIds() const;
+    /** Multi-selected filmstrip row indices (session list order). */
+    QList<int> selectedSessionIndices() const;
 
     /**
      * Session appearance override (e.g. after crop): keep a full image for

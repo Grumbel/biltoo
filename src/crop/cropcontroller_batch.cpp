@@ -538,3 +538,234 @@ bool CropController::previewCropRecipeOnItem(ImageItem *item, const CropPanelRec
     m_view->hostDisplayPipeline().rematerializeItemContent(item, st);
     return true;
 }
+
+int CropController::applyCropRecipeToBatch(const CropPanelRecipe &recipe,
+                                           const QList<BatchAppearanceTarget> &targets)
+{
+    if (!m_view || targets.isEmpty()) {
+        return 0;
+    }
+
+    QHash<QString, QImage> loadedSamples;
+    if (recipe.mode == CropPanelRecipe::Mode::Autocrop) {
+        QStringList needLoad;
+        for (const BatchAppearanceTarget &t : targets) {
+            if (t.path.isEmpty()) {
+                continue;
+            }
+            if (t.live && !sampleFromItem(t.live).isNull()) {
+                continue;
+            }
+            if (!ImageCache::get(t.path).isNull()) {
+                continue;
+            }
+            needLoad.append(t.path);
+        }
+        if (!needLoad.isEmpty()) {
+            loadedSamples = loadAutocropSamples(needLoad, m_view->window(), m_view);
+        }
+    }
+
+    struct Planned {
+        BatchAppearanceTarget target;
+        QSize logical;
+        QRect crop;
+        WorkspaceItemState beforeSt;
+        QImage beforeSrc;
+    };
+    QList<Planned> plan;
+    plan.reserve(targets.size());
+
+    for (const BatchAppearanceTarget &t : targets) {
+        QImage sample;
+        if (recipe.mode == CropPanelRecipe::Mode::Autocrop) {
+            if (t.live) {
+                sample = sampleFromItem(t.live);
+            }
+            if (sample.isNull() && !t.path.isEmpty()) {
+                sample = loadedSamples.value(t.path);
+                if (sample.isNull()) {
+                    sample = ImageCache::get(t.path);
+                    if (!sample.isNull()) {
+                        sample = sample.copy();
+                    }
+                }
+            }
+            if (sample.isNull()) {
+                continue;
+            }
+        }
+
+        QSize logical;
+        if (t.live) {
+            logical = logicalSizeForCrop(m_view, t.live, sample);
+        } else {
+            logical = ThumtooCache::cachedSize(t.path);
+            if (!SessionAppearance::isUsableNativeSize(logical)) {
+                logical = m_view->hostSizeBook().known(t.path);
+            }
+            if (!SessionAppearance::isUsableNativeSize(logical) && !sample.isNull()) {
+                logical = sample.size();
+            }
+        }
+        if (logical.width() < 1 || logical.height() < 1) {
+            continue;
+        }
+
+        const QRect crop = CropRecipeUtil::computeCropRect(recipe, logical, sample);
+        if (!CropRecipeUtil::isUsableCrop(crop, logical)) {
+            continue;
+        }
+
+        Planned p;
+        p.target = t;
+        p.logical = logical;
+        p.crop = crop;
+        if (t.live) {
+            p.beforeSrc = t.live->sourceImage().copy();
+            p.beforeSt = m_view->captureContentBakeBeforeState(t.live);
+            ItemComponents::applyPlacementToState(p.beforeSt, t.live->placement());
+        } else if (t.sessionId != kInvalidSessionImageId) {
+            p.beforeSt = m_view->sessionAppearanceValue(t.sessionId);
+            p.beforeSt.sessionId = t.sessionId;
+            p.beforeSt.path = t.path;
+        } else {
+            continue;
+        }
+        plan.append(p);
+    }
+
+    if (plan.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Crop (%1)").arg(plan.size()),
+        plan.size());
+
+    int n = 0;
+    for (Planned &p : plan) {
+        WorkspaceItemState afterSt = p.beforeSt;
+        afterSt.hasCrop = true;
+        afterSt.cropRect = p.crop;
+        afterSt.cropSourceSize = p.logical;
+        afterSt.cropRotation = 0.0;
+        afterSt.sessionId = p.target.sessionId;
+        afterSt.path = p.target.path;
+
+        if (ImageItem *item = p.target.live) {
+            applyCropAppearance(item, QImage(), afterSt);
+            m_view->hostDisplayPipeline().rematerializeItemContent(item, afterSt);
+            WorkspaceItemState afterSnap = m_view->captureContentBakeBeforeState(item);
+            ItemComponents::applyPlacementToState(afterSnap, item->placement());
+            afterSnap.hasCrop = true;
+            afterSnap.cropRect = p.crop;
+            afterSnap.cropSourceSize = p.logical;
+            afterSnap.sessionId = afterSt.sessionId;
+            m_view->pushItemContentCommand(
+                m_view->tr("Crop"), item, p.beforeSrc,
+                item->sourceImage().copy(), p.beforeSt, afterSnap);
+        } else {
+            m_view->itemWorld().setCrop(p.target.sessionId,
+                                        ItemComponents::cropFromState(afterSt));
+            m_view->pushSessionContentCommand(
+                m_view->tr("Crop"), p.target.sessionId, p.target.path,
+                p.beforeSt, afterSt);
+            QImage appearance = ImageCache::get(p.target.path);
+            if (!appearance.isNull()) {
+                appearance = SessionAppearance::applyContentToImage(
+                    appearance, afterSt, SessionAppearance::PixelKind::SoftPreview);
+                emit m_view->sessionAppearanceChanged(
+                    p.target.sessionId, p.target.path, appearance);
+            }
+        }
+        ++n;
+    }
+
+    if (n > 0 && m_view->isGalleryMode()) {
+        m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
+    }
+    if (n > 0) {
+        emit m_view->statusChanged();
+    }
+    return n;
+}
+
+int CropController::resetCropOnBatch(const QList<BatchAppearanceTarget> &targets)
+{
+    if (!m_view || targets.isEmpty()) {
+        return 0;
+    }
+
+    struct Planned {
+        BatchAppearanceTarget target;
+        WorkspaceItemState beforeSt;
+        QImage beforeSrc;
+    };
+    QList<Planned> plan;
+    for (const BatchAppearanceTarget &t : targets) {
+        Planned p;
+        p.target = t;
+        if (t.live) {
+            p.beforeSt = m_view->captureContentBakeBeforeState(t.live);
+            ItemComponents::applyPlacementToState(p.beforeSt, t.live->placement());
+            p.beforeSrc = t.live->sourceImage().copy();
+            if (!p.beforeSt.hasCrop && p.beforeSt.cropRect.isEmpty()
+                && (t.sessionId == kInvalidSessionImageId
+                    || !m_view->itemWorld().hasCrop(t.sessionId))) {
+                continue;
+            }
+        } else if (t.sessionId != kInvalidSessionImageId) {
+            p.beforeSt = m_view->sessionAppearanceValue(t.sessionId);
+            if (!p.beforeSt.hasCrop && !m_view->itemWorld().hasCrop(t.sessionId)) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+        plan.append(p);
+    }
+    if (plan.isEmpty()) {
+        return 0;
+    }
+
+    ContentUndoMacro macro(
+        m_view->hostUndoStack(),
+        m_view->tr("Reset crop (%1)").arg(plan.size()),
+        plan.size());
+
+    int n = 0;
+    for (Planned &p : plan) {
+        WorkspaceItemState afterSt = p.beforeSt;
+        afterSt.hasCrop = false;
+        afterSt.cropRect = QRect();
+        afterSt.cropSourceSize = QSize();
+        afterSt.cropRotation = 0.0;
+        afterSt.sessionId = p.target.sessionId;
+        afterSt.path = p.target.path;
+
+        if (ImageItem *item = p.target.live) {
+            applyCropAppearance(item, QImage(), afterSt);
+            m_view->hostDisplayPipeline().rematerializeItemContent(item, afterSt);
+            m_view->pushItemContentCommand(
+                m_view->tr("Reset crop"), item, p.beforeSrc,
+                item->sourceImage().copy(), p.beforeSt, afterSt);
+        } else {
+            m_view->itemWorld().setCrop(p.target.sessionId, ItemComponents::Crop{});
+            m_view->pushSessionContentCommand(
+                m_view->tr("Reset crop"), p.target.sessionId, p.target.path,
+                p.beforeSt, afterSt);
+            emit m_view->sessionAppearanceChanged(
+                p.target.sessionId, p.target.path, QImage());
+        }
+        ++n;
+    }
+    if (n > 0 && m_view->isGalleryMode()) {
+        m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
+    }
+    if (n > 0) {
+        emit m_view->statusChanged();
+    }
+    return n;
+}

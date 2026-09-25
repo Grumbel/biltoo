@@ -2,20 +2,24 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2652.1-crop-polish-undo-macro` (base `9740316`).
+**Tip:** `biltoo-2653.1-batch-targets-beyond-live` (base `9740316`).
 
 ### Done
-- **2652.1**
-  - Shared `util/contentundomacro.h` (colour / orient / crop batch).
-  - Crop panel polish: normalised 0–1 margin fields (synced with px when page
-    size known), status line (size → crop rect / need sample / full-frame),
-    debounced soft **preview on current page only** (no durable write until Apply).
+- Shared ContentUndoMacro + crop panel polish (2652).
+- **2653.1 Targets beyond live items**
+  - `BatchTargets::resolve` — Current / Selection (canvas ∪ filmstrip) /
+    Session index range.
+  - Filmstrip `selectedSessionIds()` / `selectedSessionIndices()`.
+  - Crop apply/reset via `applyCropRecipeToBatch` / `resetCropOnBatch`:
+    live tiles + **ItemWorld-only** for virtual slots.
+  - `ImageView::pushSessionContentCommand` undoes non-live writes.
+  - Crop panel **Targets** combo + index range spinboxes.
 
 ### Next
-1. Targets beyond live items (session range / materialise virtual slots).
+1. Wire colour multi-apply through the same BatchTargets resolver.
 2. Template / even-odd / stack (later).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2652.1-crop-polish-undo-macro-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2653.1-batch-targets-beyond-live-9740316.bundle HEAD
 ```

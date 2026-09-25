@@ -401,10 +401,17 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_cropPanel, &CropPanel::applyToSelectionRequested,
             this, [this](const CropPanelRecipe &recipe) {
-                if (!m_imageView) {
+                if (!m_imageView || !m_cropPanel) {
                     return;
                 }
-                const int n = m_imageView->hostCrop().applyCropRecipeToTargets(recipe);
+                QList<SessionImageId> filmIds;
+                if (m_thumbnailBar) {
+                    filmIds = m_thumbnailBar->selectedSessionIds();
+                }
+                const auto targets = BatchTargets::resolve(
+                    m_imageView, m_cropPanel->targetMode(), filmIds,
+                    m_cropPanel->rangeFrom(), m_cropPanel->rangeTo());
+                const int n = m_imageView->hostCrop().applyCropRecipeToBatch(recipe, targets);
                 if (n > 0 && statusBar()) {
                     statusBar()->showMessage(
                         tr("Crop applied to %n image(s)", "", n), 4000);
@@ -416,15 +423,9 @@ MainWindow::MainWindow(QWidget *parent)
                 if (!m_imageView) {
                     return;
                 }
-                ImageItem *item = m_imageView->targetItem();
-                if (!item && m_imageView->isImageMode() && !m_imageView->liveItems().isEmpty()) {
-                    item = m_imageView->liveItems().first();
-                }
-                if (!item) {
-                    return;
-                }
-                const int n = m_imageView->hostCrop().applyCropRecipeToItems(
-                    recipe, QList<ImageItem *>{item});
+                const auto targets = BatchTargets::resolve(
+                    m_imageView, BatchTargets::Mode::Current, {});
+                const int n = m_imageView->hostCrop().applyCropRecipeToBatch(recipe, targets);
                 if (n > 0 && statusBar()) {
                     statusBar()->showMessage(
                         tr("Crop applied to %n image(s)", "", n), 4000);
@@ -432,10 +433,17 @@ MainWindow::MainWindow(QWidget *parent)
                 updateCropPanel();
             });
     connect(m_cropPanel, &CropPanel::resetCropOnSelectionRequested, this, [this]() {
-        if (!m_imageView) {
+        if (!m_imageView || !m_cropPanel) {
             return;
         }
-        const int n = m_imageView->hostCrop().resetCropOnTargets();
+        QList<SessionImageId> filmIds;
+        if (m_thumbnailBar) {
+            filmIds = m_thumbnailBar->selectedSessionIds();
+        }
+        const auto targets = BatchTargets::resolve(
+            m_imageView, m_cropPanel->targetMode(), filmIds,
+            m_cropPanel->rangeFrom(), m_cropPanel->rangeTo());
+        const int n = m_imageView->hostCrop().resetCropOnBatch(targets);
         if (n > 0 && statusBar()) {
             statusBar()->showMessage(
                 tr("Crop reset on %n image(s)", "", n), 4000);
@@ -446,14 +454,9 @@ MainWindow::MainWindow(QWidget *parent)
         if (!m_imageView) {
             return;
         }
-        ImageItem *item = m_imageView->targetItem();
-        if (!item && m_imageView->isImageMode() && !m_imageView->liveItems().isEmpty()) {
-            item = m_imageView->liveItems().first();
-        }
-        if (!item) {
-            return;
-        }
-        const int n = m_imageView->hostCrop().resetCropOnItems(QList<ImageItem *>{item});
+        const auto targets = BatchTargets::resolve(
+            m_imageView, BatchTargets::Mode::Current, {});
+        const int n = m_imageView->hostCrop().resetCropOnBatch(targets);
         if (n > 0 && statusBar()) {
             statusBar()->showMessage(
                 tr("Crop reset on %n image(s)", "", n), 4000);
@@ -2802,9 +2805,12 @@ void MainWindow::updateCropPanel()
         item = m_imageView->liveItems().first();
     }
     const bool hasTarget = item != nullptr;
-    m_cropPanel->setEnabledControls(hasTarget);
-    m_cropPanel->setApplyToSelectionEnabled(
-        m_imageView->transformTargets().size() > 1);
+    m_cropPanel->setEnabledControls(hasTarget || m_session.size() > 0);
+    m_cropPanel->setSessionLength(m_session.size());
+    const int selN = m_imageView->transformTargets().size()
+        + (m_thumbnailBar ? m_thumbnailBar->selectedSessionIds().size() : 0);
+    m_cropPanel->setApplyToSelectionEnabled(selN > 1
+        || m_cropPanel->targetMode() == BatchTargets::Mode::IndexRange);
     if (!item) {
         m_cropPanel->setPageSize(QSize());
         m_cropPanel->setStatusText(tr("No page selected"));

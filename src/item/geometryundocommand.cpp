@@ -5,6 +5,12 @@
 // Bodies live here so imageview_transform_actions.cpp stays thin routers only.
 
 #include "imageview.h"
+#include "display/imagecache.h"
+#include "session/sessionappearance.h"
+#include "item/itemcomponents.h"
+#include "display/displaypipelinecontroller.h"
+#include "crop/cropcontroller.h"
+#include "gallery/gallerycontroller.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"
 #include "gallery/gallerycontroller.h"
@@ -136,4 +142,73 @@ void ImageView::pushItemContentCommand(const QString &text, ImageItem *item,
         WorkspaceItemState m_before, m_after;
     };
     m_undoStack->push(new ContentCommand(this, item, beforeSrc, afterSrc, before, after, text));
+}
+
+
+void ImageView::pushSessionContentCommand(const QString &text, SessionImageId sid,
+                                          const QString &path,
+                                          const WorkspaceItemState &before,
+                                          const WorkspaceItemState &after)
+{
+    if (!m_undoStack || sid == kInvalidSessionImageId) {
+        return;
+    }
+    class SessionContentCommand : public QUndoCommand {
+    public:
+        SessionContentCommand(ImageView *view, SessionImageId id, const QString &p,
+                              const WorkspaceItemState &b, const WorkspaceItemState &a,
+                              const QString &label)
+            : m_view(view), m_sid(id), m_path(p), m_before(b), m_after(a)
+        {
+            setText(label);
+        }
+        void undo() override { apply(m_before); }
+        void redo() override { apply(m_after); }
+    private:
+        void apply(const WorkspaceItemState &st)
+        {
+            if (!m_view || m_sid == kInvalidSessionImageId) {
+                return;
+            }
+            if (ImageItem *item = m_view->findItemBySessionId(m_sid)) {
+                m_view->hostCrop().applyCropAppearance(item, QImage(), st);
+                m_view->hostDisplayPipeline().rematerializeItemContent(item, st);
+                if (m_view->isGalleryMode()) {
+                    m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
+                }
+                return;
+            }
+            // Durable only — virtual Gallery slot / filmstrip row.
+            WorkspaceItemState slot = st;
+            slot.sessionId = m_sid;
+            if (!m_path.isEmpty()) {
+                slot.path = m_path;
+            }
+            m_view->itemWorld().setCrop(m_sid, ItemComponents::cropFromState(slot));
+            m_view->itemWorld().setContentBake(m_sid, ItemComponents::contentBakeFromState(slot));
+            if (!slot.colorAdjust.isIdentity()) {
+                ItemComponents::Color c;
+                c.grade = slot.colorAdjust;
+                m_view->itemWorld().setColor(m_sid, c);
+            }
+            const QString path = slot.path.isEmpty() ? m_path : slot.path;
+            QImage appearance;
+            if (!path.isEmpty()) {
+                appearance = ImageCache::get(path);
+                if (!appearance.isNull()) {
+                    appearance = SessionAppearance::applyContentToImage(
+                        appearance, slot, SessionAppearance::PixelKind::SoftPreview);
+                }
+            }
+            if (!appearance.isNull()) {
+                emit m_view->sessionAppearanceChanged(m_sid, path, appearance);
+            }
+        }
+        ImageView *m_view = nullptr;
+        SessionImageId m_sid = kInvalidSessionImageId;
+        QString m_path;
+        WorkspaceItemState m_before;
+        WorkspaceItemState m_after;
+    };
+    m_undoStack->push(new SessionContentCommand(this, sid, path, before, after, text));
 }

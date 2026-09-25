@@ -4,6 +4,7 @@
 #define CROPPANEL_H
 
 #include "crop/croprecipe.h"
+#include "item/batchtargets.h"
 
 #include <QSize>
 #include <QWidget>
@@ -32,6 +33,11 @@ public:
     /** Logical page size for px ↔ normalised sync and status (invalid = unknown). */
     void setPageSize(const QSize &logical);
     void setStatusText(const QString &text);
+    BatchTargets::Mode targetMode() const;
+    void setTargetMode(BatchTargets::Mode mode);
+    int rangeFrom() const;
+    int rangeTo() const;
+    void setSessionLength(int n);
 
 signals:
     void recipeChanged(const CropPanelRecipe &recipe);
@@ -67,6 +73,10 @@ private:
     QSpinBox *m_extraR = nullptr;
     QSpinBox *m_extraB = nullptr;
     QLabel *m_status = nullptr;
+    QComboBox *m_targetMode = nullptr;
+    QSpinBox *m_rangeFrom = nullptr;
+    QSpinBox *m_rangeTo = nullptr;
+    QGroupBox *m_rangeBox = nullptr;
     QPushButton *m_applyCurrentBtn = nullptr;
     QPushButton *m_resetCurrentBtn = nullptr;
     QPushButton *m_applySelectionBtn = nullptr;

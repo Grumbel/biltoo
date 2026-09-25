@@ -2643,6 +2643,47 @@ int ThumbnailBar::currentIndex() const
     return currentRow();
 }
 
+QList<SessionImageId> ThumbnailBar::selectedSessionIds() const
+{
+    QList<SessionImageId> out;
+    const QList<QListWidgetItem *> sel = selectedItems();
+    out.reserve(sel.size());
+    for (QListWidgetItem *it : sel) {
+        if (!it) {
+            continue;
+        }
+        const int row = this->row(it);
+        if (row < 0 || row >= m_sessionIds.size()) {
+            continue;
+        }
+        const SessionImageId sid = m_sessionIds.at(row);
+        if (sid != kInvalidSessionImageId) {
+            out.append(sid);
+        }
+    }
+    return out;
+}
+
+QList<int> ThumbnailBar::selectedSessionIndices() const
+{
+    QList<int> out;
+    const QList<QListWidgetItem *> sel = selectedItems();
+    out.reserve(sel.size());
+    for (QListWidgetItem *it : sel) {
+        if (!it) {
+            continue;
+        }
+        const int row = this->row(it);
+        if (row >= 0 && row < m_files.size()) {
+            out.append(row);
+        }
+    }
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+    return out;
+}
+
+
 void ThumbnailBar::setMultiSelectEnabled(bool on)
 {
     if (m_multiSelect == on) {

@@ -9,6 +9,7 @@
 #include "crop/cropflash.h"
 #include "crop/cropgeometry.h"
 #include "crop/croprecipe.h"
+#include "item/batchtargets.h"
 #include "imageview_types.h"
 
 #include <QImage>
@@ -65,6 +66,10 @@ public:
     int applyCropRecipeToTargets(const CropPanelRecipe &recipe);
     /** Apply recipe to an explicit target list (e.g. single current page). */
     int applyCropRecipeToItems(const CropPanelRecipe &recipe, const QList<ImageItem *> &targets);
+    /** Expanded targets (live + ItemWorld-only for virtual/filmstrip ids). */
+    int applyCropRecipeToBatch(const CropPanelRecipe &recipe,
+                               const QList<BatchAppearanceTarget> &targets);
+    int resetCropOnBatch(const QList<BatchAppearanceTarget> &targets);
     /** Clear crop fields on transformTargets (or current); keeps orient/colour. */
     int resetCropOnTargets();
     int resetCropOnItems(const QList<ImageItem *> &targets);

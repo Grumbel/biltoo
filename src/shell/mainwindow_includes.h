@@ -21,6 +21,7 @@
 #include "shell/croppanel.h"
 #include "display/imagecache.h"
 #include "crop/croprecipe.h"
+#include "item/batchtargets.h"
 #include "shell/layoutpanel.h"
 #include "shell/tocpanel.h"
 #include "shell/helppanel.h"

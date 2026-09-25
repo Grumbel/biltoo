@@ -174,6 +174,8 @@ set(BILTOO_LIB_SOURCES
   src/view/viewmodeflags.cpp
   src/view/viewshellchrome.cpp
   src/item/geometryundocommand.cpp
+  src/item/batchtargets.cpp
+  src/item/batchtargets.h
   src/image/imagecontroller.h
     src/workspace/imageview_routers.cpp
             src/session/imageview_routers.cpp
