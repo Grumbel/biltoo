@@ -2,20 +2,33 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2677.1-smooth-only-1x-2x` (base `932ed5c`).
+**Tip:** `biltoo-2678.2-research-tile-overlap` (base `932ed5c`).
+Stack on origin: **2677** (smooth 1×/2×) + **2678** (research doc only).
 
-### Filtering vanished at 4700% (and other zooms)
-`tilePaintNeedsSmooth` treated **any** near-integer tile→device density ≥1 as
-nearest-neighbour. At high zoom (scale 0, dpp ≈ zoom%) that hit every integer
-percent stop (4700%, 300%, …) and dropped bilinear filtering.
+### Research (do not implement until reviewed)
+**257 / lower-zoom missing pieces** — full write-up:
+[docs/RESEARCH_TILE_OVERLAP.md](docs/RESEARCH_TILE_OVERLAP.md)
 
-**2677:** skip Smooth only for true **1:1 / 2:1** density (ε=0.04); keep smooth
-for 3× and above. Docs: `docs/TILE_LOD.md` paint-transform note.
+**Headline findings**
+1. Interior ExactTile expand for 257 payloads matches thumtoo (scale 0/1/2 OK).
+2. **Real coverage bug:** `tile_content_rect` uses step `256×2^s` while level size
+   is floor-half → odd widths leave **1–N content pixels uncovered** at scale>0
+   (e.g. 513px image at scale 1 covers only 512). Fits “missing pieces at lower
+   zoom” especially on right/bottom edges.
+3. Overdraw `0.75/dpc` becomes **many content pixels** when zoomed out (dpc=0.1
+   → ±7.5px) — can look like lines are “eaten”; separate from overlap expand.
+4. JPEG dual-encode of the shared strip remains a visual residual.
+5. CoarserTile dest expand was a prior bug (fixed in 8e62ea3); parent UV mapping
+   into exclusive 256 is intentional.
 
-### Prior tip (already on origin)
-2676 seam overdraw — still relevant; JPEG independent encode residual remains.
+**Next (after human review):** fix coverage mapping and/or clamp overdraw; add
+odd-width coverage tests. Do not “tweak 257 expand” without reading the research.
+
+### Prior in this stack
+- **2677:** `tilePaintNeedsSmooth` only skips at true 1:1 / 2:1 density (not 4700%).
+- **2676** (on origin before this stack): seam paint order + overdraw; ExactTile +1 expand.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2677.1-smooth-only-1x-2x-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2678.2-research-tile-overlap-932ed5c.bundle HEAD
 ```
