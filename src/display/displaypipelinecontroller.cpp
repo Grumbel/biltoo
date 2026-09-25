@@ -2415,15 +2415,29 @@ void DisplayPipelineController::applyProbedImageSize(const QString &path, const 
         if (cur == layoutSize) {
             continue;
         }
+        // Gallery pack is debounced (sizeReady chunks). Between intrinsic update
+        // and the next pack, placement scale still matches the *old* content
+        // box — contentRect grows and the cell looks "unscaled" / huge.
+        // If a pack cell is already known, rescale immediately so scene
+        // footprint stays ≈ cell (contain). Keep the cell clip; do not clear
+        // it (clearing made boundingRect = full contentRect until pack).
+        if (m_host->isGalleryMode() && !m_host->hostLayout().isFreeForm()
+            && layoutSize.width() > 0 && layoutSize.height() > 0) {
+            const QSizeF cell = item->galleryCellSize();
+            if (!cell.isEmpty() && cell.width() > 1e-3 && cell.height() > 1e-3) {
+                const qreal sx = cell.width() / qreal(layoutSize.width());
+                const qreal sy = cell.height() / qreal(layoutSize.height());
+                const qreal s = qMin(sx, sy);
+                if (s > 1e-9) {
+                    ItemComponents::Placement pl = item->placement();
+                    pl.scale = s;
+                    pl.scaleY = s;
+                    item->applyPlacement(pl);
+                }
+            }
+        }
         hostSetIntrinsicSize(item, layoutSize);
         any = true;
-        // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
-        // cropping the updated contentRect until the next pack.
-        if (m_host->isGalleryMode()
-            && SessionAppearance::galleryCellAspectStale(item->galleryCellSize(),
-                                                         layoutSize)) {
-            item->setGalleryCellSize({});
-        }
         if (m_host->isImageMode() && item == m_host->targetItem()) {
             m_host->preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }

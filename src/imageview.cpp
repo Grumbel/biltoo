@@ -155,28 +155,20 @@ ImageView::ImageView(QWidget *parent)
                 m_size.book().clearProbeScheduled(path);
                 const bool valid = size.isValid() && size.width() > 0 && size.height() > 0;
                 if (valid) {
-                    // Prefer a size already learned from a full decode.
-                    if (m_size.book().hasDefinitive(path)) {
-                        // Still try LQIP if tiles are blank (probe may have written LQIP).
-                    } else {
+                    // Book may already be definitive (decode or prior probe).
+                    // Always run applyProbedImageSize so Gallery can rescale the
+                    // packed cell immediately — do not hostSetIntrinsicSize here
+                    // without matching placement scale (race: huge cells).
+                    if (!m_size.book().hasDefinitive(path)) {
                         rememberImageSize(path, size);
-                        applyProbedImageSize(path, size);
                     }
+                    applyProbedImageSize(path, size);
                     // LQIP may already be in ImageCache (size probe callback).
-                    // Still paint blank tiles; never block later soft upgrades.
                     if (isGalleryMode()) {
                         for (ImageItem *item : m_items) {
-                            if (!item || item->path() != path) {
-                                continue;
+                            if (item && item->path() == path) {
+                                m_displayPipeline->tryInstallGalleryUnderlay(item);
                             }
-                            const SessionImageId sid = item->sessionId();
-                            const WorkspaceItemState want =
-                                m_displayPipeline->wantAppearanceForItem(item, sid);
-                            const QSize lay = ContentXform::layoutSize(size, want);
-                            if (isPositiveSize(lay) && lay.width() > 1) {
-                                m_displayPipeline->hostSetIntrinsicSize(item, lay);
-                            }
-                            m_displayPipeline->tryInstallGalleryUnderlay(item);
                         }
                     }
                 }

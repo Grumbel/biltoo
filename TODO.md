@@ -2,22 +2,23 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2697.1-drop-ktileoverlap` (base `932ed5c`).
+**Tip:** `biltoo-2698.1-gallery-size-scale-race` (base `932ed5c`).
+
+### 2698.1 — Gallery size probe vs pack scale race
+SizeReady updated intrinsic layout size while pack placement scale lagged
+(debounced ContentChange). contentRect grew under the old scale → cells looked
+huge / not gallery-sized. Clearing galleryCellSize on aspect change made it
+worse (boundingRect = full content until pack).
+
+Fix:
+- On size change for a packed cell, immediately rescale so footprint ≈ cell
+  (contain); keep the cell clip.
+- sizeReady always goes through applyProbedImageSize; no bare hostSetIntrinsicSize.
 
 ### 2697.1 — drop kTileOverlap symbol
-Dead `kTileOverlap = 0` removed from `tile_types.hpp` (matches thumtoo kill).
-Docs table updated. Paint path was already exclusive exact math (2696).
-
 ### 2696 — exact tile math only
-Contract:
-- Level rect = exclusive `tile_cell` on `dim_at_tile_scale(content, s)`
-- Content dest = level rect × `2^s` (integer)
-- Src = exclusive encoded payload (cap legacy >256)
-- Dest size = src × `2^s` (same numbers)
-
-No paint-side seam workarounds.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2697.1-drop-ktileoverlap-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2698.1-gallery-size-scale-race-932ed5c.bundle HEAD
 ```
