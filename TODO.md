@@ -1,24 +1,25 @@
 # TODO / agent handoff
 
-## Status (2026-09-25)
+## Status (2026-09-26)
 
-**Tip:** `biltoo-2702.2-verify-nonsticky-scale` (base `932ed5c`).
+**Tip:** `biltoo-2703.1-sizebook-tile-mismatch` (base `6c3e877`).
 
-### 2702.2 — Verify + non-sticky identity scale
-Review of 2702.1:
-- Edge-stretch coverage math OK (full native AABB).
-- Updated `test_content_coverage_odd_widths` for stretch semantics.
-- Non-sticky Image framing also forced identity item scale (invalid preserved
-  scale + default Fit still called fitItem with Gallery pack scale).
+### 2703.1 — Gallery only top-left tile / wrong size (F5 no-op, reopen fixes)
+Root cause: size book could keep a **stale larger definitive** while thumtoo
+tile-native size was correct. Tiles planned/painted in native space only cover
+the top-left of an oversized `contentRect`. Soft F5 did not `take()` the size
+book (hard reload / reopen did). Probe callback also **skipped** install when
+any definitive existed, so the correct size never applied.
 
-Latent (not fixed): `tile_level_rect` clamps negative scales to 0 — PDF
-negative pyramid keys would mis-map if Image ever requests them.
+Fix:
+- Soft F5: `hostSizeBook().take(path)` like hard reload
+- Size probe callback: if definitive ≠ probe size, take then install
+- `rememberSizeFromDecode`: store cached size forces replace of differing book entry
 
-### 2702.1 — Coarse tile dest stretch + Image framing scale
-### 2701.1 — Gallery wrong scale / soft F5 no-op
-### 2700.1 — Sticky zoom survives Gallery
+### Prior
+2702.x tile edge stretch / Image framing scale (in 0.2.0).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2702.2-verify-nonsticky-scale-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2703.1-sizebook-tile-mismatch-6c3e877.bundle HEAD
 ```

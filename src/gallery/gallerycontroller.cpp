@@ -2395,6 +2395,14 @@ void GalleryController::reloadFromDisk(bool relayout)
             // cells stay on 16px Placeholder while need is hundreds of px —
             // only Shift-F5 (hard) used to clear these.
             ImageCache::remove(path);
+            // Drop size-book entry too. A locked wrong definitive (larger than
+            // tile-native) leaves contentRect bigger than the tile grid —
+            // only the top-left tile appears to paint; hard reload/reopen
+            // fixed it because they already take() the book.
+            {
+                QSize discarded;
+                m_view->hostSizeBook().take(path, &discarded);
+            }
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);

@@ -62,6 +62,10 @@ void ImageSizeCoordinator::rememberSizeFromDecode(const QString &path, const QIm
     // Durable index is authoritative when present (no revalidate on GUI).
     if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
         isPositiveSize(cached)) {
+        // Store size wins over a stale larger definitive (tile grid vs contentRect).
+        if (m_book.hasDefinitive(path) && m_book.known(path) != cached) {
+            forgetLogicalSize(path);
+        }
         rememberImageSize(path, cached);
         return;
     }
@@ -202,9 +206,18 @@ void ImageSizeCoordinator::scheduleImageSizeProbe(const QString &path)
                 return;
             }
             host->hostSizeBook().clearProbeScheduled(path);
-            // Prefer a size already learned from a full decode — not provisional.
+            // Probe is authoritative (thumtoo get_size / layout). A stale
+            // definitive that is *larger* than the true page (wrong sample,
+            // old dpi) leaves contentRect bigger than the tile grid — only
+            // the top-left tile paints. noteDefinitive refuses much-smaller
+            // updates, so clear a differing definitive before install.
             if (host->hostSizeBook().hasDefinitive(path)) {
-                return;
+                const QSize have = host->hostSizeBook().known(path);
+                if (have == s) {
+                    return;
+                }
+                QSize discarded;
+                host->hostSizeBook().take(path, &discarded);
             }
             host->rememberImageSize(path, s);
             host->applyProbedImageSize(path, s);
