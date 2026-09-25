@@ -57,16 +57,31 @@ namespace tilelod {
 }
 
 /// Content-space rectangle covered by tile (s, x, y).
+///
+/// Interior cells use exclusive step `kTileSize * 2^scale`. The **last**
+/// column/row on each axis extends to `content_w` / `content_h` so floor-half
+/// level sizes cannot leave a 1–N px strip of the native AABB without a dest
+/// (see docs/RESEARCH_TILE_OVERLAP.md). Out-of-grid keys return empty.
 [[nodiscard]] inline RectI tile_content_rect(int content_w, int content_h,
                                              TileKey const& key) noexcept
 {
-  int const factor = 1 << (key.scale > 0 ? key.scale : 0);
+  if (content_w <= 0 || content_h <= 0) {
+    return {};
+  }
+  int const scale = key.scale > 0 ? key.scale : 0;
+  int const factor = 1 << scale;
   // For negative scales (future PDF), treat as finer than 0 — not used yet.
   int const step = (key.scale >= 0) ? (kTileSize * factor) : kTileSize;
+  int const nx = tiles_across(content_w, scale);
+  int const ny = tiles_across(content_h, scale);
+  if (nx <= 0 || ny <= 0 || key.x < 0 || key.y < 0 || key.x >= nx
+      || key.y >= ny) {
+    return {};
+  }
   int const left = key.x * step;
   int const top = key.y * step;
-  int const right = left + step;
-  int const bottom = top + step;
+  int const right = (key.x + 1 >= nx) ? content_w : (left + step);
+  int const bottom = (key.y + 1 >= ny) ? content_h : (top + step);
   int const x0 = left < 0 ? 0 : left;
   int const y0 = top < 0 ? 0 : top;
   int const x1 = right > content_w ? content_w : right;
@@ -75,6 +90,18 @@ namespace tilelod {
     return {};
   }
   return {x0, y0, x1 - x0, y1 - y0};
+}
+
+/// Content-space half-gap for QPainter seam overdraw (~0.75 device px).
+/// Capped at 1 content unit so low zoom does not overdraw large bands.
+[[nodiscard]] inline double paint_seam_overdraw_content(
+    double device_per_content) noexcept
+{
+  if (!(device_per_content > 1e-9) || !std::isfinite(device_per_content)) {
+    return 0.5;
+  }
+  double const gap = 0.75 / device_per_content;
+  return gap < 1.0 ? gap : 1.0;
 }
 
 /// Parent cell at coarser scale (key.scale + delta), delta >= 1.

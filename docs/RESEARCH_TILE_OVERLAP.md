@@ -224,3 +224,14 @@ Interior expand s=0..2: exclusive + factor content px (matches 257 payload)
 Edge last tile: overshoot 0 when payload matches thumtoo
 dpc=0.1 → ±7.5 content px overdraw per cell edge
 ```
+
+## 13. Implemented (biltoo-2679)
+
+1. **Last-tile content rect** — `tile_content_rect` extends the last column/row
+   to `content_w` / `content_h` so exclusive coverage is the full native AABB
+   at every scale. Out-of-grid keys return empty.
+2. **Overdraw clamp** — `paint_seam_overdraw_content(dpc)` = min(0.75/dpc, 1.0);
+   used by `paint_draw_plan` and ImageItem tile paint.
+3. **Tests** — `test_content_coverage_odd_widths`, `test_paint_seam_overdraw_clamp`.
+
+JPEG dual-encode residual is unchanged.

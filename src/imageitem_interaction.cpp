@@ -12,6 +12,7 @@
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
+#include "tilelod/lod_math.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "content/contentxform.h"
@@ -1334,7 +1335,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                                      return a.dst.x() < b.dst.x();
                                  });
                 const qreal dpc = tileDevicePerContent();
-                const qreal gap = (dpc > 1e-9) ? (0.75 / dpc) : 0.5;
+                const qreal gap = static_cast<qreal>(
+                    tilelod::paint_seam_overdraw_content(static_cast<double>(dpc)));
 
                 for (TilePaintCmd &pc : paintCmds) {
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {

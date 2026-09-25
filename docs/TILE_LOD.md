@@ -38,11 +38,14 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 |--------|---------|
 | `kTileSize` | **256** |
 | `kTileOverlap` | **1** (right/bottom; paint expands dest; ES2 may crop to 256) |
-
-Paint also overdraws ~0.75 device px to hide QPainter subpixel gaps. Independent JPEG per cell still limits seam quality (especially upscaled coarse scales).
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |
+| Last content rect | Last column/row extends to native AABB (floor-half remainder) |
+| Seam overdraw | ~0.75 device px in content space, **capped at 1 content unit** |
+
+Independent JPEG per cell still limits seam quality (especially upscaled
+coarse scales). See [RESEARCH_TILE_OVERLAP.md](RESEARCH_TILE_OVERLAP.md).
 
 Dimension at scale (same as thumtoo `dim_at_tile_scale`): successive
 **integer floor-half**, not `ceil(n / 2^scale)`:

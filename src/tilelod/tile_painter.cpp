@@ -3,6 +3,8 @@
 
 #include "tilelod/tile_painter.hpp"
 
+#include "tilelod/lod_math.hpp"
+
 #include <QByteArray>
 #include <algorithm>
 #include <cstring>
@@ -126,13 +128,10 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
       }
       src = QRectF(0, 0, img.width(), img.height());
     }
-    // QPainter hairline gaps: overdraw ~¾ device-pixel in content space when
-    // caller passes device_per_content; else a fixed half content-unit.
+    // QPainter hairline gaps: ~¾ device-px in content space, capped at 1
+    // content unit (see paint_seam_overdraw_content / RESEARCH_TILE_OVERLAP).
     {
-      double gap = 0.5;
-      if (args.device_per_content > 1e-9) {
-        gap = 0.75 / args.device_per_content;
-      }
+      double const gap = paint_seam_overdraw_content(args.device_per_content);
       dst.adjust(-gap, -gap, gap, gap);
     }
     painter->drawImage(dst, img, src);

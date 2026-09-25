@@ -2,33 +2,28 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2678.2-research-tile-overlap` (base `932ed5c`).
-Stack on origin: **2677** (smooth 1×/2×) + **2678** (research doc only).
+**Tip:** `biltoo-2679.1-coverage-overdraw-clamp` (base `932ed5c`).
 
-### Research (do not implement until reviewed)
-**257 / lower-zoom missing pieces** — full write-up:
-[docs/RESEARCH_TILE_OVERLAP.md](docs/RESEARCH_TILE_OVERLAP.md)
+### Implemented (from RESEARCH_TILE_OVERLAP)
+1. **Last-tile content rect** — `tile_content_rect` extends last column/row to
+   native AABB so scale>0 no longer leaves 1–N content px uncovered (odd widths
+   after floor-half).
+2. **Overdraw clamp** — `paint_seam_overdraw_content`: min(0.75/dpc, 1.0 content
+   unit) on ImageItem + `paint_draw_plan`.
+3. **Tests** — odd-width full coverage; overdraw clamp.
 
-**Headline findings**
-1. Interior ExactTile expand for 257 payloads matches thumtoo (scale 0/1/2 OK).
-2. **Real coverage bug:** `tile_content_rect` uses step `256×2^s` while level size
-   is floor-half → odd widths leave **1–N content pixels uncovered** at scale>0
-   (e.g. 513px image at scale 1 covers only 512). Fits “missing pieces at lower
-   zoom” especially on right/bottom edges.
-3. Overdraw `0.75/dpc` becomes **many content pixels** when zoomed out (dpc=0.1
-   → ±7.5px) — can look like lines are “eaten”; separate from overlap expand.
-4. JPEG dual-encode of the shared strip remains a visual residual.
-5. CoarserTile dest expand was a prior bug (fixed in 8e62ea3); parent UV mapping
-   into exclusive 256 is intentional.
+Research: [docs/RESEARCH_TILE_OVERLAP.md](docs/RESEARCH_TILE_OVERLAP.md) §13.
 
-**Next (after human review):** fix coverage mapping and/or clamp overdraw; add
-odd-width coverage tests. Do not “tweak 257 expand” without reading the research.
+### Residual
+- JPEG independent encode of the shared 257 strip (visual seam at coarse/upscale).
+- Runtime QA of lower-zoom edges after this tip.
 
-### Prior in this stack
-- **2677:** `tilePaintNeedsSmooth` only skips at true 1:1 / 2:1 density (not 4700%).
-- **2676** (on origin before this stack): seam paint order + overdraw; ExactTile +1 expand.
+### Stack (base `932ed5c`)
+- 2677 smooth only at 1×/2× density
+- 2678 research doc
+- 2679 coverage + overdraw clamp
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2678.2-research-tile-overlap-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2679.1-coverage-overdraw-clamp-932ed5c.bundle HEAD
 ```
