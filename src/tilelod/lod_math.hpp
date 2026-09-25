@@ -88,9 +88,11 @@ namespace tilelod {
 
 /// Content-space rectangle for tile (s,x,y).
 ///
-/// Exact integer mapping of the level rect: origin and size are
-/// `level * 2^scale`. No stretch to content_w/h, no seam overdraw.
-/// A floor-half remainder of the native AABB may be uncovered at s>0.
+/// Level origin is exclusive (`level * 2^scale`). The last column/row is
+/// stretched to the native content edge so floor-half residuals do not leave
+/// a soft-underlay ring at coarse scales (looked like wrong tile scale when
+/// navigating Image mode with lowres parents). Encode/source stay exclusive
+/// ≤256; only the paint destination expands on the trailing edge.
 [[nodiscard]] inline RectI tile_content_rect(int content_w, int content_h,
                                              TileKey const& key) noexcept
 {
@@ -100,7 +102,22 @@ namespace tilelod {
   }
   int const scale = key.scale > 0 ? key.scale : 0;
   int const factor = 1 << scale;
-  return {lr.x * factor, lr.y * factor, lr.w * factor, lr.h * factor};
+  int const nx = tiles_across(content_w, scale);
+  int const ny = tiles_across(content_h, scale);
+  int x = lr.x * factor;
+  int y = lr.y * factor;
+  int w = lr.w * factor;
+  int h = lr.h * factor;
+  if (key.x == nx - 1 && content_w > x) {
+    w = content_w - x;
+  }
+  if (key.y == ny - 1 && content_h > y) {
+    h = content_h - y;
+  }
+  if (w < 1 || h < 1) {
+    return {};
+  }
+  return {x, y, w, h};
 }
 
 /// Parent cell at coarser scale (key.scale + delta), delta >= 1.

@@ -138,6 +138,20 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         // restore viewport centre in image-normalized coords (prev/next compare).
         // Always restore *after* setSceneRect/refreshScrollBarGeometry — those
         // often reset QAbstractScrollArea scroll position.
+        // Image mode owns framing via the view matrix. Always identity item
+        // scale first — leftover Gallery pack scale (or Actual) poisons tile
+        // density (dpc) and makes coarse tiles look wrongly scaled on ←/→.
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            pl.pos = QPointF(0, 0);
+            pl.rotation = 0.0;
+            pl.shear = 0.0;
+            pl.hFlip = false;
+            pl.vFlip = false;
+            item->applyPlacement(pl);
+        }
         switch (m_framing.currentStickyZoomKind()) {
         case StickyZoomKind::Fill:
             m_framing.setFillMode();
@@ -145,12 +159,6 @@ void ImageController::applyImageModeFraming(ImageItem *item)
             break;
         case StickyZoomKind::Actual:
             m_framing.clearFitFill();
-            {
-                ItemComponents::Placement pl = item->placement();
-                pl.scale = 1.0;
-                pl.scaleY = 1.0;
-                item->applyPlacement(pl);
-            }
             m_view->resetTransform();
             m_view->centerOn(item);
             break;

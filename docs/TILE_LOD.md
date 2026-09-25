@@ -40,8 +40,8 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |
-| Content rect | Exact `level_rect * 2^scale` (no stretch, no overdraw) |
-| Paint | Exclusive W×H dest and exclusive source (per-tile drawImage) |
+| Content rect | Level origin `level * 2^scale`; last column/row stretched to native edge |
+| Paint | Exclusive source UV; dest may stretch trailing edge to content AABB |
 
 Independent JPEG per cell still limits seam quality (especially upscaled
 coarse scales). See [RESEARCH_TILE_OVERLAP.md](RESEARCH_TILE_OVERLAP.md).
