@@ -4,10 +4,7 @@
 #include "tilelod/tile_painter.hpp"
 
 #include <QByteArray>
-#include <algorithm>
-#include <cmath>
 #include <cstring>
-#include <vector>
 
 namespace tilelod {
 
@@ -57,89 +54,12 @@ QImage tile_bitmap_to_qimage(TileBitmap const& bitmap)
   return QImage::fromData(ba);
 }
 
-namespace {
-
-constexpr int kMaxAssemblePixels = 64 * 1024 * 1024;
-
-bool assemble_patches(QPainter* painter, std::vector<TilePatchBlit> const& patches)
-{
-  if (!painter || patches.empty()) {
-    return false;
-  }
-  QRectF bbox = patches.front().dst;
-  for (size_t i = 1; i < patches.size(); ++i) {
-    if (!patches[i].dst.isEmpty()) {
-      bbox = bbox.united(patches[i].dst);
-    }
-  }
-  if (bbox.width() < 1.0 || bbox.height() < 1.0) {
-    return false;
-  }
-  int const x0 = static_cast<int>(std::floor(bbox.x()));
-  int const y0 = static_cast<int>(std::floor(bbox.y()));
-  int const x1 = static_cast<int>(std::ceil(bbox.right()));
-  int const y1 = static_cast<int>(std::ceil(bbox.bottom()));
-  int const bw = x1 - x0;
-  int const bh = y1 - y0;
-  if (bw < 1 || bh < 1) {
-    return false;
-  }
-  if (static_cast<qint64>(bw) * static_cast<qint64>(bh) > kMaxAssemblePixels) {
-    return false;
-  }
-
-  QImage buf(bw, bh, QImage::Format_ARGB32_Premultiplied);
-  if (buf.isNull()) {
-    return false;
-  }
-  buf.fill(Qt::transparent);
-
-  {
-    QPainter bp(&buf);
-    bp.setRenderHint(QPainter::SmoothPixmapTransform, false);
-    bp.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    for (TilePatchBlit const& p : patches) {
-      if (p.patch.isNull() || p.dst.isEmpty()) {
-        continue;
-      }
-      bp.drawImage(p.dst.translated(static_cast<qreal>(-x0), static_cast<qreal>(-y0)),
-                   p.patch);
-    }
-  }
-
-  painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-  painter->drawImage(QRectF(x0, y0, bw, bh), buf);
-  return true;
-}
-
-}  // namespace
-
-void paint_tile_patches(QPainter* painter, std::vector<TilePatchBlit> const& patches,
-                        bool smooth)
-{
-  if (!painter || patches.empty()) {
-    return;
-  }
-  if (smooth && assemble_patches(painter, patches)) {
-    return;
-  }
-  painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
-  for (TilePatchBlit const& p : patches) {
-    if (p.patch.isNull() || p.dst.isEmpty()) {
-      continue;
-    }
-    painter->drawImage(p.dst, p.patch);
-  }
-}
-
 void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
 {
   if (!painter || !args.plan) {
     return;
   }
-
-  std::vector<TilePatchBlit> patches;
-  patches.reserve(args.plan->commands.size());
+  painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
 
   for (DrawCommand const& cmd : args.plan->commands) {
     if (cmd.dst_content.empty()) {
@@ -149,7 +69,6 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
                      cmd.dst_content.h);
 
     if (cmd.kind == DrawKind::Underlay && cmd.use_lqip && !args.lqip.isNull()) {
-      painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
       painter->drawImage(dst, args.lqip);
       continue;
     }
@@ -164,24 +83,10 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (img.isNull()) {
       continue;
     }
+    // Exclusive src_uv from plan (not full 257→256 scale).
     QRectF const src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
-    // Copy exclusive subrect into a standalone image so assembly stays 1:1.
-    QImage patch = img;
-    if (src.x() > 0.5 || src.y() > 0.5 || src.width() + 0.5 < img.width()
-        || src.height() + 0.5 < img.height()) {
-      QRect const ir = src.toAlignedRect().intersected(img.rect());
-      if (ir.isEmpty()) {
-        continue;
-      }
-      patch = img.copy(ir);
-    }
-    if (patch.isNull()) {
-      continue;
-    }
-    patches.push_back({dst, patch});
+    painter->drawImage(dst, img, src);
   }
-
-  paint_tile_patches(painter, patches, args.smooth);
 }
 
 }  // namespace tilelod

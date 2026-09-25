@@ -13,7 +13,6 @@
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
-#include "tilelod/tile_painter.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "content/contentxform.h"
@@ -1308,17 +1307,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                 }
 
-                // Smooth: assemble exclusive patches 1:1, then one filtered
-                // scale (per-tile SmoothPixmapTransform clamps at cell edges).
-                std::vector<tilelod::TilePatchBlit> blits;
-                blits.reserve(static_cast<size_t>(paintCmds.size()));
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
                 for (TilePaintCmd const &pc : paintCmds) {
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    blits.push_back({pc.dst, pc.patch});
+                    painter->drawImage(pc.dst, pc.patch);
                 }
-                tilelod::paint_tile_patches(painter, blits, tileSmooth);
                 (void)under;
 
                 if (tilePlanDebugOverlayEnabled()) {

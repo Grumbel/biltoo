@@ -300,3 +300,13 @@ Dest expand cannot give the filter a continuous neighbourhood across cells.
 2. `drawImage` that buffer once with `SmoothPixmapTransform`.
 
 Implemented as `paint_tile_patches` / smooth path in `paint_draw_plan`.
+
+
+## 19. Assemble-then-smooth rolled back (biltoo-2686)
+
+Compositing every tile into a content-sized buffer each paint was correct for
+seams but made the UI unusable (huge intermediate images / paint cost).
+
+Host paint is again **per-tile exclusive** drawImage. Prefer performance;
+accept possible bilinear clamp seams until a cheaper approach exists (e.g.
+GL atlas, or assemble only the visible device-pixel region at low cost).
