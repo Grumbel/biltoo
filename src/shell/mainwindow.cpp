@@ -2791,7 +2791,9 @@ void MainWindow::updateAdjustmentsPanel()
     const int selN = m_imageView->transformTargets().size()
         + (m_thumbnailBar ? m_thumbnailBar->selectedSessionIds().size() : 0);
     m_adjustmentsPanel->setApplyToSelectionEnabled(
-        selN > 1 || m_adjustmentsPanel->targetMode() == BatchTargets::Mode::IndexRange);
+        selN > 1 || m_adjustmentsPanel->targetMode() == BatchTargets::Mode::IndexRange
+        || m_adjustmentsPanel->targetMode() == BatchTargets::Mode::EvenIndices
+        || m_adjustmentsPanel->targetMode() == BatchTargets::Mode::OddIndices);
     {
         QSignalBlocker b(m_adjustmentsPanel);
         m_adjustmentsPanel->setAdjustments(m_imageView->itemLiveColor(item));
@@ -2824,7 +2826,9 @@ void MainWindow::updateCropPanel()
     const int selN = m_imageView->transformTargets().size()
         + (m_thumbnailBar ? m_thumbnailBar->selectedSessionIds().size() : 0);
     m_cropPanel->setApplyToSelectionEnabled(selN > 1
-        || m_cropPanel->targetMode() == BatchTargets::Mode::IndexRange);
+        || m_cropPanel->targetMode() == BatchTargets::Mode::IndexRange
+        || m_cropPanel->targetMode() == BatchTargets::Mode::EvenIndices
+        || m_cropPanel->targetMode() == BatchTargets::Mode::OddIndices);
     if (!item) {
         m_cropPanel->setPageSize(QSize());
         m_cropPanel->setStatusText(tr("No page selected"));

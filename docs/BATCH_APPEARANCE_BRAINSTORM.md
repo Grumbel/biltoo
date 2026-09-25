@@ -286,7 +286,7 @@ Build order, refined from the difficulty ladder:
 3. **Crop panel** (dock, same family as colour) — see §14. Hard-coded / manual
    values + autocrop-with-threshold + post-margins + reset crops; batch apply
    to the target set.  
-   **Shipped (v1):** View → Show Crop Panel. Manual margins / Autocrop+threshold /
+   **Shipped (v1):** View → Show Crop Panel. **BatchTargets** Current/Selection/Range/Even/Odd for crop+colour+orient. Manual margins / Autocrop+threshold /
    extra margins; Apply/Reset current & selection; `CropRecipeUtil` +
    `CropController::applyCropRecipeTo*`. Live preview and normalised fields still open.  
 4. **Later** — template-from-page UX (§15), stack/sum preview, even/odd

@@ -28,6 +28,8 @@ enum class Mode {
     Current = 0,     /**< Primary / current session image only */
     Selection = 1,   /**< Live scene selection ∪ filmstrip multi-select */
     IndexRange = 2,  /**< Inclusive session list indices [from, to] */
+    EvenIndices = 3, /**< Session list indices 0, 2, 4, … (often recto) */
+    OddIndices = 4,  /**< Session list indices 1, 3, 5, … (often verso) */
 };
 
 /**

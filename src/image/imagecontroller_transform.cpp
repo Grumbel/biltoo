@@ -231,35 +231,38 @@ int ImageController::resetContentAppearanceForTargets()
     const QList<BatchAppearanceTarget> batch = orientBatchTargets(m_view);
     QList<ImageItem *> targets;
     targets.reserve(batch.size());
+    int nonLiveCleared = 0;
     for (const BatchAppearanceTarget &tg : batch) {
         if (tg.live) {
             targets.append(tg.live);
+            continue;
         }
-        // Non-live identity reset: clear ItemWorld content for sid.
-        else if (tg.sessionId != kInvalidSessionImageId) {
-            WorkspaceItemState beforeSt = m_view->sessionAppearanceValue(tg.sessionId);
-            beforeSt.sessionId = tg.sessionId;
-            beforeSt.path = tg.path;
-            if (!SessionAppearance::hasContentAppearance(beforeSt)
-                && beforeSt.colorAdjust.isIdentity()) {
-                continue;
-            }
-            m_view->itemWorld().clearContentComponents(tg.sessionId);
-            ThumtooCache::clearContentAppearance(tg.path);
-            WorkspaceItemState afterSt = SessionAppearance::clearedContentOps(beforeSt);
-            afterSt.sessionId = tg.sessionId;
-            afterSt.path = tg.path;
-            m_view->pushSessionContentCommand(
-                m_view->tr("Reset content appearance"), tg.sessionId, tg.path,
-                beforeSt, afterSt);
-            emit m_view->sessionAppearanceChanged(tg.sessionId, tg.path, QImage());
+        if (tg.sessionId == kInvalidSessionImageId) {
+            continue;
         }
+        WorkspaceItemState beforeSt = m_view->sessionAppearanceValue(tg.sessionId);
+        beforeSt.sessionId = tg.sessionId;
+        beforeSt.path = tg.path;
+        if (!SessionAppearance::hasContentAppearance(beforeSt)
+            && beforeSt.colorAdjust.isIdentity()) {
+            continue;
+        }
+        m_view->itemWorld().clearContentComponents(tg.sessionId);
+        ThumtooCache::clearContentAppearance(tg.path);
+        WorkspaceItemState afterSt = SessionAppearance::clearedContentOps(beforeSt);
+        afterSt.sessionId = tg.sessionId;
+        afterSt.path = tg.path;
+        m_view->pushSessionContentCommand(
+            m_view->tr("Reset content appearance"), tg.sessionId, tg.path,
+            beforeSt, afterSt);
+        emit m_view->sessionAppearanceChanged(tg.sessionId, tg.path, QImage());
+        ++nonLiveCleared;
     }
-    int nonLiveCleared = 0;
-    // non-live clears counted above would need a counter; recount below after live loop.
     if (targets.isEmpty()) {
-        emit m_view->statusChanged();
-        return 0; // non-live path already pushed undos; caller ignores count often
+        if (nonLiveCleared > 0) {
+            emit m_view->statusChanged();
+        }
+        return nonLiveCleared;
     }
 
     struct BeforeSnap {
@@ -366,7 +369,7 @@ int ImageController::resetContentAppearanceForTargets()
     if (n > 0) {
         emit m_view->statusChanged();
     }
-    return n;
+    return n + nonLiveCleared;
 }
 
 void ImageController::renderForPrint(QPainter *painter, const QRectF &pageRect) const

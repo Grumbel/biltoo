@@ -2,26 +2,29 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2655.1-orient-batch-targets` (base `9740316`).
+**Tip:** `biltoo-2656.1-even-odd-batch-targets` (base `9740316`).
 
 ### Done
-- Crop + colour BatchTargets (2653–2654).
-- **2655.1 Orient via BatchTargets**
-  - ImageView `setFilmstripSelectionProvider` (MainWindow binds filmstrip).
-  - `BatchTargets::resolve(Selection)` always unions filmstrip selection.
-  - Flip H/V, rotate L/R, reset content appearance use expanded targets;
-    non-live ids get ItemWorld orient + `pushSessionContentCommand`.
+- BatchTargets for crop, colour, orient (2653–2655).
+- **2656.1**
+  - `BatchTargets::EvenIndices` / `OddIndices` (session list parity).
+  - Crop + Adjustments panels expose Even / Odd in Targets.
+  - Reset content appearance returns correct non-live clear count.
 
-### Verify
-- Full `nix build` not available in agent sandbox (no nix / Qt). Static
-  symbol check passed for batch APIs. Host should `cmake --build` or
-  `nix build` before relying on runtime.
+### Verify (agent)
+- Static symbol + enum + panel wiring checks: **pass**.
+- Full compile not possible in this sandbox (no nix/Qt). Host must build.
+
+### Host smoke
+1. `git pull` this bundle; `cmake --build` / `nix build`.
+2. Filmstrip multi-select → Flip / Colour Apply / Crop Apply.
+3. Targets → Even indices → Apply crop/colour across session.
 
 ### Next
-1. Template / even-odd / stack (later product).
-2. Runtime smoke: filmstrip multi-select → flip/colour/crop without live tiles.
+- Template-from-page crop recipe (optional product).
+- Stack/sum preview (later).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2655.1-orient-batch-targets-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2656.1-even-odd-batch-targets-9740316.bundle HEAD
 ```

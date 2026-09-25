@@ -118,6 +118,25 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
         return out;
     }
 
+    if (mode == Mode::EvenIndices || mode == Mode::OddIndices) {
+        if (!doc || doc->isEmpty()) {
+            return out;
+        }
+        const int parity = (mode == Mode::EvenIndices) ? 0 : 1;
+        for (int i = 0; i < doc->size(); ++i) {
+            if ((i % 2) != parity) {
+                continue;
+            }
+            const SessionImageId sid = doc->idAt(i);
+            const QString path = doc->pathAt(i);
+            ImageItem *live = (sid != kInvalidSessionImageId)
+                ? view->findItemBySessionId(sid)
+                : nullptr;
+            appendUnique(out, seenIds, seenItems, sid, path, live, i);
+        }
+        return out;
+    }
+
     // Selection: live scene selection first.
     for (ImageItem *item : view->transformTargets()) {
         addLive(item);

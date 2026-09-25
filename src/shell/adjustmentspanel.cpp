@@ -148,6 +148,8 @@ void AdjustmentsPanel::buildUi()
         m_targetMode->addItem(tr("Current page"), int(BatchTargets::Mode::Current));
         m_targetMode->addItem(tr("Selection (canvas + filmstrip)"), int(BatchTargets::Mode::Selection));
         m_targetMode->addItem(tr("Session index range"), int(BatchTargets::Mode::IndexRange));
+        m_targetMode->addItem(tr("Even indices (0, 2, 4, …)"), int(BatchTargets::Mode::EvenIndices));
+        m_targetMode->addItem(tr("Odd indices (1, 3, 5, …)"), int(BatchTargets::Mode::OddIndices));
         m_targetMode->setCurrentIndex(1);
         targetForm->addRow(tr("Apply to"), m_targetMode);
         m_rangeBox = new QGroupBox(tr("Index range (0-based)"), targetBox);
