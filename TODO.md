@@ -2,15 +2,17 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2692.1-edge-tile-full-src` (base `932ed5c`).
+**Tip:** `biltoo-2693.1-exclusive-src-cap-assert` (base `932ed5c`).
 
-### 2692 — edge tiles use full encoded bitmap as src
-ExactTile src_uv is the full exclusive payload (not floor(content/factor)), so
-right/bottom edge cells do not drop a source row/column when sizes disagree.
+### 2693
+- Cap ExactTile src at kTileSize (no 257→256 scale from leftover Store cells)
+- Soft-fail tileLodBag without bag (no assert abort)
+- ~0.5 device-px right/bottom dest overdraw to close float gaps
 
-Pair with **thumtoo-340.5** (PDF level size = floor-half) and re-prepare tiles.
+Missing lines every 256px with leftover 257 tiles = 257→256 squash. Purge/
+re-prepare tile cache. With Smooth on, residual filter seams can remain.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2692.1-edge-tile-full-src-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2693.1-exclusive-src-cap-assert-932ed5c.bundle HEAD
 ```

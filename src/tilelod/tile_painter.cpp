@@ -60,13 +60,25 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     return;
   }
   painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
+  // Half device-pixel overdraw on right/bottom closes hairline gaps between
+  // exclusive cells under float transforms (not a content-line of overdraw).
+  double gap = 0.0;
+  if (args.device_per_content > 1e-9) {
+    gap = 0.5 / args.device_per_content;
+    if (gap > 0.25) {
+      gap = 0.25;
+    }
+  }
 
   for (DrawCommand const& cmd : args.plan->commands) {
     if (cmd.dst_content.empty()) {
       continue;
     }
-    QRectF const dst(cmd.dst_content.x, cmd.dst_content.y, cmd.dst_content.w,
-                     cmd.dst_content.h);
+    QRectF dst(cmd.dst_content.x, cmd.dst_content.y, cmd.dst_content.w,
+               cmd.dst_content.h);
+    if (gap > 0.0) {
+      dst.adjust(0.0, 0.0, gap, gap);
+    }
 
     if (cmd.kind == DrawKind::Underlay && cmd.use_lqip && !args.lqip.isNull()) {
       painter->drawImage(dst, args.lqip);

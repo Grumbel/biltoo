@@ -30,12 +30,18 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      // Full encoded exclusive cell (edge tiles are already partial width/height).
-      // Do not use floor(content/factor) — that can drop a source row/column on
-      // right/bottom edge tiles when content remainder and level crop disagree.
+      // Exclusive payload only. Cap at kTileSize so leftover 257 Store cells
+      // are not mapped 257→256 into exclusive dest (breaks every tile boundary).
+      // Edge tiles are already narrower than kTileSize.
       {
         int ew = exact->bitmap.width;
         int eh = exact->bitmap.height;
+        if (ew > kTileSize) {
+          ew = kTileSize;
+        }
+        if (eh > kTileSize) {
+          eh = kTileSize;
+        }
         if (ew < 1) {
           ew = 1;
         }

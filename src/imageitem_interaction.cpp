@@ -1118,7 +1118,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 navHot = iv->hostSlideshow().hud().isNavHot();
             }
         }
-        if (tileLodWanted() && !navHot) {
+        if (tileLodWanted() && !navHot && m_tileLodAttached) {
             prepareTileLodPlan();
             if (tileLodBag().controller && tileLodBag().controller->path() == m_path && tileLodBag().controller->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
@@ -1308,11 +1308,25 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 }
 
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
-                for (TilePaintCmd const &pc : paintCmds) {
-                    if (pc.patch.isNull() || pc.dst.isEmpty()) {
-                        continue;
+                {
+                    const qreal dpc = tileDevicePerContent();
+                    qreal gap = 0.0;
+                    if (dpc > 1e-9) {
+                        gap = 0.5 / dpc;
+                        if (gap > 0.25) {
+                            gap = 0.25;
+                        }
                     }
-                    painter->drawImage(pc.dst, pc.patch);
+                    for (TilePaintCmd const &pc : paintCmds) {
+                        if (pc.patch.isNull() || pc.dst.isEmpty()) {
+                            continue;
+                        }
+                        QRectF d = pc.dst;
+                        if (gap > 0.0) {
+                            d.adjust(0.0, 0.0, gap, gap);
+                        }
+                        painter->drawImage(d, pc.patch);
+                    }
                 }
                 (void)under;
 

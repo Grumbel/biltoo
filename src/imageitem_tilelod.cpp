@@ -288,6 +288,9 @@ void ImageItem::prepareTileLodPlan()
     if (!tileLodWanted()) {
         return;
     }
+    if (!m_tileLodAttached) {
+        return;
+    }
     QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         const ContentXform::Value x = liveContentXformForPaint();
