@@ -3016,6 +3016,7 @@ TextRegion convertRegion(const thumtoo::TextRegion &r)
                                                          : TextRegion::Role::Text;
     // Text layers are UTF-8 (MuPDF codepoints encoded in thumtoo).
     out.text = QString::fromUtf8(r.text.data(), int(r.text.size()));
+    out.blockId = r.block_id;
     if (r.target.kind == thumtoo::TextLinkTargetKind::InternalPage) {
         out.linkPage = r.target.page_1based;
     } else if (r.target.kind == thumtoo::TextLinkTargetKind::Uri) {

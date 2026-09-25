@@ -17,6 +17,7 @@ private slots:
     void midWordSplit_overlappingBoxes();
     void multiOccurrence_sameRegion();
     void emptyQuery_noHits();
+    void threeColumns_noCrossJoin();
 };
 
 void TextSearchPolicyTest::singleRegion_partialFrac()
@@ -100,6 +101,25 @@ void TextSearchPolicyTest::emptyQuery_noHits()
     QVector<QRectF> boxes{QRectF(0, 0, 40, 10)};
     QCOMPARE(TextSearchPolicy::findHits(texts, boxes, QString(), false).size(), 0);
     QCOMPARE(TextSearchPolicy::findHits(texts, boxes, QStringLiteral("   "), false).size(), 0);
+}
+
+void TextSearchPolicyTest::threeColumns_noCrossJoin()
+{
+    // Three "lines" at same Y, different MuPDF blocks (columns).
+    QVector<QString> texts{QStringLiteral("alpha"), QStringLiteral("beta"),
+                           QStringLiteral("gamma")};
+    QVector<QRectF> boxes{QRectF(0, 0, 40, 10), QRectF(100, 0, 40, 10),
+                          QRectF(200, 0, 40, 10)};
+    QVector<int> blocks{0, 1, 2};
+    // Must not form "alpha beta gamma" as one phrase across columns.
+    const auto cross = TextSearchPolicy::findHits(
+        texts, boxes, QStringLiteral("alpha beta"), false, blocks);
+    QCOMPARE(cross.size(), 0);
+    // Within one column still works.
+    const auto one = TextSearchPolicy::findHits(
+        texts, boxes, QStringLiteral("beta"), false, blocks);
+    QCOMPARE(one.size(), 1);
+    QCOMPARE(one.at(0).regionIndex, 1);
 }
 
 QTEST_MAIN(TextSearchPolicyTest)

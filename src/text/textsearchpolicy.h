@@ -39,6 +39,7 @@ bool matches(const QString &regionText, const QString &query, bool fuzzy);
  */
 QVector<int> readingOrderIndices(const QVector<QString> &texts,
                                  const QVector<QRectF> &bboxes,
+                                 const QVector<int> &blockIds = {},
                                  qreal topTolerance = 4.0);
 
 /**
@@ -50,7 +51,8 @@ QVector<int> readingOrderIndices(const QVector<QString> &texts,
 QVector<SearchHit> findHits(const QVector<QString> &texts,
                             const QVector<QRectF> &bboxes,
                             const QString &query,
-                            bool fuzzy);
+                            bool fuzzy,
+                            const QVector<int> &blockIds = {});
 
 } // namespace TextSearchPolicy
 

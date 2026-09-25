@@ -2,23 +2,25 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2659.3-cross-region-text-search` (base `9740316`).
+**Tip:** `biltoo-2660.1-text-block-id` (base `9740316`).
+**Thumtoo:** `thumtoo-339.1-text-block-id-8f6d77c` (requires tip with `TextRegion::block_id`).
 
-### Verify (agent, Qt 6.4 offscreen)
-| Suite | Result |
-|-------|--------|
-| textsearchpolicy | 10 passed |
-| batchtargets | 11 passed |
-| contentundomacro | 5 passed |
-| croprecipe | 13 passed |
-| **Total** | **39 passed, 0 failed** |
+### Done
+- Thumtoo: `block_id` on extract (MuPDF PDF/EPUB); TTL4 cache format.
+- Biltoo: `TextRegion::blockId`; Find searches **per block** (columns do not
+  form one phrase stream); reading-order sort is block-major.
+- Unit tests: 11 textsearchpolicy including threeColumns_noCrossJoin.
 
-### 2659.3
-- Overlapping same-line boxes treated as tight join (mid-word PDF).
-- Extra unit test for overlapping mid-word split.
+### Later (0.3+)
+- Tesseract / OCR-LLM for image-only pages and layouts beyond MuPDF blocks.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2659.3-cross-region-text-search-9740316.bundle HEAD
-ctest -R 'textsearchpolicy|batchtargets|contentundomacro|croprecipe' --output-on-failure
+# thumtoo first
+git -C thumtoo pull --ff-only …/thumtoo-339.1-text-block-id-8f6d77c.bundle HEAD
+# biltoo
+git pull --ff-only …/biltoo-2660.1-text-block-id-9740316.bundle HEAD
+# bump flake thumtoo input if needed
 ```
+
+**Note:** Old cached text layers (TTL3) have `blockId=-1` until re-extracted.

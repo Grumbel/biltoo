@@ -96,16 +96,19 @@ void TextLayerController::recomputeSearchMatches()
     }
     QVector<QString> texts;
     QVector<QRectF> bboxes;
+    QVector<int> blockIds;
     texts.reserve(m_session.regionCount());
     bboxes.reserve(m_session.regionCount());
+    blockIds.reserve(m_session.regionCount());
     for (int i = 0; i < m_session.regionCount(); ++i) {
         const auto &r = m_session.regionAt(i);
         texts.append(r.text);
-        // Page-space bbox is enough for reading-order sort (same units).
         bboxes.append(r.bbox);
+        blockIds.append(r.blockId);
     }
     const QVector<TextSearchPolicy::SearchHit> hits = TextSearchPolicy::findHits(
-        texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy());
+        texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
+        blockIds);
     m_session.setSearchMatches(hits);
 }
 
@@ -329,7 +332,11 @@ void TextLayerController::finishRubberBand()
     }
     QVector<int> selected =
         TextLayerGeometry::indicesIntersecting(regionRects, imgRubber);
-    TextLayerGeometry::sortReadingOrder(&selected, regionRects);
+    QVector<int> selBlocks(m_session.regionCount(), -1);
+    for (int i = 0; i < m_session.regionCount(); ++i) {
+        selBlocks[i] = m_session.regionAt(i).blockId;
+    }
+    TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks);
     m_session.setSelectedRegions(selected);
     if (m_view->viewport()) {
         m_view->viewport()->update();

@@ -7,6 +7,7 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <QSet>
+#include <QMap>
 
 namespace TextSearchPolicy {
 
@@ -113,6 +114,7 @@ bool matches(const QString &regionText, const QString &query, bool fuzzy)
 
 QVector<int> readingOrderIndices(const QVector<QString> &texts,
                                  const QVector<QRectF> &bboxes,
+                                 const QVector<int> &blockIds,
                                  qreal topTolerance)
 {
     QVector<int> order;
@@ -124,7 +126,9 @@ QVector<int> readingOrderIndices(const QVector<QString> &texts,
         order.push_back(i);
     }
     if (bboxes.size() == texts.size() && !order.isEmpty()) {
-        TextLayerGeometry::sortReadingOrder(&order, bboxes, topTolerance);
+        const QVector<int> *blocks =
+            (blockIds.size() == texts.size()) ? &blockIds : nullptr;
+        TextLayerGeometry::sortReadingOrder(&order, bboxes, topTolerance, blocks);
     }
     return order;
 }
@@ -173,7 +177,8 @@ QVector<SearchHit> hitsFromStreamMatch(const QVector<StreamSpan> &spans,
 QVector<SearchHit> findHits(const QVector<QString> &texts,
                             const QVector<QRectF> &bboxes,
                             const QString &query,
-                            bool fuzzy)
+                            bool fuzzy,
+                            const QVector<int> &blockIds)
 {
     QVector<SearchHit> out;
     const QString qn = normalizeForSearch(query);
@@ -181,66 +186,88 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
         return out;
     }
     const QString qa = alnumOnly(query);
-    const QVector<int> order = readingOrderIndices(texts, bboxes);
+    const QVector<int> order = readingOrderIndices(texts, bboxes, blockIds);
 
-    // Build normalized reading-order stream.
-    // Same-line, nearly adjacent boxes: join with no separator (PDF mid-word splits).
-    // Otherwise insert a single space (word boundary between runs).
-    QString stream;
-    QVector<StreamSpan> spans;
-    spans.reserve(order.size());
-    int prevOrderPos = -1;
-    for (int oi = 0; oi < order.size(); ++oi) {
-        const int ri = order.at(oi);
-        if (ri < 0 || ri >= texts.size()) {
-            continue;
-        }
-        const QString rn = normalizeForSearch(texts.at(ri));
-        if (rn.isEmpty()) {
-            continue;
-        }
-        if (!stream.isEmpty()) {
-            bool tightJoin = false;
-            if (prevOrderPos >= 0 && bboxes.size() == texts.size()) {
-                const int prevRi = order.at(prevOrderPos);
-                if (prevRi >= 0 && prevRi < bboxes.size() && ri < bboxes.size()) {
-                    const QRectF &a = bboxes.at(prevRi);
-                    const QRectF &b = bboxes.at(ri);
-                    if (a.isValid() && b.isValid()) {
-                        const bool sameLine = qAbs(a.center().y() - b.center().y())
-                            <= qMax(4.0, 0.6 * qMax(a.height(), b.height()));
-                        const qreal gap = b.left() - a.right();
-                        const qreal charW = a.width() / qMax(1, normalizeForSearch(texts.at(prevRi)).size());
-                        // Gap smaller than ~1.25 em → likely same word / tight run.
-                        // Only glue when boxes almost touch (PDF mid-glyph splits).
-                        tightJoin = sameLine && gap < qMax(1.5, 0.35 * charW);
-                    }
-                }
-            }
-            if (!tightJoin) {
-                stream.append(QLatin1Char(' '));
+    // Exact matches: search each MuPDF block as its own stream so columns
+    // (different block_id) never form a single phrase. Unknown block ids
+    // still use one page-wide stream (legacy geometry order).
+    const bool haveBlocks = (blockIds.size() == texts.size());
+    QList<QVector<int>> groups;
+    if (haveBlocks) {
+        QMap<int, QVector<int>> byBlock;
+        QVector<int> unknown;
+        for (int ri : order) {
+            const int bid = blockIds.at(ri);
+            if (bid < 0) {
+                unknown.append(ri);
+            } else {
+                byBlock[bid].append(ri);
             }
         }
-        StreamSpan sp;
-        sp.regionIndex = ri;
-        sp.streamStart = stream.size();
-        stream.append(rn);
-        sp.streamEnd = stream.size();
-        spans.push_back(sp);
-        prevOrderPos = oi;
+        // QMap iterates keys in ascending order (= block_index extraction order).
+        for (auto it = byBlock.begin(); it != byBlock.end(); ++it) {
+            groups.append(it.value());
+        }
+        if (!unknown.isEmpty()) {
+            groups.append(unknown);
+        }
+    } else {
+        groups.append(order);
     }
 
-    // Exact: all occurrences on the joined stream (covers single- and multi-box).
-    if (!stream.isEmpty()) {
+    for (const QVector<int> &group : groups) {
+        QString stream;
+        QVector<StreamSpan> spans;
+        spans.reserve(group.size());
+        int prevInGroup = -1;
+        for (int gi = 0; gi < group.size(); ++gi) {
+            const int ri = group.at(gi);
+            if (ri < 0 || ri >= texts.size()) {
+                continue;
+            }
+            const QString rn = normalizeForSearch(texts.at(ri));
+            if (rn.isEmpty()) {
+                continue;
+            }
+            if (!stream.isEmpty()) {
+                bool tightJoin = false;
+                if (prevInGroup >= 0 && bboxes.size() == texts.size()) {
+                    const int prevRi = group.at(prevInGroup);
+                    if (prevRi >= 0 && prevRi < bboxes.size() && ri < bboxes.size()) {
+                        const QRectF &a = bboxes.at(prevRi);
+                        const QRectF &b = bboxes.at(ri);
+                        if (a.isValid() && b.isValid()) {
+                            const bool sameLine = qAbs(a.center().y() - b.center().y())
+                                <= qMax(4.0, 0.6 * qMax(a.height(), b.height()));
+                            const qreal gap = b.left() - a.right();
+                            const qreal charW = a.width()
+                                / qMax(1, normalizeForSearch(texts.at(prevRi)).size());
+                            tightJoin = sameLine && gap < qMax(1.5, 0.35 * charW);
+                        }
+                    }
+                }
+                if (!tightJoin) {
+                    stream.append(QLatin1Char(' '));
+                }
+            }
+            StreamSpan sp;
+            sp.regionIndex = ri;
+            sp.streamStart = stream.size();
+            stream.append(rn);
+            sp.streamEnd = stream.size();
+            spans.push_back(sp);
+            prevInGroup = gi;
+        }
+        if (stream.isEmpty()) {
+            continue;
+        }
         int from = 0;
         while (from < stream.size()) {
             const int at = stream.indexOf(qn, from);
             if (at < 0) {
                 break;
             }
-            const QVector<SearchHit> piece =
-                hitsFromStreamMatch(spans, at, at + qn.size());
-            for (const SearchHit &h : piece) {
+            for (const SearchHit &h : hitsFromStreamMatch(spans, at, at + qn.size())) {
                 out.push_back(h);
             }
             from = at + qMax(1, qn.size());

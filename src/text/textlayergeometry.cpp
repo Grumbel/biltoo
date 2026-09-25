@@ -28,14 +28,22 @@ QVector<int> indicesIntersecting(const QVector<QRectF> &regionRects, const QRect
 }
 
 void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
-                      qreal topTolerance)
+                      qreal topTolerance, const QVector<int> *blockIds)
 {
     if (!indices || indices->isEmpty()) {
         return;
     }
+    const bool useBlocks = blockIds && blockIds->size() == regionRects.size();
     std::sort(indices->begin(), indices->end(), [&](int a, int b) {
         if (a < 0 || a >= regionRects.size() || b < 0 || b >= regionRects.size()) {
             return a < b;
+        }
+        if (useBlocks) {
+            const int ba = blockIds->at(a);
+            const int bb = blockIds->at(b);
+            if (ba >= 0 && bb >= 0 && ba != bb) {
+                return ba < bb;
+            }
         }
         const QRectF &ra = regionRects.at(a);
         const QRectF &rb = regionRects.at(b);

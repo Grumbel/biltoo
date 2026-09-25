@@ -1332,14 +1332,17 @@ void MainWindow::startDocumentSearch(const QString &query)
             }
             QVector<QString> texts;
             QVector<QRectF> bboxes;
+            QVector<int> blockIds;
             texts.reserve(layer.regions.size());
             bboxes.reserve(layer.regions.size());
+            blockIds.reserve(layer.regions.size());
             for (const ThumtooCache::TextRegion &r : layer.regions) {
                 texts.append(r.text);
                 bboxes.append(r.bbox);
+                blockIds.append(r.blockId);
             }
-            const int matches =
-                TextSearchPolicy::findHits(texts, bboxes, trimmed, fuzzy).size();
+            const int matches = TextSearchPolicy::findHits(
+                texts, bboxes, trimmed, fuzzy, blockIds).size();
             if (matches > 0) {
                 const int page = PagePath::pageNumber(pagePath);
                 if (page > 0) {

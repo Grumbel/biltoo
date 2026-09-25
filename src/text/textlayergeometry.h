@@ -20,12 +20,16 @@ namespace TextLayerGeometry {
 QVector<int> indicesIntersecting(const QVector<QRectF> &regionRects, const QRectF &rubber);
 
 /**
- * Stable reading order: top-to-bottom, then left-to-right.
- * Rows whose tops differ by at most @p topTolerance are treated as the same line.
+ * Stable reading order for search / selection.
+ * When @p blockIds is the same size as @p regionRects and both sides have
+ * blockId >= 0, sort primarily by block (MuPDF paragraph/column island), then
+ * top-to-bottom / LTR within the block. Otherwise fall back to page-wide
+ * top-then-left (legacy).
  * @p indices are rearranged in place; each index must be valid for @p regionRects.
  */
 void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
-                      qreal topTolerance = 4.0);
+                      qreal topTolerance = 4.0,
+                      const QVector<int> *blockIds = nullptr);
 
 } // namespace TextLayerGeometry
 

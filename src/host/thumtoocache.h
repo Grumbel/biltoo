@@ -437,6 +437,12 @@ struct TextRegion {
     /** Link target: internal 1-based page (0 = none) and/or URI. */
     int linkPage = 0;
     QString linkUri;
+    /**
+     * MuPDF structured-text block index when known (−1 unknown).
+     * Regions with the same blockId belong to one paragraph/column island —
+     * do not treat them as one horizontal line with other blocks.
+     */
+    int blockId = -1;
 };
 
 struct PageTextLayer {
