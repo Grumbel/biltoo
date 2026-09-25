@@ -519,14 +519,13 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
         setPathOrderFromLiveItems();
         applyLayout(GalleryPackReason::EnterGallery);
     } else if (restoredStash) {
-        // Warm Image↔Gallery: same ImageItem* cells already carry pack poses,
-        // underlays, and tile bags. applyLayout(EnterGallery) re-packed the
-        // whole session and ran a full decode window (tile re-issue) — that was
-        // the bulk of the “reload” after return. Only fill blanks / tile gaps.
-        //
-        // Re-apply the planned pack sceneRect (prepareCanvas cleared it). Without
-        // this, a residual view override or null sceneRect limits scroll to the
-        // live-window bounding box and the overview looks off-centre.
+        // Warm Image↔Gallery: keep underlays / tile bags, but Image mode often
+        // sets item scale to 1 (view-owned fit/1:1). Restoring stash without
+        // re-applying pack poses left cells at scale 1 (huge / wrong footprint).
+        // Rebuild plan + sync window only — not full applyLayout(EnterGallery)
+        // decode storm.
+        rebuildVirtualPlan();
+        syncVirtualWindow();
         if (m_virtualSceneBounds.isValid() && m_view->canvasScene()) {
             m_view->setSceneRect(QRectF());
             if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
@@ -1685,11 +1684,12 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         return;
     }
     // Size-first open: while the gate is active, the virtual plan holds every
-    // definitive/failed row (sparse — holes skipped). ContentChange packs that
-    // set so cells are not stuck at the origin. Full session pack still runs
-    // on gate complete (EnterGallery).
+    // definitive/failed row (sparse — holes skipped). ContentChange / explicit
+    // layout / reload packs that set so cells are not stuck at the origin.
+    // Full session pack still runs on gate complete (EnterGallery).
     if (m_view->hostGallerySizeResolve().active()
         && reason != GalleryPackReason::ContentChange
+        && reason != GalleryPackReason::ExplicitLayout
         && reason != GalleryPackReason::EnterGallery
         && reason != GalleryPackReason::Reload) {
         return;
@@ -2391,7 +2391,14 @@ void GalleryController::reloadFromDisk(bool relayout)
         }
         m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
         if (!purgedPaths.contains(path)) {
+            // Soft F5 must drop soft/LQIP cache and settled-ladder marks or
+            // cells stay on 16px Placeholder while need is hundreds of px —
+            // only Shift-F5 (hard) used to clear these.
+            ImageCache::remove(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
+            for (int edge : ThumtooCache::kLadderEdges) {
+                ThumtooCache::forgetPixelsSettled(path, edge);
+            }
             purgedPaths.insert(path);
         } else {
             m_view->hostDisplayPipeline().dropItemTileLodSession(item);
@@ -2407,6 +2414,11 @@ void GalleryController::reloadFromDisk(bool relayout)
     }
     if (relayout) {
         applyLayout(GalleryPackReason::Reload);
+    } else {
+        // Even without full pack: re-apply poses so Image-mode scale=1 residue
+        // cannot leave huge cells after a pixel-only refresh.
+        rebuildVirtualPlan();
+        syncVirtualWindow();
     }
     m_view->hostHud().showFlash(ImageView::tr("Reload"), ImageView::tr("Gallery"), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
     emit m_view->statusChanged();
