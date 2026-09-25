@@ -2,7 +2,7 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2656.1-even-odd-batch-targets` (base `9740316`).
+**Tip:** `biltoo-2656.2-even-odd-batch-targets` (base `9740316`).
 
 ### Done
 - BatchTargets for crop, colour, orient (2653–2655).
@@ -26,5 +26,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2656.1-even-odd-batch-targets-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2656.2-even-odd-batch-targets-9740316.bundle HEAD
 ```
