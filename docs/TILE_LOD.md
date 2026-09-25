@@ -41,7 +41,7 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |
-| Last content rect | Last column/row extends to native AABB (floor-half remainder) |
+| Content rect | Exact `level_rect * 2^scale` (no stretch, no overdraw) |
 | Paint | Exclusive W×H dest and exclusive source (per-tile drawImage) |
 
 Independent JPEG per cell still limits seam quality (especially upscaled

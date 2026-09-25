@@ -349,32 +349,31 @@ void test_edge_tile_content_rect()
   CHECK_EQ(r1.w, 44);
 }
 
-/// Tiles abut without overlap; may leave a small floor-half remainder uncovered
-/// (we no longer stretch the last column to force full coverage).
+/// Exact level→content mapping: tiles abut; coverage equals level_w * 2^s
+/// (may be short of content_w by a floor-half remainder at s>0).
 void test_content_coverage_odd_widths()
 {
-  int const widths[] = {513, 1025, 2052, 4097};
+  int const widths[] = {300, 513, 1025, 2052, 4097};
   for (int cw : widths) {
     for (int s = 0; s < 6; ++s) {
       int const nx = tilelod::tiles_across(cw, s);
       if (nx <= 0) {
         continue;
       }
+      int const factor = 1 << s;
+      int const level_w = tilelod::dim_at_tile_scale(cw, s);
       int covered = 0;
       int prev_right = 0;
-      int const factor = 1 << s;
       for (int x = 0; x < nx; ++x) {
         auto r = tilelod::tile_content_rect(cw, cw, {s, x, 0});
         CHECK(!r.empty());
         CHECK_EQ(r.x, prev_right);
-        CHECK(r.w <= tilelod::kTileSize * factor);
+        CHECK_EQ(r.w % factor, 0);
         covered += r.w;
         prev_right = r.x + r.w;
       }
+      CHECK_EQ(covered, level_w * factor);
       CHECK(covered <= cw);
-      CHECK(prev_right <= cw);
-      // Remainder is smaller than one content step.
-      CHECK(cw - covered < tilelod::kTileSize * factor);
     }
   }
   CHECK(tilelod::tile_content_rect(513, 513, {1, 99, 0}).empty());

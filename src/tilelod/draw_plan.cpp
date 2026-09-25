@@ -23,16 +23,25 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (cr.empty()) {
       continue;
     }
-    // 1. Exact — dest is the exclusive content grid cell (tiles abut). Source
-    // is the exclusive payload. Do not size dest from bitmap×scale: a short
-    // encode (255 vs 256) left a 1 content-px gap before the next cell.
-    // +1 right/bottom when not on the content edge closes float/filter seams
-    // without stretching the outer edge past the content AABB.
+    cmd.dst_content = {static_cast<double>(cr.x), static_cast<double>(cr.y),
+                       static_cast<double>(cr.w), static_cast<double>(cr.h)};
+
+    // 1. Exact
+    //   level rect L = exclusive cell on dim_at_tile_scale(content, s)
+    //   dest = L * 2^s   (integer, from tile_content_rect)
+    //   src  = [0,0]×L   (cap width/height to bitmap; legacy 257 → first 256)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      int ew = exact->bitmap.width;
-      int eh = exact->bitmap.height;
+      RectI const lr = tile_level_rect(in.content_w, in.content_h, key);
+      int ew = lr.w;
+      int eh = lr.h;
+      if (ew > exact->bitmap.width) {
+        ew = exact->bitmap.width;
+      }
+      if (eh > exact->bitmap.height) {
+        eh = exact->bitmap.height;
+      }
       if (ew > kTileSize) {
         ew = kTileSize;
       }
@@ -46,36 +55,14 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
         eh = 1;
       }
       cmd.src_uv = {0, 0, static_cast<double>(ew), static_cast<double>(eh)};
-      int dw = cr.w;
-      int dh = cr.h;
-      if (cr.x + cr.w < in.content_w) {
-        dw = cr.w + 1;
-      }
-      if (cr.y + cr.h < in.content_h) {
-        dh = cr.h + 1;
-      }
-      if (cr.x + dw > in.content_w) {
-        dw = in.content_w - cr.x;
-      }
-      if (cr.y + dh > in.content_h) {
-        dh = in.content_h - cr.y;
-      }
-      if (dw < 1) {
-        dw = 1;
-      }
-      if (dh < 1) {
-        dh = 1;
-      }
+      // Dest stays the exact content mapping of the level grid cell.
       cmd.dst_content = {static_cast<double>(cr.x), static_cast<double>(cr.y),
-                         static_cast<double>(dw), static_cast<double>(dh)};
+                         static_cast<double>(cr.w), static_cast<double>(cr.h)};
       cmd.kind = DrawKind::ExactTile;
       plan.any_tile = true;
       plan.commands.push_back(cmd);
       continue;
     }
-
-    cmd.dst_content = {static_cast<double>(cr.x), static_cast<double>(cr.y),
-                       static_cast<double>(cr.w), static_cast<double>(cr.h)};
 
     // 2. Finest available coarser parent
     bool found_parent = false;
@@ -101,15 +88,12 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
       continue;
     }
 
-    // 3. Hole: host already paints a continuous soft/PreferCache base under the
-    // tile grid. Emitting Underlay/Empty here forced paint_draw_plan (and debug
-    // washes) to walk every missing cell for no visual gain when lqip is null.
+    // 3. Hole: soft underlay shows through unless LQIP is available.
     if (in.has_lqip) {
       cmd.kind = DrawKind::Underlay;
       cmd.use_lqip = true;
       plan.commands.push_back(cmd);
     }
-    // else: omit — soft shows through; parent/exact commands still listed above.
   }
 
   return plan;

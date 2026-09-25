@@ -29,7 +29,7 @@ namespace tilelod {
   return n;
 }
 
-/// Number of tile columns/rows covering the image at scale s.
+/// Number of tile columns/rows covering the **level** at scale s.
 [[nodiscard]] inline int tiles_across(int content_dim, int scale) noexcept
 {
   int const d = dim_at_tile_scale(content_dim, scale);
@@ -56,40 +56,51 @@ namespace tilelod {
   return scale_cap;
 }
 
-/// Content-space rectangle covered by tile (s, x, y).
-///
-/// Exclusive grid: origin `key * step`, size up to `step` (`kTileSize * 2^scale`),
-/// clipped to the content AABB. Does **not** stretch the last column/row past
-/// `step` to fill a floor-half remainder (that stretched edge tiles).
-[[nodiscard]] inline RectI tile_content_rect(int content_w, int content_h,
-                                             TileKey const& key) noexcept
+/// Exclusive level-space pixel rect for tile (s,x,y) — same as thumtoo
+/// `tile_cell_pixel_rect` on `dim_at_tile_scale(content,*)`.
+[[nodiscard]] inline RectI tile_level_rect(int content_w, int content_h,
+                                           TileKey const& key) noexcept
 {
   if (content_w <= 0 || content_h <= 0) {
     return {};
   }
   int const scale = key.scale > 0 ? key.scale : 0;
-  int const factor = 1 << scale;
-  int const step = (key.scale >= 0) ? (kTileSize * factor) : kTileSize;
+  int const level_w = dim_at_tile_scale(content_w, scale);
+  int const level_h = dim_at_tile_scale(content_h, scale);
   int const nx = tiles_across(content_w, scale);
   int const ny = tiles_across(content_h, scale);
   if (nx <= 0 || ny <= 0 || key.x < 0 || key.y < 0 || key.x >= nx
       || key.y >= ny) {
     return {};
   }
-  int const left = key.x * step;
-  int const top = key.y * step;
-  int right = left + step;
-  int bottom = top + step;
-  if (right > content_w) {
-    right = content_w;
-  }
-  if (bottom > content_h) {
-    bottom = content_h;
-  }
-  if (right <= left || bottom <= top) {
+  int const left = key.x * kTileSize;
+  int const top = key.y * kTileSize;
+  if (left >= level_w || top >= level_h) {
     return {};
   }
-  return {left, top, right - left, bottom - top};
+  int const tw = (kTileSize < (level_w - left)) ? kTileSize : (level_w - left);
+  int const th = (kTileSize < (level_h - top)) ? kTileSize : (level_h - top);
+  if (tw < 1 || th < 1) {
+    return {};
+  }
+  return {left, top, tw, th};
+}
+
+/// Content-space rectangle for tile (s,x,y).
+///
+/// Exact integer mapping of the level rect: origin and size are
+/// `level * 2^scale`. No stretch to content_w/h, no seam overdraw.
+/// A floor-half remainder of the native AABB may be uncovered at s>0.
+[[nodiscard]] inline RectI tile_content_rect(int content_w, int content_h,
+                                             TileKey const& key) noexcept
+{
+  RectI const lr = tile_level_rect(content_w, content_h, key);
+  if (lr.empty()) {
+    return {};
+  }
+  int const scale = key.scale > 0 ? key.scale : 0;
+  int const factor = 1 << scale;
+  return {lr.x * factor, lr.y * factor, lr.w * factor, lr.h * factor};
 }
 
 /// Parent cell at coarser scale (key.scale + delta), delta >= 1.
@@ -116,11 +127,7 @@ namespace tilelod {
 
 /**
  * Target pyramid scale for a given device density.
- *
  * device_per_content: screen pixels per content pixel (1 = 1:1).
- * We want tile-space pixels per content pixel ≈ 2^{-scale} to be at least
- * device_per_content, so scale ≲ -log2(device_per_content).
- * Finest integer scale meeting density, then clamped.
  */
 [[nodiscard]] inline int target_scale_for_density(double device_per_content,
                                                    int min_scale,
@@ -130,11 +137,8 @@ namespace tilelod {
     return min_scale;
   }
   if (!(device_per_content > 0.0) || !std::isfinite(device_per_content)) {
-    // Unknown / invalid → coarsest safe overview
     return max_scale;
   }
-  // scale = floor(-log2(need)); need=1 → 0; need=2 → -1 (finer, clamp to min);
-  // need=0.5 → 1 (coarser).
   double const ideal = -std::log2(device_per_content);
   int s = static_cast<int>(std::floor(ideal + 1e-9));
   if (s < min_scale) {
@@ -146,14 +150,7 @@ namespace tilelod {
   return s;
 }
 
-/**
- * UV sub-rect inside a coarser parent tile that covers the fine key's region.
- *
- * Maps the fine key's content-space rect into parent pixel space [0, parent_w] ×
- * [0, parent_h]. Content-rect mapping stays correct for edge tiles (partial
- * width/height); uniform span subdivision drifts when dim_at_tile_scale is not
- * a pure power-of-two multiple of the parent step.
- */
+/// UV rect in parent bitmap covering the fine tile's content, for CoarserTile.
 [[nodiscard]] inline RectF parent_uv_for_child(TileKey const& fine,
                                                TileKey const& parent,
                                                int parent_pixel_w,
@@ -170,22 +167,28 @@ namespace tilelod {
   }
   RectI const fine_cr = tile_content_rect(content_w, content_h, fine);
   RectI const parent_cr = tile_content_rect(content_w, content_h, parent);
-  if (fine_cr.empty() || parent_cr.empty() || parent_cr.w <= 0 || parent_cr.h <= 0) {
+  if (fine_cr.empty() || parent_cr.empty() || parent_cr.w <= 0
+      || parent_cr.h <= 0) {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  int map_w = parent_pixel_w;
-  int map_h = parent_pixel_h;
-  double const u0 = (static_cast<double>(fine_cr.x - parent_cr.x)
-                     / static_cast<double>(parent_cr.w))
-                    * static_cast<double>(map_w);
-  double const v0 = (static_cast<double>(fine_cr.y - parent_cr.y)
-                     / static_cast<double>(parent_cr.h))
-                    * static_cast<double>(map_h);
-  double const uw = (static_cast<double>(fine_cr.w) / static_cast<double>(parent_cr.w))
-                    * static_cast<double>(map_w);
-  double const vh = (static_cast<double>(fine_cr.h) / static_cast<double>(parent_cr.h))
-                    * static_cast<double>(map_h);
+  // Parent bitmap is exclusive level pixels (same size as parent_cr / 2^ps).
+  int const map_w = parent_pixel_w;
+  int const map_h = parent_pixel_h;
+  double const u0 =
+      (static_cast<double>(fine_cr.x - parent_cr.x)
+       / static_cast<double>(parent_cr.w))
+      * static_cast<double>(map_w);
+  double const v0 =
+      (static_cast<double>(fine_cr.y - parent_cr.y)
+       / static_cast<double>(parent_cr.h))
+      * static_cast<double>(map_h);
+  double const uw =
+      (static_cast<double>(fine_cr.w) / static_cast<double>(parent_cr.w))
+      * static_cast<double>(map_w);
+  double const vh =
+      (static_cast<double>(fine_cr.h) / static_cast<double>(parent_cr.h))
+      * static_cast<double>(map_h);
   return {u0, v0, uw, vh};
 }
 
