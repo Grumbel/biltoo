@@ -74,6 +74,12 @@ void WorkspaceController::clearLiveCanvas()
         destroyCanvasItem(item);
     }
     m_view->liveItems().clear();
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        // Rebuild BSP after mass remove+delete (stale leaves → paint UAF).
+        const QGraphicsScene::ItemIndexMethod method = scene->itemIndexMethod();
+        scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+        scene->setItemIndexMethod(method);
+    }
     // Do not scene->clear() — that would delete stashed items if any were
     // still parented (they are not). Scene may hold no items; that is fine.
     m_view->hostChrome().clearMouseInfo();

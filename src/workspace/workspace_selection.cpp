@@ -205,7 +205,11 @@ void WorkspaceController::removeCanvasSessionIds(const QList<SessionImageId> &id
     }
     if (QGraphicsScene *scene = m_view->canvasScene()) {
         scene->blockSignals(false);
+        const QGraphicsScene::ItemIndexMethod method = scene->itemIndexMethod();
+        scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+        scene->setItemIndexMethod(method);
     }
+    updateSceneRect();
     m_view->setUpdatesEnabled(true);
     if (QWidget *vp = m_view->viewport()) {
         vp->update();

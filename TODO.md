@@ -2,24 +2,23 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2703.1-sizebook-tile-mismatch` (base `6c3e877`).
+**Tip:** `biltoo-2703.2-workspace-delete-bsp-uaf` (base `6c3e877`).
 
-### 2703.1 — Gallery only top-left tile / wrong size (F5 no-op, reopen fixes)
-Root cause: size book could keep a **stale larger definitive** while thumtoo
-tile-native size was correct. Tiles planned/painted in native space only cover
-the top-left of an oversized `contentRect`. Soft F5 did not `take()` the size
-book (hard reload / reopen did). Probe callback also **skipped** install when
-any definitive existed, so the correct size never applied.
+### 2703.2 — SIGSEGV deleting Workspace item (BSP climbTree)
+Paint during `processDirtyItems` walked a stale BSP leaf after
+`removeItem`+`delete`. Batch Delete kept updates disabled but re-enabled
+paint without rebuilding the index; `updateSceneRect` mid-destroy also
+walked BSP.
 
 Fix:
-- Soft F5: `hostSizeBook().take(path)` like hard reload
-- Size probe callback: if definitive ≠ probe size, take then install
-- `rememberSizeFromDecode`: store cached size forces replace of differing book entry
+- Hide item before removeItem
+- Skip `updateSceneRect` inside destroy while updates disabled
+- After batch delete / clearLiveCanvas: toggle itemIndexMethod to rebuild BSP
+- Single updateSceneRect after batch
 
-### Prior
-2702.x tile edge stretch / Image framing scale (in 0.2.0).
+### 2703.1 — size book vs tile-native mismatch
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2703.1-sizebook-tile-mismatch-6c3e877.bundle HEAD
+git pull --ff-only …/biltoo-2703.2-workspace-delete-bsp-uaf-6c3e877.bundle HEAD
 ```

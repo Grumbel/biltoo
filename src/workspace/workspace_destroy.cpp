@@ -65,10 +65,13 @@ void WorkspaceController::destroyCanvasItem(ImageItem *item, bool persistState)
         // (re-entrant paint was UAF in the BSP / item lists).
         const bool blocked = sc->blockSignals(true);
         item->setSelected(false);
+        // Hide before remove so any stray paint of this item is a no-op.
+        item->setVisible(false);
         sc->removeItem(item);
         sc->blockSignals(blocked);
     } else {
         item->setSelected(false);
+        item->setVisible(false);
     }
     delete item;
     // TransformCommand stores raw ImageItem*; drop undo history that would
@@ -79,7 +82,10 @@ void WorkspaceController::destroyCanvasItem(ImageItem *item, bool persistState)
             stack->clear();
         }
     }
-    if (m_view->isWorkspaceMode()) {
+    // Batch delete (Delete key) keeps updates disabled and rebuilds the scene
+    // index once at the end — avoid BSP walk / setSceneRect mid-loop (SIGSEGV
+    // in QGraphicsSceneBspTree::climbTree during processDirtyItems).
+    if (m_view->isWorkspaceMode() && m_view->updatesEnabled()) {
         updateSceneRect();
     }
 }

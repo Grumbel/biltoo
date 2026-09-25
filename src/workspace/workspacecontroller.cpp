@@ -524,6 +524,14 @@ bool WorkspaceController::tryKeyPressDeleteSelection(QKeyEvent *event)
         m_view->destroyCanvasItem(item);
     }
     scene->blockSignals(false);
+    // Force BSP rebuild: removeItem+delete can leave stale leaves that
+    // processDirtyItems → paint walks (SIGSEGV in climbTree).
+    {
+        const QGraphicsScene::ItemIndexMethod method = scene->itemIndexMethod();
+        scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+        scene->setItemIndexMethod(method);
+    }
+    updateSceneRect();
     m_view->setUpdatesEnabled(true);
     if (m_view->viewport()) {
         m_view->viewport()->update();
