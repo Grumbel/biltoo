@@ -267,27 +267,118 @@ Still:
 
 ---
 
-## 12. Suggested slice order (if this ever leaves the napkin)
+## 12. Agreed direction (2026-09-25)
 
-1. **Multi-select + multi-apply** flip / content rotate / reset (proves target
-   set + undo).  
-2. **Batch crop from template page** (normalised rect, optional mirror for
-   parity, range + exclude ends).  
-3. **Stack preview** (mean/median at low res) as the underlay for defining that
-   template.  
-4. **Even/odd recipes** and cover roles as first-class in the dialog.  
-5. **Autocrop proposals** per page, still user-confirmed.  
-6. Colour multi-apply; attention copy/clear.  
-7. Only then: registration / deskew sophistication.
+Build order, refined from the difficulty ladder:
+
+1. **Multi-apply orient / reset + undo bag** — flip H/V, content ±90°, reset
+   appearance on a target set. Proves selection, batch commit, and one undo
+   step for N ids.  
+2. **Colour multi-apply** — same param block as [AdjustmentsPanel](../src/shell/adjustmentspanel.h)
+   (`ColorAdjustments`), apply to targets; panel already has live preview on
+   *one* image.  
+3. **Crop panel** (dock, same family as colour) — see §14. Hard-coded / manual
+   values + autocrop-with-threshold + post-margins + reset crops; batch apply
+   to the target set.  
+4. **Later** — template-from-page UX (§15), stack/sum preview, even/odd
+   recipes, cover roles, registration/deskew.
+
+Stack preview and “perfect book pipeline” stay **after** a useful panel exists.
 
 ---
 
 ## 13. One-sentence summary
 
-**Batch appearance is bulk writing of per-SessionImageId content params—
-easy for orient and colour, medium for shared or mirrored crops with
-exclusions, and hard for autocrop—best unlocked by a low-res stack preview and
-the existing single-page crop UI as the final authority on every page.**
+**Batch appearance is bulk writing of per-SessionImageId content params;
+ship orient/reset and colour multi-apply first, then a colour-like crop panel
+(manual values, autocrop+threshold, extra margins, reset), and only later
+template/stack assists for hard scanned books.**
+
+---
+
+## 14. Crop panel as intermediate (like AdjustmentsPanel)
+
+A dock **Crop panel** is a better next product step than a full batch-crop
+wizard. Mirror the colour panel’s habits: controls in a side panel, effect
+described as data, **Apply to selection / session range** as an explicit
+action (not every slider tick writing 200 pages).
+
+### 14.1 Controls (v1)
+
+| Control | Role |
+|---------|------|
+| **Mode** | Manual values · Autocrop · (later: From template) |
+| **Manual rect** | Raw L/T/R/B or x/y/w/h in **pixels of current logical size**, and/or normalised 0–1 fields. Editing one representation updates the other when size is known. |
+| **Autocrop** | Run content-bbox detect on each target (or on current page only for preview). **Threshold** / aggressiveness slider. |
+| **Extra margin** | Top / bottom / left / right **added after** autocrop (or inset from manual edges) — padding back outward so text isn’t tight. Units: px or % of page. |
+| **Reset crop** | Clear crop fields on the target set (or current only). |
+| **Target set** | Current page · Gallery selection · Index range · (later: parity / exclude ends). |
+| **Apply** | Commit to all targets in the set (one undo bag). |
+| **Preview** | Optional: show proposed rect on the **current** Image/Gallery focus only, before Apply. |
+
+Fully automatic = Autocrop mode + threshold + optional extra margins + Apply
+to range. Fully manual = type rects + Apply. Both share the same commit path
+into existing `cropRect` / `cropSourceSize` / `cropRotation` fields.
+
+### 14.2 What the panel does *not* need in v1
+
+- Stack/sum underlay  
+- Linked live groups (editing page 5 updates 6–200 continuously)  
+- Deskew  
+- Dependency on a chosen template page  
+
+Those layer on without replacing the panel.
+
+### 14.3 Apply semantics
+
+- **While dragging sliders:** update preview on the *current* session image
+  only (same as colour), or update nothing until Apply — pick one and stick
+  to it; colour panel emits `adjustmentsChanged` live, so crop panel can
+  either match that for current-id only, or stay Apply-gated for batch safety.
+- **Recommendation:** live update **current id only**; **Apply to targets**
+  is a separate button for N>1. Prevents accidental bulk writes while tuning
+  threshold.
+
+---
+
+## 15. Template page — UI options (later)
+
+Template = “use **this** page’s crop (normalised) as the recipe for others.”
+Uncertainty is mostly **how the user designates the template**, not the data
+model.
+
+| UI pattern | How it works | Pros | Cons |
+|------------|--------------|------|------|
+| **A. “Use current as template”** | User crops page *k* with normal crop UI or panel manual mode; panel button **Use as template** stores normalised recipe; **Apply to targets** paints that recipe. | Minimal new chrome; reuses existing crop. | Easy to forget which page is template. |
+| **B. Template slot in panel** | Small thumbnail + “Set from current” / “Clear”; Apply always uses the slot if set. | Visible state. | Slightly more UI. |
+| **C. Right-click tile** | Gallery context: **Set as crop template** then **Apply template to selection**. | Fast for power users. | Discoverability. |
+| **D. Wizard** | Step 1 pick template, step 2 targets, step 3 confirm. | Guided. | Heavy for a dock-first product. |
+
+**Recommendation:** **A + B** — panel holds an optional template recipe
+(normalised rect + “from session id …”); primary path is crop current → Use as
+template → set target range → Apply. Gallery context menu (C) as shortcut.
+Avoid a separate wizard until the panel is proven.
+
+**Mirror for verso/recto:** once template exists, a checkbox **Mirror
+horizontally for opposite parity** covers many book scans without a second
+manual crop. Still later than v1 panel.
+
+**Stack preview** can eventually *replace* the template underlay (composite
+instead of one page) without changing Apply.
+
+---
+
+## 16. Undo bag (orient first)
+
+For multi-apply orient/reset (slice 1):
+
+- Before commit, snapshot `ContentAppearance` (or the fields touched) for each
+  target SessionImageId.  
+- Single QUndoCommand: “Batch orient (N pages)” / “Batch reset appearance (N)”.  
+- Redo re-applies the new values; undo restores snapshots.  
+
+Same bag type should serve colour and crop Apply later so the shell does not
+grow three undo designs.
 
 ---
 

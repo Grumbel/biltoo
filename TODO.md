@@ -2,13 +2,14 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2644.1-batch-appearance-brainstorm` (base `0c8c9c0`).
+**Tip:** `biltoo-2645.1-batch-appearance-panel-plan` (base `dedfa58`).
 
 ### Docs
-- [docs/BATCH_APPEARANCE_BRAINSTORM.md](docs/BATCH_APPEARANCE_BRAINSTORM.md) — multi-page crop/autocrop/stack preview
-- [GLOSSARY.md](GLOSSARY.md), [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md)
+[docs/BATCH_APPEARANCE_BRAINSTORM.md](docs/BATCH_APPEARANCE_BRAINSTORM.md) —
+agreed order: orient/reset → colour → crop panel; crop panel like AdjustmentsPanel;
+template-page UI options later.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2644.1-batch-appearance-brainstorm-0c8c9c0.bundle HEAD
+git pull --ff-only …/biltoo-2645.1-batch-appearance-panel-plan-dedfa58.bundle HEAD
 ```
