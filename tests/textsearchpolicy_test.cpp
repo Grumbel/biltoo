@@ -13,6 +13,9 @@ private slots:
     void crossRegion_phrase();
     void crossRegion_noFalseJoin();
     void fuzzy_fullBox();
+    void midWordSplit_tightBoxes();
+    void multiOccurrence_sameRegion();
+    void emptyQuery_noHits();
 };
 
 void TextSearchPolicyTest::singleRegion_partialFrac()
@@ -30,7 +33,6 @@ void TextSearchPolicyTest::singleRegion_partialFrac()
 
 void TextSearchPolicyTest::crossRegion_phrase()
 {
-    // "hello" | "world" → stream "hello world"
     QVector<QString> texts{QStringLiteral("hello"), QStringLiteral("world")};
     QVector<QRectF> boxes{QRectF(0, 0, 50, 10), QRectF(60, 0, 50, 10)};
     const auto hits = TextSearchPolicy::findHits(
@@ -38,7 +40,6 @@ void TextSearchPolicyTest::crossRegion_phrase()
     QCOMPARE(hits.size(), 2);
     QCOMPARE(hits.at(0).regionIndex, 0);
     QCOMPARE(hits.at(1).regionIndex, 1);
-    // First box mostly full (whole "hello"), second whole "world"
     QVERIFY(hits.at(0).endFrac - hits.at(0).startFrac > 0.9);
     QVERIFY(hits.at(1).endFrac - hits.at(1).startFrac > 0.9);
 }
@@ -47,8 +48,6 @@ void TextSearchPolicyTest::crossRegion_noFalseJoin()
 {
     QVector<QString> texts{QStringLiteral("cat"), QStringLiteral("dog")};
     QVector<QRectF> boxes{QRectF(0, 0, 40, 10), QRectF(50, 0, 40, 10)};
-    // "at do" is not a real phrase the user would type spanning mid-words —
-    // stream is "cat dog"; "at do" would match mid-stream. Use a non-match:
     const auto hits = TextSearchPolicy::findHits(
         texts, boxes, QStringLiteral("catfish"), false);
     QCOMPARE(hits.size(), 0);
@@ -56,16 +55,41 @@ void TextSearchPolicyTest::crossRegion_noFalseJoin()
 
 void TextSearchPolicyTest::fuzzy_fullBox()
 {
-    QVector<QString> texts{QStringLiteral("he11o")}; // OCR: 1 for l
+    QVector<QString> texts{QStringLiteral("he11o")};
     QVector<QRectF> boxes{QRectF(0, 0, 40, 10)};
-    const auto hits = TextSearchPolicy::findHits(
-        texts, boxes, QStringLiteral("hello"), true);
-    // alnum "he11o" vs "hello" — edit distance may or may not match depending
-    // on policy; at least exact must not fire.
     const auto exact = TextSearchPolicy::findHits(
         texts, boxes, QStringLiteral("hello"), false);
     QCOMPARE(exact.size(), 0);
-    Q_UNUSED(hits);
+}
+
+void TextSearchPolicyTest::midWordSplit_tightBoxes()
+{
+    // "hel" + "lo" with almost no gap → stream "hello"
+    QVector<QString> texts{QStringLiteral("hel"), QStringLiteral("lo")};
+    QVector<QRectF> boxes{QRectF(0, 0, 30, 10), QRectF(31, 0, 20, 10)};
+    const auto hits = TextSearchPolicy::findHits(
+        texts, boxes, QStringLiteral("hello"), false);
+    QCOMPARE(hits.size(), 2);
+    QCOMPARE(hits.at(0).regionIndex, 0);
+    QCOMPARE(hits.at(1).regionIndex, 1);
+}
+
+void TextSearchPolicyTest::multiOccurrence_sameRegion()
+{
+    QVector<QString> texts{QStringLiteral("foo bar foo")};
+    QVector<QRectF> boxes{QRectF(0, 0, 100, 10)};
+    const auto hits = TextSearchPolicy::findHits(
+        texts, boxes, QStringLiteral("foo"), false);
+    QCOMPARE(hits.size(), 2);
+    QVERIFY(hits.at(0).startFrac < hits.at(1).startFrac);
+}
+
+void TextSearchPolicyTest::emptyQuery_noHits()
+{
+    QVector<QString> texts{QStringLiteral("hello")};
+    QVector<QRectF> boxes{QRectF(0, 0, 40, 10)};
+    QCOMPARE(TextSearchPolicy::findHits(texts, boxes, QString(), false).size(), 0);
+    QCOMPARE(TextSearchPolicy::findHits(texts, boxes, QStringLiteral("   "), false).size(), 0);
 }
 
 QTEST_MAIN(TextSearchPolicyTest)

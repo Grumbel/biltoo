@@ -183,11 +183,15 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
     const QString qa = alnumOnly(query);
     const QVector<int> order = readingOrderIndices(texts, bboxes);
 
-    // Build normalized reading-order stream (space between regions).
+    // Build normalized reading-order stream.
+    // Same-line, nearly adjacent boxes: join with no separator (PDF mid-word splits).
+    // Otherwise insert a single space (word boundary between runs).
     QString stream;
     QVector<StreamSpan> spans;
     spans.reserve(order.size());
-    for (int ri : order) {
+    int prevOrderPos = -1;
+    for (int oi = 0; oi < order.size(); ++oi) {
+        const int ri = order.at(oi);
         if (ri < 0 || ri >= texts.size()) {
             continue;
         }
@@ -196,7 +200,26 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
             continue;
         }
         if (!stream.isEmpty()) {
-            stream.append(QLatin1Char(' '));
+            bool tightJoin = false;
+            if (prevOrderPos >= 0 && bboxes.size() == texts.size()) {
+                const int prevRi = order.at(prevOrderPos);
+                if (prevRi >= 0 && prevRi < bboxes.size() && ri < bboxes.size()) {
+                    const QRectF &a = bboxes.at(prevRi);
+                    const QRectF &b = bboxes.at(ri);
+                    if (a.isValid() && b.isValid()) {
+                        const bool sameLine = qAbs(a.center().y() - b.center().y())
+                            <= qMax(4.0, 0.6 * qMax(a.height(), b.height()));
+                        const qreal gap = b.left() - a.right();
+                        const qreal charW = a.width() / qMax(1, normalizeForSearch(texts.at(prevRi)).size());
+                        // Gap smaller than ~1.25 em → likely same word / tight run.
+                        // Only glue when boxes almost touch (PDF mid-glyph splits).
+                        tightJoin = sameLine && gap >= 0 && gap < qMax(1.5, 0.35 * charW);
+                    }
+                }
+            }
+            if (!tightJoin) {
+                stream.append(QLatin1Char(' '));
+            }
         }
         StreamSpan sp;
         sp.regionIndex = ri;
@@ -204,6 +227,7 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
         stream.append(rn);
         sp.streamEnd = stream.size();
         spans.push_back(sp);
+        prevOrderPos = oi;
     }
 
     // Exact: all occurrences on the joined stream (covers single- and multi-box).
