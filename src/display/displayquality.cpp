@@ -5,7 +5,23 @@
 
 #include "display/imagecache.h"
 
+#include <atomic>
+
 namespace DisplayQuality {
+
+namespace {
+std::atomic<bool> g_smoothScaling{true};
+} // namespace
+
+void setSmoothScaling(bool on)
+{
+    g_smoothScaling.store(on, std::memory_order_relaxed);
+}
+
+bool smoothScaling()
+{
+    return g_smoothScaling.load(std::memory_order_relaxed);
+}
 
 Tier tierOf(int longEdge)
 {

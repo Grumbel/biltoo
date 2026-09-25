@@ -9,6 +9,8 @@
 #include "version.h"
 #include "thumtoo/version.hpp"
 #include "imageitem.h"
+#include "display/displayquality.h"
+#include <QPainter>
 #include "slideshow/slideshowclocks.h"
 
 #include <QDebug>
@@ -1524,6 +1526,29 @@ void MainWindow::findPreviousMatch()
     goToSearchHit(prev);
 }
 
+
+
+void MainWindow::toggleSmoothScaling()
+{
+    const bool on = m_smoothScalingAct && m_smoothScalingAct->isChecked();
+    DisplayQuality::setSmoothScaling(on);
+    if (!m_imageView) {
+        return;
+    }
+    m_imageView->setRenderHint(QPainter::SmoothPixmapTransform, on);
+    if (QGraphicsScene *sc = m_imageView->scene()) {
+        const auto mode = on ? Qt::SmoothTransformation : Qt::FastTransformation;
+        for (QGraphicsItem *gi : sc->items()) {
+            if (auto *item = dynamic_cast<ImageItem *>(gi)) {
+                item->setTransformationMode(mode);
+            }
+        }
+        sc->update();
+    }
+    if (m_imageView->viewport()) {
+        m_imageView->viewport()->update();
+    }
+}
 
 void MainWindow::toggleHud()
 {
@@ -3680,6 +3705,17 @@ void MainWindow::readSettings()
             m_toggleHudAct->setChecked(hud);
         }
         {
+            const bool smooth =
+                settings.value(QStringLiteral("view/smoothScaling"), true).toBool();
+            DisplayQuality::setSmoothScaling(smooth);
+            if (m_smoothScalingAct) {
+                m_smoothScalingAct->setChecked(smooth);
+            }
+            if (m_imageView) {
+                m_imageView->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
+            }
+        }
+        {
             const bool editMarks =
                 settings.value(QStringLiteral("contentEditMarksVisible"), true).toBool();
             if (m_toggleContentEditMarksAct) {
@@ -3798,6 +3834,8 @@ void MainWindow::writeSettings()
     if (m_imageView) {
         settings.setValue(QStringLiteral("stickyZoomEnabled"),
                           m_imageView->hostFraming().isStickyZoomEnabled());
+        settings.setValue(QStringLiteral("view/smoothScaling"),
+                          DisplayQuality::smoothScaling());
         settings.setValue(QStringLiteral("stickyZoomKind"),
                           static_cast<int>(m_imageView->hostFraming().currentStickyZoomKind()));
     }

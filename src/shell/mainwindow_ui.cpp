@@ -318,6 +318,13 @@ void MainWindow::createActions()
     m_toggleHudAct->setStatusTip(tr("Toggle HUD overlay (H when the view has focus)"));
     connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
 
+    m_smoothScalingAct = new QAction(tr("&Smooth Scaling"), this);
+    m_smoothScalingAct->setCheckable(true);
+    m_smoothScalingAct->setChecked(true);
+    m_smoothScalingAct->setStatusTip(
+        tr("Smooth filtering when scaling images and tiles (off = nearest-neighbour)"));
+    connect(m_smoothScalingAct, &QAction::triggered, this, &MainWindow::toggleSmoothScaling);
+
     m_toggleContentEditMarksAct = new QAction(tr("Show content &edit marks"), this);
     m_toggleContentEditMarksAct->setCheckable(true);
     m_toggleContentEditMarksAct->setChecked(true);
@@ -1001,6 +1008,7 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_viewBackgroundAct);
     m_viewMenu->addAction(m_toggleHudAct);
+    m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);

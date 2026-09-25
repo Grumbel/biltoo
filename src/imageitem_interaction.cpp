@@ -61,6 +61,9 @@ bool tilePlanDebugOverlayEnabled()
 bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
                           const tilelod::DrawPlan &plan)
 {
+    if (!DisplayQuality::smoothScaling()) {
+        return false;
+    }
     for (const tilelod::DrawCommand &cmd : plan.commands) {
         if (cmd.kind == tilelod::DrawKind::CoarserTile) {
             return true;
@@ -1033,7 +1036,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             if (galleryLqipOnlyUnderTiles && !isLqipSample(img)) {
                 return;
             }
-            painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
             const QRect src = sampleSrcRectForCrop(img.size());
             if (!src.isEmpty()) {
                 painter->drawImage(box, img, src);
@@ -1069,7 +1072,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         > DisplayQuality::kLqipMaxEdge) {
                     // leave underlay to LQIP branch / placeholder
                 } else {
-                painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                 {
                     const QRect src = sampleSrcRectForCrop(pixmap().size());
                     if (!src.isEmpty()) {
@@ -1088,7 +1091,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     && (!galleryLqipOnlyUnderTiles
                         || qMax(pixmap().width(), pixmap().height())
                             <= DisplayQuality::kLqipMaxEdge)) {
-                    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                    painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                     painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 } else if (!m_source.isNull()) {
                     drawSampleInContentRect(m_source);

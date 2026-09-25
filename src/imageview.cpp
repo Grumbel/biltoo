@@ -277,7 +277,7 @@ ImageView::ImageView(QWidget *parent)
     // Slideshow progress QTimer: owned by SlideshowController (parented to this).
     m_slideshow.ensureProgressTimer();
 
-    setRenderHint(QPainter::SmoothPixmapTransform, true);
+    setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
     // OpenGL viewport — overlays must use drawForeground (see paintEvent).
     setViewport(new QOpenGLWidget);
     setAcceptDrops(true);

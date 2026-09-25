@@ -2,28 +2,20 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2681.1-exclusive-dest-full-src` (base `932ed5c`).
+**Tip:** `biltoo-2682.1-view-smooth-scaling` (base `932ed5c`).
 
-### 2681 — correct QPainter overlap model
-Dest expand / seam overdraw were wrong for QPainter.
+### 2682 — View → Smooth Scaling
+Checkable View menu action (default on). Process-wide via
+`DisplayQuality::smoothScaling()`. When off: nearest-neighbour for tiles
+(`tilePaintNeedsSmooth`), soft drawImage paths, ImageItem transformation mode,
+and QGraphicsView hint. Persisted as `view/smoothScaling`.
 
-- **Dest** = exclusive W×H (`tile_content_rect` only).
-- **Source** = full bitmap including +1 overlap when present.
-- `drawImage(exclusive, full_src)` so SmoothPixmapTransform filters toward the
-  shared edge line; cells abut, no dest overlap.
-
-Removed: ExactTile dest expand, `±gap` / `+gap` overdraw, R→L order requirement.
-
-### Still in stack
-- 2679 last-tile content coverage (odd-width floor-half)
-- 2677 smooth only at 1×/2×
-- Research doc updated §15
-
-### Residual
-- JPEG dual-encode of the shared strip (colour step, not a gap).
-- Legacy 256× Store tiles: no overlap source; still exclusive paint.
+### Prior
+- 2681 exclusive dest + full overlap source (no expand/overdraw)
+- 2679 last-tile coverage
+- 2677 smooth density heuristic (still applied when Smooth Scaling is on)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2681.1-exclusive-dest-full-src-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2682.1-view-smooth-scaling-932ed5c.bundle HEAD
 ```

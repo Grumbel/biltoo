@@ -96,7 +96,9 @@ ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *pa
     // (layoutSizeForPath / probe) before fit/pack.
     , m_intrinsicSize(1, 1)
 {
-    setTransformationMode(Qt::SmoothTransformation);
+    setTransformationMode(DisplayQuality::smoothScaling()
+                           ? Qt::SmoothTransformation
+                           : Qt::FastTransformation);
     // Classic viewer by default: not selectable/movable until workspace mode
     setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
@@ -115,7 +117,9 @@ ImageItem::ImageItem(const QString &path, const QSize &intrinsicSize, QGraphicsI
                        ? intrinsicSize
                        : QSize(1, 1))
 {
-    setTransformationMode(Qt::SmoothTransformation);
+    setTransformationMode(DisplayQuality::smoothScaling()
+                           ? Qt::SmoothTransformation
+                           : Qt::FastTransformation);
     setFlags(ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
     setOffset(-m_intrinsicSize.width() / 2.0, -m_intrinsicSize.height() / 2.0);
@@ -375,13 +379,17 @@ void ImageItem::setGallerySelectable(bool on)
         // Gallery: smooth scale so soft thumbs look less blocky when the view
         // zoom is not 1:1. ItemCoordinateCache + pixmap bake survives scroll
         // under QOpenGLWidget (DeviceCoordinateCache is invalidated on pan).
-        setTransformationMode(Qt::SmoothTransformation);
+        setTransformationMode(DisplayQuality::smoothScaling()
+                           ? Qt::SmoothTransformation
+                           : Qt::FastTransformation);
         syncGalleryScrollCache();
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);
         setCacheMode(QGraphicsItem::NoCache);
-        setTransformationMode(Qt::SmoothTransformation);
+        setTransformationMode(DisplayQuality::smoothScaling()
+                           ? Qt::SmoothTransformation
+                           : Qt::FastTransformation);
         setFlags(ItemSendsGeometryChanges);
     }
     prepareGeometryChange();

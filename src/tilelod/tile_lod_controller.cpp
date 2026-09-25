@@ -3,6 +3,8 @@
 
 #include "tilelod/tile_lod_controller.hpp"
 
+#include "display/displayquality.h"
+
 #include <QPainter>
 
 namespace tilelod {
@@ -117,7 +119,7 @@ bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) con
   PaintDrawPlanArgs args;
   args.plan = &plan;
   args.lqip = lqipUnderlay;
-  args.smooth = true;
+  args.smooth = DisplayQuality::smoothScaling();
   args.device_per_content = m_device_per_content;
   args.resolve = [this](TileKey const& key, TileBitmap const&) -> QImage {
     CacheEntry const* e = m_session->cache().find(key);

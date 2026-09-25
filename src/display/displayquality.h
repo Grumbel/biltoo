@@ -59,6 +59,14 @@ inline int debugStampFontPx(int w, int h)
     return qBound(14, qMin(w, h) / 18, 22);
 }
 
+/**
+ * Process-wide SmoothPixmapTransform / QGraphicsItem smooth scale preference.
+ * Default on. View → Smooth Scaling; persisted as view/smoothScaling.
+ * When off, tile and soft paint use nearest-neighbour (debug seams / pixels).
+ */
+void setSmoothScaling(bool on);
+[[nodiscard]] bool smoothScaling();
+
 } // namespace DisplayQuality
 
 #endif

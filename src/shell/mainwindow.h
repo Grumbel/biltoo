@@ -197,6 +197,7 @@ private slots:
     void goToSearchHit(int index);
     QStringList documentPagePathsForSearch() const;
     void toggleHud();
+    void toggleSmoothScaling();
     void toggleThumbnailLabels();
     void toggleThumbnailCrop();
     void goPrevious();
@@ -634,6 +635,7 @@ private:
     QAction *m_cropAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;
+    QAction *m_smoothScalingAct = nullptr;
     QAction *m_toggleContentEditMarksAct = nullptr;
     QAction *m_showTextRegionsAct = nullptr;
     QAction *m_findOnPageAct = nullptr;
