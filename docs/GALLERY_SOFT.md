@@ -12,3 +12,10 @@ Host decode-window bookkeeping lives under the **GalleryDecode** name
 (`gallerydecodesm`, `GalleryDecodeBook`, `GalleryDecodeState`) — not "soft".
 
 See [GALLERY_PIXELS.md](GALLERY_PIXELS.md).
+
+## Broader direction
+
+Gallery is done. **Image / Workspace Soft** is still alive and should die the
+same way (LQIP/EMB until tiles cover). See **TODO.md → Kill Soft — tiles
+everywhere**. Not a 0.2.0 tag requirement.
+
