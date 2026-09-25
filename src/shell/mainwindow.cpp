@@ -341,6 +341,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_adjustmentsDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (visible) {
             updateAdjustmentsPanel();
+            updateCropPanel();
         }
     });
     connect(m_adjustmentsPanel, &AdjustmentsPanel::applyToSelectionRequested,
@@ -354,6 +355,7 @@ MainWindow::MainWindow(QWidget *parent)
                         tr("Colour grade applied to %n image(s)", "", n), 4000);
                 }
                 updateAdjustmentsPanel();
+                updateCropPanel();
             });
     connect(m_adjustmentsPanel, &AdjustmentsPanel::adjustmentsChanged,
             this, [this](const ColorAdjustments &adj) {
@@ -381,6 +383,83 @@ MainWindow::MainWindow(QWidget *parent)
                 }
                 m_adjustmentsPreviewTimer->start();
             });
+
+    m_cropPanel = new CropPanel(this);
+    m_cropDock = new QDockWidget(tr("Crop"), this);
+    m_cropDock->setObjectName(QStringLiteral("CropDock"));
+    m_cropDock->setWidget(m_cropPanel);
+    m_cropDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_cropDock->setFeatures(QDockWidget::DockWidgetClosable
+                            | QDockWidget::DockWidgetMovable
+                            | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::RightDockWidgetArea, m_cropDock);
+    m_cropDock->hide();
+    connect(m_cropDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible) {
+            updateCropPanel();
+        }
+    });
+    connect(m_cropPanel, &CropPanel::applyToSelectionRequested,
+            this, [this](const CropPanelRecipe &recipe) {
+                if (!m_imageView) {
+                    return;
+                }
+                const int n = m_imageView->hostCrop().applyCropRecipeToTargets(recipe);
+                if (n > 0 && statusBar()) {
+                    statusBar()->showMessage(
+                        tr("Crop applied to %n image(s)", "", n), 4000);
+                }
+                updateCropPanel();
+            });
+    connect(m_cropPanel, &CropPanel::applyToCurrentRequested,
+            this, [this](const CropPanelRecipe &recipe) {
+                if (!m_imageView) {
+                    return;
+                }
+                ImageItem *item = m_imageView->targetItem();
+                if (!item && m_imageView->isImageMode() && !m_imageView->liveItems().isEmpty()) {
+                    item = m_imageView->liveItems().first();
+                }
+                if (!item) {
+                    return;
+                }
+                const int n = m_imageView->hostCrop().applyCropRecipeToItems(
+                    recipe, QList<ImageItem *>{item});
+                if (n > 0 && statusBar()) {
+                    statusBar()->showMessage(
+                        tr("Crop applied to %n image(s)", "", n), 4000);
+                }
+                updateCropPanel();
+            });
+    connect(m_cropPanel, &CropPanel::resetCropOnSelectionRequested, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        const int n = m_imageView->hostCrop().resetCropOnTargets();
+        if (n > 0 && statusBar()) {
+            statusBar()->showMessage(
+                tr("Crop reset on %n image(s)", "", n), 4000);
+        }
+        updateCropPanel();
+    });
+    connect(m_cropPanel, &CropPanel::resetCropOnCurrentRequested, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        ImageItem *item = m_imageView->targetItem();
+        if (!item && m_imageView->isImageMode() && !m_imageView->liveItems().isEmpty()) {
+            item = m_imageView->liveItems().first();
+        }
+        if (!item) {
+            return;
+        }
+        const int n = m_imageView->hostCrop().resetCropOnItems(QList<ImageItem *>{item});
+        if (n > 0 && statusBar()) {
+            statusBar()->showMessage(
+                tr("Crop reset on %n image(s)", "", n), 4000);
+        }
+        updateCropPanel();
+    });
 
     m_layoutPanel = new LayoutPanel(this);
     m_layoutDock = new QDockWidget(tr("Layout"), this);
@@ -2679,6 +2758,25 @@ void MainWindow::updateAdjustmentsPanel()
 }
 
 
+
+void MainWindow::updateCropPanel()
+{
+    if (!m_cropPanel || !m_imageView) {
+        return;
+    }
+    if (m_cropDock && !m_cropDock->isVisible()) {
+        return;
+    }
+    ImageItem *item = m_imageView->targetItem();
+    if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
+        item = m_imageView->liveItems().first();
+    }
+    const bool hasTarget = item != nullptr;
+    m_cropPanel->setEnabledControls(hasTarget);
+    m_cropPanel->setApplyToSelectionEnabled(
+        m_imageView->transformTargets().size() > 1);
+}
+
 void MainWindow::updateLayoutPanel()
 {
     if (!m_layoutPanel || !m_imageView) {
@@ -2825,6 +2923,7 @@ void MainWindow::updateStatus()
     updateNavigationActions();
     updateMetadataPanel();
     updateAdjustmentsPanel();
+    updateCropPanel();
     // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.

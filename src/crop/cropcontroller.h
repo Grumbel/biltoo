@@ -8,6 +8,7 @@
 #include "crop/crophandle.h"
 #include "crop/cropflash.h"
 #include "crop/cropgeometry.h"
+#include "crop/croprecipe.h"
 #include "imageview_types.h"
 
 #include <QImage>
@@ -15,6 +16,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QString>
+#include <QList>
 #include <Qt>
 
 class ImageView;
@@ -54,6 +56,18 @@ public:
     void applyCropAppearance(ImageItem *item, const QImage &src, const WorkspaceItemState &state);
     void emitCropApplyAppearance(SessionImageId sid, const QString &path, ImageItem *item,
                                  const QImage &preferredDisplay, bool hasCrop);
+
+    /**
+     * Batch / panel crop: apply @p recipe to transformTargets (or single current).
+     * GUI-safe; autocrop uses item pixels / ImageCache only (no sync full load).
+     * @return number of items written.
+     */
+    int applyCropRecipeToTargets(const CropPanelRecipe &recipe);
+    /** Apply recipe to an explicit target list (e.g. single current page). */
+    int applyCropRecipeToItems(const CropPanelRecipe &recipe, const QList<ImageItem *> &targets);
+    /** Clear crop fields on transformTargets (or current); keeps orient/colour. */
+    int resetCropOnTargets();
+    int resetCropOnItems(const QList<ImageItem *> &targets);
 
     void cancelCrop();
     void leaveCropModeInternal(bool apply);

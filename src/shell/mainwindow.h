@@ -29,6 +29,7 @@ class DualImageShell;
 class ThumbnailBar;
 class MetadataPanel;
 class AdjustmentsPanel;
+class CropPanel;
 class LayoutPanel;
 class TocPanel;
 class HelpPanel;
@@ -357,6 +358,7 @@ private slots:
     void navigateDocumentPage(int page_1based);
     void openDocumentLinkUri(const QString &uri);
     void updateAdjustmentsPanel();
+    void updateCropPanel();
     void updateLayoutPanel();
     void applyWorkspaceLayoutFromPanel();
     void updateWindowTitle();
@@ -533,9 +535,12 @@ private:
     MetadataPanel *m_metadataPanel = nullptr;
     AdjustmentsPanel *m_adjustmentsPanel = nullptr;
     QDockWidget *m_adjustmentsDock = nullptr;
+    CropPanel *m_cropPanel = nullptr;
+    QDockWidget *m_cropDock = nullptr;
     /** Debounce histogram/vectorscope rebuild while colour sliders move. */
     QTimer *m_adjustmentsPreviewTimer = nullptr;
     QAction *m_toggleAdjustmentsAct = nullptr;
+    QAction *m_toggleCropAct = nullptr;
     QString m_metadataPath;
     QDockWidget *m_metadataDock = nullptr;
     LayoutPanel *m_layoutPanel = nullptr;

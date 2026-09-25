@@ -281,9 +281,14 @@ Build order, refined from the difficulty ladder:
 2. **Colour multi-apply** — same param block as [AdjustmentsPanel](../src/shell/adjustmentspanel.h)
    (`ColorAdjustments`), apply to targets; panel already has live preview on
    *one* image.  
+   **Shipped:** Adjustments **Apply to selection** → `applyColorAdjustmentsToTargets`
+   + undo macro; sliders still edit primary only.
 3. **Crop panel** (dock, same family as colour) — see §14. Hard-coded / manual
    values + autocrop-with-threshold + post-margins + reset crops; batch apply
    to the target set.  
+   **Shipped (v1):** View → Show Crop Panel. Manual margins / Autocrop+threshold /
+   extra margins; Apply/Reset current & selection; `CropRecipeUtil` +
+   `CropController::applyCropRecipeTo*`. Live preview and normalised fields still open.  
 4. **Later** — template-from-page UX (§15), stack/sum preview, even/odd
    recipes, cover roles, registration/deskew.
 

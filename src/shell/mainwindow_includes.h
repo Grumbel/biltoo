@@ -18,6 +18,7 @@
 #include "session/sessionreorderdialog.h"
 #include "shell/metadatapanel.h"
 #include "shell/adjustmentspanel.h"
+#include "shell/croppanel.h"
 #include "shell/layoutpanel.h"
 #include "shell/tocpanel.h"
 #include "shell/helppanel.h"

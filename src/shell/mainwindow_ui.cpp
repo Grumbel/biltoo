@@ -777,6 +777,11 @@ void MainWindow::createActions()
         m_toggleAdjustmentsAct->setIcon(resourceIcon(QStringLiteral("color-adjustments")));
         m_toggleAdjustmentsAct->setStatusTip(tr("Colour grade, histogram, and vectorscope"));
     }
+    if (m_cropDock) {
+        m_toggleCropAct = m_cropDock->toggleViewAction();
+        m_toggleCropAct->setText(tr("Show Cro&p Panel"));
+        m_toggleCropAct->setStatusTip(tr("Crop margins, autocrop, and batch apply"));
+    }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (m_toggleMetadataAct->isChecked() != visible) {
@@ -1037,6 +1042,9 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleHelpAct);
     if (m_toggleAdjustmentsAct) {
         m_viewMenu->addAction(m_toggleAdjustmentsAct);
+    }
+    if (m_toggleCropAct) {
+        m_viewMenu->addAction(m_toggleCropAct);
     }
     m_viewMenu->addAction(m_toggleLayoutPanelAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);

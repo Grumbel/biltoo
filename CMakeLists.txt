@@ -129,6 +129,9 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/slideshowcontroller.h
   src/crop/cropcontroller.cpp
   src/crop/cropcontroller_appearance.cpp
+  src/crop/cropcontroller_batch.cpp
+  src/crop/croprecipe.cpp
+  src/crop/croprecipe.h
   src/crop/cropcontroller.h
   src/attention/attentioncontroller.cpp
   src/attention/attentioncontroller.h
@@ -327,6 +330,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/metadatapanel.h
   src/shell/adjustmentspanel.cpp
   src/shell/adjustmentspanel.h
+  src/shell/croppanel.cpp
+  src/shell/croppanel.h
   src/color/coloradjust.cpp
   src/color/coloradjust.h
   src/shell/layoutpanel.cpp
