@@ -2344,18 +2344,6 @@ void MainWindow::onThumbnailDockLocationChanged(Qt::DockWidgetArea area)
 
 void MainWindow::updateThumbnailEdgeActions()
 {
-    if (m_thumbnailsBottomAct) {
-        m_thumbnailsBottomAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Bottom);
-    }
-    if (m_thumbnailsTopAct) {
-        m_thumbnailsTopAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Top);
-    }
-    if (m_thumbnailsLeftAct) {
-        m_thumbnailsLeftAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Left);
-    }
-    if (m_thumbnailsRightAct) {
-        m_thumbnailsRightAct->setChecked(m_thumbnailEdge == ThumbnailEdge::Right);
-    }
 }
 
 

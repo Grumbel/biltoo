@@ -75,7 +75,7 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
 ### Menu and shortcut polish
 
 - File: **Export Session Images…** distinguished from Workspace page PNG/PDF export
-- Image → **Document** submenu (EPUB Layout, PDF Embedded Images — experimental)
+- Image → EPUB Layout, PDF Embedded Images (experimental; no Document submenu)
 - Gallery → **Layout** submenu; Edit clipboard vs session separators
 - Shortcuts dialog notes viewer letter chords; Fit **Ctrl+Shift+F**, Workspace **Ctrl+Shift+W**
 - Esc chain: crop cancel → leave slideshow → leave fullscreen → leave Image mode
@@ -410,9 +410,8 @@ features landed:
 
 **Image**
 
-- Rotate / flip / reset / crop / attention, then **EPUB layout** and **PDF
-  Embedded Images**. Document actions are not really “image transforms” —
-  a “Document” submenu (or View-adjacent) would age better.
+- Rotate / flip / reset / crop / attention, then **EPUB Layout** and **PDF
+  Embedded Images** at the same menu level (no Document submenu).
 - PDF Embedded Images is experimental (§4.3); status tip should say so until
   hardened.
 

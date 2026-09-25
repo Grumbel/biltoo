@@ -814,42 +814,6 @@ void MainWindow::createActions()
         }
     });
 
-    m_thumbnailsBottomAct = new QAction(tr("Thumbnails on &Bottom"), this);
-    m_thumbnailsBottomAct->setCheckable(true);
-    m_thumbnailsBottomAct->setStatusTip(tr("Place the thumbnail strip along the bottom edge"));
-    connect(m_thumbnailsBottomAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(ThumbnailEdge::Bottom);
-    });
-
-    m_thumbnailsTopAct = new QAction(tr("Thumbnails on &Top"), this);
-    m_thumbnailsTopAct->setCheckable(true);
-    m_thumbnailsTopAct->setStatusTip(tr("Place the thumbnail strip along the top edge"));
-    connect(m_thumbnailsTopAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(ThumbnailEdge::Top);
-    });
-
-    m_thumbnailsLeftAct = new QAction(tr("Thumbnails on &Left"), this);
-    m_thumbnailsLeftAct->setCheckable(true);
-    m_thumbnailsLeftAct->setStatusTip(tr("Place the thumbnail strip along the left edge"));
-    connect(m_thumbnailsLeftAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(ThumbnailEdge::Left);
-    });
-
-    m_thumbnailsRightAct = new QAction(tr("Thumbnails on &Right"), this);
-    m_thumbnailsRightAct->setCheckable(true);
-    m_thumbnailsRightAct->setStatusTip(tr("Place the thumbnail strip along the right edge"));
-    connect(m_thumbnailsRightAct, &QAction::triggered, this, [this]() {
-        setThumbnailBarPosition(ThumbnailEdge::Right);
-    });
-
-    m_thumbnailPositionGroup = new QActionGroup(this);
-    m_thumbnailPositionGroup->setExclusive(true);
-    m_thumbnailPositionGroup->addAction(m_thumbnailsBottomAct);
-    m_thumbnailPositionGroup->addAction(m_thumbnailsTopAct);
-    m_thumbnailPositionGroup->addAction(m_thumbnailsLeftAct);
-    m_thumbnailPositionGroup->addAction(m_thumbnailsRightAct);
-    m_thumbnailsBottomAct->setChecked(true);
-
     m_toggleScrollBarsAct = new QAction(tr("Show &Scrollbars"), this);
     m_toggleScrollBarsAct->setCheckable(true);
     m_toggleScrollBarsAct->setChecked(false);
@@ -1023,10 +987,8 @@ void MainWindow::createMenus()
     m_imageMenu->addAction(m_cropAct);
     m_imageMenu->addAction(m_attentionAct);
     m_imageMenu->addSeparator();
-    auto *documentMenu = m_imageMenu->addMenu(tr("&Document"));
-    documentMenu->setStatusTip(tr("Document-specific tools (EPUB, PDF)"));
-    documentMenu->addAction(m_epubLayoutAct);
-    documentMenu->addAction(m_pdfEmbeddedImagesAct);
+    m_imageMenu->addAction(m_epubLayoutAct);
+    m_imageMenu->addAction(m_pdfEmbeddedImagesAct);
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     auto *zoomMenu = m_viewMenu->addMenu(tr("&Zoom"));
@@ -1058,15 +1020,10 @@ void MainWindow::createMenus()
     }
     m_viewMenu->addAction(m_toggleLayoutPanelAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
-    auto *thumbsMenu = m_viewMenu->addMenu(tr("&Thumbnails"));
-    thumbsMenu->addAction(m_toggleThumbnailBarAct);
-    thumbsMenu->addAction(m_hideThumbLabelsAct);
-    thumbsMenu->addAction(m_cropThumbnailsAct);
-    thumbsMenu->addSeparator();
-    thumbsMenu->addAction(m_thumbnailsBottomAct);
-    thumbsMenu->addAction(m_thumbnailsTopAct);
-    thumbsMenu->addAction(m_thumbnailsLeftAct);
-    thumbsMenu->addAction(m_thumbnailsRightAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_toggleThumbnailBarAct);
+    m_viewMenu->addAction(m_hideThumbLabelsAct);
+    m_viewMenu->addAction(m_cropThumbnailsAct);
 
     // Top-level Gallery and Workspace — not buried under View.
     auto *galleryMenu = menuBar()->addMenu(tr("&Gallery"));
@@ -1668,12 +1625,13 @@ void MainWindow::populateActionHelpTexts()
         "<ul>"
         "<li>Click a thumb to select / navigate the session. Double-click (or Enter) "
         "opens <b>Image</b> mode — it does not place the image on the Workspace.</li>"
-        "<li>Drag thumbs onto the Workspace canvas to place them. Labels and "
-        "position (top/bottom/left/right) are configurable.</li>"
+        "<li>Drag thumbs onto the Workspace canvas to place them. Filenames under "
+        "thumbs can be hidden from View.</li>"
+        "<li>Drag the filmstrip title bar to dock it on any edge (or float it).</li>"
         "<li>Visibility defaults differ by mode (Workspace often on, Gallery often off) "
         "and can be toggled independently.</li>"
         "</ul>"
-        "<p>Use <b>Show Thumbnails</b> or the toolbar button to show or hide the strip.</p>"));
+        "<p>Use <b>Show Thumbnails</b> (View menu or toolbar) to show or hide the strip.</p>"));
 
     setHelp(m_helpGuideSessionAct, tr(
         "<p>A <b>session</b> is an ordered list of images (and archive/page members) "
@@ -2040,15 +1998,6 @@ void MainWindow::populateActionHelpTexts()
         "<p>When checked, filmstrip thumbnails are centre-cropped to a square cell. "
         "When unchecked (default), thumbs letterbox and preserve aspect ratio. "
         "This is a view preference only — it does not crop session appearance.</p>"));
-    setHelp(m_thumbnailsTopAct, tr(
-        "<p>Dock the filmstrip along the <b>top</b> edge of the window. Position is "
-        "remembered with other UI state.</p>"));
-    setHelp(m_thumbnailsBottomAct, tr(
-        "<p>Dock the filmstrip along the <b>bottom</b> edge of the window.</p>"));
-    setHelp(m_thumbnailsLeftAct, tr(
-        "<p>Dock the filmstrip along the <b>left</b> edge of the window.</p>"));
-    setHelp(m_thumbnailsRightAct, tr(
-        "<p>Dock the filmstrip along the <b>right</b> edge of the window.</p>"));
 }
 
 void MainWindow::showFilmstripHelp()

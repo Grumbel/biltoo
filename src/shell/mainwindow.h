@@ -715,10 +715,6 @@ private:
     QAction *m_sortPixelCountAct = nullptr;
     QAction *m_toggleToolBarAct = nullptr;
     QAction *m_toggleThumbnailBarAct = nullptr;
-    QAction *m_thumbnailsBottomAct = nullptr;
-    QAction *m_thumbnailsTopAct = nullptr;
-    QAction *m_thumbnailsLeftAct = nullptr;
-    QAction *m_thumbnailsRightAct = nullptr;
     QAction *m_toggleMetadataAct = nullptr;
     QAction *m_toggleTocAct = nullptr;
     QAction *m_toggleHelpAct = nullptr;
@@ -737,7 +733,6 @@ private:
     QAction *m_helpGuideFilmstripAct = nullptr;
     QAction *m_helpGuideSessionAct = nullptr;
     QActionGroup *m_sortGroup = nullptr;
-    QActionGroup *m_thumbnailPositionGroup = nullptr;
 
     /** Working set: ordered paths + stable session-image ids (Phase 4). */
     SessionDocument m_session;
