@@ -1350,8 +1350,20 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
     if (!hasOrient) {
         return src;
     }
+    // Filmstrip is SoftPreview only. materializeDisplay asserts NOT GUI when
+    // long edge > kGuiMaterializeMaxEdge (e.g. host cache holds full/overview
+    // after crop apply). Clamp before bake so session-remove / setCurrentIndex
+    // refresh cannot abort on the GUI thread.
+    QImage host = src;
+    const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+    if (ImageCache::longEdge(host) > maxGui) {
+        host = ImageCache::clampToMaxEdge(host, maxGui);
+    }
+    if (host.isNull()) {
+        return src;
+    }
     return SessionAppearance::applyContentToImage(
-        src, st, SessionAppearance::PixelKind::SoftPreview);
+        host, st, SessionAppearance::PixelKind::SoftPreview);
 }
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize,
