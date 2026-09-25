@@ -1123,6 +1123,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());
                 tilelod::DrawPlan plan = tileLodBag().controller->session()->draw_plan();
+                const bool tileSmooth = tilePaintNeedsSmooth(
+                    tileDevicePerContent(),
+                    tileLodBag().controller->session()->target_scale(), plan);
                 const QSize native = tileNativeSize();
                 const ContentXform::Value x = liveContentXformForPaint();
                 const QPointF off = offset();
@@ -1209,10 +1212,28 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (img.isNull()) {
                         continue;
                     }
-                    // Exclusive content dest (srcBox). ExactTile src_uv is the
-                    // exclusive level rect (not 257→256 scale). CoarserTile:
-                    // parent UV only.
-                    tilelod::RectF const uv = cmd.src_uv;
+                    // Exclusive dest by default. When smoothing and bitmap has
+                    // +overlap, expand dest 1:1 with full source (not 257→256).
+                    tilelod::RectF uv = cmd.src_uv;
+                    if (cmd.kind == tilelod::DrawKind::ExactTile && tileSmooth) {
+                        const int sc = cmd.src_key.scale;
+                        const int factor = (sc > 0) ? (1 << sc) : 1;
+                        const int exclW = qMax(1, int(qRound(srcBox.width()
+                            / double(factor))));
+                        const int exclH = qMax(1, int(qRound(srcBox.height()
+                            / double(factor))));
+                        if (img.width() > exclW) {
+                            srcBox.setWidth(srcBox.width()
+                                + double(img.width() - exclW) * double(factor));
+                        }
+                        if (img.height() > exclH) {
+                            srcBox.setHeight(srcBox.height()
+                                + double(img.height() - exclH) * double(factor));
+                        }
+                        srcBox = srcBox.intersected(
+                            QRectF(0, 0, native.width(), native.height()));
+                        uv = {0, 0, double(img.width()), double(img.height())};
+                    }
                     QImage patch = extractUv(img, uv);
                     if (patch.isNull()) {
                         continue;
@@ -1305,14 +1326,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                 }
 
-                const bool smooth = tilePaintNeedsSmooth(
-                    tileDevicePerContent(),
-                    tileLodBag().controller->session()->target_scale(), plan);
-                painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
 
-                // Exclusive dests — stable L→R / T→B for determinism only.
+                // Smooth + overlap expands right/bottom → paint high x/y first.
                 std::stable_sort(paintCmds.begin(), paintCmds.end(),
-                                 [](const TilePaintCmd &a, const TilePaintCmd &b) {
+                                 [tileSmooth](const TilePaintCmd &a, const TilePaintCmd &b) {
+                                     if (tileSmooth) {
+                                         if (a.dst.y() != b.dst.y()) {
+                                             return a.dst.y() > b.dst.y();
+                                         }
+                                         return a.dst.x() > b.dst.x();
+                                     }
                                      if (a.dst.y() != b.dst.y()) {
                                          return a.dst.y() < b.dst.y();
                                      }
@@ -1323,7 +1347,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    // Dest = exclusive cell; patch may be 257² (overlap in source).
                     painter->drawImage(pc.dst, pc.patch);
                 }
                 (void)under;

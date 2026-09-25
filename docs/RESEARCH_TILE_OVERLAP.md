@@ -278,3 +278,13 @@ dest expand or non-1:1 source mapping. For correct geometry:
 - Overlap strip remains in the Store for encode / possible future GL path
 
 **2683:** ExactTile `src_uv` exclusive only; paint no longer overrides to full bitmap.
+
+
+## 17. Smooth on → 1:1 dest expand (biltoo-2684)
+
+Exclusive 256→256 is correct with **nearest** but QPainter bilinear **clamps**
+at each drawImage edge → visible cross seams when Smooth Scaling is on.
+
+Fix when smooth and bitmap has +overlap: grow dest by the extra strip and map
+**full** source **1:1** (257 source → 257 content units). Never map 257→256
+(that scaled cells and broke checkerboards). Paint order R→L/B→T.

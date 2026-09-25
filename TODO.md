@@ -2,19 +2,15 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2683.1-exclusive-src-dest` (base `932ed5c`).
+**Tip:** `biltoo-2684.1-smooth-1to1-overlap` (base `932ed5c`).
 
-### 2683 — checkerboard / tile phase
-Full 257→256 dest mapping **scaled every cell** and broke regular patterns
-(visible vertical seam on grid.png). ExactTile now uses **exclusive source
-and exclusive dest** (1:1 level pixels). Overlap strip is not drawn by QPainter.
-
-### Also in stack
-- 2682 View → Smooth Scaling
-- 2681 removed dest expand/overdraw
-- 2679 last-tile content coverage
+### 2684 — smooth seams vs pixel-exact
+- **Smooth off:** exclusive src→dest (checkerboard continuous; no filter seams).
+- **Smooth on:** ExactTile with 257 bitmap expands dest **1:1** with full source
+  (not 257→256 scale). Bilinear can sample the shared edge. Paint R→L/B→T so
+  the strip wins.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2683.1-exclusive-src-dest-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2684.1-smooth-1to1-overlap-932ed5c.bundle HEAD
 ```
