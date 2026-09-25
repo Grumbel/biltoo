@@ -2,16 +2,13 @@
 
 ## Status (2026-09-25)
 
-**Tip:** docs brainstorm `biltoo-2642.1-scene-language-brainstorm` (base `329a27e`).
+**Tip:** `biltoo-2643.1-glossary` (base `d06c25a`).
 
-Gallery AlwaysOn bars remain tip behaviour from 2641.2.
-
-### New doc
-[docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md) —
-HyperCard-style scene language napkin: generators, PDF/EPUB links, Workspace as
-partial scene data, Ted Nelson (transclusion, two-way links). **Brainstorm only.**
+### Docs
+- [GLOSSARY.md](GLOSSARY.md) — project vocabulary (domain, identity, pixels, Gallery, Qt surface, …)
+- [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md) — HyperCard / Nelson napkin
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2642.1-scene-language-brainstorm-329a27e.bundle HEAD
+git pull --ff-only …/biltoo-2643.1-glossary-d06c25a.bundle HEAD
 ```

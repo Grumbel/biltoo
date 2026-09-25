@@ -15,7 +15,7 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 **Thumtoo↔host contract (normative):** [docs/THUMTOO_HOST_CONTRACT.md](docs/THUMTOO_HOST_CONTRACT.md) — read before PreferCache / soft / Full / slideshow climb changes.
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
-See [TODO.md](TODO.md) for the roadmap and open questions.
+See [TODO.md](TODO.md) for the roadmap and open questions. Vocabulary: [GLOSSARY.md](GLOSSARY.md).
 Latest agent handoff: **TODO.md** + [docs/IMAGEVIEW_SURFACE.md](docs/IMAGEVIEW_SURFACE.md).
 Latest tip: **biltoo-2624** — ImageView peel plateau (pure forwards done; host surface stays).
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
