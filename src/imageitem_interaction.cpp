@@ -3,6 +3,7 @@
 
 #include "imageitem.h"
 #include <algorithm>
+#include <vector>
 #include "item/itemframegeometry.h"
 #include "item/itemhandlepolicy.h"
 #include "display/displayquality.h"
@@ -12,6 +13,7 @@
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
+#include "tilelod/tile_painter.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "content/contentxform.h"
@@ -1212,28 +1214,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (img.isNull()) {
                         continue;
                     }
-                    // Exclusive dest by default. When smoothing and bitmap has
-                    // +overlap, expand dest 1:1 with full source (not 257→256).
-                    tilelod::RectF uv = cmd.src_uv;
-                    if (cmd.kind == tilelod::DrawKind::ExactTile && tileSmooth) {
-                        const int sc = cmd.src_key.scale;
-                        const int factor = (sc > 0) ? (1 << sc) : 1;
-                        const int exclW = qMax(1, int(qRound(srcBox.width()
-                            / double(factor))));
-                        const int exclH = qMax(1, int(qRound(srcBox.height()
-                            / double(factor))));
-                        if (img.width() > exclW) {
-                            srcBox.setWidth(srcBox.width()
-                                + double(img.width() - exclW) * double(factor));
-                        }
-                        if (img.height() > exclH) {
-                            srcBox.setHeight(srcBox.height()
-                                + double(img.height() - exclH) * double(factor));
-                        }
-                        srcBox = srcBox.intersected(
-                            QRectF(0, 0, native.width(), native.height()));
-                        uv = {0, 0, double(img.width()), double(img.height())};
-                    }
+                    // Exclusive src_uv from plan (no 257→256 scale, no dest expand).
+                    tilelod::RectF const uv = cmd.src_uv;
                     QImage patch = extractUv(img, uv);
                     if (patch.isNull()) {
                         continue;
@@ -1326,29 +1308,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                 }
 
-                painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
-
-                // Smooth + overlap expands right/bottom → paint high x/y first.
-                std::stable_sort(paintCmds.begin(), paintCmds.end(),
-                                 [tileSmooth](const TilePaintCmd &a, const TilePaintCmd &b) {
-                                     if (tileSmooth) {
-                                         if (a.dst.y() != b.dst.y()) {
-                                             return a.dst.y() > b.dst.y();
-                                         }
-                                         return a.dst.x() > b.dst.x();
-                                     }
-                                     if (a.dst.y() != b.dst.y()) {
-                                         return a.dst.y() < b.dst.y();
-                                     }
-                                     return a.dst.x() < b.dst.x();
-                                 });
-
-                for (TilePaintCmd &pc : paintCmds) {
+                // Smooth: assemble exclusive patches 1:1, then one filtered
+                // scale (per-tile SmoothPixmapTransform clamps at cell edges).
+                std::vector<tilelod::TilePatchBlit> blits;
+                blits.reserve(static_cast<size_t>(paintCmds.size()));
+                for (TilePaintCmd const &pc : paintCmds) {
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    painter->drawImage(pc.dst, pc.patch);
+                    blits.push_back({pc.dst, pc.patch});
                 }
+                tilelod::paint_tile_patches(painter, blits, tileSmooth);
                 (void)under;
 
                 if (tilePlanDebugOverlayEnabled()) {

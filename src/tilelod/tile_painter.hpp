@@ -8,7 +8,9 @@
 
 #include <QImage>
 #include <QPainter>
+#include <QRectF>
 #include <functional>
+#include <vector>
 
 namespace tilelod {
 
@@ -23,8 +25,7 @@ using TileImageResolver =
 struct PaintDrawPlanArgs {
   DrawPlan const* plan = nullptr;
   TileImageResolver resolve;  ///< Required for ExactTile / CoarserTile
-  /// Content units per device pixel inverse (screen/content). Reserved for
-  /// callers; paint maps exclusive dest ← full source (no dest overdraw).
+  /// Content units per device pixel inverse (screen/content).
   double device_per_content = 0.0;
   QImage lqip;                ///< Optional underlay when use_lqip
   bool smooth = true;
@@ -32,15 +33,26 @@ struct PaintDrawPlanArgs {
 
 /**
  * Paint a DrawPlan in **content coordinates** (same space as cmd.dst_content).
- * Caller sets the painter transform so content maps to the item/view.
- *
- * Order: for each command, draw the chosen tile sub-rect (or LQIP / skip).
- * Does not draw Empty placeholders (host may already have drawn underlay).
+ * When @c smooth, tiles are composited 1:1 into one buffer then scaled once
+ * (avoids per-cell bilinear clamp seams).
  */
 void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args);
 
 /** Decode TileBitmap to QImage (rgba8 copy or QImage::fromData for jpeg). */
 QImage tile_bitmap_to_qimage(TileBitmap const& bitmap);
+
+/** One already-decoded patch and its exclusive dest in painter space. */
+struct TilePatchBlit {
+  QRectF dst;
+  QImage patch;
+};
+
+/**
+ * Paint patches. If @p smooth and assembly succeeds, composite at 1:1 then
+ * one SmoothPixmapTransform; else draw each patch with @p smooth hint.
+ */
+void paint_tile_patches(QPainter* painter, std::vector<TilePatchBlit> const& patches,
+                        bool smooth);
 
 }  // namespace tilelod
 

@@ -2,15 +2,17 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2684.1-smooth-1to1-overlap` (base `932ed5c`).
+**Tip:** `biltoo-2685.1-assemble-then-smooth` (base `932ed5c`).
 
-### 2684 — smooth seams vs pixel-exact
-- **Smooth off:** exclusive src→dest (checkerboard continuous; no filter seams).
-- **Smooth on:** ExactTile with 257 bitmap expands dest **1:1** with full source
-  (not 257→256 scale). Bilinear can sample the shared edge. Paint R→L/B→T so
-  the strip wins.
+### 2685 — real smooth-seam fix
+Per-tile `drawImage` + `SmoothPixmapTransform` **clamps** at each cell → seams.
+Expand/order hacks cannot fix that.
+
+**Correct model:** blit exclusive tile patches **1:1** into one buffer, then
+**one** filtered `drawImage` of that buffer (`paint_tile_patches` /
+`paint_draw_plan`). Nearest path still draws tiles individually.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2684.1-smooth-1to1-overlap-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2685.1-assemble-then-smooth-932ed5c.bundle HEAD
 ```

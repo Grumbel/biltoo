@@ -288,3 +288,15 @@ at each drawImage edge → visible cross seams when Smooth Scaling is on.
 Fix when smooth and bitmap has +overlap: grow dest by the extra strip and map
 **full** source **1:1** (257 source → 257 content units). Never map 257→256
 (that scaled cells and broke checkerboards). Paint order R→L/B→T.
+
+## 18. Assemble then smooth (biltoo-2685)
+
+QPainter bilinear filtering is **per drawImage**. Adjacent exclusive tiles
+each clamp at their edge → visible cross seams when Smooth Scaling is on.
+Dest expand cannot give the filter a continuous neighbourhood across cells.
+
+**Correct host model**
+1. Copy exclusive tile pixels into one buffer at **1:1** (no scale).
+2. `drawImage` that buffer once with `SmoothPixmapTransform`.
+
+Implemented as `paint_tile_patches` / smooth path in `paint_draw_plan`.
