@@ -2,16 +2,12 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2649.2-crop-panel-autocrop-segv` (base `9740316`).
+**Tip:** `biltoo-2649.3-crop-panel-qpointer-fix` (base `9740316`).
 
 ### Done
-- Orient / colour multi-apply; reset appearance GUI fix (2646–2648).
-- **Crop panel v1 (2649.1)** + **autocrop SEGV fix (2649.2):**
-  - Batch apply uses a pure **plan phase** (no ItemWorld/pixel mutation while
-    collecting targets), then applies.
-  - Autocrop samples from **item pixels only** (deep `.copy()`); no
-    `ImageCache::get` during batch (was SEGV in `qHash(path)` under selection).
-  - `QPointer<ImageItem>` skip if tile dies mid-apply.
+- Crop panel v1 + autocrop batch hardening (2649.1–.2).
+- **2649.3:** `ImageItem` is `QGraphicsPixmapItem`, not `QObject` — drop
+  `QPointer<ImageItem>` (compile error); keep raw pointers + plan phase.
 
 ### Next
 1. Crop panel polish: live preview; normalised fields; status when size unknown.
@@ -19,5 +15,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2649.2-crop-panel-autocrop-segv-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2649.3-crop-panel-qpointer-fix-9740316.bundle HEAD
 ```

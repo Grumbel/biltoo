@@ -15,7 +15,6 @@
 #include "item/imagesizebook.h"
 #include "gallery/gallerycontroller.h"
 
-#include <QPointer>
 #include <QPixmap>
 #include <QUndoStack>
 
@@ -120,7 +119,7 @@ QImage sampleForAutocrop(ImageItem *item)
 }
 
 struct PlannedCrop {
-    QPointer<ImageItem> item;
+    ImageItem * item;
     QString path;
     SessionImageId sid = kInvalidSessionImageId;
     QSize logical;
@@ -192,7 +191,7 @@ int CropController::applyCropRecipeToItems(const CropPanelRecipe &recipe,
 
     int n = 0;
     for (PlannedCrop &p : plan) {
-        ImageItem *item = p.item.data();
+        ImageItem *item = p.item;
         if (!item) {
             continue;
         }
@@ -246,7 +245,7 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
     }
 
     struct PlannedReset {
-        QPointer<ImageItem> item;
+        ImageItem * item;
         SessionImageId sid = kInvalidSessionImageId;
         WorkspaceItemState beforeSt;
         QImage beforeSrc;
@@ -285,7 +284,7 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
 
     int n = 0;
     for (PlannedReset &p : plan) {
-        ImageItem *item = p.item.data();
+        ImageItem *item = p.item;
         if (!item) {
             continue;
         }
