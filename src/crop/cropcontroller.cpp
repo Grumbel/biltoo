@@ -70,10 +70,10 @@ ImageItem *CropController::cropTargetItem() const
         }
     }
     if (ImageItem *t = m_view->targetItem()) {
-        // Soft ladder tiles have preview/source with m_previewPixels; pixmap is
-        // often empty (paint uses m_source). hasDecodedPixels() alone was
-        // "Crop / No image" for every soft-only Workspace/Gallery selection.
-        if (t->hasDisplayPixels()) {
+        // Soft ladder: preview/source. Workspace/Gallery often paint tiles with
+        // only LQIP pixmap or pure tile coverage — source+preview both null.
+        // Rejecting those was "Crop / No image" despite a selected tile.
+        if (t->hasDisplayPixels() || !t->path().isEmpty()) {
             return t;
         }
     }
@@ -450,7 +450,9 @@ bool CropController::enterCropModeFromUi()
         return false;
     }
     ImageItem *item = cropTargetItem();
-    if (!item || !item->hasDisplayPixels()) {
+    // Path identity is enough: prepareCropModeFullImage loads host/full.
+    // Tiles-only Workspace items have no soft sample until enter.
+    if (!item || item->path().isEmpty()) {
         flashCropHud(CropFlash::noImage());
         return false;
     }

@@ -91,6 +91,10 @@ QList<ImageItem *> WorkspaceController::transformTargets() const
     }
     for (QGraphicsItem *gi : scene->selectedItems()) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            // Match targetItem(): ignore stale selection after destroyCanvasItem.
+            if (!m_view->liveItems().contains(item) || item->scene() != scene) {
+                continue;
+            }
             out.append(item);
         }
     }
