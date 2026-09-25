@@ -176,17 +176,14 @@ QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
         sz.height());
 }
 
-QSize layoutSize(const QSize &native, const Value &x)
+QRect orientedCropRect(const QSize &native, const Value &x)
 {
-    if (!isPositiveSize(native)) {
-        return native;
+    if (!isPositiveSize(native) || !x.hasCrop || x.cropRect.isEmpty()) {
+        return {};
     }
     // Post-orient size first (cropRect is defined in that space).
     QSize oriented = swapsAspect(x) ? QSize(native.height(), native.width())
                                     : native;
-    if (!x.hasCrop || x.cropRect.isEmpty()) {
-        return oriented;
-    }
     QSize basis = (x.cropSourceSize.isValid() && x.cropSourceSize.width() > 0
                    && x.cropSourceSize.height() > 0)
                       ? x.cropSourceSize
@@ -199,8 +196,6 @@ QSize layoutSize(const QSize &native, const Value &x)
     // Map through one 90° step (same matrix as materialize / bakeRotate90).
     if (!sameOrientationClass(basis, oriented)) {
         crop = mapCropRectThroughContentRotate90(crop, basis, 1);
-        // If still mismatched (shouldn't happen for axis-aligned sizes), try
-        // one more step so basis matches oriented class.
         if (!sameOrientationClass(basis, oriented)) {
             crop = mapCropRectThroughContentRotate90(crop, basis, 1);
         }
@@ -209,6 +204,23 @@ QSize layoutSize(const QSize &native, const Value &x)
     if (basis != oriented) {
         crop = scaleCropRect(crop, basis, oriented);
     }
+    if (crop.width() < 1 || crop.height() < 1) {
+        return {};
+    }
+    return crop;
+}
+
+QSize layoutSize(const QSize &native, const Value &x)
+{
+    if (!isPositiveSize(native)) {
+        return native;
+    }
+    QSize oriented = swapsAspect(x) ? QSize(native.height(), native.width())
+                                    : native;
+    if (!x.hasCrop || x.cropRect.isEmpty()) {
+        return oriented;
+    }
+    const QRect crop = orientedCropRect(native, x);
     if (crop.width() < 1 || crop.height() < 1) {
         return oriented;
     }
@@ -405,7 +417,10 @@ QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
     if (!x.hasCrop || x.cropRect.isEmpty()) {
         return oriented;
     }
-    const QRect crop = x.cropRect.normalized();
+    const QRect crop = orientedCropRect(native, x);
+    if (crop.width() < 1 || crop.height() < 1) {
+        return oriented;
+    }
     const qreal dw = crop.width();
     const qreal dh = crop.height();
     if (hasFreeCropRotation(x)) {
@@ -493,7 +508,10 @@ QTransform sourceToDisplayTransform(const QSize &native, const Value &x)
         if (!x.hasCrop || x.cropRect.isEmpty()) {
             return p;
         }
-        const QRect crop = x.cropRect.normalized();
+        const QRect crop = orientedCropRect(native, x);
+        if (crop.width() < 1 || crop.height() < 1) {
+            return p;
+        }
         if (hasFreeCropRotation(x)) {
             const qreal dw = crop.width();
             const qreal dh = crop.height();

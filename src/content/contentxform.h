@@ -170,6 +170,14 @@ void mapCropThroughContentRotate90(Value &x, int quarterTurns);
  * scaled. Linear scale alone is wrong for orientation change except when
  * crop aspect equals the full frame.
  */
+/**
+ * Crop rectangle in **oriented full-native** space (post flip/turns, pre
+ * crop-local origin). Scales @c cropRect from @c cropSourceSize onto the
+ * oriented size of @p native — same basis as layoutSize / materializeDisplay.
+ * Empty if no crop or invalid inputs.
+ */
+QRect orientedCropRect(const QSize &native, const Value &x);
+
 QSize layoutSize(const QSize &native, const Value &x);
 QSize layoutSize(const QSize &native, const WorkspaceItemState &state);
 

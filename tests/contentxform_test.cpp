@@ -42,6 +42,8 @@ private slots:
     void scaleCropRect_nativeToSoft();
     void scaleCropRect_softToNative();
     void scaleCropRect_identity();
+    void orientedCropRect_softToNative();
+    void orientedCropRect_identityBasis();
     void mapCropRect_oneStepMatchesTrueMatrix();
     void mapCropThrough_updatesSourceSizeAndRotation();
     void layoutSize_cropThenMappedRotate();
@@ -404,6 +406,30 @@ void ContentXformTest::scaleCropRect_identity()
     const QRect crop(10, 20, 100, 80);
     QCOMPARE(scaleCropRectMirror(crop, QSize(400, 300), QSize(400, 300)), crop);
 }
+
+void ContentXformTest::orientedCropRect_softToNative()
+{
+    // Crop recorded on soft 400×300; tile grid is native 4000×3000 (PDF page).
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(100, 50, 80, 60);
+    x.cropSourceSize = QSize(400, 300);
+    const QRect oriented =
+        ContentXform::orientedCropRect(QSize(4000, 3000), x);
+    QCOMPARE(oriented, QRect(1000, 500, 800, 600));
+    QCOMPARE(ContentXform::layoutSize(QSize(4000, 3000), x), QSize(800, 600));
+}
+
+void ContentXformTest::orientedCropRect_identityBasis()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(10, 20, 100, 80);
+    x.cropSourceSize = QSize(400, 300);
+    QCOMPARE(ContentXform::orientedCropRect(QSize(400, 300), x),
+             QRect(10, 20, 100, 80));
+}
+
 
 void ContentXformTest::mapCropRect_oneStepMatchesTrueMatrix()
 {

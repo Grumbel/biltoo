@@ -121,7 +121,11 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
             continue;
         }
         if (xform.hasCrop && !xform.cropRect.isEmpty()) {
-            const QRect contentCrop = xform.cropRect.normalized();
+            const QRect contentCrop =
+                ContentXform::orientedCropRect(nativeSize, xform);
+            if (contentCrop.width() < 1 || contentCrop.height() < 1) {
+                continue;
+            }
             const QRectF local = disp.translated(-contentCrop.x(), -contentCrop.y());
             const QRectF cropLocal(0.0, 0.0, contentCrop.width(), contentCrop.height());
             disp = local.intersected(cropLocal);
@@ -170,7 +174,9 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     // contentRect (offset already in contentBounds).
     QRectF labelBox = contentBounds;
     if (freeRotPainter && xform.hasCrop && !xform.cropRect.isEmpty()) {
-        labelBox = QRectF(xform.cropRect.normalized());
+        const QRect oc = ContentXform::orientedCropRect(nativeSize, xform);
+        labelBox = oc.isEmpty() ? QRectF(xform.cropRect.normalized())
+                                : QRectF(oc);
     }
     if (labelBox.width() < 8.0 || labelBox.height() < 8.0) {
         painter->restore();
@@ -1176,7 +1182,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                     QRectF disp = oriented;
                     if (x.hasCrop && !x.cropRect.isEmpty()) {
-                        const QRect contentCrop = x.cropRect.normalized();
+                        // Scale cropSourceSize → tile-grid oriented native
+                        // (PDF soft crop basis vs page-native tiles).
+                        const QRect contentCrop =
+                            ContentXform::orientedCropRect(native, x);
+                        if (contentCrop.width() < 1 || contentCrop.height() < 1) {
+                            continue;
+                        }
                         const QRectF local = oriented.translated(
                             -contentCrop.x(), -contentCrop.y());
                         const QRectF cropLocal(0.0, 0.0, contentCrop.width(),
@@ -1225,10 +1237,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 if (freeRot) {
                     // Match SessionAppearance::materializeDisplay free-rot window:
                     // crop centre → contentRect centre, then -cropRotation.
-                    const QRect contentCrop = x.cropRect.normalized();
-                    painter->translate(cr.center());
-                    painter->rotate(-x.cropRotation);
-                    painter->translate(-QPointF(contentCrop.center()));
+                    const QRect contentCrop = ContentXform::orientedCropRect(native, x);
+                    if (contentCrop.width() >= 1 && contentCrop.height() >= 1) {
+                        painter->translate(cr.center());
+                        painter->rotate(-x.cropRotation);
+                        painter->translate(-QPointF(contentCrop.center()));
+                    }
                 }
 
                 const bool smooth = tilePaintNeedsSmooth(
