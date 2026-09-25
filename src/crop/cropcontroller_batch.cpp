@@ -29,27 +29,9 @@
 #include <QThreadPool>
 #include <QUndoStack>
 #include <QAtomicInt>
+#include "util/contentundomacro.h"
 
 namespace {
-
-struct ContentUndoMacro {
-    QUndoStack *stack = nullptr;
-    explicit ContentUndoMacro(QUndoStack *s, const QString &text, int targetCount)
-        : stack(s && targetCount > 1 ? s : nullptr)
-    {
-        if (stack) {
-            stack->beginMacro(text);
-        }
-    }
-    ~ContentUndoMacro()
-    {
-        if (stack) {
-            stack->endMacro();
-        }
-    }
-    ContentUndoMacro(const ContentUndoMacro &) = delete;
-    ContentUndoMacro &operator=(const ContentUndoMacro &) = delete;
-};
 
 QList<ImageItem *> cropBatchTargets(ImageView *view)
 {
@@ -508,4 +490,51 @@ int CropController::resetCropOnItems(const QList<ImageItem *> &targets)
         emit m_view->statusChanged();
     }
     return n;
+}
+
+bool CropController::previewCropRecipeOnItem(ImageItem *item, const CropPanelRecipe &recipe)
+{
+    if (!m_view || !item) {
+        return false;
+    }
+    const QString path = item->path();
+    QImage sample;
+    if (recipe.mode == CropPanelRecipe::Mode::Autocrop) {
+        sample = sampleFromItem(item);
+        if (sample.isNull() && !path.isEmpty()) {
+            // Cache-only; do not block the slider path on disk I/O.
+            sample = ImageCache::get(path);
+            if (!sample.isNull()) {
+                sample = sample.copy();
+            }
+        }
+        if (sample.isNull()) {
+            return false;
+        }
+    }
+    const QSize logical = logicalSizeForCrop(m_view, item, sample);
+    if (logical.width() < 1 || logical.height() < 1) {
+        return false;
+    }
+    const QRect crop = CropRecipeUtil::computeCropRect(recipe, logical, sample);
+    if (!CropRecipeUtil::isUsableCrop(crop, logical)) {
+        // Identity / full frame: show uncropped soft for feedback.
+        WorkspaceItemState st = m_view->freezeItemAppearance(item);
+        st.hasCrop = false;
+        st.cropRect = QRect();
+        st.cropSourceSize = QSize();
+        st.cropRotation = 0.0;
+        m_view->hostDisplayPipeline().rematerializeItemContent(item, st);
+        return false;
+    }
+
+    WorkspaceItemState st = m_view->freezeItemAppearance(item);
+    ItemComponents::applyPlacementToState(st, item->placement());
+    st.hasCrop = true;
+    st.cropRect = crop;
+    st.cropSourceSize = logical;
+    st.cropRotation = 0.0;
+    // Display only — do not storeCropAppearance / ItemWorld until Apply.
+    m_view->hostDisplayPipeline().rematerializeItemContent(item, st);
+    return true;
 }

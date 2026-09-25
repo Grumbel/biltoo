@@ -5,10 +5,12 @@
 
 #include "crop/croprecipe.h"
 
+#include <QSize>
 #include <QWidget>
 
 class QComboBox;
 class QSpinBox;
+class QDoubleSpinBox;
 class QSlider;
 class QLabel;
 class QPushButton;
@@ -27,6 +29,9 @@ public:
     void setRecipe(const CropPanelRecipe &r);
     void setEnabledControls(bool on);
     void setApplyToSelectionEnabled(bool on);
+    /** Logical page size for px ↔ normalised sync and status (invalid = unknown). */
+    void setPageSize(const QSize &logical);
+    void setStatusText(const QString &text);
 
 signals:
     void recipeChanged(const CropPanelRecipe &recipe);
@@ -39,6 +44,10 @@ private:
     void buildUi();
     void emitIfChanged();
     void syncModeVisibility();
+    void onMarginPxChanged();
+    void onMarginNormChanged();
+    void syncNormFromPx();
+    void syncPxFromNorm();
 
     QComboBox *m_mode = nullptr;
     QGroupBox *m_manualBox = nullptr;
@@ -46,6 +55,10 @@ private:
     QSpinBox *m_marginT = nullptr;
     QSpinBox *m_marginR = nullptr;
     QSpinBox *m_marginB = nullptr;
+    QDoubleSpinBox *m_normL = nullptr;
+    QDoubleSpinBox *m_normT = nullptr;
+    QDoubleSpinBox *m_normR = nullptr;
+    QDoubleSpinBox *m_normB = nullptr;
     QGroupBox *m_autoBox = nullptr;
     QSlider *m_threshold = nullptr;
     QLabel *m_thresholdVal = nullptr;
@@ -53,11 +66,14 @@ private:
     QSpinBox *m_extraT = nullptr;
     QSpinBox *m_extraR = nullptr;
     QSpinBox *m_extraB = nullptr;
+    QLabel *m_status = nullptr;
     QPushButton *m_applyCurrentBtn = nullptr;
     QPushButton *m_resetCurrentBtn = nullptr;
     QPushButton *m_applySelectionBtn = nullptr;
     QPushButton *m_resetSelectionBtn = nullptr;
+    QSize m_pageSize;
     bool m_block = false;
+    bool m_syncingNorm = false;
 };
 
 #endif

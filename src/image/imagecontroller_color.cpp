@@ -15,28 +15,7 @@
 #include <QImage>
 #include <QUndoStack>
 
-namespace {
-
-struct ContentUndoMacro {
-    QUndoStack *stack = nullptr;
-    explicit ContentUndoMacro(QUndoStack *s, const QString &text, int targetCount)
-        : stack(s && targetCount > 1 ? s : nullptr)
-    {
-        if (stack) {
-            stack->beginMacro(text);
-        }
-    }
-    ~ContentUndoMacro()
-    {
-        if (stack) {
-            stack->endMacro();
-        }
-    }
-    ContentUndoMacro(const ContentUndoMacro &) = delete;
-    ContentUndoMacro &operator=(const ContentUndoMacro &) = delete;
-};
-
-} // namespace
+#include "util/contentundomacro.h"
 
 void ImageController::ensureColorAdjustCommitTimer()
 {

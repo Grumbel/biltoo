@@ -461,6 +461,36 @@ MainWindow::MainWindow(QWidget *parent)
         updateCropPanel();
     });
 
+    connect(m_cropPanel, &CropPanel::recipeChanged, this, [this](const CropPanelRecipe &recipe) {
+        if (!m_imageView || !m_cropPanel) {
+            return;
+        }
+        // Debounced soft preview on the current page only (no durable write).
+        if (!m_cropPreviewTimer) {
+            m_cropPreviewTimer = new QTimer(this);
+            m_cropPreviewTimer->setSingleShot(true);
+            m_cropPreviewTimer->setInterval(180);
+            connect(m_cropPreviewTimer, &QTimer::timeout, this, [this]() {
+                if (!m_imageView || !m_cropPanel) {
+                    return;
+                }
+                ImageItem *item = m_imageView->targetItem();
+                if (!item && m_imageView->isImageMode()
+                    && !m_imageView->liveItems().isEmpty()) {
+                    item = m_imageView->liveItems().first();
+                }
+                if (!item) {
+                    return;
+                }
+                const CropPanelRecipe r = m_cropPanel->recipe();
+                m_imageView->hostCrop().previewCropRecipeOnItem(item, r);
+                updateCropPanel();
+            });
+        }
+        m_cropPreviewTimer->start();
+        Q_UNUSED(recipe);
+    });
+
     m_layoutPanel = new LayoutPanel(this);
     m_layoutDock = new QDockWidget(tr("Layout"), this);
     m_layoutDock->setObjectName(QStringLiteral("LayoutDock"));
@@ -2775,6 +2805,60 @@ void MainWindow::updateCropPanel()
     m_cropPanel->setEnabledControls(hasTarget);
     m_cropPanel->setApplyToSelectionEnabled(
         m_imageView->transformTargets().size() > 1);
+    if (!item) {
+        m_cropPanel->setPageSize(QSize());
+        m_cropPanel->setStatusText(tr("No page selected"));
+        return;
+    }
+    const QString path = item->path();
+    QSize logical = ThumtooCache::cachedSize(path);
+    if (!SessionAppearance::isUsableNativeSize(logical)) {
+        logical = m_imageView->hostSizeBook().known(path);
+    }
+    if (!SessionAppearance::isUsableNativeSize(logical)) {
+        const QSize isz = item->imageSize();
+        if (isz.width() > 1 && isz.height() > 1) {
+            logical = isz;
+        }
+    }
+    m_cropPanel->setPageSize(logical);
+
+    const CropPanelRecipe recipe = m_cropPanel->recipe();
+    QString status;
+    if (!SessionAppearance::isUsableNativeSize(logical)) {
+        status = tr("Page size unknown — open/probe size or wait for soft sample");
+    } else {
+        QImage sample;
+        if (recipe.mode == CropPanelRecipe::Mode::Autocrop) {
+            sample = item->sourceImage();
+            if (sample.isNull()) {
+                sample = item->pixmap().toImage();
+            }
+            if (sample.isNull()) {
+                sample = ImageCache::get(path);
+            }
+        }
+        const QRect crop = CropRecipeUtil::computeCropRect(recipe, logical, sample);
+        if (CropRecipeUtil::isUsableCrop(crop, logical)) {
+            status = tr("%1×%2 → crop %3,%4 %5×%6  (selection: %7)")
+                         .arg(logical.width())
+                         .arg(logical.height())
+                         .arg(crop.x())
+                         .arg(crop.y())
+                         .arg(crop.width())
+                         .arg(crop.height())
+                         .arg(m_imageView->transformTargets().size());
+        } else if (recipe.mode == CropPanelRecipe::Mode::Autocrop && sample.isNull()) {
+            status = tr("%1×%2 — autocrop needs a soft sample (Apply will wait/load)")
+                         .arg(logical.width())
+                         .arg(logical.height());
+        } else {
+            status = tr("%1×%2 — recipe is full-frame (no crop)")
+                         .arg(logical.width())
+                         .arg(logical.height());
+        }
+    }
+    m_cropPanel->setStatusText(status);
 }
 
 void MainWindow::updateLayoutPanel()

@@ -537,6 +537,7 @@ private:
     QDockWidget *m_adjustmentsDock = nullptr;
     CropPanel *m_cropPanel = nullptr;
     QDockWidget *m_cropDock = nullptr;
+    QTimer *m_cropPreviewTimer = nullptr;
     /** Debounce histogram/vectorscope rebuild while colour sliders move. */
     QTimer *m_adjustmentsPreviewTimer = nullptr;
     QAction *m_toggleAdjustmentsAct = nullptr;

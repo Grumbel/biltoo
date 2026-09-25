@@ -68,6 +68,12 @@ public:
     /** Clear crop fields on transformTargets (or current); keeps orient/colour. */
     int resetCropOnTargets();
     int resetCropOnItems(const QList<ImageItem *> &targets);
+    /**
+     * Soft live preview on one item: rematerialize with recipe crop, no undo,
+     * no durable ItemWorld write. Apply commits via applyCropRecipeTo*.
+     * @return true when a usable crop was shown.
+     */
+    bool previewCropRecipeOnItem(ImageItem *item, const CropPanelRecipe &recipe);
 
     void cancelCrop();
     void leaveCropModeInternal(bool apply);

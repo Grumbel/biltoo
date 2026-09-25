@@ -4,6 +4,7 @@
 #include "shell/croppanel.h"
 
 #include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -34,8 +35,9 @@ void CropPanel::buildUi()
     m_mode = new QComboBox(modeBox);
     m_mode->addItem(tr("Manual margins"), int(CropPanelRecipe::Mode::ManualMargins));
     m_mode->addItem(tr("Autocrop"), int(CropPanelRecipe::Mode::Autocrop));
-    m_mode->setToolTip(tr("Manual: inset from each edge in page pixels.\n"
-                          "Autocrop: trim uniform background (GIMP-style), then extra margin."));
+    m_mode->setToolTip(tr("Manual: inset from each edge.\n"
+                          "Autocrop: trim uniform background (GIMP-style), then extra margin.\n"
+                          "Sliders update the current page preview; Apply commits."));
     modeForm->addRow(tr("Crop"), m_mode);
     connect(m_mode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
         syncModeVisibility();
@@ -43,22 +45,36 @@ void CropPanel::buildUi()
     });
     layout->addWidget(modeBox);
 
-    m_manualBox = new QGroupBox(tr("Manual margins (px)"), inner);
+    m_manualBox = new QGroupBox(tr("Manual margins"), inner);
     auto *manForm = new QFormLayout(m_manualBox);
-    auto addSpin = [&](const QString &name, QSpinBox **box) {
-        *box = new QSpinBox(m_manualBox);
-        (*box)->setRange(0, 100000);
-        (*box)->setValue(0);
-        (*box)->setSuffix(QStringLiteral(" px"));
-        manForm->addRow(name, *box);
-        connect(*box, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {
-            emitIfChanged();
+    auto addMarginRow = [&](const QString &name, QSpinBox **px, QDoubleSpinBox **norm) {
+        *px = new QSpinBox(m_manualBox);
+        (*px)->setRange(0, 100000);
+        (*px)->setValue(0);
+        (*px)->setSuffix(QStringLiteral(" px"));
+        *norm = new QDoubleSpinBox(m_manualBox);
+        (*norm)->setRange(0.0, 1.0);
+        (*norm)->setDecimals(3);
+        (*norm)->setSingleStep(0.01);
+        (*norm)->setValue(0.0);
+        (*norm)->setToolTip(tr("Fraction of page width/height (0–1)"));
+        auto *row = new QWidget(m_manualBox);
+        auto *hl = new QHBoxLayout(row);
+        hl->setContentsMargins(0, 0, 0, 0);
+        hl->addWidget(*px, 1);
+        hl->addWidget(*norm);
+        manForm->addRow(name, row);
+        connect(*px, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {
+            onMarginPxChanged();
+        });
+        connect(*norm, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this](double) {
+            onMarginNormChanged();
         });
     };
-    addSpin(tr("Left"), &m_marginL);
-    addSpin(tr("Top"), &m_marginT);
-    addSpin(tr("Right"), &m_marginR);
-    addSpin(tr("Bottom"), &m_marginB);
+    addMarginRow(tr("Left"), &m_marginL, &m_normL);
+    addMarginRow(tr("Top"), &m_marginT, &m_normT);
+    addMarginRow(tr("Right"), &m_marginR, &m_normR);
+    addMarginRow(tr("Bottom"), &m_marginB, &m_normB);
     layout->addWidget(m_manualBox);
 
     m_autoBox = new QGroupBox(tr("Autocrop"), inner);
@@ -86,7 +102,7 @@ void CropPanel::buildUi()
     layout->addWidget(m_autoBox);
 
     auto *extraBox = new QGroupBox(tr("Extra margin (px)"), inner);
-    extraBox->setToolTip(tr("Expanded outward after manual inset or autocrop so content is not tight."));
+    extraBox->setToolTip(tr("Expanded outward after manual inset or autocrop."));
     auto *extraForm = new QFormLayout(extraBox);
     auto addExtra = [&](const QString &name, QSpinBox **box) {
         *box = new QSpinBox(extraBox);
@@ -103,6 +119,11 @@ void CropPanel::buildUi()
     addExtra(tr("Right"), &m_extraR);
     addExtra(tr("Bottom"), &m_extraB);
     layout->addWidget(extraBox);
+
+    m_status = new QLabel(tr("No page selected"), inner);
+    m_status->setWordWrap(true);
+    m_status->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    layout->addWidget(m_status);
 
     auto *actions = new QGroupBox(tr("Apply"), inner);
     auto *actLay = new QVBoxLayout(actions);
@@ -191,7 +212,83 @@ void CropPanel::setRecipe(const CropPanelRecipe &r)
     if (m_extraR) m_extraR->setValue(r.extraRight);
     if (m_extraB) m_extraB->setValue(r.extraBottom);
     m_block = false;
+    syncNormFromPx();
     syncModeVisibility();
+}
+
+void CropPanel::setPageSize(const QSize &logical)
+{
+    m_pageSize = logical;
+    syncNormFromPx();
+}
+
+void CropPanel::setStatusText(const QString &text)
+{
+    if (m_status) {
+        m_status->setText(text);
+    }
+}
+
+void CropPanel::onMarginPxChanged()
+{
+    if (m_block || m_syncingNorm) {
+        return;
+    }
+    syncNormFromPx();
+    emitIfChanged();
+}
+
+void CropPanel::onMarginNormChanged()
+{
+    if (m_block || m_syncingNorm) {
+        return;
+    }
+    syncPxFromNorm();
+    emitIfChanged();
+}
+
+void CropPanel::syncNormFromPx()
+{
+    if (!m_normL) {
+        return;
+    }
+    m_syncingNorm = true;
+    const int w = m_pageSize.width();
+    const int h = m_pageSize.height();
+    auto setN = [](QDoubleSpinBox *box, int px, int dim) {
+        if (!box) {
+            return;
+        }
+        if (dim > 0) {
+            box->setValue(qBound(0.0, double(px) / double(dim), 1.0));
+        }
+    };
+    setN(m_normL, m_marginL ? m_marginL->value() : 0, w);
+    setN(m_normR, m_marginR ? m_marginR->value() : 0, w);
+    setN(m_normT, m_marginT ? m_marginT->value() : 0, h);
+    setN(m_normB, m_marginB ? m_marginB->value() : 0, h);
+    m_syncingNorm = false;
+}
+
+void CropPanel::syncPxFromNorm()
+{
+    if (!m_marginL || m_pageSize.width() < 1 || m_pageSize.height() < 1) {
+        return;
+    }
+    m_syncingNorm = true;
+    const int w = m_pageSize.width();
+    const int h = m_pageSize.height();
+    auto setP = [](QSpinBox *box, double frac, int dim) {
+        if (!box) {
+            return;
+        }
+        box->setValue(qBound(0, int(qRound(frac * dim)), dim));
+    };
+    setP(m_marginL, m_normL ? m_normL->value() : 0.0, w);
+    setP(m_marginR, m_normR ? m_normR->value() : 0.0, w);
+    setP(m_marginT, m_normT ? m_normT->value() : 0.0, h);
+    setP(m_marginB, m_normB ? m_normB->value() : 0.0, h);
+    m_syncingNorm = false;
 }
 
 void CropPanel::emitIfChanged()
