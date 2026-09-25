@@ -11,10 +11,9 @@
 
 namespace tilelod {
 
-/// Matches thumtoo::kTileSize / Galapix tile grid.
+/// Matches thumtoo::kTileSize / Galapix tile grid. Exclusive ≤256 cells;
+/// no edge overlap strip (that experiment is gone on both sides).
 inline constexpr int kTileSize = 256;
-/// Always 0 (matches thumtoo). No edge strip; exclusive cells only.
-inline constexpr int kTileOverlap = 0;
 
 /// Grid cell identity at a pyramid scale.
 struct TileKey {
