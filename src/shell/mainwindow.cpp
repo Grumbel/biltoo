@@ -1151,8 +1151,7 @@ void MainWindow::onSearchTextChanged(const QString &text)
     const QString path = m_imageView->hostImage().classicPath();
     m_docSearchPageMatchCount = m_imageView->hostText().setSearchQuery(text);
     // Tag current session row for page-local hits (filmstrip / gallery chrome).
-    if (m_imageView) {
-        const QString path = m_imageView->hostImage().classicPath();
+    {
         SessionImageId sid = kInvalidSessionImageId;
         if (m_currentIndex >= 0 && m_currentIndex < m_session.size()) {
             sid = m_session.idAt(m_currentIndex);
@@ -1160,7 +1159,6 @@ void MainWindow::onSearchTextChanged(const QString &text)
         if (text.trimmed().isEmpty()) {
             m_searchIndex.clear();
         } else {
-            // Keep doc-wide tags if query unchanged; only refresh current path count.
             if (m_searchIndex.query() != text.trimmed()) {
                 m_searchIndex.beginQuery(text.trimmed());
             }

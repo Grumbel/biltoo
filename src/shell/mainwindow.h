@@ -190,7 +190,8 @@ private slots:
     void scheduleDocumentSearch(const QString &query);
     void startDocumentSearch(const QString &query);
     void onDocumentSearchFinished(quint64 generation, const QString &query,
-                                  const QVector<int> &hitPages, int pageHits);
+                                  const QVector<int> &hitPages,
+                                  const QVector<QPair<QString, int>> &pathMatchCounts);
     void findNextMatch();
     void findPreviousMatch();
     void goToSearchHit(int index);
