@@ -2,14 +2,15 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2691.1-no-tile-overlap` (base `932ed5c`).
+**Tip:** `biltoo-2692.1-edge-tile-full-src` (base `932ed5c`).
 
-### 2691 — remove 257 overlap
-`kTileOverlap = 0`. No parent-UV strip. Exclusive paint only.
+### 2692 — edge tiles use full encoded bitmap as src
+ExactTile src_uv is the full exclusive payload (not floor(content/factor)), so
+right/bottom edge cells do not drop a source row/column when sizes disagree.
 
-Pair with **thumtoo-340.4-no-tile-overlap**. Re-prepare tile caches.
+Pair with **thumtoo-340.5** (PDF level size = floor-half) and re-prepare tiles.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2691.1-no-tile-overlap-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2692.1-edge-tile-full-src-932ed5c.bundle HEAD
 ```

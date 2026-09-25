@@ -30,22 +30,17 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      // Exclusive level pixels (content rect / 2^scale), capped to bitmap.
+      // Full encoded exclusive cell (edge tiles are already partial width/height).
+      // Do not use floor(content/factor) — that can drop a source row/column on
+      // right/bottom edge tiles when content remainder and level crop disagree.
       {
-        int const factor = (key.scale > 0) ? (1 << key.scale) : 1;
-        int ew = cr.w / factor;
-        int eh = cr.h / factor;
+        int ew = exact->bitmap.width;
+        int eh = exact->bitmap.height;
         if (ew < 1) {
           ew = 1;
         }
         if (eh < 1) {
           eh = 1;
-        }
-        if (ew > exact->bitmap.width) {
-          ew = exact->bitmap.width;
-        }
-        if (eh > exact->bitmap.height) {
-          eh = exact->bitmap.height;
         }
         cmd.src_uv = {0, 0, static_cast<double>(ew), static_cast<double>(eh)};
       }
