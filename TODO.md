@@ -2,14 +2,14 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2694.1-no-last-tile-stretch` (base `932ed5c`).
+**Tip:** `biltoo-2695.1-tile-dest-grid-plus1` (base `932ed5c`).
 
-### 2694 — stop stretching right/bottom edge tiles
-Last-column/row no longer extends dest past exclusive `step` to fill a
-floor-half content remainder. ExactTile dest = exclusive src × 2^scale
-(clamped to content), never stretched to fill the content rect.
+### 2695 — tile dest = content grid + 1px seam overlap
+ExactTile dest uses exclusive `tile_content_rect` (not bitmap×scale). Interior
+cells add +1 content px on right/bottom (clamped) so a short encode cannot open
+a 1px gap before the next tile. Outer edge is not stretched past content.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2694.1-no-last-tile-stretch-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2695.1-tile-dest-grid-plus1-932ed5c.bundle HEAD
 ```

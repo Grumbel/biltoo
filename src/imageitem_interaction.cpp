@@ -1308,25 +1308,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 }
 
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
-                {
-                    const qreal dpc = tileDevicePerContent();
-                    qreal gap = 0.0;
-                    if (dpc > 1e-9) {
-                        gap = 0.5 / dpc;
-                        if (gap > 0.25) {
-                            gap = 0.25;
-                        }
+                for (TilePaintCmd const &pc : paintCmds) {
+                    if (pc.patch.isNull() || pc.dst.isEmpty()) {
+                        continue;
                     }
-                    for (TilePaintCmd const &pc : paintCmds) {
-                        if (pc.patch.isNull() || pc.dst.isEmpty()) {
-                            continue;
-                        }
-                        QRectF d = pc.dst;
-                        if (gap > 0.0) {
-                            d.adjust(0.0, 0.0, gap, gap);
-                        }
-                        painter->drawImage(d, pc.patch);
-                    }
+                    painter->drawImage(pc.dst, pc.patch);
                 }
                 (void)under;
 

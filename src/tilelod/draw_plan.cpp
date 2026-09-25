@@ -23,8 +23,11 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (cr.empty()) {
       continue;
     }
-    // 1. Exact — dest size follows exclusive source × 2^scale (no stretch to
-    // fill a content remainder; that made the right/bottom column look wrong).
+    // 1. Exact — dest is the exclusive content grid cell (tiles abut). Source
+    // is the exclusive payload. Do not size dest from bitmap×scale: a short
+    // encode (255 vs 256) left a 1 content-px gap before the next cell.
+    // +1 right/bottom when not on the content edge closes float/filter seams
+    // without stretching the outer edge past the content AABB.
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
@@ -43,9 +46,14 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
         eh = 1;
       }
       cmd.src_uv = {0, 0, static_cast<double>(ew), static_cast<double>(eh)};
-      int const factor = (key.scale > 0) ? (1 << key.scale) : 1;
-      int dw = ew * factor;
-      int dh = eh * factor;
+      int dw = cr.w;
+      int dh = cr.h;
+      if (cr.x + cr.w < in.content_w) {
+        dw = cr.w + 1;
+      }
+      if (cr.y + cr.h < in.content_h) {
+        dh = cr.h + 1;
+      }
       if (cr.x + dw > in.content_w) {
         dw = in.content_w - cr.x;
       }
