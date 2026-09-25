@@ -190,23 +190,22 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 ## 4. Known limitations (0.2.0 — not blockers)
 
-### 4.1 EPUB / PDF text search does not cross text-box boundaries
+### 4.1 EPUB / PDF text search (cross-box v1 + approx highlight)
 
 **What works today**
 
 - Document pages can expose a **text layer** (regions with string + bbox).
-- Find (search bar) matches the query against **each region independently**
+- Find (search bar) matches via `TextSearchPolicy::findHits` on a **reading-order stream** (regions joined with a space) for exact queries
   via `TextSearchPolicy` (`normalizeForSearch`, optional fuzzy / alnum).
-- Hits highlight per matching region on the current page.
+- Hits highlight an **LTR width slice** of each contributing region (uniform-advance approximation; full box for fuzzy-only hits).
 
-**Limitation**
+**Remaining limitations**
 
-- Matching is **per text box / region**. A phrase that is split across two
-  adjacent regions (line break, column, hyphenation, separate PDF text objects,
-  EPUB fragment boxes) will **not** match even when the concatenated reading
-  order would contain the phrase.
-- Fuzzy mode still operates inside a single region’s string; it does not join
-  neighbours.
+- Exact phrases spanning boxes work when reading order + a single space join
+  matches the extractors’ fragmentation; hyphenation soft-hyphen and RTL are
+  not special-cased.
+- Fuzzy mode remains **per-region** (OCR slip); it does not join neighbours.
+- Partial highlight assumes roughly horizontal LTR runs inside each bbox.
 
 **Why**
 

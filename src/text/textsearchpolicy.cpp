@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "text/textsearchpolicy.h"
+#include "text/textlayergeometry.h"
+
+#include <QtGlobal>
+#include <algorithm>
+#include <QSet>
 
 namespace TextSearchPolicy {
 
 QString normalizeForSearch(QString s)
 {
     s = s.toLower();
-    // Collapse whitespace; keep letters/digits for light OCR tolerance.
     QString out;
     out.reserve(s.size());
     bool prevSpace = false;
@@ -26,7 +30,6 @@ QString normalizeForSearch(QString s)
     return out.trimmed();
 }
 
-/** Alphanumeric-only form for fuzzy OCR (ignore punctuation/spaces). */
 QString alnumOnly(const QString &s)
 {
     QString out;
@@ -52,25 +55,20 @@ bool regionMatchesQuery(const QString &regionText, const QString &queryNorm,
     if (!fuzzy) {
         return false;
     }
-    // Alnum-only contains (helps OCR noise / missing spaces / punctuation).
     if (!queryAlnum.isEmpty()) {
         const QString ra = alnumOnly(regionText);
         if (ra.contains(queryAlnum)) {
             return true;
         }
-        // Light edit distance: allow one substitution/insert/delete for queries
-        // long enough that a single OCR slip is plausible (not for 1–2 chars).
         if (queryAlnum.size() >= 4 && ra.size() >= queryAlnum.size() - 1) {
             const int qn = queryAlnum.size();
             for (int i = 0; i + qn - 1 <= ra.size(); ++i) {
                 const int window = qMin(qn + 1, ra.size() - i);
                 for (int w = qMax(qn - 1, 1); w <= window; ++w) {
                     const QString slice = ra.mid(i, w);
-                    // Hamming-ish: count mismatches with simple DP bound.
                     int dist = 0;
                     const int a = slice.size();
                     const int b = qn;
-                    // Bounded Levenshtein early-out (max dist 1).
                     if (qAbs(a - b) > 1) {
                         continue;
                     }
@@ -87,7 +85,6 @@ bool regionMatchesQuery(const QString &regionText, const QString &queryNorm,
                             return true;
                         }
                     } else {
-                        // Length differs by 1: accept if one is subsequence of other.
                         const QString &shorter = a < b ? slice : queryAlnum;
                         const QString &longer = a < b ? queryAlnum : slice;
                         int si = 0;
@@ -107,12 +104,155 @@ bool regionMatchesQuery(const QString &regionText, const QString &queryNorm,
     return false;
 }
 
-
 bool matches(const QString &regionText, const QString &query, bool fuzzy)
 {
     const QString qn = normalizeForSearch(query);
     const QString qa = alnumOnly(query);
     return regionMatchesQuery(regionText, qn, qa, fuzzy);
+}
+
+QVector<int> readingOrderIndices(const QVector<QString> &texts,
+                                 const QVector<QRectF> &bboxes,
+                                 qreal topTolerance)
+{
+    QVector<int> order;
+    order.reserve(texts.size());
+    for (int i = 0; i < texts.size(); ++i) {
+        if (texts.at(i).trimmed().isEmpty()) {
+            continue;
+        }
+        order.push_back(i);
+    }
+    if (bboxes.size() == texts.size() && !order.isEmpty()) {
+        TextLayerGeometry::sortReadingOrder(&order, bboxes, topTolerance);
+    }
+    return order;
+}
+
+namespace {
+
+struct StreamSpan {
+    int regionIndex = -1;
+    int streamStart = 0;
+    int streamEnd = 0; // exclusive
+};
+
+QVector<SearchHit> hitsFromStreamMatch(const QVector<StreamSpan> &spans,
+                                       int matchStart, int matchEnd)
+{
+    QVector<SearchHit> hits;
+    if (matchStart < 0 || matchEnd <= matchStart) {
+        return hits;
+    }
+    for (const StreamSpan &sp : spans) {
+        if (sp.streamEnd <= matchStart || sp.streamStart >= matchEnd) {
+            continue;
+        }
+        const int len = sp.streamEnd - sp.streamStart;
+        if (len < 1) {
+            continue;
+        }
+        const int localStart = qMax(0, matchStart - sp.streamStart);
+        const int localEnd = qMin(len, matchEnd - sp.streamStart);
+        SearchHit h;
+        h.regionIndex = sp.regionIndex;
+        h.startFrac = qreal(localStart) / qreal(len);
+        h.endFrac = qreal(localEnd) / qreal(len);
+        if (h.endFrac <= h.startFrac) {
+            h.endFrac = qMin(1.0, h.startFrac + 0.05);
+        }
+        h.startFrac = qBound(0.0, h.startFrac, 1.0);
+        h.endFrac = qBound(0.0, h.endFrac, 1.0);
+        hits.push_back(h);
+    }
+    return hits;
+}
+
+} // namespace
+
+QVector<SearchHit> findHits(const QVector<QString> &texts,
+                            const QVector<QRectF> &bboxes,
+                            const QString &query,
+                            bool fuzzy)
+{
+    QVector<SearchHit> out;
+    const QString qn = normalizeForSearch(query);
+    if (qn.isEmpty() || texts.isEmpty()) {
+        return out;
+    }
+    const QString qa = alnumOnly(query);
+    const QVector<int> order = readingOrderIndices(texts, bboxes);
+
+    // Build normalized reading-order stream (space between regions).
+    QString stream;
+    QVector<StreamSpan> spans;
+    spans.reserve(order.size());
+    for (int ri : order) {
+        if (ri < 0 || ri >= texts.size()) {
+            continue;
+        }
+        const QString rn = normalizeForSearch(texts.at(ri));
+        if (rn.isEmpty()) {
+            continue;
+        }
+        if (!stream.isEmpty()) {
+            stream.append(QLatin1Char(' '));
+        }
+        StreamSpan sp;
+        sp.regionIndex = ri;
+        sp.streamStart = stream.size();
+        stream.append(rn);
+        sp.streamEnd = stream.size();
+        spans.push_back(sp);
+    }
+
+    // Exact: all occurrences on the joined stream (covers single- and multi-box).
+    if (!stream.isEmpty()) {
+        int from = 0;
+        while (from < stream.size()) {
+            const int at = stream.indexOf(qn, from);
+            if (at < 0) {
+                break;
+            }
+            const QVector<SearchHit> piece =
+                hitsFromStreamMatch(spans, at, at + qn.size());
+            for (const SearchHit &h : piece) {
+                out.push_back(h);
+            }
+            from = at + qMax(1, qn.size());
+        }
+    }
+
+    // Fuzzy per-region only when exact did not already cover that region for
+    // this query (full-box highlight; no reliable char map).
+    if (fuzzy) {
+        QSet<int> exactRegions;
+        for (const SearchHit &h : out) {
+            exactRegions.insert(h.regionIndex);
+        }
+        for (int i = 0; i < texts.size(); ++i) {
+            if (exactRegions.contains(i)) {
+                continue;
+            }
+            if (regionMatchesQuery(texts.at(i), qn, qa, true)
+                && !normalizeForSearch(texts.at(i)).contains(qn)) {
+                SearchHit h;
+                h.regionIndex = i;
+                h.startFrac = 0.0;
+                h.endFrac = 1.0;
+                out.push_back(h);
+            }
+        }
+    }
+
+    // Stable order by region index then startFrac.
+    std::sort(out.begin(), out.end(), [](const SearchHit &a, const SearchHit &b) {
+        if (a.regionIndex != b.regionIndex) {
+            return a.regionIndex < b.regionIndex;
+        }
+        return a.startFrac < b.startFrac;
+    });
+    return out;
 }
 
 } // namespace TextSearchPolicy

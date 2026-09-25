@@ -94,17 +94,19 @@ void TextLayerController::recomputeSearchMatches()
     if (!m_session.hasSearchQuery() || !m_session.hasRegions()) {
         return;
     }
-    const QString qn = TextSearchPolicy::normalizeForSearch(m_session.searchQueryRef());
-    const QString qa = TextSearchPolicy::alnumOnly(m_session.searchQueryRef());
+    QVector<QString> texts;
+    QVector<QRectF> bboxes;
+    texts.reserve(m_session.regionCount());
+    bboxes.reserve(m_session.regionCount());
     for (int i = 0; i < m_session.regionCount(); ++i) {
         const auto &r = m_session.regionAt(i);
-        if (r.text.isEmpty()) {
-            continue;
-        }
-        if (TextSearchPolicy::regionMatchesQuery(r.text, qn, qa, m_session.isSearchFuzzy())) {
-            m_session.addSearchMatch(i);
-        }
+        texts.append(r.text);
+        // Page-space bbox is enough for reading-order sort (same units).
+        bboxes.append(r.bbox);
     }
+    const QVector<TextSearchPolicy::SearchHit> hits = TextSearchPolicy::findHits(
+        texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy());
+    m_session.setSearchMatches(hits);
 }
 
 int TextLayerController::setSearchQuery(const QString &query)
@@ -512,14 +514,23 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
     if (m_session.hasSearchMatches()) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 220, 40, 110));
-        for (int idxMatch : m_session.searchMatchesRef()) {
-            if (idxMatch < 0 || idxMatch >= m_session.regionCount()) {
+        for (const TextSearchPolicy::SearchHit &hit : m_session.searchMatchesRef()) {
+            if (hit.regionIndex < 0 || hit.regionIndex >= m_session.regionCount()) {
                 continue;
             }
-            const auto &r = m_session.regionAt(idxMatch);
-            const QRectF img = regionImageRect(r);
+            const auto &r = m_session.regionAt(hit.regionIndex);
+            QRectF img = regionImageRect(r);
             if (img.isEmpty()) {
                 continue;
+            }
+            // LTR approximation: highlight the horizontal slice of the box
+            // that likely holds the matched substring (uniform advance).
+            const qreal a = qBound(0.0, hit.startFrac, 1.0);
+            const qreal b = qBound(0.0, hit.endFrac, 1.0);
+            if (b > a && (a > 0.0 || b < 1.0)) {
+                const qreal x0 = img.left() + img.width() * a;
+                const qreal x1 = img.left() + img.width() * b;
+                img = QRectF(QPointF(x0, img.top()), QPointF(x1, img.bottom()));
             }
             const QRectF local = img.translated(item->offset());
             painter->drawPolygon(item->mapToScene(local));

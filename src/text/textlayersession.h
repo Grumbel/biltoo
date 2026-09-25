@@ -5,6 +5,7 @@
 #define TEXTLAYERSESSION_H
 
 #include "host/thumtoocache.h"
+#include "text/textsearchpolicy.h"
 #include "view/viewtransform.h"
 
 #include <QPoint>
@@ -21,7 +22,7 @@ struct TextLayerSession {
     QString layerPath;
     QString searchQuery;
     bool searchFuzzy = true;
-    QVector<int> searchMatches;
+    QVector<TextSearchPolicy::SearchHit> searchMatches;
     bool rubberbanding = false;
     QPoint rubberOrigin;
     QRect rubberRect;
@@ -54,7 +55,7 @@ struct TextLayerSession {
 
     const QString &layerPathRef() const { return layerPath; }
 
-    const QVector<int> &searchMatchesRef() const { return searchMatches; }
+    const QVector<TextSearchPolicy::SearchHit> &searchMatchesRef() const { return searchMatches; }
 
     const QVector<int> &selectedRegionsRef() const { return selectedRegions; }
 
@@ -82,9 +83,15 @@ struct TextLayerSession {
 
     void clearSearchMatches() { searchMatches.clear(); }
 
-    void setSearchMatches(const QVector<int> &ids) { searchMatches = ids; }
+    void setSearchMatches(const QVector<TextSearchPolicy::SearchHit> &hits)
+    {
+        searchMatches = hits;
+    }
 
-    void addSearchMatch(int idx) { searchMatches.push_back(idx); }
+    void addSearchMatch(const TextSearchPolicy::SearchHit &hit)
+    {
+        searchMatches.push_back(hit);
+    }
 
     int matchCount() const { return searchMatches.size(); }
 

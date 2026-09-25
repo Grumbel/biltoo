@@ -843,6 +843,17 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-contentundomacro-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME contentundomacro COMMAND biltoo-contentundomacro-test)
 
+  add_executable(biltoo-textsearchpolicy-test
+    tests/textsearchpolicy_test.cpp
+    src/text/textsearchpolicy.cpp
+    src/text/textlayergeometry.cpp
+  )
+  target_include_directories(biltoo-textsearchpolicy-test PRIVATE src)
+  target_link_libraries(biltoo-textsearchpolicy-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME textsearchpolicy COMMAND biltoo-textsearchpolicy-test)
+
+
+
 
 
   # Paint-path contract: contentRect / layoutSize vs mapSourceRectToOriented
