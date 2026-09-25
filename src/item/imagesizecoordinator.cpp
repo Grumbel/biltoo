@@ -35,6 +35,15 @@ ImageSizeCoordinator::ImageSizeCoordinator(ImageView *view)
 {
 }
 
+void ImageSizeCoordinator::forgetLogicalSize(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    QSize discarded;
+    m_book.take(path, &discarded);
+}
+
 void ImageSizeCoordinator::rememberImageSize(const QString &path, const QSize &size)
 {
     GUI_BUDGET("ImageSizeCoordinator::rememberImageSize");

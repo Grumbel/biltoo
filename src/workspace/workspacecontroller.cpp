@@ -809,6 +809,10 @@ void WorkspaceController::hardReloadFromDisk()
         m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
+            {
+                QSize discarded;
+                m_view->hostSizeBook().take(path, &discarded);
+            }
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);

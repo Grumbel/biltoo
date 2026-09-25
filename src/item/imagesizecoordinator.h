@@ -29,6 +29,8 @@ public:
     const ImageSizeBook &book() const { return m_book; }
 
     void rememberImageSize(const QString &path, const QSize &size);
+    /** Drop session size-book entry so hard reload can re-probe (SIZE.md). */
+    void forgetLogicalSize(const QString &path);
     void rememberSizeFromDecode(const QString &path, const QImage &image);
 
     QSize imageSizeForPath(const QString &path);

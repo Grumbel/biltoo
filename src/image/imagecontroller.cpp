@@ -207,6 +207,10 @@ void ImageController::hardReloadFromDisk()
     if (targets.isEmpty()) {
         // No item yet — still purge Store + process caches, then LoadReplace.
         ImageCache::remove(path);
+        {
+            QSize discarded;
+            m_view->hostSizeBook().take(path, &discarded);
+        }
         m_view->hostDisplayPipeline().purgeTilePathRam(path);
         for (int edge : ThumtooCache::kLadderEdges) {
             ThumtooCache::forgetPixelsSettled(path, edge);
@@ -244,6 +248,10 @@ void ImageController::hardReloadFromDisk()
         m_view->takePendingWorkspacePath(p);
         m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         ImageCache::remove(p);
+        {
+            QSize discarded;
+            m_view->hostSizeBook().take(p, &discarded);
+        }
         for (int edge : ThumtooCache::kLadderEdges) {
             ThumtooCache::forgetPixelsSettled(p, edge);
         }
