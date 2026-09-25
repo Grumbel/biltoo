@@ -174,15 +174,15 @@ namespace tilelod {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  // Legacy 257 Store tiles: map exclusive content into the first kTileSize
-  // columns/rows (strip the trailing overlap column/row when present).
+  // Overlap payloads (kTileSize+kTileOverlap): map exclusive content into the
+  // first exclusive columns/rows only.
   int map_w = parent_pixel_w;
   int map_h = parent_pixel_h;
-  if (parent_pixel_w > kTileSize) {
-    map_w = parent_pixel_w - 1;
+  if (kTileOverlap > 0 && parent_pixel_w > kTileSize) {
+    map_w = parent_pixel_w - kTileOverlap;
   }
-  if (parent_pixel_h > kTileSize) {
-    map_h = parent_pixel_h - 1;
+  if (kTileOverlap > 0 && parent_pixel_h > kTileSize) {
+    map_h = parent_pixel_h - kTileOverlap;
   }
   if (map_w < 1) {
     map_w = parent_pixel_w;

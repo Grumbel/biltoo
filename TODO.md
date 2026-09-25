@@ -2,14 +2,14 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2689.1-gallery-wheel-zoom-cursor` (base `932ed5c`).
+**Tip:** `biltoo-2690.1-overlap-encode-match` (base `932ed5c`).
 
-### 2689 — Gallery Ctrl+wheel zooms about cursor
-`onScrollBarRangeChanged` was `centerOn(viewport centre)` after zoom-induced
-range changes, cancelling `AnchorUnderMouse`. Suppress bar-range recenter
-during wheel zoom; zoom with NoAnchor + translate delta under cursor.
+### 2690 — match thumtoo encode overlap
+`kTileOverlap=1` again (constant / parent UV). Paint remains exclusive src_uv.
+Missing book lines after exclusive-only encode: re-prepare tiles with thumtoo
+340.3.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2689.1-gallery-wheel-zoom-cursor-932ed5c.bundle HEAD
+git pull --ff-only …/biltoo-2690.1-overlap-encode-match-932ed5c.bundle HEAD
 ```
