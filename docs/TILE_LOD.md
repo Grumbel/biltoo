@@ -37,6 +37,7 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 | Symbol | Meaning |
 |--------|---------|
 | `kTileSize` | **256** |
+| `kTileOverlap` | **1** (right/bottom; paint expands dest; ES2 may crop to 256) |
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |

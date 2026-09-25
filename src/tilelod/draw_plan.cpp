@@ -30,6 +30,7 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
+      // Bitmap may be 256 or 256+kTileOverlap; paint expands dst from size.
       cmd.src_uv = {0, 0, static_cast<double>(exact->bitmap.width),
                     static_cast<double>(exact->bitmap.height)};
       cmd.kind = DrawKind::ExactTile;

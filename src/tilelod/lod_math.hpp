@@ -159,16 +159,32 @@ namespace tilelod {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
+  // Overlap bitmaps (257): exclusive content maps into the first kTileSize
+  // columns/rows; the extra strip is only for exact-tile seam expand.
+  int map_w = parent_pixel_w;
+  int map_h = parent_pixel_h;
+  if (kTileOverlap > 0 && parent_pixel_w > kTileSize) {
+    map_w = parent_pixel_w - kTileOverlap;
+  }
+  if (kTileOverlap > 0 && parent_pixel_h > kTileSize) {
+    map_h = parent_pixel_h - kTileOverlap;
+  }
+  if (map_w < 1) {
+    map_w = parent_pixel_w;
+  }
+  if (map_h < 1) {
+    map_h = parent_pixel_h;
+  }
   double const u0 = (static_cast<double>(fine_cr.x - parent_cr.x)
                      / static_cast<double>(parent_cr.w))
-                    * static_cast<double>(parent_pixel_w);
+                    * static_cast<double>(map_w);
   double const v0 = (static_cast<double>(fine_cr.y - parent_cr.y)
                      / static_cast<double>(parent_cr.h))
-                    * static_cast<double>(parent_pixel_h);
+                    * static_cast<double>(map_h);
   double const uw = (static_cast<double>(fine_cr.w) / static_cast<double>(parent_cr.w))
-                    * static_cast<double>(parent_pixel_w);
+                    * static_cast<double>(map_w);
   double const vh = (static_cast<double>(fine_cr.h) / static_cast<double>(parent_cr.h))
-                    * static_cast<double>(parent_pixel_h);
+                    * static_cast<double>(map_h);
   return {u0, v0, uw, vh};
 }
 

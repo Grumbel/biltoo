@@ -67,8 +67,8 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (cmd.dst_content.empty()) {
       continue;
     }
-    QRectF const dst(cmd.dst_content.x, cmd.dst_content.y, cmd.dst_content.w,
-                     cmd.dst_content.h);
+    QRectF dst(cmd.dst_content.x, cmd.dst_content.y, cmd.dst_content.w,
+               cmd.dst_content.h);
 
     if (cmd.kind == DrawKind::Underlay && cmd.use_lqip && !args.lqip.isNull()) {
       // Stretch LQIP into the cell's content region (placeholder until tiles).
@@ -87,7 +87,27 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (img.isNull()) {
       continue;
     }
-    QRectF const src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
+    // 257 overlap cells: expand exclusive content dest so bilinear samples the
+    // shared strip. Legacy 256× bitmaps leave dst unchanged.
+    {
+      int const sc = cmd.src_key.scale;
+      int const factor = (sc > 0) ? (1 << sc) : 1;
+      int const exclW =
+          dst.width() > 0.0 ? int(dst.width() / double(factor) + 0.5) : 1;
+      int const exclH =
+          dst.height() > 0.0 ? int(dst.height() / double(factor) + 0.5) : 1;
+      if (img.width() > exclW) {
+        dst.setWidth(dst.width() + double(img.width() - exclW) * double(factor));
+      }
+      if (img.height() > exclH) {
+        dst.setHeight(dst.height()
+                      + double(img.height() - exclH) * double(factor));
+      }
+    }
+    QRectF src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
+    if (cmd.kind == DrawKind::ExactTile) {
+      src = QRectF(0, 0, img.width(), img.height());
+    }
     painter->drawImage(dst, img, src);
   }
 }
