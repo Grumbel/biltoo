@@ -2,24 +2,20 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2653.1-batch-targets-beyond-live` (base `9740316`).
+**Tip:** `biltoo-2654.1-colour-batch-targets` (base `9740316`).
 
 ### Done
-- Shared ContentUndoMacro + crop panel polish (2652).
-- **2653.1 Targets beyond live items**
-  - `BatchTargets::resolve` — Current / Selection (canvas ∪ filmstrip) /
-    Session index range.
-  - Filmstrip `selectedSessionIds()` / `selectedSessionIndices()`.
-  - Crop apply/reset via `applyCropRecipeToBatch` / `resetCropOnBatch`:
-    live tiles + **ItemWorld-only** for virtual slots.
-  - `ImageView::pushSessionContentCommand` undoes non-live writes.
-  - Crop panel **Targets** combo + index range spinboxes.
+- Crop batch targets beyond live (2653).
+- **2654.1 Colour multi-apply via BatchTargets**
+  - `applyColorAdjustmentsToBatch` — live install + ItemWorld for virtual ids.
+  - Adjustments panel **Targets** (Current / Selection+filmstrip / index range).
+  - MainWindow resolves filmstrip selection into the batch list.
 
 ### Next
-1. Wire colour multi-apply through the same BatchTargets resolver.
-2. Template / even-odd / stack (later).
+1. Template / even-odd / stack (later).
+2. Orient (flip/rotate) through BatchTargets if filmstrip-only selection matters.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2653.1-batch-targets-beyond-live-9740316.bundle HEAD
+git pull --ff-only …/biltoo-2654.1-colour-batch-targets-9740316.bundle HEAD
 ```

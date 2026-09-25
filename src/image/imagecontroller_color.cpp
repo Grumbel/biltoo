@@ -16,6 +16,9 @@
 #include <QUndoStack>
 
 #include "util/contentundomacro.h"
+#include "item/batchtargets.h"
+#include "display/imagecache.h"
+#include "session/sessionappearance.h"
 
 void ImageController::ensureColorAdjustCommitTimer()
 {
@@ -170,17 +173,15 @@ void ImageController::setTargetColorAdjustments(const ColorAdjustments &adj)
 
 int ImageController::applyColorAdjustmentsToTargets(const ColorAdjustments &adj)
 {
-    QList<ImageItem *> targets = m_view->transformTargets();
-    if (targets.isEmpty()) {
-        ImageItem *item = m_view->targetItem();
-        if (!item && m_view->isImageMode() && !m_view->liveItems().isEmpty()) {
-            item = m_view->liveItems().first();
-        }
-        if (item) {
-            targets.append(item);
-        }
-    }
-    if (targets.isEmpty()) {
+    const QList<BatchAppearanceTarget> targets = BatchTargets::resolve(
+        m_view, BatchTargets::Mode::Selection, {});
+    return applyColorAdjustmentsToBatch(adj, targets);
+}
+
+int ImageController::applyColorAdjustmentsToBatch(const ColorAdjustments &adj,
+                                                  const QList<BatchAppearanceTarget> &targets)
+{
+    if (!m_view || targets.isEmpty()) {
         return 0;
     }
 
@@ -190,24 +191,49 @@ int ImageController::applyColorAdjustmentsToTargets(const ColorAdjustments &adj)
         targets.size());
 
     int n = 0;
-    for (ImageItem *item : targets) {
-        if (!item) {
+    for (const BatchAppearanceTarget &t : targets) {
+        if (ImageItem *item = t.live) {
+            const QImage beforeSrc = item->sourceImage().copy();
+            WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
+            ItemComponents::applyPlacementToState(beforeSt, item->placement());
+            beforeSt.colorAdjust = m_view->itemLiveColor(item);
+
+            installColorAdjustmentsOnItem(item, adj);
+
+            WorkspaceItemState afterSt = m_view->captureContentBakeBeforeState(item);
+            ItemComponents::applyPlacementToState(afterSt, item->placement());
+            afterSt.colorAdjust = adj;
+            afterSt.sessionId = beforeSt.sessionId != kInvalidSessionImageId
+                ? beforeSt.sessionId
+                : t.sessionId;
+            m_view->pushItemContentCommand(
+                m_view->tr("Colour grade"), item, beforeSrc,
+                item->sourceImage().copy(), beforeSt, afterSt);
+            ++n;
             continue;
         }
-        const QImage beforeSrc = item->sourceImage().copy();
-        WorkspaceItemState beforeSt = m_view->captureContentBakeBeforeState(item);
-        ItemComponents::applyPlacementToState(beforeSt, item->placement());
-        beforeSt.colorAdjust = m_view->itemLiveColor(item);
-
-        installColorAdjustmentsOnItem(item, adj);
-
-        WorkspaceItemState afterSt = m_view->captureContentBakeBeforeState(item);
-        ItemComponents::applyPlacementToState(afterSt, item->placement());
+        if (t.sessionId == kInvalidSessionImageId) {
+            continue;
+        }
+        WorkspaceItemState beforeSt = m_view->sessionAppearanceValue(t.sessionId);
+        beforeSt.sessionId = t.sessionId;
+        beforeSt.path = t.path;
+        WorkspaceItemState afterSt = beforeSt;
         afterSt.colorAdjust = adj;
-        afterSt.sessionId = beforeSt.sessionId;
-        m_view->pushItemContentCommand(
-            m_view->tr("Colour grade"), item, beforeSrc,
-            item->sourceImage().copy(), beforeSt, afterSt);
+
+        ItemComponents::Color c;
+        c.grade = adj;
+        m_view->itemWorld().setColor(t.sessionId, c);
+
+        m_view->pushSessionContentCommand(
+            m_view->tr("Colour grade"), t.sessionId, t.path, beforeSt, afterSt);
+
+        QImage appearance = ImageCache::get(t.path);
+        if (!appearance.isNull()) {
+            appearance = SessionAppearance::applyContentToImage(
+                appearance, afterSt, SessionAppearance::PixelKind::SoftPreview);
+            emit m_view->sessionAppearanceChanged(t.sessionId, t.path, appearance);
+        }
         ++n;
     }
     if (n > 0) {

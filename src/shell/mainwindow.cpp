@@ -346,10 +346,17 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_adjustmentsPanel, &AdjustmentsPanel::applyToSelectionRequested,
             this, [this](const ColorAdjustments &adj) {
-                if (!m_imageView) {
+                if (!m_imageView || !m_adjustmentsPanel) {
                     return;
                 }
-                const int n = m_imageView->hostImage().applyColorAdjustmentsToTargets(adj);
+                QList<SessionImageId> filmIds;
+                if (m_thumbnailBar) {
+                    filmIds = m_thumbnailBar->selectedSessionIds();
+                }
+                const auto targets = BatchTargets::resolve(
+                    m_imageView, m_adjustmentsPanel->targetMode(), filmIds,
+                    m_adjustmentsPanel->rangeFrom(), m_adjustmentsPanel->rangeTo());
+                const int n = m_imageView->hostImage().applyColorAdjustmentsToBatch(adj, targets);
                 if (n > 0 && statusBar()) {
                     statusBar()->showMessage(
                         tr("Colour grade applied to %n image(s)", "", n), 4000);
@@ -2776,8 +2783,11 @@ void MainWindow::updateAdjustmentsPanel()
         return;
     }
     m_adjustmentsPanel->setEnabledControls(true);
+    m_adjustmentsPanel->setSessionLength(m_session.size());
+    const int selN = m_imageView->transformTargets().size()
+        + (m_thumbnailBar ? m_thumbnailBar->selectedSessionIds().size() : 0);
     m_adjustmentsPanel->setApplyToSelectionEnabled(
-        m_imageView->transformTargets().size() > 1);
+        selN > 1 || m_adjustmentsPanel->targetMode() == BatchTargets::Mode::IndexRange);
     {
         QSignalBlocker b(m_adjustmentsPanel);
         m_adjustmentsPanel->setAdjustments(m_imageView->itemLiveColor(item));

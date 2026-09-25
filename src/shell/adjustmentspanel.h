@@ -3,11 +3,15 @@
 #ifndef ADJUSTMENTSPANEL_H
 #define ADJUSTMENTSPANEL_H
 #include "color/coloradjust.h"
+#include "item/batchtargets.h"
 #include <QWidget>
 class QLabel;
 class QSlider;
 class QPushButton;
 class QCheckBox;
+class QComboBox;
+class QSpinBox;
+class QGroupBox;
 class ImageHistogramWidget;
 class VectorScopeWidget;
 class AdjustmentsPanel : public QWidget {
@@ -20,6 +24,11 @@ public:
     void clearPreview();
     void setEnabledControls(bool on);
     void setApplyToSelectionEnabled(bool on);
+    BatchTargets::Mode targetMode() const;
+    void setTargetMode(BatchTargets::Mode mode);
+    int rangeFrom() const;
+    int rangeTo() const;
+    void setSessionLength(int n);
 signals:
     void adjustmentsChanged(const ColorAdjustments &adj);
     void applyToSelectionRequested(const ColorAdjustments &adj);
@@ -39,6 +48,10 @@ private:
     QCheckBox *m_invertCheck = nullptr;
     QPushButton *m_resetBtn = nullptr;
     QPushButton *m_applySelectionBtn = nullptr;
+    QComboBox *m_targetMode = nullptr;
+    QSpinBox *m_rangeFrom = nullptr;
+    QSpinBox *m_rangeTo = nullptr;
+    QGroupBox *m_rangeBox = nullptr;
     ImageHistogramWidget *m_histogram = nullptr;
     VectorScopeWidget *m_scope = nullptr;
     bool m_block = false;

@@ -13,6 +13,7 @@
 #include "session/sessionappearance.h"
 #include "item/itemcomponents.h"
 #include "color/coloradjust.h"
+#include "item/batchtargets.h"
 #include <QSize>
 
 class ImageView;
@@ -193,6 +194,8 @@ public:
      * One undo macro when N>1. Sliders still use setTargetColorAdjustments.
      */
     int applyColorAdjustmentsToTargets(const ColorAdjustments &adj);
+    int applyColorAdjustmentsToBatch(const ColorAdjustments &adj,
+                                     const QList<BatchAppearanceTarget> &targets);
     void flushColorAdjustCommit();
 
 private:
