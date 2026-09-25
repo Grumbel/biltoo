@@ -262,3 +262,19 @@ exclusive edge.
 
 **2681:** remove dest expand and seam overdraw; ExactTile uses full source →
 exclusive dest only.
+
+
+## 16. Checkerboard break (biltoo-2683)
+
+Mapping **full 257 source → exclusive 256 dest** uniformly scales each cell
+(257/256). On a regular pattern the phase drifts and **vertical/horizontal
+seams appear** (screenshot: grid.png at high zoom).
+
+QPainter cannot use the extra texel like a GL border sample without either
+dest expand or non-1:1 source mapping. For correct geometry:
+
+- **src** = exclusive level pixels (`min(content_span/2^scale, bitmap)` capped)
+- **dst** = exclusive content rect
+- Overlap strip remains in the Store for encode / possible future GL path
+
+**2683:** ExactTile `src_uv` exclusive only; paint no longer overrides to full bitmap.

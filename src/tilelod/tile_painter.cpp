@@ -64,11 +64,9 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
   }
   painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
 
-  // Exclusive dests do not overlap — order is only for determinism.
-  // ExactTile bitmaps may be 257²: map the *full* source into the exclusive
-  // W×H dest so SmoothPixmapTransform filters toward the shared edge strip.
-  // Do not expand or overdraw dest (that fought QPainter and ate neighbour
-  // content). See docs/RESEARCH_TILE_OVERLAP.md §15.
+  // Exclusive dests abut — order is only for determinism.
+  // ExactTile src_uv is exclusive level pixels (not the +1 overlap strip):
+  // mapping 257 source → 256 dest scaled every cell and broke checkerboards.
   std::vector<DrawCommand const*> ordered;
   ordered.reserve(args.plan->commands.size());
   for (DrawCommand const& cmd : args.plan->commands) {
@@ -108,12 +106,8 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     if (img.isNull()) {
       continue;
     }
-    // ExactTile: full bitmap (256 or 257) → exclusive dest.
-    // CoarserTile: parent UV subrect only (exclusive map_w, not the seam strip).
-    QRectF src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
-    if (cmd.kind == DrawKind::ExactTile) {
-      src = QRectF(0, 0, img.width(), img.height());
-    }
+    // src_uv from plan: exclusive for ExactTile; parent subrect for CoarserTile.
+    QRectF const src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
     painter->drawImage(dst, img, src);
   }
 }

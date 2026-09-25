@@ -30,9 +30,27 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      // Bitmap may be 256 or 256+kTileOverlap; paint expands dst from size.
-      cmd.src_uv = {0, 0, static_cast<double>(exact->bitmap.width),
-                    static_cast<double>(exact->bitmap.height)};
+      // Exclusive level pixels only — never map 257→256 dest (that scales the
+      // cell and breaks phase on regular patterns / checkerboards). Overlap
+      // column stays in the bitmap for encode/GL; QPainter uses exclusive src.
+      {
+        int const factor = (key.scale > 0) ? (1 << key.scale) : 1;
+        int ew = cr.w / factor;
+        int eh = cr.h / factor;
+        if (ew < 1) {
+          ew = 1;
+        }
+        if (eh < 1) {
+          eh = 1;
+        }
+        if (ew > exact->bitmap.width) {
+          ew = exact->bitmap.width;
+        }
+        if (eh > exact->bitmap.height) {
+          eh = exact->bitmap.height;
+        }
+        cmd.src_uv = {0, 0, static_cast<double>(ew), static_cast<double>(eh)};
+      }
       cmd.kind = DrawKind::ExactTile;
       plan.any_tile = true;
       plan.commands.push_back(cmd);

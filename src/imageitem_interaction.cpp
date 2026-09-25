@@ -1209,14 +1209,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (img.isNull()) {
                         continue;
                     }
-                    // Exclusive content dest (srcBox). ExactTile: full bitmap
-                    // including +kTileOverlap so SmoothPixmapTransform filters
-                    // toward the shared edge; do not expand dest. CoarserTile:
-                    // parent UV only (exclusive region of parent).
-                    tilelod::RectF uv = cmd.src_uv;
-                    if (cmd.kind == tilelod::DrawKind::ExactTile) {
-                        uv = {0, 0, double(img.width()), double(img.height())};
-                    }
+                    // Exclusive content dest (srcBox). ExactTile src_uv is the
+                    // exclusive level rect (not 257→256 scale). CoarserTile:
+                    // parent UV only.
+                    tilelod::RectF const uv = cmd.src_uv;
                     QImage patch = extractUv(img, uv);
                     if (patch.isNull()) {
                         continue;
