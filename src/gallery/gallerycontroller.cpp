@@ -1282,6 +1282,59 @@ void GalleryController::onContentAppearanceReset()
     updateDecodeWindow();
 }
 
+
+void GalleryController::setSearchHitIndex(const SessionSearchIndex *index)
+{
+    if (m_searchHitIndex == index) {
+        return;
+    }
+    m_searchHitIndex = index;
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void GalleryController::paintSearchHitFrames(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view || !m_searchHitIndex || m_searchHitIndex->isEmpty()) {
+        return;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return;
+    }
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    const QColor wash(255, 200, 40, 40);
+    QPen ring(QColor(255, 190, 30, 220));
+    ring.setCosmetic(true);
+    ring.setWidthF(2.5);
+    for (QGraphicsItem *gi : scene->items()) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->isInteractive()) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        const QString path = item->path(); // may need different API
+        if (!m_searchHitIndex->hasHit(sid, path)) {
+            continue;
+        }
+        const QRectF local = item->displayContentRect();
+        const QPolygonF scenePoly = item->mapToScene(local);
+        const QRectF bounds = scenePoly.boundingRect();
+        if (!exposed.isNull() && !exposed.intersects(bounds)) {
+            continue;
+        }
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(wash);
+        painter->drawPolygon(scenePoly);
+        painter->setBrush(Qt::NoBrush);
+        painter->setPen(ring);
+        painter->drawPolygon(scenePoly);
+    }
+    painter->restore();
+}
+
 void GalleryController::paintSelectionFrames(QPainter *painter, const QRectF &exposed) const
 {
     if (!painter || !m_view) {

@@ -13,6 +13,7 @@
 #include <QPoint>
 #include <QStringList>
 #include "imageview_types.h"
+#include "session/sessionsearchindex.h"
 #include "session/packorderview.h"
 #include "gallery/gallerysizeresolve.h"
 #include "gallery/gallerydecodebook.h"
@@ -150,6 +151,13 @@ public:
      * Skips interactive (Workspace) items.
      */
     void paintSelectionFrames(QPainter *painter, const QRectF &exposed) const;
+    /**
+     * Yellow wash on tiles tagged by SessionSearchIndex (Find).
+     * Provider: optional; null skips. Called from drawForeground.
+     */
+    void paintSearchHitFrames(QPainter *painter, const QRectF &exposed) const;
+    void setSearchHitIndex(const SessionSearchIndex *index);
+
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();
@@ -255,6 +263,7 @@ private:
     void setPathOrderFromLiveItems();
 
     ImageView *m_view = nullptr;
+    const SessionSearchIndex *m_searchHitIndex = nullptr;
     GallerySizeResolve m_sizeResolve;
     GalleryDecodeBook m_decodeBook;
     LayoutPrefs m_layout;

@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "item/itemcomponents.h"
 #include "session/sessiondocument.h"
+#include "session/sessionsearchindex.h"
 #include "session/sessionsort.h"
 #include "imageview_types.h"
 #include "session/projectfile.h"
@@ -601,10 +602,12 @@ private:
     quint64 m_docSearchGeneration = 0;
     QString m_docSearchQuery;
     /** 1-based page numbers with ≥1 match (document-wide scan). */
-    QVector<int> m_docSearchHitPages;
+    QVector<int> m_docSearchHitPages; // 1-based PDF pages for next/prev (legacy)
     int m_docSearchHitIndex = -1;
     int m_docSearchPageMatchCount = 0;
     bool m_docSearchRunning = false;
+    SessionSearchIndex m_searchIndex;
+
     QAction *m_quitAct = nullptr;
     QAction *m_printAct = nullptr;
     QAction *m_printPreviewAct = nullptr;

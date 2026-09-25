@@ -185,6 +185,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     m_thumbnailBar = new ThumbnailBar(this);
+    m_thumbnailBar->setSearchHitIndex(&m_searchIndex);
+    if (m_imageView) {
+        m_imageView->hostGallery().setSearchHitIndex(&m_searchIndex);
+    }
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     if (m_imageView) {
         m_thumbnailBar->setStripBackground(m_imageView->hostCanvasBg().primaryColor());
@@ -1146,6 +1150,31 @@ void MainWindow::onSearchTextChanged(const QString &text)
     m_imageView->hostText().setSearchFuzzy(fuzzy);
     const QString path = m_imageView->hostImage().classicPath();
     m_docSearchPageMatchCount = m_imageView->hostText().setSearchQuery(text);
+    // Tag current session row for page-local hits (filmstrip / gallery chrome).
+    if (m_imageView) {
+        const QString path = m_imageView->hostImage().classicPath();
+        SessionImageId sid = kInvalidSessionImageId;
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.size()) {
+            sid = m_session.idAt(m_currentIndex);
+        }
+        if (text.trimmed().isEmpty()) {
+            m_searchIndex.clear();
+        } else {
+            // Keep doc-wide tags if query unchanged; only refresh current path count.
+            if (m_searchIndex.query() != text.trimmed()) {
+                m_searchIndex.beginQuery(text.trimmed());
+            }
+            m_searchIndex.addOrUpdate(
+                sid, path, quint16(qMin(65535, m_docSearchPageMatchCount)));
+        }
+        if (m_thumbnailBar) {
+            m_thumbnailBar->viewport()->update();
+        }
+        if (m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    }
+
     m_docSearchHitPages.clear();
     m_docSearchHitIndex = -1;
     m_docSearchQuery = text.trimmed();
@@ -1285,6 +1314,13 @@ void MainWindow::scheduleDocumentSearch(const QString &query)
         m_docSearchHitPages.clear();
         m_docSearchHitIndex = -1;
         m_docSearchQuery.clear();
+        m_searchIndex.clear();
+        if (m_thumbnailBar) {
+            m_thumbnailBar->viewport()->update();
+        }
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
         updateSearchMatchLabel();
         return;
     }
@@ -1320,6 +1356,8 @@ void MainWindow::startDocumentSearch(const QString &query)
     const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
     const QPointer<MainWindow> guard(this);
     QThreadPool::globalInstance()->start([guard, pages, trimmed, fuzzy, gen]() {
+        QVector<QPair<QString, int>> pathHits;
+        pathHits.reserve(64);
         QVector<int> hitPages;
         hitPages.reserve(64);
         for (const QString &pagePath : pages) {
@@ -1344,6 +1382,7 @@ void MainWindow::startDocumentSearch(const QString &query)
             const int matches = TextSearchPolicy::findHits(
                 texts, bboxes, trimmed, fuzzy, blockIds).size();
             if (matches > 0) {
+                pathHits.append(qMakePair(pagePath, matches));
                 const int page = PagePath::pageNumber(pagePath);
                 if (page > 0) {
                     hitPages.append(page);
@@ -1353,22 +1392,22 @@ void MainWindow::startDocumentSearch(const QString &query)
         if (!guard) {
             return;
         }
-        // Generation checked only on the GUI thread (no data race on the counter).
         QMetaObject::invokeMethod(
             guard.data(),
-            [guard, gen, trimmed, hitPages]() {
+            [guard, gen, trimmed, hitPages, pathHits]() {
                 MainWindow *host = guard.data();
                 if (!host || gen != host->m_docSearchGeneration) {
                     return;
                 }
-                host->onDocumentSearchFinished(gen, trimmed, hitPages, 0);
+                host->onDocumentSearchFinished(gen, trimmed, hitPages, pathHits);
             },
             Qt::QueuedConnection);
     });
 }
 
 void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &query,
-                                          const QVector<int> &hitPages, int /*pageHits*/)
+                                          const QVector<int> &hitPages,
+                                          const QVector<QPair<QString, int>> &pathMatchCounts)
 {
     if (generation != m_docSearchGeneration) {
         return;
@@ -1376,6 +1415,34 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
     m_docSearchRunning = false;
     m_docSearchQuery = query;
     m_docSearchHitPages = hitPages;
+
+    // Map document paths → SessionImageId tags for filmstrip / gallery chrome.
+    {
+        const quint64 g = m_searchIndex.beginQuery(query);
+        QVector<SessionSearchIndex::Hit> hits;
+        hits.reserve(pathMatchCounts.size());
+        for (const auto &pair : pathMatchCounts) {
+            SessionSearchIndex::Hit h;
+            h.path = pair.first;
+            h.matchCount = quint16(qMin(65535, pair.second));
+            h.id = m_session.firstIdForPath(pair.first);
+            if (h.id == kInvalidSessionImageId) {
+                // Prefer id-aligned index for duplicate-safe membership.
+                const int idx = m_session.indexOfPathPreferId(pair.first);
+                if (idx >= 0) {
+                    h.id = m_session.idAt(idx);
+                }
+            }
+            hits.append(h);
+        }
+        m_searchIndex.commit(g, query, hits);
+        if (m_thumbnailBar) {
+            m_thumbnailBar->viewport()->update();
+        }
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    }
     // Point at the hit for the current page when possible.
     m_docSearchHitIndex = -1;
     if (m_imageView && !hitPages.isEmpty()) {

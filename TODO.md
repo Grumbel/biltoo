@@ -2,25 +2,22 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2660.1-text-block-id` (base `9740316`).
-**Thumtoo:** `thumtoo-339.1-text-block-id-8f6d77c` (requires tip with `TextRegion::block_id`).
+**Tip:** `biltoo-2661.1-session-search-index` (base `9740316`).
+**Thumtoo:** still needs `339.1-text-block-id` for block_id Find.
 
 ### Done
-- Thumtoo: `block_id` on extract (MuPDF PDF/EPUB); TTL4 cache format.
-- Biltoo: `TextRegion::blockId`; Find searches **per block** (columns do not
-  form one phrase stream); reading-order sort is block-major.
-- Unit tests: 11 textsearchpolicy including threeColumns_noCrossJoin.
+- `SessionSearchIndex` — sparse Find tags by SessionImageId (+ path fallback).
+- Filmstrip: yellow top-left badge when row is tagged.
+- Gallery: soft yellow wash + ring on tagged tiles.
+- Doc scan commits path→id hits; page-local Find tags current row.
+- Generation guard against stale workers.
+- Unit tests: sessionsearchindex (6 passed).
 
-### Later (0.3+)
-- Tesseract / OCR-LLM for image-only pages and layouts beyond MuPDF blocks.
+### Not ItemWorld
+Search hits are query-scoped UI state, not durable appearance components.
 
 ### Apply
 ```bash
-# thumtoo first
-git -C thumtoo pull --ff-only …/thumtoo-339.1-text-block-id-8f6d77c.bundle HEAD
-# biltoo
-git pull --ff-only …/biltoo-2660.1-text-block-id-9740316.bundle HEAD
-# bump flake thumtoo input if needed
+git pull --ff-only …/biltoo-2661.1-session-search-index-9740316.bundle HEAD
+ctest -R sessionsearchindex --output-on-failure
 ```
-
-**Note:** Old cached text layers (TTL3) have `blockId=-1` until re-extracted.

@@ -8,6 +8,7 @@
 #include <QSet>
 #include <QImage>
 #include "imageview_types.h"
+#include "session/sessionsearchindex.h"
 #include <QListWidget>
 #include <functional>
 #include "display/displaysurface.h"
@@ -148,6 +149,14 @@ public:
     int currentIndex() const;
     /** Multi-selected filmstrip rows as SessionImageIds (skips invalid). */
     QList<SessionImageId> selectedSessionIds() const;
+
+    /**
+     * Ephemeral Find tags (SessionSearchIndex). Null clears chrome.
+     * Bar does not own the index; MainWindow does.
+     */
+    void setSearchHitIndex(const SessionSearchIndex *index);
+    const SessionSearchIndex *searchHitIndex() const { return m_searchHitIndex; }
+
     /** Multi-selected filmstrip row indices (session list order). */
     QList<int> selectedSessionIndices() const;
 
@@ -374,6 +383,8 @@ private:
     /** Session ids whose override is a crop bake — refuse non-crop appearance overwrites. */
     QSet<SessionImageId> m_sessionIdCropSticky;
     QVector<SessionImageId> m_sessionIds;
+    const SessionSearchIndex *m_searchHitIndex = nullptr;
+
     QSet<int> m_onCanvasIndices;
     ThumbnailDelegate *m_delegate = nullptr;
 

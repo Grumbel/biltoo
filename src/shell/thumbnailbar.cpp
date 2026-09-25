@@ -394,6 +394,32 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawLine(left, top);
     }
 
+    
+    // Find match badge (SessionSearchIndex) — top-left dot, opposite workspace fold.
+    if (bar && bar->searchHitIndex() && contentRect.width() > 8) {
+        SessionImageId sid = kInvalidSessionImageId;
+        QString path;
+        if (index.row() >= 0) {
+            // Roles mirror ThumbnailBar::setSession.
+            const QVariant sidVar = index.data(ThumbnailBar::RoleSessionId);
+            if (sidVar.isValid()) {
+                sid = SessionImageId(sidVar.toLongLong());
+            }
+            path = index.data(ThumbnailBar::RolePath).toString();
+            if (path.isEmpty()) {
+                path = index.data(Qt::UserRole).toString();
+            }
+        }
+        if (bar->searchHitIndex()->hasHit(sid, path)) {
+            const int d = qBound(6, contentRect.width() / 8, 12);
+            const QRect dot(contentRect.left() + 3, contentRect.top() + 3, d, d);
+            painter->setPen(QPen(QColor(40, 30, 0, 180), 1));
+            painter->setBrush(QColor(255, 210, 40, 230));
+            painter->setRenderHint(QPainter::Antialiasing, true);
+            painter->drawEllipse(dot);
+        }
+    }
+
     painter->restore();
 }
 
@@ -2361,6 +2387,15 @@ void ThumbnailBar::primeGeometryFromCache()
         doItemsLayout();
         updateCenteringMargins();
     }
+}
+
+void ThumbnailBar::setSearchHitIndex(const SessionSearchIndex *index)
+{
+    if (m_searchHitIndex == index) {
+        return;
+    }
+    m_searchHitIndex = index;
+    viewport()->update();
 }
 
 void ThumbnailBar::setSession(const QStringList &files, const QVector<SessionImageId> &ids)

@@ -580,6 +580,7 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
     // is not invalidated on select or scroll (was painted inside ImageItem::paint).
     if (m_view->isGalleryMode()) {
+        m_view->hostGallery().paintSearchHitFrames(painter, rect);
         m_view->hostGallery().paintSelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.

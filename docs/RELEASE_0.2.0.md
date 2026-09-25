@@ -208,6 +208,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 - Partial highlight assumes roughly horizontal LTR runs inside each bbox.
 - **blockId** (MuPDF stext block) keeps column islands separate in Find order; legacy cache layers without block ids still use page-wide Y-then-X.
 - **Later (0.3+):** Tesseract / OCR-LLM layout for image-only pages and hard multi-column reconstruction beyond MuPDF blocks.
+- **SessionSearchIndex** (ephemeral tags by SessionImageId): filmstrip yellow dot + gallery wash on pages with Find hits — not ItemWorld.
 
 **Why**
 

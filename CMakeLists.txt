@@ -278,6 +278,7 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionseedbook.h
   src/session/sessiondocument.cpp
   src/session/sessiondocument.h
+  src/session/sessionsearchindex.h
   src/session/sessionopen.cpp
   src/session/sessionopen.h
   src/session/sessionsort.cpp
@@ -682,6 +683,15 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
     add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
+
+  add_executable(biltoo-sessionsearchindex-test
+    tests/sessionsearchindex_test.cpp
+  )
+  target_include_directories(biltoo-sessionsearchindex-test PRIVATE src)
+  target_link_libraries(biltoo-sessionsearchindex-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME sessionsearchindex COMMAND biltoo-sessionsearchindex-test)
+
+
 
   add_executable(biltoo-sessionsort-test
     tests/sessionsort_test.cpp
