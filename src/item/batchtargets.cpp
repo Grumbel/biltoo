@@ -8,6 +8,7 @@
 #include "session/sessiondocument.h"
 
 #include <QSet>
+#include <QtGlobal>
 
 namespace BatchTargets {
 
@@ -97,36 +98,12 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
         return out;
     }
 
-    if (mode == Mode::IndexRange) {
+    if (mode == Mode::IndexRange || mode == Mode::EvenIndices
+        || mode == Mode::OddIndices) {
         if (!doc || doc->isEmpty()) {
             return out;
         }
-        int a = qMax(0, rangeFrom);
-        int b = rangeTo < 0 ? (doc->size() - 1) : rangeTo;
-        if (b < a) {
-            qSwap(a, b);
-        }
-        b = qMin(b, doc->size() - 1);
-        for (int i = a; i <= b; ++i) {
-            const SessionImageId sid = doc->idAt(i);
-            const QString path = doc->pathAt(i);
-            ImageItem *live = (sid != kInvalidSessionImageId)
-                ? view->findItemBySessionId(sid)
-                : nullptr;
-            appendUnique(out, seenIds, seenItems, sid, path, live, i);
-        }
-        return out;
-    }
-
-    if (mode == Mode::EvenIndices || mode == Mode::OddIndices) {
-        if (!doc || doc->isEmpty()) {
-            return out;
-        }
-        const int parity = (mode == Mode::EvenIndices) ? 0 : 1;
-        for (int i = 0; i < doc->size(); ++i) {
-            if ((i % 2) != parity) {
-                continue;
-            }
+        for (int i : sessionIndices(mode, doc->size(), rangeFrom, rangeTo)) {
             const SessionImageId sid = doc->idAt(i);
             const QString path = doc->pathAt(i);
             ImageItem *live = (sid != kInvalidSessionImageId)
@@ -146,7 +123,6 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
     if (stripIds.isEmpty()) {
         stripIds = view->filmstripSelectedSessionIds();
     } else {
-        // Union explicit list with live provider (MainWindow may pass both).
         for (SessionImageId sid : view->filmstripSelectedSessionIds()) {
             if (!stripIds.contains(sid)) {
                 stripIds.append(sid);
@@ -167,7 +143,7 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
     // Empty selection → current page.
     if (out.isEmpty()) {
         ImageItem *item = view->targetItem();
-        if (!item && !view->liveItems().isEmpty()) {
+        if (!item && view->isImageMode() && !view->liveItems().isEmpty()) {
             item = view->liveItems().first();
         }
         addLive(item);

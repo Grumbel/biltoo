@@ -820,6 +820,31 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME contentxform COMMAND biltoo-contentxform-test)
 
+  add_executable(biltoo-croprecipe-test
+    tests/croprecipe_test.cpp
+    src/crop/croprecipe.cpp
+    tests/imageloader_autotrim_stub.cpp
+  )
+  target_include_directories(biltoo-croprecipe-test PRIVATE src)
+  target_link_libraries(biltoo-croprecipe-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME croprecipe COMMAND biltoo-croprecipe-test)
+
+  add_executable(biltoo-batchtargets-test
+    tests/batchtargets_test.cpp
+  )
+  target_include_directories(biltoo-batchtargets-test PRIVATE src)
+  target_link_libraries(biltoo-batchtargets-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME batchtargets COMMAND biltoo-batchtargets-test)
+
+  add_executable(biltoo-contentundomacro-test
+    tests/contentundomacro_test.cpp
+  )
+  target_include_directories(biltoo-contentundomacro-test PRIVATE src)
+  target_link_libraries(biltoo-contentundomacro-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME contentundomacro COMMAND biltoo-contentundomacro-test)
+
+
+
   # Paint-path contract: contentRect / layoutSize vs mapSourceRectToOriented
   # for every quarter-turn (and flips). Isolates "content rect does not rotate".
   add_executable(biltoo-content-orient-paint-contract-test

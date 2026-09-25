@@ -42,6 +42,53 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
                                      int rangeFrom = 0,
                                      int rangeTo = -1);
 
+/**
+ * Session-list indices for IndexRange / EvenIndices / OddIndices.
+ * Empty for Current / Selection (those need a live view).
+ * rangeTo < 0 means last index (sessionSize - 1).
+ */
+inline QList<int> sessionIndices(Mode mode, int sessionSize,
+                                 int rangeFrom = 0, int rangeTo = -1)
+{
+    QList<int> out;
+    if (sessionSize < 1) {
+        return out;
+    }
+    if (mode == Mode::IndexRange) {
+        int from = rangeFrom < 0 ? 0 : rangeFrom;
+        if (from > sessionSize - 1) {
+            from = sessionSize - 1;
+        }
+        int to = rangeTo < 0 ? (sessionSize - 1) : rangeTo;
+        if (to > sessionSize - 1) {
+            to = sessionSize - 1;
+        }
+        if (to < 0) {
+            to = 0;
+        }
+        if (to < from) {
+            const int tmp = from;
+            from = to;
+            to = tmp;
+        }
+        out.reserve(to - from + 1);
+        for (int i = from; i <= to; ++i) {
+            out.append(i);
+        }
+        return out;
+    }
+    if (mode == Mode::EvenIndices || mode == Mode::OddIndices) {
+        const int parity = (mode == Mode::EvenIndices) ? 0 : 1;
+        for (int i = 0; i < sessionSize; ++i) {
+            if ((i % 2) == parity) {
+                out.append(i);
+            }
+        }
+        return out;
+    }
+    return out;
+}
+
 } // namespace BatchTargets
 
 #endif
