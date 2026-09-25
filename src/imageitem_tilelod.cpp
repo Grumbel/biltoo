@@ -234,6 +234,11 @@ bool ImageItem::tileLodWanted() const
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
     }
+    // Skip only when the *file-native* grid is smaller than one tile cell.
+    // Layout/crop size may be < 256 while native tiles still exist.
+    if (qMax(native.width(), native.height()) < 256) {
+        return false;
+    }
 
     // Gallery packed cell: threshold is *on-screen cell* long edge, not
     // content×(view×item). galleryCellSize is already scene footprint (item
@@ -262,9 +267,8 @@ bool ImageItem::tileLodWanted() const
             return false;
         }
         const qreal screenLong = cellLong * viewScale * dpr;
-        // Match Image mode (shouldUseTiles ~32px screen): Gallery used 256 and
-        // left typical packed cells on soft-only with SOFT debug stamps.
-        // Soft underlay remains until the tile plan fully covers.
+        // Same ~32px screen floor as Image mode. LQIP is underlay only until
+        // tiles cover — not a substitute for available 256² cells.
         constexpr qreal kGalleryTileScreenMin = 32.0;
         return screenLong > kGalleryTileScreenMin;
     }

@@ -2,15 +2,15 @@
 
 ## Status (2026-09-25)
 
-**Tip:** `biltoo-2671.1-crop-keep-tiles` (base `2e49220`).
+**Tip:** `biltoo-2672.1-tiles-not-lqip-under-256` (base `2e49220`).
 
 ### This tip
-Crop enter no longer suppresses tile LOD / skips draft-locked items in
-TileLoadCoordinator. Sample freeze still blocks soft/ladder install thrash;
-display uses the same tile paint path as Image/Workspace (soft ≤512 underlay
-only until tiles cover).
+`shouldUseTiles` no longer treats layout long edge < 256 as "no tiles"
+(that blocked crops / small boxes while file-native 256² tiles exist).
+Screen footprint > ~32px wants tiles; LQIP underlay only. Tiny *native*
+files (< 256) still skip the pyramid.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2671.1-crop-keep-tiles-2e49220.bundle HEAD
+git pull --ff-only …/biltoo-2672.1-tiles-not-lqip-under-256-2e49220.bundle HEAD
 ```

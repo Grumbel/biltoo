@@ -16,12 +16,10 @@ bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongE
   if (!(devicePerContent > 0.0) || contentLongEdge <= 0) {
     return false;
   }
-  // Files smaller than one tile: no useful pyramid — keep soft/LQIP only.
-  if (contentLongEdge < 256) {
-    return false;
-  }
+  // contentLongEdge is *layout* long edge (may be a crop box < 256). Do not
+  // treat that as "file smaller than one tile" — the pyramid is still file-native
+  // and 256² cells remain useful. LQIP is only for negligible on-screen size.
   double const screenLong = devicePerContent * static_cast<double>(contentLongEdge);
-  // Any meaningful on-screen footprint: tiles own display (LQIP underlay only).
   return screenLong > 32.0;
 }
 
