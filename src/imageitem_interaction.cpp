@@ -1326,13 +1326,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tileLodBag().controller->session()->target_scale(), plan);
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
 
-                // Left→right, top→bottom so ExactTile +overlap strips win.
+                // Right→left, bottom→top: +overlap / +gap is on right/bottom, so
+                // the lower-x / lower-y cell must paint last or the neighbour
+                // exclusive rect erases the shared strip (see tile_painter).
                 std::stable_sort(paintCmds.begin(), paintCmds.end(),
                                  [](const TilePaintCmd &a, const TilePaintCmd &b) {
                                      if (a.dst.y() != b.dst.y()) {
-                                         return a.dst.y() < b.dst.y();
+                                         return a.dst.y() > b.dst.y();
                                      }
-                                     return a.dst.x() < b.dst.x();
+                                     return a.dst.x() > b.dst.x();
                                  });
                 const qreal dpc = tileDevicePerContent();
                 const qreal gap = static_cast<qreal>(
@@ -1342,8 +1344,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    // Kill QPainter subpixel hairlines between cells.
-                    QRectF d = pc.dst.adjusted(-gap, -gap, gap, gap);
+                    // Right/bottom only — matches kTileOverlap expand direction.
+                    QRectF d = pc.dst.adjusted(0.0, 0.0, gap, gap);
                     painter->drawImage(d, pc.patch);
                 }
                 (void)under;

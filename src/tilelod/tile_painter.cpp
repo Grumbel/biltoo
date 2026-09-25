@@ -66,7 +66,10 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
   }
   painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
 
-  // Stable overdraw: left→right, top→bottom so +overlap strips win.
+  // Right→left, bottom→top: ExactTile expands +overdraws on right/bottom, so
+  // the lower-x / lower-y cell must paint *after* its neighbour or the next
+  // exclusive tile erases the shared strip (symmetric ±gap was also eating
+  // ~1 content px into the previous cell — “disappearing lines”).
   std::vector<DrawCommand const*> ordered;
   ordered.reserve(args.plan->commands.size());
   for (DrawCommand const& cmd : args.plan->commands) {
@@ -75,10 +78,10 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
   std::stable_sort(ordered.begin(), ordered.end(),
                    [](DrawCommand const* a, DrawCommand const* b) {
                      if (a->src_key.y != b->src_key.y) {
-                       return a->src_key.y < b->src_key.y;
+                       return a->src_key.y > b->src_key.y;
                      }
                      if (a->src_key.x != b->src_key.x) {
-                       return a->src_key.x < b->src_key.x;
+                       return a->src_key.x > b->src_key.x;
                      }
                      // Exact over coarser when same cell key space differs
                      return static_cast<int>(a->kind) < static_cast<int>(b->kind);
@@ -128,11 +131,11 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
       }
       src = QRectF(0, 0, img.width(), img.height());
     }
-    // QPainter hairline gaps: ~¾ device-px in content space, capped at 1
-    // content unit (see paint_seam_overdraw_content / RESEARCH_TILE_OVERLAP).
+    // Seam overdraw only on right/bottom (matches kTileOverlap + expand).
+    // Symmetric ±gap let the next cell eat into the previous exclusive rect.
     {
       double const gap = paint_seam_overdraw_content(args.device_per_content);
-      dst.adjust(-gap, -gap, gap, gap);
+      dst.adjust(0.0, 0.0, gap, gap);
     }
     painter->drawImage(dst, img, src);
   }
