@@ -274,6 +274,10 @@ Build order, refined from the difficulty ladder:
 1. **Multi-apply orient / reset + undo bag** — flip H/V, content ±90°, reset
    appearance on a target set. Proves selection, batch commit, and one undo
    step for N ids.  
+   **Shipped:** `transformTargets()` already multi-applies orient. `ContentUndoMacro`
+   groups N content undos for flip/rotate when |targets|>1. Reset snapshots
+   before/after and pushes ContentCommands under the same macro. Limited to
+   **live** selected ImageItems (virtual Gallery slots need materialise/select).
 2. **Colour multi-apply** — same param block as [AdjustmentsPanel](../src/shell/adjustmentspanel.h)
    (`ColorAdjustments`), apply to targets; panel already has live preview on
    *one* image.  
