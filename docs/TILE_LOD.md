@@ -38,6 +38,8 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 |--------|---------|
 | `kTileSize` | **256** |
 | `kTileOverlap` | **1** (right/bottom; paint expands dest; ES2 may crop to 256) |
+
+Paint also overdraws ~0.75 device px to hide QPainter subpixel gaps. Independent JPEG per cell still limits seam quality (especially upscaled coarse scales).
 | `scale` | **0** = full resolution; each **+1** halves width and height |
 | `(x, y)` | Tile indices from the top-left of that scale’s image |
 | Edge tiles | May be smaller than 256×256 in pixel payload |

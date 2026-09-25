@@ -23,6 +23,9 @@ using TileImageResolver =
 struct PaintDrawPlanArgs {
   DrawPlan const* plan = nullptr;
   TileImageResolver resolve;  ///< Required for ExactTile / CoarserTile
+  /// Content units per device pixel inverse: device_per_content = screen/content.
+  /// Used to overdraw ~1 device px and hide QPainter subpixel seams.
+  double device_per_content = 0.0;
   QImage lqip;                ///< Optional underlay when use_lqip
   bool smooth = true;
 };

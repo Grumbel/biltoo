@@ -76,6 +76,7 @@ private:
 
   QString m_path;
   bool m_enabled = true;
+  double m_device_per_content = 0.0;
   std::shared_ptr<SharedPathTiles> m_shared;
   std::unique_ptr<TileSession> m_session;
 };

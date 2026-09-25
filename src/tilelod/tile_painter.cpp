@@ -4,6 +4,7 @@
 #include "tilelod/tile_painter.hpp"
 
 #include <QByteArray>
+#include <algorithm>
 #include <cstring>
 
 namespace tilelod {
@@ -63,7 +64,26 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
   }
   painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
 
+  // Stable overdraw: left→right, top→bottom so +overlap strips win.
+  std::vector<DrawCommand const*> ordered;
+  ordered.reserve(args.plan->commands.size());
   for (DrawCommand const& cmd : args.plan->commands) {
+    ordered.push_back(&cmd);
+  }
+  std::stable_sort(ordered.begin(), ordered.end(),
+                   [](DrawCommand const* a, DrawCommand const* b) {
+                     if (a->src_key.y != b->src_key.y) {
+                       return a->src_key.y < b->src_key.y;
+                     }
+                     if (a->src_key.x != b->src_key.x) {
+                       return a->src_key.x < b->src_key.x;
+                     }
+                     // Exact over coarser when same cell key space differs
+                     return static_cast<int>(a->kind) < static_cast<int>(b->kind);
+                   });
+
+  for (DrawCommand const* pcmd : ordered) {
+    DrawCommand const& cmd = *pcmd;
     if (cmd.dst_content.empty()) {
       continue;
     }
@@ -105,6 +125,15 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
                       + double(img.height() - exclH) * double(factor));
       }
       src = QRectF(0, 0, img.width(), img.height());
+    }
+    // QPainter hairline gaps: overdraw ~¾ device-pixel in content space when
+    // caller passes device_per_content; else a fixed half content-unit.
+    {
+      double gap = 0.5;
+      if (args.device_per_content > 1e-9) {
+        gap = 0.75 / args.device_per_content;
+      }
+      dst.adjust(-gap, -gap, gap, gap);
     }
     painter->drawImage(dst, img, src);
   }

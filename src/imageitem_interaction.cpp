@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include <algorithm>
 #include "item/itemframegeometry.h"
 #include "item/itemhandlepolicy.h"
 #include "display/displayquality.h"
@@ -1317,11 +1318,24 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tileLodBag().controller->session()->target_scale(), plan);
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
 
-                for (const TilePaintCmd &pc : paintCmds) {
+                // Left→right, top→bottom so ExactTile +overlap strips win.
+                std::stable_sort(paintCmds.begin(), paintCmds.end(),
+                                 [](const TilePaintCmd &a, const TilePaintCmd &b) {
+                                     if (a.dst.y() != b.dst.y()) {
+                                         return a.dst.y() < b.dst.y();
+                                     }
+                                     return a.dst.x() < b.dst.x();
+                                 });
+                const qreal dpc = tileDevicePerContent();
+                const qreal gap = (dpc > 1e-9) ? (0.75 / dpc) : 0.5;
+
+                for (TilePaintCmd &pc : paintCmds) {
                     if (pc.patch.isNull() || pc.dst.isEmpty()) {
                         continue;
                     }
-                    painter->drawImage(pc.dst, pc.patch);
+                    // Kill QPainter subpixel hairlines between cells.
+                    QRectF d = pc.dst.adjusted(-gap, -gap, gap, gap);
+                    painter->drawImage(d, pc.patch);
                 }
                 (void)under;
 

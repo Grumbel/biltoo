@@ -86,6 +86,7 @@ void TileLodController::updateViewport(QRectF const& contentVisible,
   vp.content_rect = {contentVisible.x(), contentVisible.y(), contentVisible.width(),
                      contentVisible.height()};
   vp.device_per_content = devicePerContent;
+  m_device_per_content = devicePerContent;
   m_session->set_viewport(vp, marginContent);
 }
 
@@ -117,6 +118,7 @@ bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) con
   args.plan = &plan;
   args.lqip = lqipUnderlay;
   args.smooth = true;
+  args.device_per_content = m_device_per_content;
   args.resolve = [this](TileKey const& key, TileBitmap const&) -> QImage {
     CacheEntry const* e = m_session->cache().find(key);
     if (!e || e->state != TileState::Succeeded || !e->bitmap.valid()) {
