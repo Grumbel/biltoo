@@ -1069,13 +1069,15 @@ void MainWindow::exportDocumentText()
     f.write(bom, 3);
     f.write(utf8);
     f.close();
-    qWarning().noquote()
-        << QStringLiteral("[find] exportText path=%1 pages=%2 withText=%3 regions=%4 bytes=%5")
-               .arg(outPath)
-               .arg(pages.size())
-               .arg(pagesWithText)
-               .arg(totalRegions)
-               .arg(utf8.size());
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FIND")) {
+        qWarning().noquote()
+            << QStringLiteral("[find] exportText path=%1 pages=%2 withText=%3 regions=%4 bytes=%5")
+                   .arg(outPath)
+                   .arg(pages.size())
+                   .arg(pagesWithText)
+                   .arg(totalRegions)
+                   .arg(utf8.size());
+    }
     if (statusBar()) {
         statusBar()->showMessage(
             tr("Exported text from %1/%2 pages (%3 regions) → %4")
@@ -1177,20 +1179,22 @@ void MainWindow::onSearchTextChanged(const QString &text)
     m_docSearchHitIndex = -1;
     m_docSearchQuery = text.trimmed();
     updateSearchMatchLabel();
-    qWarning().noquote()
-        << QStringLiteral(
-               "[find] query=%1 fuzzy=%2 path=%3 pageRef=%4 hasLayer=%5 regions=%6 matches=%7 mode=%8")
-               .arg(text.trimmed())
-               .arg(fuzzy)
-               .arg(path)
-               .arg(PagePath::isPageRef(path))
-               .arg(m_imageView->hostText().hasLayer())
-               .arg(m_imageView->hostText().regionCount())
-               .arg(m_docSearchPageMatchCount)
-               .arg(m_imageView->isImageMode()
-                        ? QStringLiteral("image")
-                        : (m_imageView->isGalleryMode() ? QStringLiteral("gallery")
-                                                        : QStringLiteral("workspace")));
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FIND")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[find] query=%1 fuzzy=%2 path=%3 pageRef=%4 hasLayer=%5 regions=%6 matches=%7 mode=%8")
+                   .arg(text.trimmed())
+                   .arg(fuzzy)
+                   .arg(path)
+                   .arg(PagePath::isPageRef(path))
+                   .arg(m_imageView->hostText().hasLayer())
+                   .arg(m_imageView->hostText().regionCount())
+                   .arg(m_docSearchPageMatchCount)
+                   .arg(m_imageView->isImageMode()
+                            ? QStringLiteral("image")
+                            : (m_imageView->isGalleryMode() ? QStringLiteral("gallery")
+                                                            : QStringLiteral("workspace")));
+    }
     if (!text.trimmed().isEmpty() && statusBar()) {
         if (!PagePath::isPageRef(path)) {
             statusBar()->showMessage(
@@ -1459,11 +1463,13 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
         m_docSearchPageMatchCount = m_imageView->hostTextLayer().matchCount();
     }
     updateSearchMatchLabel();
-    qWarning().noquote()
-        << QStringLiteral("[find] docScan done query=%1 pagesWithHits=%2 pageMatches=%3")
-               .arg(query)
-               .arg(hitPages.size())
-               .arg(m_docSearchPageMatchCount);
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FIND")) {
+        qWarning().noquote()
+            << QStringLiteral("[find] docScan done query=%1 pagesWithHits=%2 pageMatches=%3")
+                   .arg(query)
+                   .arg(hitPages.size())
+                   .arg(m_docSearchPageMatchCount);
+    }
     if (statusBar()) {
         if (hitPages.isEmpty()) {
             statusBar()->showMessage(tr("No matches in document"), 3000);

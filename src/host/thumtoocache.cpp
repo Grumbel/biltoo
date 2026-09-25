@@ -3008,6 +3008,12 @@ QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
 
 namespace {
 
+bool findDebug()
+{
+    static const bool on = qEnvironmentVariableIsSet("BILTOO_DEBUG_FIND");
+    return on;
+}
+
 TextRegion convertRegion(const thumtoo::TextRegion &r)
 {
     TextRegion out;
@@ -3095,11 +3101,13 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
                    .arg(QString::fromStdString(uri));
         return {};
     }
-    qWarning().noquote()
-        << QStringLiteral("[find] ensurePageTextLayer: ok path=%1 uri=%2 regions=%3")
-               .arg(sessionPath)
-               .arg(QString::fromStdString(uri))
-               .arg(static_cast<int>(layer->regions.size()));
+    if (findDebug()) {
+        qWarning().noquote()
+            << QStringLiteral("[find] ensurePageTextLayer: ok path=%1 uri=%2 regions=%3")
+                   .arg(sessionPath)
+                   .arg(QString::fromStdString(uri))
+                   .arg(static_cast<int>(layer->regions.size()));
+    }
     return convertLayer(*layer);
 }
 
