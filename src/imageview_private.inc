@@ -278,6 +278,7 @@
     SessionSeedBook *m_seedBook = nullptr;
     /** Non-owning SessionDocument (MainWindow); preferred for membership queries. */
     SessionDocument *m_sessionDoc = nullptr;
+    FilmstripSelectionProvider m_filmstripSelectionProvider;
     /**
      * Path → native pixel size + provisional / probe-scheduled sets.
      * Dimensions are a property of the file; safe to key by path (not id).

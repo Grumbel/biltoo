@@ -123,8 +123,19 @@ QList<BatchAppearanceTarget> resolve(ImageView *view,
         addLive(item);
     }
     // Filmstrip multi-select (covers Gallery virtual slots not on canvas).
+    QList<SessionImageId> stripIds = filmstripIds;
+    if (stripIds.isEmpty()) {
+        stripIds = view->filmstripSelectedSessionIds();
+    } else {
+        // Union explicit list with live provider (MainWindow may pass both).
+        for (SessionImageId sid : view->filmstripSelectedSessionIds()) {
+            if (!stripIds.contains(sid)) {
+                stripIds.append(sid);
+            }
+        }
+    }
     if (doc) {
-        for (SessionImageId sid : filmstripIds) {
+        for (SessionImageId sid : stripIds) {
             if (sid == kInvalidSessionImageId) {
                 continue;
             }

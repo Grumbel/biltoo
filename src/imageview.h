@@ -258,6 +258,18 @@ public:
         m_sessionDoc = doc;
     }
     SessionDocument *sessionDocument() const override { return m_sessionDoc; }
+
+    /** Filmstrip multi-select (MainWindow binds ThumbnailBar). Empty when unset. */
+    using FilmstripSelectionProvider = std::function<QList<SessionImageId>()>;
+    void setFilmstripSelectionProvider(FilmstripSelectionProvider provider)
+    {
+        m_filmstripSelectionProvider = std::move(provider);
+    }
+    QList<SessionImageId> filmstripSelectedSessionIds() const
+    {
+        return m_filmstripSelectionProvider ? m_filmstripSelectionProvider()
+                                           : QList<SessionImageId>{};
+    }
     void takePendingWorkspacePath(const QString &path) override;
 
 

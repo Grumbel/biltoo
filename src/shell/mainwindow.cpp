@@ -32,6 +32,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_imageView->bindSessionSeedBook(&m_session.seedBook());
     // Tier 4 path-order: dual-write view book + document until book is deleted.
     m_imageView->bindSessionDocument(&m_session);
+    m_imageView->setFilmstripSelectionProvider([this]() {
+        return m_thumbnailBar ? m_thumbnailBar->selectedSessionIds()
+                              : QList<SessionImageId>{};
+    });
     m_imageView->setAccessibleName(tr("Image view"));
     m_imageView->setAccessibleDescription(
         tr("Shows the current image. In image mode, click the left or right edge "

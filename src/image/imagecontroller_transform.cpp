@@ -18,20 +18,112 @@
 #include <QDebug>
 #include <QUndoStack>
 #include "util/contentundomacro.h"
+#include "item/batchtargets.h"
+#include "display/imagecache.h"
+
+
+namespace {
+
+void orientFlipSessionOnly(ImageView *view, const BatchAppearanceTarget &t,
+                           bool horizontal, bool vertical)
+{
+    if (!view || t.sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    WorkspaceItemState beforeSt = view->sessionAppearanceValue(t.sessionId);
+    beforeSt.sessionId = t.sessionId;
+    beforeSt.path = t.path;
+
+    bool h = beforeSt.contentHFlip;
+    bool v = beforeSt.contentVFlip;
+    int turns = beforeSt.contentQuarterTurns % 4;
+    if (turns < 0) {
+        turns += 4;
+    }
+    const bool swapAxes = (turns == 1 || turns == 3);
+    const bool srcH = swapAxes ? vertical : horizontal;
+    const bool srcV = swapAxes ? horizontal : vertical;
+    if (srcH) {
+        h = !h;
+    }
+    if (srcV) {
+        v = !v;
+    }
+
+    WorkspaceItemState want = beforeSt;
+    want.contentHFlip = h;
+    want.contentVFlip = v;
+    SessionAppearance::mapCropThroughContentFlip(want, horizontal, vertical);
+
+    view->itemWorld().setContentBake(t.sessionId, ItemComponents::contentBakeFromState(want));
+    view->itemWorld().setCrop(t.sessionId, ItemComponents::cropFromState(want));
+    view->pushSessionContentCommand(
+        horizontal && !vertical ? view->tr("Flip horizontal")
+            : vertical && !horizontal ? view->tr("Flip vertical")
+                                      : view->tr("Flip"),
+        t.sessionId, t.path, beforeSt, want);
+
+    QImage appearance = ImageCache::get(t.path);
+    if (!appearance.isNull()) {
+        appearance = SessionAppearance::applyContentToImage(
+            appearance, want, SessionAppearance::PixelKind::SoftPreview);
+        emit view->sessionAppearanceChanged(t.sessionId, t.path, appearance);
+    }
+}
+
+void orientRotateSessionOnly(ImageView *view, const BatchAppearanceTarget &t, int quarterTurns)
+{
+    if (!view || t.sessionId == kInvalidSessionImageId || quarterTurns == 0) {
+        return;
+    }
+    WorkspaceItemState beforeSt = view->sessionAppearanceValue(t.sessionId);
+    beforeSt.sessionId = t.sessionId;
+    beforeSt.path = t.path;
+
+    const int turns = ContentXform::normalizeQuarterTurns(
+        beforeSt.contentQuarterTurns + quarterTurns);
+    WorkspaceItemState want = beforeSt;
+    want.contentQuarterTurns = turns;
+    SessionAppearance::mapCropThroughContentRotate90(want, quarterTurns);
+
+    view->itemWorld().setContentBake(t.sessionId, ItemComponents::contentBakeFromState(want));
+    view->itemWorld().setCrop(t.sessionId, ItemComponents::cropFromState(want));
+    view->pushSessionContentCommand(
+        quarterTurns < 0 ? view->tr("Rotate left") : view->tr("Rotate right"),
+        t.sessionId, t.path, beforeSt, want);
+
+    QImage appearance = ImageCache::get(t.path);
+    if (!appearance.isNull()) {
+        appearance = SessionAppearance::applyContentToImage(
+            appearance, want, SessionAppearance::PixelKind::SoftPreview);
+        emit view->sessionAppearanceChanged(t.sessionId, t.path, appearance);
+    }
+}
+
+QList<BatchAppearanceTarget> orientBatchTargets(ImageView *view)
+{
+    return BatchTargets::resolve(view, BatchTargets::Mode::Selection, {});
+}
+
+} // namespace
 
 void ImageController::flipHorizontal()
 {
-    const QList<ImageItem *> targets = m_view->transformTargets();
+    const QList<BatchAppearanceTarget> targets = orientBatchTargets(m_view);
     if (targets.isEmpty()) {
         return;
     }
     ContentUndoMacro macro(m_view->hostUndoStack(),
                            m_view->tr("Flip horizontal (%1)").arg(targets.size()),
                            targets.size());
-    for (ImageItem *item : targets) {
-        m_view->hostDisplayPipeline().bakeItemFlip(item, true, false);
-        if (m_framing.isFitMode() && m_view->isImageMode()) {
-            fitItem(item, framing().aspectMode());
+    for (const BatchAppearanceTarget &tg : targets) {
+        if (ImageItem *item = tg.live) {
+            m_view->hostDisplayPipeline().bakeItemFlip(item, true, false);
+            if (m_framing.isFitMode() && m_view->isImageMode()) {
+                fitItem(item, framing().aspectMode());
+            }
+        } else {
+            orientFlipSessionOnly(m_view, tg, true, false);
         }
     }
     if (m_view->isGalleryMode()) {
@@ -42,17 +134,21 @@ void ImageController::flipHorizontal()
 
 void ImageController::flipVertical()
 {
-    const QList<ImageItem *> targets = m_view->transformTargets();
+    const QList<BatchAppearanceTarget> targets = orientBatchTargets(m_view);
     if (targets.isEmpty()) {
         return;
     }
     ContentUndoMacro macro(m_view->hostUndoStack(),
                            m_view->tr("Flip vertical (%1)").arg(targets.size()),
                            targets.size());
-    for (ImageItem *item : targets) {
-        m_view->hostDisplayPipeline().bakeItemFlip(item, false, true);
-        if (m_framing.isFitMode() && m_view->isImageMode()) {
-            fitItem(item, framing().aspectMode());
+    for (const BatchAppearanceTarget &tg : targets) {
+        if (ImageItem *item = tg.live) {
+            m_view->hostDisplayPipeline().bakeItemFlip(item, false, true);
+            if (m_framing.isFitMode() && m_view->isImageMode()) {
+                fitItem(item, framing().aspectMode());
+            }
+        } else {
+            orientFlipSessionOnly(m_view, tg, false, true);
         }
     }
     if (m_view->isGalleryMode()) {
@@ -84,15 +180,19 @@ void ImageController::rotateContentByQuarterTurns(ImageItem *item, int quarterTu
 
 void ImageController::rotateLeft()
 {
-    const QList<ImageItem *> targets = m_view->transformTargets();
+    const QList<BatchAppearanceTarget> targets = orientBatchTargets(m_view);
     if (targets.isEmpty()) {
         return;
     }
     ContentUndoMacro macro(m_view->hostUndoStack(),
                            m_view->tr("Rotate left (%1)").arg(targets.size()),
                            targets.size());
-    for (ImageItem *item : targets) {
-        rotateContentByQuarterTurns(item, -1);
+    for (const BatchAppearanceTarget &tg : targets) {
+        if (ImageItem *item = tg.live) {
+            rotateContentByQuarterTurns(item, -1);
+        } else {
+            orientRotateSessionOnly(m_view, tg, -1);
+        }
     }
     if (m_view->isGalleryMode()) {
         m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
@@ -104,15 +204,19 @@ void ImageController::rotateLeft()
 
 void ImageController::rotateRight()
 {
-    const QList<ImageItem *> targets = m_view->transformTargets();
+    const QList<BatchAppearanceTarget> targets = orientBatchTargets(m_view);
     if (targets.isEmpty()) {
         return;
     }
     ContentUndoMacro macro(m_view->hostUndoStack(),
                            m_view->tr("Rotate right (%1)").arg(targets.size()),
                            targets.size());
-    for (ImageItem *item : targets) {
-        rotateContentByQuarterTurns(item, 1);
+    for (const BatchAppearanceTarget &tg : targets) {
+        if (ImageItem *item = tg.live) {
+            rotateContentByQuarterTurns(item, 1);
+        } else {
+            orientRotateSessionOnly(m_view, tg, 1);
+        }
     }
     if (m_view->isGalleryMode()) {
         m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
@@ -124,9 +228,38 @@ void ImageController::rotateRight()
 
 int ImageController::resetContentAppearanceForTargets()
 {
-    const QList<ImageItem *> targets = m_view->transformTargets();
+    const QList<BatchAppearanceTarget> batch = orientBatchTargets(m_view);
+    QList<ImageItem *> targets;
+    targets.reserve(batch.size());
+    for (const BatchAppearanceTarget &tg : batch) {
+        if (tg.live) {
+            targets.append(tg.live);
+        }
+        // Non-live identity reset: clear ItemWorld content for sid.
+        else if (tg.sessionId != kInvalidSessionImageId) {
+            WorkspaceItemState beforeSt = m_view->sessionAppearanceValue(tg.sessionId);
+            beforeSt.sessionId = tg.sessionId;
+            beforeSt.path = tg.path;
+            if (!SessionAppearance::hasContentAppearance(beforeSt)
+                && beforeSt.colorAdjust.isIdentity()) {
+                continue;
+            }
+            m_view->itemWorld().clearContentComponents(tg.sessionId);
+            ThumtooCache::clearContentAppearance(tg.path);
+            WorkspaceItemState afterSt = SessionAppearance::clearedContentOps(beforeSt);
+            afterSt.sessionId = tg.sessionId;
+            afterSt.path = tg.path;
+            m_view->pushSessionContentCommand(
+                m_view->tr("Reset content appearance"), tg.sessionId, tg.path,
+                beforeSt, afterSt);
+            emit m_view->sessionAppearanceChanged(tg.sessionId, tg.path, QImage());
+        }
+    }
+    int nonLiveCleared = 0;
+    // non-live clears counted above would need a counter; recount below after live loop.
     if (targets.isEmpty()) {
-        return 0;
+        emit m_view->statusChanged();
+        return 0; // non-live path already pushed undos; caller ignores count often
     }
 
     struct BeforeSnap {
