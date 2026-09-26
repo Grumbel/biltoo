@@ -1,0 +1,10 @@
+version = 1
+SPDX-PackageName = "qimgview"
+SPDX-PackageSupplier = "Ingo Ruhnke <grumbel@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/Grumbel/qimgview"
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Ingo Ruhnke <grumbel@gmail.com>"
+SPDX-License-Identifier = "GPL-3.0-or-later"

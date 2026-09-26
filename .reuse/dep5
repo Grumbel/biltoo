@@ -1,8 +1,0 @@
-Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: qimgview
-Upstream-Contact: Ingo Ruhnke <grumbel@gmail.com>
-Source: https://github.com/Grumbel/qimgview
-
-Files: *
-Copyright: 2026 Ingo Ruhnke <grumbel@gmail.com>
-License: GPL-3.0-or-later
