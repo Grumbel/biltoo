@@ -596,6 +596,7 @@ TileSession::DebugSnapshot TileSession::debug_snapshot() const
   s.holding = request_scale_holding();
   s.reached_desired = m_reached_desired;
   s.generation = m_generation;
+  s.has_lqip = m_has_lqip;
   Coverage const c = coverage();
   s.visible = c.visible;
   s.exact_succeeded = c.exact_succeeded;
@@ -605,6 +606,30 @@ TileSession::DebugSnapshot TileSession::debug_snapshot() const
     if (e.state == TileState::Succeeded && e.bitmap.valid()) {
       ++s.cache_succeeded;
     }
+  }
+  // Plan histogram: rebuild is cheap (RAM lookup only); counts paint kinds.
+  DrawPlan const plan = draw_plan();
+  for (DrawCommand const& cmd : plan.commands) {
+    switch (cmd.kind) {
+    case DrawKind::ExactTile:
+      ++s.plan_exact;
+      break;
+    case DrawKind::CoarserTile:
+      ++s.plan_parent;
+      break;
+    case DrawKind::Underlay:
+      ++s.plan_underlay;
+      break;
+    case DrawKind::Empty:
+      ++s.plan_empty;
+      break;
+    }
+  }
+  // Keys with no command are holes (no exact/parent/underlay).
+  int const commanded = s.plan_exact + s.plan_parent + s.plan_underlay
+                        + s.plan_empty;
+  if (s.visible > commanded) {
+    s.plan_empty += s.visible - commanded;
   }
   return s;
 }

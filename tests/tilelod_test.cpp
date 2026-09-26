@@ -283,6 +283,75 @@ void test_lqip_until_tile()
   CHECK(plan.any_tile);
 }
 
+/** Failed exact must not block coarser parent stand-in (checklist §5.3 #8). */
+void test_failed_exact_falls_to_parent()
+{
+  tilelod::TileMemoryCache cache;
+  tilelod::TileKey exact{0, 0, 0};
+  tilelod::TileKey parent = tilelod::parent_key(exact, 1);
+  cache.set_failed(exact, 1);
+  cache.set_succeeded(parent, solid_tile(256, 256, 40), 1);
+
+  tilelod::BuildDrawPlanInput in;
+  in.content_w = 512;
+  in.content_h = 512;
+  in.target_scale = 0;
+  in.max_scale = 1;
+  in.visible_keys = {exact};
+  in.has_lqip = false;
+  in.lookup = [&](tilelod::TileKey const& k) { return cache.find(k); };
+
+  auto plan = tilelod::build_draw_plan(in);
+  CHECK_EQ(static_cast<int>(plan.commands.size()), 1);
+  CHECK_EQ(static_cast<int>(plan.commands[0].kind),
+           static_cast<int>(tilelod::DrawKind::CoarserTile));
+  CHECK_EQ(plan.commands[0].src_key.scale, 1);
+  CHECK(plan.any_tile);
+}
+
+/** No exact, no parent, no LQIP → no commands (host paints placeholder). */
+void test_empty_plan_without_lqip()
+{
+  tilelod::TileMemoryCache cache;
+  tilelod::BuildDrawPlanInput in;
+  in.content_w = 256;
+  in.content_h = 256;
+  in.target_scale = 0;
+  in.max_scale = 0;
+  in.visible_keys = {{0, 0, 0}};
+  in.has_lqip = false;
+  in.lookup = [&](tilelod::TileKey const& k) { return cache.find(k); };
+
+  auto plan = tilelod::build_draw_plan(in);
+  CHECK_EQ(static_cast<int>(plan.commands.size()), 0);
+  CHECK(!plan.any_tile);
+}
+
+/** InFlight exact + parent Succeeded → parent (not hole while climbing). */
+void test_inflight_exact_falls_to_parent()
+{
+  tilelod::TileMemoryCache cache;
+  tilelod::TileKey exact{0, 0, 0};
+  tilelod::TileKey parent = tilelod::parent_key(exact, 1);
+  cache.set_in_flight(exact, 2);
+  cache.set_succeeded(parent, solid_tile(256, 256, 50), 1);
+
+  tilelod::BuildDrawPlanInput in;
+  in.content_w = 512;
+  in.content_h = 512;
+  in.target_scale = 0;
+  in.max_scale = 1;
+  in.visible_keys = {exact};
+  in.has_lqip = true;
+  in.lookup = [&](tilelod::TileKey const& k) { return cache.find(k); };
+
+  auto plan = tilelod::build_draw_plan(in);
+  CHECK_EQ(static_cast<int>(plan.commands.size()), 1);
+  CHECK_EQ(static_cast<int>(plan.commands[0].kind),
+           static_cast<int>(tilelod::DrawKind::CoarserTile));
+  CHECK(plan.any_tile);
+}
+
 void test_budget_and_session()
 {
   FakeTileSource src;
@@ -905,6 +974,9 @@ int main()
   test_parent_uv_edge_tile();
   test_fallback_parent_uv();
   test_lqip_until_tile();
+  test_failed_exact_falls_to_parent();
+  test_empty_plan_without_lqip();
+  test_inflight_exact_falls_to_parent();
   test_budget_and_session();
   test_cancel_on_viewport_change();
   test_edge_tile_content_rect();

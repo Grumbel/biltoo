@@ -112,6 +112,13 @@ public:
     int exact_succeeded = 0;
     int in_flight = 0;
     int cache_succeeded = 0;
+    /// Draw-plan command histogram (visible keys only).
+    int plan_exact = 0;
+    int plan_parent = 0;
+    int plan_underlay = 0;
+    /// Visible keys with no Exact/Coarser/Underlay command (hole).
+    int plan_empty = 0;
+    bool has_lqip = false;
     bool holding = false;
     bool reached_desired = false;
     std::uint64_t generation = 0;

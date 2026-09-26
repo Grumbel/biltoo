@@ -5,7 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile drawing & request path — investigation plan
 
-Status: **investigation in progress** — Phase 0 audit done; underlay fixes in tree. Captures
+Status: **investigation in progress** — Phase 0 audit + underlay fixes done;
+Phase 1 instrumentation + draw-plan unit contracts in tree (§13). Captures
 current symptoms, architecture map, hypotheses, instrumentation needs, and
 phased work to make paint **always show the best available pixels** and unify
 filmstrip vs main-view paths where possible.
@@ -405,4 +406,58 @@ or path-idle registry drops.
 - Issue optional parent prefetch when exact is slow (without flooding coordinator).
 - Shared `resolveDisplaySample` for filmstrip + gallery.
 - Alive InFlight placeholder distinct from neutral provisional.
-- Instrumentation histograms behind `BILTOO_TILE_DEBUG`.
+- ~~Instrumentation histograms behind `BILTOO_TILE_DEBUG`.~~ (done in §13)
+
+---
+
+## 13. Phase 1 progress — instrumentation + plan contracts (2026-09-26)
+
+### Code audit (checklist §5.3) — status after Phase 0 fixes
+
+| # | Item | Verdict |
+|---|------|---------|
+| 1 | `build_draw_plan` parent walk | **OK** — walks `delta=1…max_scale-key.scale`, finest Succeeded parent first; UV via `parent_uv_for_child`. |
+| 2 | Protect list | **OK** — full coarser parent chain of every visible key; same set for cancel-obsolete. |
+| 3 | `trim_to_budget` | **OK** — unit `test_trim_protects_parents`; does not drop protected exact/parent. |
+| 4 | LQIP attach/clear | **OK after Phase 0** — `setHasLqip` from any whole-frame sample; host paints underlay until `viewportFullyCovered` (exact coverage). |
+| 5 | `tileLodWanted` vs paint | **OK after Phase 0** — gallery allows soft when LQIP missing. |
+| 6 | ImageItem paint order | **OK** — whole-frame underlay first, then Exact/Coarser plan walk (Underlay plan cmds unused on this path). |
+| 7 | Filmstrip shared sample | **Open** — still separate climb; warm ImageCache short-circuit only. |
+| 8 | Failed tiles | **OK** — Failed exact does not block parent (new unit test). |
+| 9 | Workspace multi-item | **OK by design** — shared registry path cache. |
+
+### Draw-plan contracts locked by unit tests
+
+- `test_failed_exact_falls_to_parent` — Failed exact → CoarserTile when parent Succeeded.
+- `test_inflight_exact_falls_to_parent` — InFlight exact → CoarserTile (not Underlay when parent exists).
+- `test_empty_plan_without_lqip` — no exact/parent/LQIP → zero commands (host placeholder).
+
+### Instrumentation (`BILTOO_TILE_DEBUG`)
+
+`TileSession::DebugSnapshot` and `ImageItem::tileLodDebugLine` now report:
+
+```text
+plan=E/P/U/H   # Exact / Parent / Underlay / Hole counts for visible keys
+lqip=0|1       # session has_lqip flag
+```
+
+Example line fragment:
+
+```text
+foo.jpg … plan=3/1/0/0 lqip=1 …
+```
+
+Use during R1–R3: hole count (`H`) should stay 0 when `lqip=1` or `cacheOk>0` with parents.
+
+### Remaining Phase 1 gaps (not fixed this slice)
+
+1. **Optional finer-in-RAM fallback** (product rule 3) — not implemented; zoom-out may drop finer via `drop_finer_than` on owned caches before paint.
+2. **Optional parent prefetch** when exact is slow — still against TILE_LOD “do not request parents solely for fallback”; only residual from progressive climb.
+3. **Alive InFlight chrome** vs neutral placeholder — still the same `paintNeutralPlaceholder`.
+4. **Filmstrip `resolveDisplaySample`** — Phase 3.
+
+### Next
+
+- Runtime: exercise R1–R3 with `BILTOO_TILE_DEBUG=1`; confirm `plan=…/H=0` on warm paths.
+- If holes remain with `lqip=1`, audit host underlay skip branches for that mode.
+- Phase 2 only after hole rate is measured.

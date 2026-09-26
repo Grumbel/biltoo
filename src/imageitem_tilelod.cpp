@@ -547,9 +547,11 @@ QString ImageItem::tileLodDebugLine() const
     }
     const tilelod::TileSession::DebugSnapshot s =
         tileLodBag().controller->session()->debug_snapshot();
+    // plan=E/P/U/H: Exact / Parent / Underlay / Hole counts for visible keys.
     return QStringLiteral(
                "%1 tgt=%2 des=%3 max=%4 vis=%5 exact=%6 inflight=%7 "
-               "cacheOk=%8 hold=%9 reached=%10 gen=%11 pathRam=%12 disp=%13")
+               "cacheOk=%8 plan=%9/%10/%11/%12 lqip=%13 hold=%14 reached=%15 "
+               "gen=%16 pathRam=%17 disp=%18")
         .arg(name)
         .arg(s.target_scale)
         .arg(s.desired_scale)
@@ -558,6 +560,11 @@ QString ImageItem::tileLodDebugLine() const
         .arg(s.exact_succeeded)
         .arg(s.in_flight)
         .arg(s.cache_succeeded)
+        .arg(s.plan_exact)
+        .arg(s.plan_parent)
+        .arg(s.plan_underlay)
+        .arg(s.plan_empty)
+        .arg(s.has_lqip ? 1 : 0)
         .arg(s.holding ? 1 : 0)
         .arg(s.reached_desired ? 1 : 0)
         .arg(static_cast<qulonglong>(s.generation))
