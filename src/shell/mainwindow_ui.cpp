@@ -827,6 +827,18 @@ void MainWindow::createActions()
         m_toggleCropAct = m_cropDock->toggleViewAction();
         m_toggleCropAct->setText(tr("Show Cro&p Panel"));
         m_toggleCropAct->setStatusTip(tr("Crop margins, autocrop, and batch apply"));
+
+    if (m_ocrDock) {
+        m_toggleOcrAct = m_ocrDock->toggleViewAction();
+        m_toggleOcrAct->setText(tr("Show &OCR Panel"));
+        m_toggleOcrAct->setStatusTip(
+            tr("OCR options, progress, and log (page or whole document)"));
+        connect(m_ocrDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+            if (visible) {
+                updateOcrPanel();
+            }
+        });
+    }
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
@@ -1045,10 +1057,10 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
-    m_viewMenu->addAction(m_ocrPageAct);
-    m_viewMenu->addAction(m_ocrForcePageAct);
-    m_viewMenu->addAction(m_ocrDocumentAct);
-    m_viewMenu->addAction(m_ocrCancelAct);
+    // OCR actions kept for shortcuts; primary UI is the OCR dock panel.
+    if (m_toggleOcrAct) {
+        m_viewMenu->addAction(m_toggleOcrAct);
+    }
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();
@@ -1482,7 +1494,7 @@ void MainWindow::createToolBar()
             && !m_imageView->hostText().hasLayer()
             && statusBar()) {
             statusBar()->showMessage(
-                tr("No OCR layer — View → OCR This Page"), 4000);
+                tr("No OCR layer — open View → Show OCR Panel and Run OCR"), 4000);
         }
         if (m_searchEdit) {
             // Re-run page-local + document search against the chosen layer.

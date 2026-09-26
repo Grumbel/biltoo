@@ -32,6 +32,7 @@ class ThumbnailBar;
 class MetadataPanel;
 class AdjustmentsPanel;
 class CropPanel;
+class OcrPanel;
 class LayoutPanel;
 class TocPanel;
 class HelpPanel;
@@ -369,6 +370,8 @@ private slots:
     void openDocumentLinkUri(const QString &uri);
     void updateAdjustmentsPanel();
     void updateCropPanel();
+    void updateOcrPanel();
+    void runOcrFromPanel();
     void updateLayoutPanel();
     void applyWorkspaceLayoutFromPanel();
     void updateWindowTitle();
@@ -547,6 +550,9 @@ private:
     QDockWidget *m_adjustmentsDock = nullptr;
     CropPanel *m_cropPanel = nullptr;
     QDockWidget *m_cropDock = nullptr;
+    OcrPanel *m_ocrPanel = nullptr;
+    QDockWidget *m_ocrDock = nullptr;
+    QAction *m_toggleOcrAct = nullptr;
     QTimer *m_cropPreviewTimer = nullptr;
     /** Debounce histogram/vectorscope rebuild while colour sliders move. */
     QTimer *m_adjustmentsPreviewTimer = nullptr;

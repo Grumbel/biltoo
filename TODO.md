@@ -2,19 +2,20 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2706.4-suggest-margins-qualify` (base `b65f69e`).
+**Tip:** `biltoo-2707.1-ocr-panel` (base `b65f69e`).
 
-### 2706.4 — Build fixes
-- `CropRecipeUtil::SuggestedMargins` qualification (test + MainWindow)
-- QTEST_MAIN after new suggest tests; OCR lambda `ok`/`fail` rename (shadow)
+### 2707.1 — OCR dock panel
+- View → **Show OCR Panel** (replaces three similar OCR menu items as primary UI)
+- Scope (page / document), language, jobs, force, Run/Cancel
+- Progress bar, summary, timestamped log, current-page native/OCR region counts
+- Legacy OCR menu actions still exist for shortcuts; panel is the control surface
 
-### 2706.3 — Atomic generation counters
-### 2706.2 — OCR QPointer null-deref warnings
-### 2706.1 — Find source, crop suggest, OCR batch jobs
+### Prior
+- 2706.x Find source, crop suggest, batch jobs, build/race fixes
 
 Needs thumtoo **342.2+** (prefer **343.1**).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2706.4-suggest-margins-qualify-b65f69e.bundle HEAD
+git pull --ff-only …/biltoo-2707.1-ocr-panel-b65f69e.bundle HEAD
 ```

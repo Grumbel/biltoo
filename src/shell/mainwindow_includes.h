@@ -19,6 +19,7 @@
 #include "shell/metadatapanel.h"
 #include "shell/adjustmentspanel.h"
 #include "shell/croppanel.h"
+#include "shell/ocrpanel.h"
 #include "display/imagecache.h"
 #include "crop/croprecipe.h"
 #include "item/batchtargets.h"

@@ -339,6 +339,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/adjustmentspanel.h
   src/shell/croppanel.cpp
   src/shell/croppanel.h
+  src/shell/ocrpanel.cpp
+  src/shell/ocrpanel.h
   src/color/coloradjust.cpp
   src/color/coloradjust.h
   src/shell/layoutpanel.cpp
