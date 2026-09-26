@@ -133,8 +133,9 @@ void pumpProbeQueue()
         while (!g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
+            // Underlay slot — soft in the main ImageCache slot is not enough.
             if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
-                && ImageCache::has(p)) {
+                && ImageCache::hasUnderlay(p)) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));
@@ -145,8 +146,9 @@ void pumpProbeQueue()
         while (g_probeInflight < kMaxConcurrentSizeProbes && !g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
+            // Underlay slot — soft in the main ImageCache slot is not enough.
             if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
-                && ImageCache::has(p)) {
+                && ImageCache::hasUnderlay(p)) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));

@@ -411,8 +411,7 @@ void ImageItem::prepareTileLodPlan()
                 <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
         }
         if (!haveSample && !m_path.isEmpty()) {
-            const QImage cached = ImageCache::get(m_path);
-            haveSample = embBand(cached);
+            haveSample = embBand(ImageCache::getUnderlay(m_path));
         }
         tileLodBag().controller->setHasLqip(haveSample);
     }

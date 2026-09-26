@@ -1426,11 +1426,9 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
     if (book.isFailed(path) || !book.hasDefinitive(path)) {
         return false;
     }
-    QImage under = ImageCache::get(path);
-    // Only EMB/LQIP-band samples count (KILL_SOFT). Soft in ImageCache is not
-    // underlay — seed Store and wait; do not downscale soft into a fake LQIP.
-    if (under.isNull()
-        || ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+    QImage under = ImageCache::getUnderlay(path);
+    // Soft in the main ImageCache slot is not underlay (separate slot).
+    if (under.isNull()) {
         ThumtooCache::scheduleStoreUnderlaySeed(path);
         return false;
     }

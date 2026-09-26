@@ -967,9 +967,8 @@ QImage cachedLqipImage(const QString &path)
     if (path.isEmpty()) {
         return {};
     }
-    // Prefer process underlay when already seeded.
-    if (const QImage cached = ImageCache::get(path); !cached.isNull()
-        && ImageCache::longEdge(cached) <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+    // Prefer process underlay slot when already seeded (not soft main slot).
+    if (const QImage cached = ImageCache::getUnderlay(path); !cached.isNull()) {
         return cached;
     }
     // GUI: no Store I/O — scheduleStoreUnderlaySeed fills the cache off-thread.

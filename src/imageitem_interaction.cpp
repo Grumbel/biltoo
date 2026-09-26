@@ -1065,12 +1065,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     && qMax(pixmap().width(), pixmap().height())
                         > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
                     // Soft pixmap: try live displayImage if emb-band, else later branches.
-                    const QImage &live = displayImage();
-                    if (!live.isNull()
-                        && isEmbeddedUnderlaySample(live)) {
+                    const QImage &embLive = displayImage();
+                    if (!embLive.isNull()
+                        && isEmbeddedUnderlaySample(embLive)) {
                         painter->setRenderHint(QPainter::SmoothPixmapTransform,
                                                DisplayQuality::smoothScaling());
-                        painter->drawImage(box, live);
+                        painter->drawImage(box, embLive);
                     }
                     // else leave underlay to m_source / m_preview / placeholder
                 } else {

@@ -18,9 +18,10 @@
  * Contract:
  * - Keys are decode paths (file / archive / page URI), not SessionImageId.
  * - Values are raw samples (no content flip/rotate/crop/grade applied).
- * - put() is upward-only by long edge; larger replaces smaller.
+ * - put() is upward-only by long edge for the main slot; larger replaces smaller.
+ * - EMB/LQIP underlay is a **separate** slot per path (does not compete with soft).
  * - Frames larger than kDisplayMaxEdge are clamped on insert (RAM bound).
- * - Soft ladder (≤512) and display edges (≤8192 interim) share one slot per path.
+ * - Soft ladder (≤512) and display edges (≤8192 interim) share one main slot per path.
  *   True deep zoom should use grid tiles; raised cap is a stopgap.
  * - Eviction is **memory-budget** LRU (not entry count). Prefer dropping large
  *   samples before small underlays (EMB/LQIP). Default budget 384 MiB; override
@@ -87,6 +88,13 @@ void put(const QString &path, const QImage &image);
 
 /** True if get(path, minLongEdge) would succeed. */
 bool has(const QString &path, int minLongEdge = 0);
+
+/**
+ * EMB/LQIP-band underlay for Gallery/tile paint (≤ kEmbeddedUnderlayMaxEdge).
+ * Independent of the main upward-only soft/full slot — soft must not erase LQIP.
+ */
+QImage getUnderlay(const QString &path);
+bool hasUnderlay(const QString &path);
 
 /**
  * Return a cached image with long edge ≥ maxEdge when possible.

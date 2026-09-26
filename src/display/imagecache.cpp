@@ -36,6 +36,13 @@ QHash<QString, QImage> &map()
     return m;
 }
 
+/** EMB/LQIP underlay — does not compete with soft/full in map(). */
+QHash<QString, QImage> &underlayMap()
+{
+    static QHash<QString, QImage> m;
+    return m;
+}
+
 /** Access order for LRU eviction (front = oldest). */
 QStringList &order()
 {
@@ -245,8 +252,20 @@ void put(const QString &path, const QImage &image, const QString &forceTag)
     stampDebugOverlayIfEnabled(&stored, QFileInfo(path).fileName(), forceTag);
     const int incoming = longEdge(stored);
     const int incomingCost = rgbaCostKiB(stored);
+    const bool isUnderlayTag =
+        forceTag == QLatin1String("EMB") || forceTag == QLatin1String("LQIP");
+    const bool embBand =
+        incoming > 0 && incoming <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
 
     QMutexLocker lock(&mutex());
+    // Separate underlay slot: soft/full must not prevent EMB/LQIP install.
+    if (isUnderlayTag || embBand) {
+        QHash<QString, QImage> &um = underlayMap();
+        if (!um.contains(path) || longEdge(um.value(path)) < incoming
+            || isUnderlayTag) {
+            um.insert(path, stored);
+        }
+    }
     QHash<QString, QImage> &m = map();
 
     if (m.contains(path)) {
@@ -276,6 +295,31 @@ void put(const QString &path, const QImage &image, const QString &forceTag)
 bool has(const QString &path, int minLongEdge)
 {
     return !get(path, minLongEdge).isNull();
+}
+
+QImage getUnderlay(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    QMutexLocker lock(&mutex());
+    const QImage u = underlayMap().value(path);
+    if (!u.isNull()) {
+        return u;
+    }
+    // Main slot may still hold emb-band only (never soft as underlay).
+    const QImage main = map().value(path);
+    if (!main.isNull()
+        && longEdge(main) <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        touchUnlocked(path);
+        return main;
+    }
+    return {};
+}
+
+bool hasUnderlay(const QString &path)
+{
+    return !getUnderlay(path).isNull();
 }
 
 QImage ensure(const QString &path, int maxEdge)
@@ -323,6 +367,7 @@ void clear()
 {
     QMutexLocker lock(&mutex());
     map().clear();
+    underlayMap().clear();
     order().clear();
     inFlight().clear();
     totalCostKiB() = 0;
@@ -335,6 +380,7 @@ void remove(const QString &path)
     }
     QMutexLocker lock(&mutex());
     removeEntryUnlocked(path);
+    underlayMap().remove(path);
     // Drop in-flight ensure keys for this path (key is path + '\n' + edge).
     QSet<QString> &flight = inFlight();
     const QString prefix = path + QLatin1Char('\n');
