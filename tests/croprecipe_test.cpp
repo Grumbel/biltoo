@@ -159,12 +159,9 @@ void CropRecipeTest::autocrop_centerBlob_trimsBorder()
     QVERIFY(crop.contains(QPoint(50, 50))); // center of blob
 }
 
-QTEST_MAIN(CropRecipeTest)
-#include "croprecipe_test.moc"
-
 void CropRecipeTest::suggest_emptyBands_notOk()
 {
-    const SuggestedMargins s =
+    const CropRecipeUtil::SuggestedMargins s =
         CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), {});
     QVERIFY(!s.ok);
 }
@@ -174,7 +171,7 @@ void CropRecipeTest::suggest_headerFooter_insets()
     QVector<QRectF> bands;
     bands.append(QRectF(10, 5, 180, 20));   // header near top
     bands.append(QRectF(20, 270, 160, 20)); // footer near bottom
-    const SuggestedMargins s =
+    const CropRecipeUtil::SuggestedMargins s =
         CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), bands);
     QVERIFY(s.ok);
     QCOMPARE(s.left, 0);
@@ -188,8 +185,11 @@ void CropRecipeTest::suggest_clampsExtremeInsets()
     QVector<QRectF> bands;
     // Huge "header" covering half the page — must clamp.
     bands.append(QRectF(0, 0, 200, 150));
-    const SuggestedMargins s =
+    const CropRecipeUtil::SuggestedMargins s =
         CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), bands);
     QVERIFY(s.ok);
     QVERIFY(s.top <= 300 * 3 / 10);
 }
+
+QTEST_MAIN(CropRecipeTest)
+#include "croprecipe_test.moc"

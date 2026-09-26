@@ -542,7 +542,7 @@ MainWindow::MainWindow(QWidget *parent)
                 bands.append(img);
             }
         }
-        const SuggestedMargins sug =
+        const CropRecipeUtil::SuggestedMargins sug =
             CropRecipeUtil::suggestMarginsFromBandRegions(logical, bands);
         if (!sug.ok) {
             if (statusBar()) {
@@ -4787,12 +4787,12 @@ void MainWindow::ocrDocument()
         std::atomic<int> okCount{0};
         std::atomic<int> failCount{0};
 
-        auto reportProgress = [self, total](int done, int ok, int fail, int pageNo) {
+        auto reportProgress = [self, total](int done, int okN, int failN, int pageNo) {
             MainWindow *host = self.data();
             if (!host) {
                 return;
             }
-            QMetaObject::invokeMethod(host, [self, done, total, ok, fail, pageNo]() {
+            QMetaObject::invokeMethod(host, [self, done, total, okN, failN, pageNo]() {
                 MainWindow *h = self.data();
                 if (!h || !h->m_imageView) {
                     return;
@@ -4803,13 +4803,13 @@ void MainWindow::ocrDocument()
                         .arg(pageNo)
                         .arg(done)
                         .arg(total)
-                        .arg(ok)
-                        .arg(fail));
+                        .arg(okN)
+                        .arg(failN));
                 h->statusBar()->showMessage(
                     h->tr("OCR document: %1 / %2 (%3 ok)")
                         .arg(done)
                         .arg(total)
-                        .arg(ok));
+                        .arg(okN));
             }, Qt::QueuedConnection);
         };
 
@@ -4829,8 +4829,8 @@ void MainWindow::ocrDocument()
                 const int pageNo = PagePath::pageNumber(pagePath);
                 const auto layer =
                     ThumtooCache::ensureOcrPageTextLayer(pagePath, force, langCopy);
-                const bool ok = !layer.regions.isEmpty() || layer.pageBounds.isValid();
-                if (ok) {
+                const bool pageOk = !layer.regions.isEmpty() || layer.pageBounds.isValid();
+                if (pageOk) {
                     okCount.fetch_add(1);
                 } else {
                     failCount.fetch_add(1);
