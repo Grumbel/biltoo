@@ -977,13 +977,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             setCacheMode(QGraphicsItem::NoCache);
         }
 
-        auto isLqipSample = [](const QImage &img) {
-            if (img.isNull()) {
-                return false;
-            }
-            return qMax(img.width(), img.height())
-                <= DisplayQuality::kLqipMaxEdge;
-        };
         // EMB (≤320) or LQIP (≤96) only under tiles — not soft/HOST (KILL_SOFT).
         auto isEmbeddedUnderlaySample = [](const QImage &img) {
             if (img.isNull()) {
