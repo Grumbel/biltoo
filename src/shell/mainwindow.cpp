@@ -4694,31 +4694,32 @@ void MainWindow::startOcrCurrentPage(bool force)
             return;
         }
         QMetaObject::invokeMethod(self, [self, pathCopy, layer, gen]() {
-            if (!self || gen != self->m_ocrGeneration) {
+            MainWindow *host = self.data();
+            if (!host || gen != host->m_ocrGeneration) {
                 return;
             }
-            self->m_ocrRunning = false;
-            if (self->m_ocrCancelAct) {
-                self->m_ocrCancelAct->setEnabled(false);
+            host->m_ocrRunning = false;
+            if (host->m_ocrCancelAct) {
+                host->m_ocrCancelAct->setEnabled(false);
             }
-            if (!self->m_imageView) {
+            if (!host->m_imageView) {
                 return;
             }
-            self->m_imageView->hostShell().clearCentreProgress();
+            host->m_imageView->hostShell().clearCentreProgress();
             // Install only if still on the same page.
-            if (self->m_imageView->hostImage().classicPath() == pathCopy
+            if (host->m_imageView->hostImage().classicPath() == pathCopy
                 && !layer.regions.isEmpty()) {
-                self->m_imageView->hostText().installLayer(layer, pathCopy);
-                if (self->m_showTextRegionsAct) {
-                    self->m_showTextRegionsAct->setChecked(true);
+                host->m_imageView->hostText().installLayer(layer, pathCopy);
+                if (host->m_showTextRegionsAct) {
+                    host->m_showTextRegionsAct->setChecked(true);
                 }
             }
             if (layer.regions.isEmpty()) {
-                self->statusBar()->showMessage(
-                    tr("OCR failed (unavailable, unsupported page, or no text)"), 5000);
+                host->statusBar()->showMessage(
+                    host->tr("OCR failed (unavailable, unsupported page, or no text)"), 5000);
             } else {
-                self->statusBar()->showMessage(
-                    tr("OCR finished — %n text region(s)", "", layer.regions.size()),
+                host->statusBar()->showMessage(
+                    host->tr("OCR finished — %n text region(s)", "", layer.regions.size()),
                     5000);
             }
         }, Qt::QueuedConnection);
@@ -4787,23 +4788,25 @@ void MainWindow::ocrDocument()
         std::atomic<int> failCount{0};
 
         auto reportProgress = [self, total](int done, int ok, int fail, int pageNo) {
-            if (!self) {
+            MainWindow *host = self.data();
+            if (!host) {
                 return;
             }
-            QMetaObject::invokeMethod(self, [self, done, total, ok, fail, pageNo]() {
-                if (!self || !self->m_imageView) {
+            QMetaObject::invokeMethod(host, [self, done, total, ok, fail, pageNo]() {
+                MainWindow *h = self.data();
+                if (!h || !h->m_imageView) {
                     return;
                 }
-                self->m_imageView->hostShell().setCentreProgress(
-                    self->tr("OCR document"),
-                    self->tr("Page %1 — %2/%3 done (%4 ok, %5 failed)")
+                h->m_imageView->hostShell().setCentreProgress(
+                    h->tr("OCR document"),
+                    h->tr("Page %1 — %2/%3 done (%4 ok, %5 failed)")
                         .arg(pageNo)
                         .arg(done)
                         .arg(total)
                         .arg(ok)
                         .arg(fail));
-                self->statusBar()->showMessage(
-                    self->tr("OCR document: %1 / %2 (%3 ok)")
+                h->statusBar()->showMessage(
+                    h->tr("OCR document: %1 / %2 (%3 ok)")
                         .arg(done)
                         .arg(total)
                         .arg(ok));
@@ -4814,7 +4817,8 @@ void MainWindow::ocrDocument()
                        &nextIndex, &doneCount, &okCount, &failCount,
                        reportProgress]() {
             while (true) {
-                if (!self || gen != self->m_ocrGeneration) {
+                MainWindow *host = self.data();
+                if (!host || gen != host->m_ocrGeneration) {
                     return;
                 }
                 const int i = nextIndex.fetch_add(1);
@@ -4846,45 +4850,47 @@ void MainWindow::ocrDocument()
             th.join();
         }
 
-        if (!self) {
+        MainWindow *host = self.data();
+        if (!host) {
             return;
         }
         const int okFinal = okCount.load();
         const int failFinal = failCount.load();
-        QMetaObject::invokeMethod(self, [self, gen, okFinal, failFinal, total]() {
-            if (!self || gen != self->m_ocrGeneration) {
+        QMetaObject::invokeMethod(host, [self, gen, okFinal, failFinal, total]() {
+            MainWindow *h = self.data();
+            if (!h || gen != h->m_ocrGeneration) {
                 return;
             }
-            self->m_ocrRunning = false;
-            if (self->m_ocrCancelAct) {
-                self->m_ocrCancelAct->setEnabled(false);
+            h->m_ocrRunning = false;
+            if (h->m_ocrCancelAct) {
+                h->m_ocrCancelAct->setEnabled(false);
             }
-            if (self->m_ocrPageAct) {
-                self->m_ocrPageAct->setEnabled(true);
+            if (h->m_ocrPageAct) {
+                h->m_ocrPageAct->setEnabled(true);
             }
-            if (self->m_ocrForcePageAct) {
-                self->m_ocrForcePageAct->setEnabled(true);
+            if (h->m_ocrForcePageAct) {
+                h->m_ocrForcePageAct->setEnabled(true);
             }
-            if (self->m_ocrDocumentAct) {
-                self->m_ocrDocumentAct->setEnabled(true);
+            if (h->m_ocrDocumentAct) {
+                h->m_ocrDocumentAct->setEnabled(true);
             }
-            if (self->m_imageView) {
-                self->m_imageView->hostShell().clearCentreProgress();
-                self->m_imageView->hostText().refresh();
-                if (self->m_showTextRegionsAct) {
-                    self->m_showTextRegionsAct->setChecked(true);
+            if (h->m_imageView) {
+                h->m_imageView->hostShell().clearCentreProgress();
+                h->m_imageView->hostText().refresh();
+                if (h->m_showTextRegionsAct) {
+                    h->m_showTextRegionsAct->setChecked(true);
                 }
             }
             if (failFinal > 0) {
-                self->statusBar()->showMessage(
-                    self->tr("OCR document finished — %1 ok, %2 failed / %3 pages")
+                h->statusBar()->showMessage(
+                    h->tr("OCR document finished — %1 ok, %2 failed / %3 pages")
                         .arg(okFinal)
                         .arg(failFinal)
                         .arg(total),
                     8000);
             } else {
-                self->statusBar()->showMessage(
-                    self->tr("OCR document finished — %1 / %2 pages")
+                h->statusBar()->showMessage(
+                    h->tr("OCR document finished — %1 / %2 pages")
                         .arg(okFinal)
                         .arg(total),
                     6000);
