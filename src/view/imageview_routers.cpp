@@ -109,6 +109,14 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     QGraphicsView::keyPressEvent(event);
 }
 
+void ImageView::keyReleaseEvent(QKeyEvent *event)
+{
+    if (m_shell.handleKeyRelease(event)) {
+        return;
+    }
+    QGraphicsView::keyReleaseEvent(event);
+}
+
 void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (m_shell.handleMouseDoubleClick(event)) {

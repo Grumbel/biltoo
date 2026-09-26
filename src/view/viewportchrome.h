@@ -18,6 +18,8 @@ struct ViewportChrome {
     QPoint lastHoverViewPos;
     bool panning = false;
     bool imageModeLeftDragPan = true;
+    /** Space held: temporary pan override (any tool / mode). */
+    bool spacePanHeld = false;
 
     QPoint panDeltaFrom(const QPoint &pos) const
     {

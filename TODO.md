@@ -2,23 +2,22 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2712.1-shared-view-tools` (base `b65f69e`).
+**Tip:** `biltoo-2712.2-tool-pan-select-text` (base `b65f69e`).
 
-### 2712.1 — Shared Select/Pan/Zoom tool (Phase A)
-- `ViewInteraction` owns `Tool` on ImageView (not Workspace-only).
-- Defaults on mode enter: Image → Pan, Gallery/Workspace → Select.
-- Left tools strip visible in all modes; V/H/Z shortcuts.
-- Zoom-region tool works outside Workspace when Zoom is active.
-- Image-mode left-drag behaviour **unchanged** (still chrome preference).
+### 2712.2 — Tool-aware pan + Select→text rubber
+- Left pan follows **Pan tool** (all modes); middle always pans; Alt+left pans.
+- **Space** held = temporary pan when tool is *not* Pan (Space still toggles slideshow when Pan is active).
+- Image **Select** tool: left-drag text rubber-band when regions exist; Shift+drag still works under Pan.
+- Image left-drag legacy preference only applies together with Pan tool.
 
-### 2711.x — Dock layout + Panels top-level menu
+### 2712.1 — Shared ViewInteraction tool ownership
 
-### Next (tools)
-- Phase B/C: Image Select → text rubber-band; Space-to-pan override
+### Next
 - Crop on toolbox (modal enter)
 - Multi-page TextSelection data
+- Optional: click-select single text region without drag
 
 ### Apply
 ```bash
-git pull --rebase …/biltoo-2712.1-shared-view-tools-b65f69e.bundle HEAD
+git pull --rebase …/biltoo-2712.2-tool-pan-select-text-b65f69e.bundle HEAD
 ```

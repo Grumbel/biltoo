@@ -486,9 +486,17 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
     if (!m_view->isImageMode() || m_view->hostCrop().active()
         || m_view->hostAttention().active()
         || event->button() != Qt::LeftButton
-        || !(event->modifiers() & Qt::ShiftModifier)
-        || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
-        || !PagePath::isPageRef(m_view->hostImage().classicPath())) {
+        || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))) {
+        return false;
+    }
+    // Select tool: left-drag rubber-band. Pan tool: keep Shift+drag as text select.
+    const bool selectTool = m_view->currentTool() == Tool::Select;
+    const bool shiftSelect = event->modifiers() & Qt::ShiftModifier;
+    if (!selectTool && !shiftSelect) {
+        return false;
+    }
+    // Only when a text/OCR layer is present (avoid eating edge-nav clicks).
+    if (!m_session.hasRegions()) {
         return false;
     }
     m_session.beginRubber(event->pos());

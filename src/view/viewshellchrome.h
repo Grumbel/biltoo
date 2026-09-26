@@ -92,6 +92,7 @@ public:
     bool handleMouseMove(QMouseEvent *event);
     bool handleMouseRelease(QMouseEvent *event);
     bool handleKeyPress(QKeyEvent *event);
+    bool handleKeyRelease(QKeyEvent *event);
     bool handleMouseDoubleClick(QMouseEvent *event);
     void handleLeave();
 

@@ -51,26 +51,27 @@ bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
     if (!m_view || !event) {
         return false;
     }
-    // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (!m_view->hostSlideshow().dwell().isMotionActive()
-        && (event->button() == Qt::MiddleButton
-            || (event->button() == Qt::LeftButton
-                && ((m_view->isImageMode() && m_viewport.isImageModeLeftDragPan())
-                    || (m_view->isWorkspaceMode()
-                        && m_view->currentTool() == Tool::Pan)
-                    || (m_view->isGalleryMode()
-                        && (event->modifiers() & Qt::AltModifier))
-                    || (event->modifiers() & Qt::AltModifier))))) {
-        if (!(m_view->isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
-              && event->button() == Qt::LeftButton)) {
-            m_viewport.beginPan(event->pos());
-            m_view->setCursor(Qt::ClosedHandCursor);
-            event->accept();
-            return true;
-        }
+    if (m_view->hostSlideshow().dwell().isMotionActive()) {
+        return false;
     }
-    if (event->button() == Qt::MiddleButton
-        && !m_view->hostSlideshow().dwell().isMotionActive()) {
+    // Middle-button always pans. Space-held or Alt+left temporary pan.
+    // Left + Pan tool: pan in every mode. Image legacy left-drag pan only when
+    // tool is Pan (Select reserves left for text / content selection).
+    const bool left = event->button() == Qt::LeftButton;
+    const bool middle = event->button() == Qt::MiddleButton;
+    const bool alt = event->modifiers() & Qt::AltModifier;
+    const bool panTool = m_view->currentTool() == Tool::Pan;
+    const bool spacePan = m_viewport.spacePanHeld;
+    const bool leftPan =
+        left
+        && (spacePan || alt || panTool
+            || (m_view->isImageMode() && m_viewport.isImageModeLeftDragPan() && panTool));
+    // Workspace Select + Shift is reserved for multi-select gestures.
+    if (m_view->isWorkspaceMode() && left && (event->modifiers() & Qt::ShiftModifier)
+        && !spacePan && !alt) {
+        return false;
+    }
+    if (middle || leftPan) {
         m_viewport.beginPan(event->pos());
         m_view->setCursor(Qt::ClosedHandCursor);
         event->accept();
@@ -893,6 +894,17 @@ bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
     if (!m_view || !event) {
         return false;
     }
+    // Space-to-pan only when another tool is active so Space still toggles
+    // slideshow while the Pan tool is selected (MainWindow shortcut).
+    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()
+        && m_view->currentTool() != Tool::Pan) {
+        m_viewport.spacePanHeld = true;
+        if (!m_viewport.isPanning()) {
+            m_view->setCursor(Qt::OpenHandCursor);
+        }
+        event->accept();
+        return true;
+    }
     return m_view->hostAttention().tryKeyPressAttention(event)
         || m_view->hostCrop().tryKeyPressCrop(event)
         || m_view->hostImage().tryKeyPressZoomRegion(event)
@@ -902,6 +914,22 @@ bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
         || m_view->hostWorkspace().tryKeyPressShear(event)
         || m_view->hostGallery().tryKeyPressDeleteSelection(event)
         || m_view->hostWorkspace().tryKeyPressDeleteSelection(event);
+}
+
+bool ViewShellChrome::handleKeyRelease(QKeyEvent *event)
+{
+    if (!m_view || !event) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
+        m_viewport.spacePanHeld = false;
+        if (!m_viewport.isPanning()) {
+            restoreToolCursor();
+        }
+        event->accept();
+        return true;
+    }
+    return false;
 }
 
 bool ViewShellChrome::handleMouseDoubleClick(QMouseEvent *event)
