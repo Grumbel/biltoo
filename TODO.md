@@ -16,6 +16,9 @@ git pull --rebase …/biltoo-2712.11-tags-bookmarks-doc.bundle HEAD
 ```
 
 ## Roadmap / later
+### Tile draw / LOD investigation
+Plan: [docs/TILE_DRAW_INVESTIGATION.md](docs/TILE_DRAW_INVESTIGATION.md)
+
 
 ### Tags and bookmarks
 Scope brainstorm: [docs/TAGS_AND_BOOKMARKS.md](docs/TAGS_AND_BOOKMARKS.md)

@@ -953,3 +953,7 @@ Tiles stay raw in the shared RAM cache. At paint time, `applyColorAdjustments`
 runs on resolve (ContentXform or item grade). Converted `QImage`s (identity or graded) are cached per
 item (`resolveGradedTile`) keyed by cell + grade signature so pan/repaint does
 not re-copy or re-grade every frame. Soft underlay remains pre-graded from materialize.
+
+## See also
+
+- Investigation / hardening plan: [TILE_DRAW_INVESTIGATION.md](TILE_DRAW_INVESTIGATION.md)
