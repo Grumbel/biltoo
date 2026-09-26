@@ -1077,9 +1077,11 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_showSearchBarAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
     m_viewMenu->addSeparator();
-    // Panels submenu — single place for all dock toggles (IDE / GIMP style).
-    // Also used by the toolbar Panels tool button.
-    m_panelsMenu = m_viewMenu->addMenu(tr("&Panels"));
+    m_viewMenu->addAction(m_hideThumbLabelsAct);
+    m_viewMenu->addAction(m_cropThumbnailsAct);
+
+    // Top-level Panels menu (not a View submenu). Shared with toolbar button.
+    m_panelsMenu = menuBar()->addMenu(tr("&Panels"));
     m_panelsMenu->setStatusTip(tr("Show or hide side panels and the filmstrip"));
     m_panelsMenu->addAction(m_toggleThumbnailBarAct);
     m_panelsMenu->addAction(m_toggleMetadataAct);
@@ -1100,9 +1102,6 @@ void MainWindow::createMenus()
     m_panelsMenu->addAction(m_toggleLayoutPanelAct);
     m_panelsMenu->addSeparator();
     m_panelsMenu->addAction(m_resetDockLayoutAct);
-    m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_hideThumbLabelsAct);
-    m_viewMenu->addAction(m_cropThumbnailsAct);
 
     // Top-level Gallery and Workspace — not buried under View.
     auto *galleryMenu = menuBar()->addMenu(tr("&Gallery"));
@@ -1380,7 +1379,7 @@ void MainWindow::createToolBar()
     }
     // Help sits with chrome toggles, immediately before Fullscreen.
     m_toolBar->addAction(m_toggleHelpAct);
-    // All panels in one popup (same menu as View → Panels).
+    // All panels in one popup (same menu as the top-level Panels menu).
     if (m_panelsMenu) {
         auto *panelsBtn = new QToolButton(m_toolBar);
         panelsBtn->setObjectName(QStringLiteral("PanelsToolButton"));

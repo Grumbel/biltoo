@@ -25,7 +25,7 @@ Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **Settings:** dock layout uses version-gated `dockLayoutState` + `dockLayoutVersion`
 (`kDockLayoutStateVersion` in `mainwindow.cpp`). If a saved blob crashes on
 restore (Qt `QDockAreaLayout`), bump the version so stale state is ignored, or
-use **View → Panels → Reset Panel Layout**. Do not write unversioned `windowState`.
+use **Panels → Reset Panel Layout**. Do not write unversioned `windowState`.
 GUI-thread audit: [GUI_THREAD_AUDIT.md](GUI_THREAD_AUDIT.md).
 
 **Identity (mandatory):** [IDENTITY.md](IDENTITY.md) — `SessionImageId` is the
@@ -407,7 +407,7 @@ and Select/Pan live on the vertical workspace tool strip.
 - Open Directory (Ctrl+Shift+O) and CLI directories expand to images sorted by name.
 - `--recursive` / `-r` walks subdirectories when expanding directory arguments.
 - Status bar shows image coordinates and RGB under the cursor.
-- Window geometry is stored as readable `windowGeometry=x,y,w,h` plus `windowMaximized` (legacy `geometry` QByteArray still read once). Dock layout is `dockLayoutState` + `dockLayoutVersion` (bump version to discard bad blobs). Toolbar/some dock visibility also uses explicit boolean keys. **View → Panels** lists all dock toggles; **Reset Panel Layout** clears the saved blob.
+- Window geometry is stored as readable `windowGeometry=x,y,w,h` plus `windowMaximized` (legacy `geometry` QByteArray still read once). Dock layout is `dockLayoutState` + `dockLayoutVersion` (bump version to discard bad blobs). Toolbar/some dock visibility also uses explicit boolean keys. Top-level **Panels** menu lists all dock toggles; **Reset Panel Layout** clears the saved blob.
 - Slideshow (F5): advances automatically; `--slideshow` and `--interval=ms` on the CLI.
   Manual navigation or thumbnail click pauses the slideshow. Optional auto-fullscreen
   (Preferences, on by default). Disabled in workspace mode.
