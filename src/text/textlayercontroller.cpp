@@ -8,6 +8,7 @@
 #include "imageitem.h"
 #include "text/textlayergeometry.h"
 #include "text/textregionstyle.h"
+#include "text/textregionkind.h"
 #include "text/textsearchpolicy.h"
 #include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
@@ -67,8 +68,9 @@ void TextLayerController::refresh()
         return;
     }
     // Explicit refresh always loads (Text panel, OCR install, show-regions).
-    const ThumtooCache::PageTextLayer layer =
+    ThumtooCache::PageTextLayer layer =
         TextLayerResolve::load(path, m_session.layerPreferValue());
+    TextRegionKindAnnotate::annotate(&layer);
     m_session.setLayerContent(layer, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
@@ -82,7 +84,9 @@ void TextLayerController::installLayer(const ThumtooCache::PageTextLayer &layer,
 {
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
-    m_session.setLayerContent(layer, path);
+    ThumtooCache::PageTextLayer annotated = layer;
+    TextRegionKindAnnotate::annotate(&annotated);
+    m_session.setLayerContent(annotated, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
@@ -686,9 +690,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->drawPolygon(item->mapToScene(local));
         }
     }
-    // Glyphs: actual extracted/OCR text inside each box.
+    // Glyphs: recognized text inside each box (readable fill + kind-tinted edge).
     if (m_session.showsGlyphs()) {
-        painter->setBrush(Qt::NoBrush);
         for (const ThumtooCache::TextRegion &r : m_session.regions()) {
             if (r.text.isEmpty()) {
                 continue;
@@ -703,13 +706,16 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             if (sceneBox.height() < 1.0 || sceneBox.width() < 1.0) {
                 continue;
             }
+            // Opaque-ish paper behind glyphs so page ink does not wash them out.
+            painter->setPen(QPen(TextRegionStyle::outlineColor(r), 0));
+            painter->setBrush(QColor(255, 252, 230, 220));
+            painter->drawPolygon(scenePoly);
             QFont f = painter->font();
-            // Fit roughly to box height (scene units ≈ device if view scale applied by painter).
             const qreal px = qBound(4.0, sceneBox.height() * 0.72, 72.0);
             f.setPixelSize(qMax(4, int(px)));
             painter->setFont(f);
-            painter->setPen(QColor(20, 20, 20, 220));
-            // Single line, no wrap — wrap uses Qt metrics, not OCR glyph boxes.
+            painter->setPen(QColor(20, 20, 20, 235));
+            painter->setBrush(Qt::NoBrush);
             painter->drawText(sceneBox, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
                               r.text);
         }
