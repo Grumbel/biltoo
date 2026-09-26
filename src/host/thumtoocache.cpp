@@ -3164,11 +3164,18 @@ QString OcrRunResult::message() const
             "ThumtooCache",
             "OCR unavailable — Tesseract was not built into thumtoo "
             "(rebuild with Tesseract / check flake inputs)");
-    case Status::Failed:
+    case Status::Failed: {
+        const QString detail = last_ocr_detail();
+        if (!detail.isEmpty()) {
+            return QCoreApplication::translate(
+                       "ThumtooCache", "OCR failed — %1")
+                .arg(detail);
+        }
         return QCoreApplication::translate(
             "ThumtooCache",
-            "OCR failed — could not rasterize the page or Tesseract returned an error "
+            "OCR failed — could not rasterize or Tesseract returned an error "
             "(unsupported format, missing tessdata, or bad language code?)");
+    }
     case Status::EmptyText:
         return QCoreApplication::translate(
             "ThumtooCache",
@@ -3215,8 +3222,16 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
     if (!layer) {
         out.status = OcrRunResult::Status::Failed;
+        // Pull thumtoo thread-local detail (rasterize / tessdata / …).
+        const std::string_view detail = thumtoo::ocr_last_error();
+        if (!detail.empty()) {
+            // Stash on message via a thread-local we re-read in message().
+            set_last_ocr_detail(QString::fromUtf8(detail.data(),
+                                                  static_cast<int>(detail.size())));
+        }
         return out;
     }
+    set_last_ocr_detail({});
     out.layer = convertLayer(*layer);
     if (out.layer.regions.isEmpty()) {
         // Valid OCR pass with no glyphs — not a hard engine failure.
