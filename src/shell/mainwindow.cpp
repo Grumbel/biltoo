@@ -4739,11 +4739,15 @@ void MainWindow::updateOcrPanel()
     const int page = PagePath::pageNumber(path);
     const auto native = ThumtooCache::cachedPageTextLayer(path);
     const auto ocr = ThumtooCache::cachedOcrPageTextLayer(path);
-    m_ocrPanel->setLayerInfo(
-        tr("Page %1\nNative text: %2 region(s)\nOCR text: %3 region(s)")
-            .arg(page > 0 ? QString::number(page) : QStringLiteral("?"))
-            .arg(native.regions.size())
-            .arg(ocr.regions.size()));
+        const QString engine = ThumtooCache::ocrAvailable()
+            ? tr("Tesseract: available")
+            : tr("Tesseract: not available in this build");
+        m_ocrPanel->setLayerInfo(
+            tr("Page %1\nNative text: %2 region(s)\nOCR text: %3 region(s)\n%4")
+                .arg(page > 0 ? QString::number(page) : QStringLiteral("?"))
+                .arg(native.regions.size())
+                .arg(ocr.regions.size())
+                .arg(engine));
 }
 
 void MainWindow::startOcrCurrentPage(bool force)
@@ -4803,12 +4807,12 @@ void MainWindow::startOcrCurrentPage(bool force)
     const QString pathCopy = path;
     const QString langCopy = lang;
     QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen, force]() {
-        const ThumtooCache::PageTextLayer layer =
-            ThumtooCache::ensureOcrPageTextLayer(pathCopy, force, langCopy);
+        const ThumtooCache::OcrRunResult result =
+            ThumtooCache::runOcrPageTextLayer(pathCopy, force, langCopy);
         if (!self) {
             return;
         }
-        QMetaObject::invokeMethod(self, [self, pathCopy, layer, gen, force]() {
+        QMetaObject::invokeMethod(self, [self, pathCopy, result, gen, force]() {
             MainWindow *host = self.data();
             if (!host || gen != host->m_ocrGeneration.load()) {
                 return;
@@ -4834,32 +4838,26 @@ void MainWindow::startOcrCurrentPage(bool force)
                 return;
             }
             host->m_imageView->hostShell().clearCentreProgress();
-            if (host->m_imageView->hostImage().classicPath() == pathCopy
+            const ThumtooCache::PageTextLayer &layer = result.layer;
+            const bool ok = result.status == ThumtooCache::OcrRunResult::Status::Ok;
+            if (host->m_imageView->hostImage().classicPath() == pathCopy && ok
                 && !layer.regions.isEmpty()) {
                 host->m_imageView->hostText().installLayer(layer, pathCopy);
                 if (host->m_showTextRegionsAct) {
                     host->m_showTextRegionsAct->setChecked(true);
                 }
             }
-            if (layer.regions.isEmpty()) {
-                const QString msg = host->tr(
-                    "OCR failed (unavailable, unsupported page, or no text)");
-                host->statusBar()->showMessage(msg, 5000);
-                if (host->m_ocrPanel) {
-                    host->m_ocrPanel->setSummary(msg);
-                    host->m_ocrPanel->appendLog(msg);
-                }
-            } else {
-                const QString msg = host->tr("OCR finished — %n text region(s)", "",
-                                             layer.regions.size());
-                host->statusBar()->showMessage(msg, 5000);
-                if (host->m_ocrPanel) {
-                    host->m_ocrPanel->setSummary(msg);
-                    host->m_ocrPanel->appendLog(
-                        host->tr("Page done: %1 region(s) (force=%2)")
-                            .arg(layer.regions.size())
-                            .arg(force ? QStringLiteral("yes") : QStringLiteral("no")));
-                }
+            const QString msg = result.message();
+            host->statusBar()->showMessage(msg, ok ? 5000 : 8000);
+            if (host->m_ocrPanel) {
+                host->m_ocrPanel->setSummary(msg);
+                host->m_ocrPanel->appendLog(
+                    ok ? host->tr("Page done (force=%1): %2")
+                             .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
+                             .arg(msg)
+                       : host->tr("Page failed (force=%1): %2")
+                             .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
+                             .arg(msg));
             }
             host->updateOcrPanel();
         }, Qt::QueuedConnection);
@@ -5014,13 +5012,29 @@ void MainWindow::ocrDocument()
                 }
                 const QString &pagePath = pagesCopy.at(i);
                 const int pageNo = PagePath::pageNumber(pagePath);
-                const auto layer =
-                    ThumtooCache::ensureOcrPageTextLayer(pagePath, force, langCopy);
-                const bool pageOk = !layer.regions.isEmpty() || layer.pageBounds.isValid();
+                const ThumtooCache::OcrRunResult result =
+                    ThumtooCache::runOcrPageTextLayer(pagePath, force, langCopy);
+                const bool pageOk =
+                    result.status == ThumtooCache::OcrRunResult::Status::Ok
+                    || result.status == ThumtooCache::OcrRunResult::Status::EmptyText;
                 if (pageOk) {
                     okCount.fetch_add(1);
                 } else {
                     failCount.fetch_add(1);
+                    if (failCount.load() <= 5) {
+                        const QString detail = result.message();
+                        const int pn = pageNo;
+                        MainWindow *notify = self.data();
+                        if (notify) {
+                            QMetaObject::invokeMethod(notify, [self, pn, detail]() {
+                                MainWindow *h = self.data();
+                                if (h && h->m_ocrPanel) {
+                                    h->m_ocrPanel->appendLog(
+                                        h->tr("Page %1: %2").arg(pn).arg(detail));
+                                }
+                            }, Qt::QueuedConnection);
+                        }
+                    }
                 }
                 const int done = doneCount.fetch_add(1) + 1;
                 reportProgress(done, okCount.load(), failCount.load(), pageNo);

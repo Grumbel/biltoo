@@ -486,6 +486,33 @@ PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
                                      bool force = false,
                                      const QString &lang = QString());
 
+/** Result of an OCR attempt with a specific failure reason for UI. */
+struct OcrRunResult {
+    enum class Status {
+        Ok = 0,           /**< Non-empty regions (or valid empty page bounds only) */
+        NoClient,         /**< thumtoo client not open */
+        BadUri,           /**< path did not map to a thumtoo URI */
+        Unavailable,      /**< Tesseract not linked / ocr_available() false */
+        Failed,           /**< Rasterize or recognize returned null */
+        EmptyText,        /**< OCR ran but produced no text regions */
+    };
+    Status status = Status::Failed;
+    PageTextLayer layer;
+    /** Localized one-line explanation (English fallback in .cpp). */
+    QString message() const;
+};
+
+/** True when thumtoo reports OCR (Tesseract) is available at runtime. */
+bool ocrAvailable();
+
+/**
+ * Like ensureOcrPageTextLayer but returns @c OcrRunResult with a concrete status.
+ * Prefer this for UI paths that need to explain failure.
+ */
+OcrRunResult runOcrPageTextLayer(const QString &sessionPath,
+                                 bool force = false,
+                                 const QString &lang = QString());
+
 /** Cache-only OCR layer (empty if never OCR'd). */
 PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath);
 

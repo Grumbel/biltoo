@@ -51,6 +51,7 @@
 
 #include "thumtoo/archive.hpp"
 #include "thumtoo/client.hpp"
+#include "thumtoo/ocr.hpp"
 #include "thumtoo/image.hpp"
 #include "thumtoo/status.hpp"
 #include "thumtoo/uri.hpp"
@@ -3128,6 +3129,66 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
                                      const QString &lang)
 {
+    return runOcrPageTextLayer(sessionPath, force, lang).layer;
+}
+
+bool ocrAvailable()
+{
+#if defined(BILTOO_HAVE_THUMTOO_TEXT)
+    return thumtoo::ocr_available();
+#else
+    return false;
+#endif
+}
+
+QString OcrRunResult::message() const
+{
+    switch (status) {
+    case Status::Ok:
+        if (layer.regions.isEmpty()) {
+            return QCoreApplication::translate(
+                "ThumtooCache", "OCR finished — no text regions on this page");
+        }
+        return QCoreApplication::translate(
+            "ThumtooCache", "OCR finished — %n text region(s)", "",
+            layer.regions.size());
+    case Status::NoClient:
+        return QCoreApplication::translate(
+            "ThumtooCache", "OCR unavailable — thumtoo cache client is not open");
+    case Status::BadUri:
+        return QCoreApplication::translate(
+            "ThumtooCache",
+            "OCR unavailable — path could not be mapped to a document URI");
+    case Status::Unavailable:
+        return QCoreApplication::translate(
+            "ThumtooCache",
+            "OCR unavailable — Tesseract was not built into thumtoo "
+            "(rebuild with Tesseract / check flake inputs)");
+    case Status::Failed:
+        return QCoreApplication::translate(
+            "ThumtooCache",
+            "OCR failed — could not rasterize the page or Tesseract returned an error "
+            "(unsupported format, missing tessdata, or bad language code?)");
+    case Status::EmptyText:
+        return QCoreApplication::translate(
+            "ThumtooCache",
+            "OCR finished — no text detected on this page "
+            "(blank/image-only page, or recognition found nothing)");
+    }
+    return QCoreApplication::translate("ThumtooCache", "OCR failed");
+}
+
+OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
+                                 const QString &lang)
+{
+    OcrRunResult out;
+#if !defined(BILTOO_HAVE_THUMTOO_TEXT)
+    Q_UNUSED(sessionPath);
+    Q_UNUSED(force);
+    Q_UNUSED(lang);
+    out.status = OcrRunResult::Status::Unavailable;
+    return out;
+#else
     init();
     thumtoo::Client *c = nullptr;
     {
@@ -3135,11 +3196,17 @@ PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
         c = clientUnlocked();
     }
     if (!c) {
-        return {};
+        out.status = OcrRunResult::Status::NoClient;
+        return out;
     }
     const std::string uri = toThumtooUri(sessionPath);
     if (uri.empty()) {
-        return {};
+        out.status = OcrRunResult::Status::BadUri;
+        return out;
+    }
+    if (!thumtoo::ocr_available()) {
+        out.status = OcrRunResult::Status::Unavailable;
+        return out;
     }
     thumtoo::OcrOptions opts;
     if (!lang.isEmpty()) {
@@ -3147,9 +3214,18 @@ PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
     }
     auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
     if (!layer) {
-        return {};
+        out.status = OcrRunResult::Status::Failed;
+        return out;
     }
-    return convertLayer(*layer);
+    out.layer = convertLayer(*layer);
+    if (out.layer.regions.isEmpty()) {
+        // Valid OCR pass with no glyphs — not a hard engine failure.
+        out.status = OcrRunResult::Status::EmptyText;
+        return out;
+    }
+    out.status = OcrRunResult::Status::Ok;
+    return out;
+#endif
 }
 
 
@@ -3188,6 +3264,22 @@ PageTextLayer ensurePageTextLayer(const QString &)
 PageTextLayer ensureOcrPageTextLayer(const QString &, bool, const QString &)
 {
     return {};
+}
+bool ocrAvailable()
+{
+    return false;
+}
+QString OcrRunResult::message() const
+{
+    return QCoreApplication::translate(
+        "ThumtooCache",
+        "OCR unavailable — text/OCR support not compiled into this biltoo build");
+}
+OcrRunResult runOcrPageTextLayer(const QString &, bool, const QString &)
+{
+    OcrRunResult out;
+    out.status = OcrRunResult::Status::Unavailable;
+    return out;
 }
 PageTextLayer cachedOcrPageTextLayer(const QString &)
 {
