@@ -19,6 +19,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QPainter>
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QWidget>
 
@@ -690,7 +691,7 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->drawPolygon(item->mapToScene(local));
         }
     }
-    // Glyphs: recognized text inside each box (readable fill + kind-tinted edge).
+    // Glyphs: recognized text stretched to the OCR/native bbox (readable fill).
     if (m_session.showsGlyphs()) {
         for (const ThumtooCache::TextRegion &r : m_session.regions()) {
             if (r.text.isEmpty()) {
@@ -706,18 +707,34 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             if (sceneBox.height() < 1.0 || sceneBox.width() < 1.0) {
                 continue;
             }
-            // Opaque-ish paper behind glyphs so page ink does not wash them out.
             painter->setPen(QPen(TextRegionStyle::outlineColor(r), 0));
             painter->setBrush(QColor(255, 252, 230, 220));
             painter->drawPolygon(scenePoly);
+
+            // Measure at a stable pixel size, then non-uniform scale into the box
+            // so long lines fill width and height tracks the region (not Qt wrap).
             QFont f = painter->font();
-            const qreal px = qBound(4.0, sceneBox.height() * 0.72, 72.0);
-            f.setPixelSize(qMax(4, int(px)));
+            f.setPixelSize(48); // reference size; scale maps into sceneBox
+            f.setStyleStrategy(QFont::PreferDefault);
+            const QFontMetricsF fm(f);
+            const QString line = r.text.simplified();
+            qreal advance = fm.horizontalAdvance(line);
+            if (advance < 1.0) {
+                advance = 1.0;
+            }
+            const qreal textH = qMax(qreal(1.0), fm.height());
+            const qreal sx = sceneBox.width() / advance;
+            const qreal sy = sceneBox.height() / textH;
+            painter->save();
             painter->setFont(f);
             painter->setPen(QColor(20, 20, 20, 235));
             painter->setBrush(Qt::NoBrush);
-            painter->drawText(sceneBox, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
-                              r.text);
+            // Map reference text space → scene box (may shear slightly if poly
+            // is rotated; boundingRect scale is good enough for Image mode).
+            painter->translate(sceneBox.topLeft());
+            painter->scale(sx, sy);
+            painter->drawText(QPointF(0.0, fm.ascent()), line);
+            painter->restore();
         }
     }
 
