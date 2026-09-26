@@ -481,6 +481,7 @@ set(BILTOO_FEATURE_THUMTOO_UNARR 0)
 set(BILTOO_FEATURE_THUMTOO_MUPDF 0)
 set(BILTOO_FEATURE_THUMTOO_DJVU 0)
 set(BILTOO_FEATURE_THUMTOO_CURL 0)
+set(BILTOO_FEATURE_THUMTOO_TESSERACT 0)
 
 if(PkgConfig_FOUND)
   # libvips — host ImageLoader extras (HEIF/AVIF buffer path, autorot, attention
@@ -561,6 +562,9 @@ endif()
 if(DEFINED THUMTOO_HAVE_CURL AND THUMTOO_HAVE_CURL)
   set(BILTOO_FEATURE_THUMTOO_CURL 1)
 endif()
+if(DEFINED THUMTOO_HAVE_TESSERACT AND THUMTOO_HAVE_TESSERACT)
+  set(BILTOO_FEATURE_THUMTOO_TESSERACT 1)
+endif()
 message(STATUS "thumtoo: required (${THUMTOO_SOURCE_DIR})")
 
 # Version + feature macros: only TUs that include version.h recompile on bump.
@@ -587,6 +591,7 @@ biltoo_feature_status(BILTOO_FEATURE_THUMTOO_UNARR _st_unarr)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_MUPDF _st_mupdf)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_DJVU _st_djvu)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_CURL _st_curl)
+biltoo_feature_status(BILTOO_FEATURE_THUMTOO_TESSERACT _st_tesseract)
 
 message(STATUS "")
 message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
@@ -600,6 +605,7 @@ message(STATUS "    libunarr ....... ${_st_unarr}  (solid RAR/CBR extract)")
 message(STATUS "    MuPDF .......... ${_st_mupdf}  (PDF pages)")
 message(STATUS "    DjVuLibre ...... ${_st_djvu}  (DjVu pages)")
 message(STATUS "    libcurl ........ ${_st_curl}  (HTTP/S source fetch)")
+message(STATUS "    Tesseract ...... ${_st_tesseract}  (OCR text layers)")
 message(STATUS "  Runtime: install KImageFormats for XCF/KRA/ORA and other Qt plugins.")
 message(STATUS "")
 
