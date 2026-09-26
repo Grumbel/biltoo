@@ -45,7 +45,7 @@ void RasterClimbSmTest::covers_band()
 void RasterClimbSmTest::soft_first_when_blank()
 {
     Machine m;
-    m.setWant(256, 0, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(256, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.scheduleSoft);
@@ -55,7 +55,7 @@ void RasterClimbSmTest::soft_first_when_blank()
 void RasterClimbSmTest::soft_then_display_under_overview()
 {
     Machine m;
-    m.setWant(800, 0, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(800, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.scheduleSoft);
@@ -72,7 +72,7 @@ void RasterClimbSmTest::soft_then_display_under_overview()
 void RasterClimbSmTest::soft_covered_high_need_prefers_before_full()
 {
     Machine m;
-    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(4096, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(!p.scheduleSoft);
@@ -92,7 +92,7 @@ void RasterClimbSmTest::soft_covered_high_need_prefers_before_full()
 void RasterClimbSmTest::prefercache_soft_delivery_sets_plateau_then_full()
 {
     Machine m;
-    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(4096, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     m.noteDelivery(4096, 512, kSoft); // PreferCache returned soft
     QVERIFY(m.state().preferGaveUp);
@@ -104,7 +104,7 @@ void RasterClimbSmTest::prefercache_tilesynth_mid_edge_then_full()
 {
     // TileSynth PreferCache returned ~2048 for a Full-band want.
     Machine m;
-    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(4096, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     m.noteDelivery(4096, 2048, kSoft);
     QVERIFY(m.state().preferGaveUp);
@@ -118,7 +118,7 @@ void RasterClimbSmTest::prefercache_covers_request_but_short_of_want()
     // Prefer was scheduled at a clamped edge that TileSynth fully covers, while
     // host want still needs Full-band. Must still preferGaveUp → Full.
     Machine m;
-    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(4096, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     m.noteDelivery(2048, 2048, kSoft); // covers request, short of want
     QVERIFY(m.state().preferGaveUp);
@@ -149,7 +149,7 @@ void RasterClimbSmTest::full_shortfall_clears_done_in_plan()
 void RasterClimbSmTest::host_lru_demotion_resets_queues()
 {
     Machine m;
-    m.setWant(512, 0, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(512, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     m.state().softQueued = true;
     m.setHaveFromHost(0, kSoft); // LRU eviction
@@ -162,7 +162,7 @@ void RasterClimbSmTest::host_lru_demotion_resets_queues()
 void RasterClimbSmTest::reconcile_clears_sticky_queued()
 {
     Machine m;
-    m.setWant(512, 0, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(512, 0, Policy::TileDisplay, kSoft, kOverview);
     m.state().softQueued = true;
     m.state().displayQueued = true;
     PendingFlags none;
@@ -174,7 +174,7 @@ void RasterClimbSmTest::reconcile_clears_sticky_queued()
 void RasterClimbSmTest::escalate_resets_full_done()
 {
     Machine m;
-    m.setWant(2048, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(2048, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.state().fullDone = true;
     m.setWant(4096, 6048, Policy::EscalateToFull, kSoft, kOverview);
     QVERIFY(!m.state().fullDone);
@@ -195,7 +195,7 @@ void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
 {
     // SoftOnly returned 128 while softMax is 512 — must not loop SoftOnly.
     Machine m;
-    m.setWant(256, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(256, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.scheduleSoft);
@@ -215,7 +215,7 @@ void RasterClimbSmTest::host_mid_soft_skips_softonly()
 {
     // ImageCache already has mid soft (100): SoftOnly must not loop.
     Machine m;
-    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(100, kSoft);
     QVERIFY(m.state().softAttempted);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
@@ -229,7 +229,7 @@ void RasterClimbSmTest::soft_mid_rung_marks_attempted()
     // SoftOnly returned 100 (above LQIP, below old 128 floor): softAttempted
     // so Prefer soft at softMax runs instead of SoftOnly forever.
     Machine m;
-    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.noteDelivery(/*requestEdge=*/256, /*got=*/100, kSoft);
     QVERIFY(m.state().softAttempted);
     QVERIFY(!m.state().preferGaveUp);
@@ -243,7 +243,7 @@ void RasterClimbSmTest::lqip_delivery_still_schedules_soft()
 {
     // LQIP (≤96) must not freeze the soft PreferCache climb.
     Machine m;
-    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.scheduleSoft);

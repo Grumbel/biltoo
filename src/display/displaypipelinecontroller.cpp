@@ -111,7 +111,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
             continue;
         }
         // tileLodWanted: tiles own display — skip PreferCache (global tick already
-        // ran above). Durable-only still allows SoftDisplay PreferCache underlay
+        // ran above). Durable-only still allows TileDisplay PreferCache underlay
         // until LOD wants (same as tilesOwnDisplay(wanted, false) / countDurable=false).
         if (ii->tileLodWanted()) {
             continue;
@@ -148,7 +148,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         {
             const auto pol =
                 ThumtooCache::hasDurableTilesKnown(path)
-                    ? PathRasterService::ClimbPolicy::SoftDisplay
+                    ? PathRasterService::ClimbPolicy::TileDisplay
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             (void)applyDisplaySurfaceAction(ii, act, QImage(), needEdge, pol);
         }
@@ -255,11 +255,11 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
     }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
-    // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
+    // Slideshow + durable tiles: TileDisplay (PreferCache/TileSynth) only —
     // EscalateToFull native decode is the CPU storm on prepared libraries.
     const auto policy =
         (m_host->hostSlideshow().hud().isProgressActive() && ThumtooCache::hasDurableTilesKnown(path))
-            ? PathRasterService::ClimbPolicy::SoftDisplay
+            ? PathRasterService::ClimbPolicy::TileDisplay
             : PathRasterService::ClimbPolicy::EscalateToFull;
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
                   qPrintable(QFileInfo(path).fileName()), edge,
@@ -797,7 +797,7 @@ void DisplayPipelineController::driveImageFocusSurface()
     {
         const auto pol =
             ThumtooCache::hasDurableTilesKnown(path)
-                ? PathRasterService::ClimbPolicy::SoftDisplay
+                ? PathRasterService::ClimbPolicy::TileDisplay
                 : PathRasterService::ClimbPolicy::EscalateToFull;
         (void)applyDisplaySurfaceAction(
             item, action, QImage(),

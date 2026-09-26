@@ -70,9 +70,9 @@ only place that joins **path climb**, **appearance want**, and **surface need**.
 | Kind | Consumer | Typical need edge | Climb policy |
 |------|----------|-------------------|--------------|
 | `ImageFocus` | Image mode primary item | viewport long edge (capped native) | EscalateToFull |
-| `GalleryTile` | Gallery `ImageItem` | cell / pack target | LQIP + tiles (no SoftDisplay climb) |
-| `FilmstripCell` | ThumbnailBar row | strip thumb size | SoftDisplay |
-| `WorkspaceItem` | Workspace free item | on-screen footprint / focus | SoftDisplay; Escalate when focused |
+| `GalleryTile` | Gallery `ImageItem` | cell / pack target | LQIP + tiles (no TileDisplay climb) |
+| `FilmstripCell` | ThumbnailBar row | strip thumb size | TileDisplay |
+| `WorkspaceItem` | Workspace free item | on-screen footprint / focus | TileDisplay; Escalate when focused |
 | `SlideshowPhase` | from/to phase buffers | slideshow target edge | EscalateToFull |
 
 ### 3.2 Binding

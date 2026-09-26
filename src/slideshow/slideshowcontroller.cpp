@@ -956,7 +956,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
                                    : ImageCache::longEdge(phase().toImageRef());
         if (phaseHave < need || incoming < need) {
             const auto policy =
-                PathRasterService::ClimbPolicy::SoftDisplay;
+                PathRasterService::ClimbPolicy::TileDisplay;
             m_view->hostPathRaster()->ensure(path, target, m_view->logicalSizeForPath(path), policy);
         }
     }
@@ -1036,7 +1036,7 @@ void SlideshowController::slideshowPhaseSurfaceTick()
         }
         if (act.type == AT::ScheduleClimb && m_view->hostPathRaster()) {
             const auto policy =
-                PathRasterService::ClimbPolicy::SoftDisplay;
+                PathRasterService::ClimbPolicy::TileDisplay;
             m_view->hostPathRaster()->ensure(
                 path, target, m_view->logicalSizeForPath(path), policy);
         }
@@ -1082,11 +1082,11 @@ QImage SlideshowController::slideshowSoftPlaceholder(const QString &path)
         soft = ThumtooCache::cachedLqipImage(path);
     }
     if (soft.isNull()) {
-        // LQIP/cache miss: PathRaster SoftDisplay → TileSynth or pyramid.
+        // LQIP/cache miss: PathRaster TileDisplay → TileSynth or pyramid.
         // Fallback without PathRaster: same (never PreferCache soft encode).
         if (m_view->hostPathRaster()) {
             const auto policy =
-                PathRasterService::ClimbPolicy::SoftDisplay;
+                PathRasterService::ClimbPolicy::TileDisplay;
             m_view->hostPathRaster()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
             (void)ThumtooCache::scheduleTileSynthOrPyramid(
@@ -1650,7 +1650,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
     }
     // PreferCache plateau with Full already done for this want — stop.
     if (m_view->hostPathRaster()->isGaveUp(path) && !m_view->hostPathRaster()->isClimbPending(path)) {
-        // SoftDisplay plateau — do not escalate to Full native.
+        // TileDisplay plateau — do not escalate to Full native.
     }
 
     qCDebug(lcSlideshow).nospace()
@@ -1658,12 +1658,12 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
         << " edge=" << targetEdge
         << " have=" << haveEdge;
 
-    // SoftDisplay only: PreferCache/TileSynth at screen-fit edge. Never Full
+    // TileDisplay only: PreferCache/TileSynth at screen-fit edge. Never Full
     // native whole-frame (that pulled multi-MP samples for every slide).
     m_view->hostPathRaster()->ensure(path, targetEdge, native,
-                         PathRasterService::ClimbPolicy::SoftDisplay);
+                         PathRasterService::ClimbPolicy::TileDisplay);
     // Warm durable tiles into the shared path TileMemoryCache (TileLodRegistry)
-    // so SoftDisplay TileSynth and later Image/Gallery views reuse them.
+    // so TileDisplay TileSynth and later Image/Gallery views reuse them.
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTilePyramid(path);
     }
@@ -1986,7 +1986,7 @@ void SlideshowController::paintMotionCover(QPainter *painter, const QImage &imag
 
     // Tiles first (shared TileLodRegistry + ImageItem session) — same cover paint
     // helper as Image/Gallery. Prefer tiles whenever the path has RAM/durable
-    // coverage so SoftDisplay atlases cannot pin the slideshow on low-res.
+    // coverage so TileDisplay atlases cannot pin the slideshow on low-res.
     if (paintSlideshowTiles(painter, path, dest, image)) {
         return;
     }

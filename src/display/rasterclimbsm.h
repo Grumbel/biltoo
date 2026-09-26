@@ -7,17 +7,21 @@
 /**
  * Pure path→raster climb state machine (no I/O).
  *
- * PathRasterService schedules; this class decides *when* Soft / PreferCache /
- * FocusFull / Full are legal so sticky flags and PreferCache-before-Full
- * deadlocks cannot recur.
+ * PathRasterService schedules; this class decides when TileSynth/pyramid,
+ * PreferCache overview, or Full are legal so sticky flags and
+ * PreferCache-before-Full deadlocks cannot recur.
+ *
+ * Product: Soft ladder encode is dead ([docs/KILL_SOFT.md]). Plan field
+ * scheduleSoft still means "first ≤softMax band via TileSynth or pyramid"
+ * (PathRasterService wires it that way).
  *
  * Invariants:
  * 1. have comes only from setHaveFromHost / noteDelivery (host is authority).
  * 2. softQueued/displayQueued/fullQueued are cleared when external pending is false.
- * 2b. softAttempted: soft PreferCache completed with got>0; do not re-soft while
- *     host still holds a sample (avoids soft loops when returned edge < softMax).
- * 3. When soft is covered and effectiveNeed > overviewCap, plan may emit Full
- *    in the same tick as PreferCache — PreferCache cannot monopolize the path.
+ * 2b. softAttempted: first band already returned pixels; do not re-issue while
+ *     host still holds a sample (avoids loops when returned edge < softMax).
+ * 3. When first band is covered and effectiveNeed > overviewCap, plan may emit
+ *    Full in the same tick as PreferCache — PreferCache cannot monopolize the path.
  * 4. fullDone is cleared while have is a shortfall vs effectiveNeed.
  * 5. preferGaveUp is not terminal until Full was attempted when need > overview.
  *
@@ -40,7 +44,7 @@ inline bool covers(int have, int need)
 }
 
 enum class Policy {
-    SoftDisplay = 0,
+    TileDisplay = 0,
     EscalateToFull = 1,
 };
 
@@ -78,7 +82,7 @@ struct State {
     bool preferGaveUp = false;
     bool tilesQueued = false;
     bool fullDone = false;
-    Policy policy = Policy::SoftDisplay;
+    Policy policy = Policy::TileDisplay;
 };
 
 class Machine {

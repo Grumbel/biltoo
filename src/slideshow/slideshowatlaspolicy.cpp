@@ -69,7 +69,7 @@ int targetLongEdge(bool viewportValid, int viewportW, int viewportH, qreal dpr,
                    qreal headroom)
 {
     // Screen-fit only: viewport × DPR × Ken-Burns headroom. Never native /
-    // whole-image PreferCache Full — tiles (TileSynth SoftDisplay) or soft at
+    // whole-image PreferCache Full — tiles (TileSynth TileDisplay) or soft at
     // this edge. Cap at overview band so 4K+ natives are not pulled in whole.
     if (!viewportValid) {
         return ThumtooCache::kGalleryLadderEdge;

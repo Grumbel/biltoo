@@ -197,7 +197,7 @@ have ← deliveries into ImageCache only (upward-only)
 PreferCache plateau is normal; raising want clears the plateau latch
 EscalateToFull (ImageFocus / slideshow): Full only **after** Prefer plateau
   (same-plan Soft+Prefer+Full starved intermediate UI updates)
-SoftDisplay (filmstrip / Workspace non-focus / Slideshow): soft band, no Full
+TileDisplay (filmstrip / Workspace non-focus / Slideshow): soft band, no Full
 ```
 
 Crop does **not** change the host want formula: decode enough of the **full

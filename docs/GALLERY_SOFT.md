@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Gallery soft path — removed
 
 Soft PreferCache / soft-ladder underlay for Gallery is **gone** and must not be
-reintroduced. Placeholders are **LQIP** only; sharpness is **tiles**.
+reintroduced. Placeholders are **LQIP** (and EMB) only; sharpness is **tiles**.
 
 Host decode-window bookkeeping lives under the **GalleryDecode** name
 (`gallerydecodesm`, `GalleryDecodeBook`, `GalleryDecodeState`) — not "soft".
@@ -15,7 +15,7 @@ See [GALLERY_PIXELS.md](GALLERY_PIXELS.md).
 
 ## Broader direction
 
-Gallery is done. **Image / Workspace Soft** is still alive and should die the
-same way (LQIP/EMB until tiles cover). See **TODO.md → Kill Soft — tiles
-everywhere**. Not a 0.2.0 tag requirement.
-
+Gallery is done. **Soft is product-dead for all modes** — see
+[KILL_SOFT.md](KILL_SOFT.md). Image / Workspace must use EMB/LQIP underlay +
+tiles (same as Gallery). Climb policy is `TileDisplay` / `EscalateToFull`, not
+a soft ladder.

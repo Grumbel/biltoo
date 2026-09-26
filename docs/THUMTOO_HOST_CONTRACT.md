@@ -106,18 +106,21 @@ request and still fail slideshow need if want was 2048 and only 1024 exists.
 
 ```text
 enum class ClimbPolicy {
-  SoftDisplay,    // Soft → PreferCache/TileSynth ≤ overview; no Full native
-  EscalateToFull, // Soft → PreferCache → Full once (Image mode cold path)
+  TileDisplay,    // TileSynth / pyramid / overview band; no Full native
+  EscalateToFull, // same, then Full once when need > overview (Image cold)
 };
 ```
 
-### SoftDisplay
+### TileDisplay
 
 Used by **filmstrip**, **Workspace** (non-focus), and **Slideshow** (screen-fit).
 
-1. Soft if `have == 0`
+1. If `have == 0`: TileSynth when durable tiles exist, else schedule tile pyramid
+   (optional one-shot overview only if product still allows PreferCache miss path)
 2. PreferCache / TileSynth until Met or BestAvailable (overview band)
 3. Plateau is terminal for this want — **no Full native**
+
+Soft ladder encode is **not** part of this policy ([KILL_SOFT.md](KILL_SOFT.md)).
 
 ### Gallery (no PathRaster soft climb)
 
@@ -131,12 +134,12 @@ See [GALLERY_PIXELS.md](GALLERY_PIXELS.md). Soft PreferCache underlay is removed
 
 ### EscalateToFull (Image mode, cold)
 
-1. Soft if `have == 0`
-2. PreferCache until Met or BestAvailable
+1. If `have == 0`: TileSynth or tile pyramid (same as TileDisplay first step)
+2. PreferCache / TileSynth until Met or BestAvailable
 3. On BestAvailable while `want` > overview: **one Full** when no durable tiles
 4. When durable tiles exist, Image mode uses **tiles** instead of Full
 
-Slideshow uses SoftDisplay only (screen-fit edge), never EscalateToFull.
+Slideshow uses TileDisplay only (screen-fit edge), never EscalateToFull.
 
 ---
 
@@ -164,7 +167,7 @@ Sample climb only changes sharpness.
 2. **Consumer PreferCache retry** after BestAvailable (`forgetPixelsSettled`). Consumer PreferCache retry is not a product
    feature). Retry belongs only inside the
    service if the contract is extended; today plateau → Full under
-   EscalateToFull, or raise want under SoftDisplay.
+   EscalateToFull, or raise want under TileDisplay.
 2b. **Second Full / PreferCache owners** outside PathRasterService (including
    pool workers). Workers must `requestEscalateClimb` on the GUI thread.
    Soft-only `schedulePixels` from ImageLoader is allowed (§1 exception).
@@ -209,7 +212,7 @@ without documenting it here.
 
 - Changing band edges or PreferCache guarantees requires updating **this file**
   and PERFORMANCE.md in the **same** tip.
-- New consumers must pick SoftDisplay or EscalateToFull; do not invent a third
+- New consumers must pick TileDisplay or EscalateToFull; do not invent a third
   recovery path in ImageView.
 - Thumtoo-side API changes should land with a biltoo tip that adjusts this
   contract before consumer workarounds.

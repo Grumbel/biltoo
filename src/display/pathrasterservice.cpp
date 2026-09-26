@@ -18,7 +18,7 @@ PathRasterService::PathRasterService(QObject *parent)
 RasterClimb::Policy PathRasterService::toSmPolicy(ClimbPolicy p)
 {
     return p == ClimbPolicy::EscalateToFull ? RasterClimb::Policy::EscalateToFull
-                                            : RasterClimb::Policy::SoftDisplay;
+                                            : RasterClimb::Policy::TileDisplay;
 }
 
 int PathRasterService::capWant(int want, const QSize &knownNative)

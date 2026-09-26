@@ -29,7 +29,7 @@ failure, and consumers invented different recoveries.
 ## ClimbPolicy
 
 ```text
-SoftDisplay / EscalateToFull — Soft → PreferCache (≤1024 effective) → Full when want > 1024
+TileDisplay / EscalateToFull — Soft → PreferCache (≤1024 effective) → Full when want > 1024
 ```
 
 **Progressive order (EscalateToFull):** Soft and Prefer may share a plan while
@@ -48,7 +48,7 @@ PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
 ## API
 
 ```text
-ensure(path, wantEdge, knownNative?, policy = SoftDisplay)
+ensure(path, wantEdge, knownNative?, policy = TileDisplay)
 noteDelivery(path, requestEdge, image) → put cache, emit rasterImproved, pump
 best / haveEdge / isGaveUp / isClimbPending
 invalidateAll()           — session switch
@@ -60,7 +60,7 @@ invalidateAll()           — session switch
 |----------|---------------|---------|
 | Gallery | *(none — LQIP + tiles)* | `applyGalleryLadderReady` accepts LQIP only |
 | Image mode | EscalateToFull (cold) / tiles when durable | `rasterImproved` / `tryInstall` |
-| Slideshow | SoftDisplay (screen-fit) → tiles/TileSynth | phase buffers + optional tile paint |
+| Slideshow | TileDisplay (screen-fit) → tiles/TileSynth | phase buffers + optional tile paint |
 | Filmstrip | *(not PathRaster — `scheduleFilmstripTilePixels`)* | LQIP + TileSynth |
 
 Gallery does not call `ensure`. Decode window installs LQIP and drives

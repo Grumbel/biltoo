@@ -318,7 +318,7 @@ Policy helpers:
 |------|-------------------------|
 | `tileLodWanted` | **Skip** — tiles own display; tick tile LOD |
 | Durable pyramid, no live item yet | **Skip** — tick tile LOD (prefetch / cold underlay) when `countDurable` |
-| Durable only, `tileLodWanted` false | SoftDisplay underlay may still run until LOD wants |
+| Durable only, `tileLodWanted` false | TileDisplay underlay may still run until LOD wants |
 | Neither | PreferCache / Full climb as usual |
 
 - Gallery decode window skips tileLodWanted cells
@@ -329,7 +329,7 @@ Policy helpers:
   live item already wants tiles (not every soft underlay delivery)
 - PathRaster cancel-once on enter tile band
 - Workspace `ensureWorkspaceQualityClimb` skips PreferCache only when
-  `tileLodWanted()` (durable-only SoftDisplay underlay still allowed); global
+  `tileLodWanted()` (durable-only TileDisplay underlay still allowed); global
   `tickPrimaryTileLod` already ran for the mode
 
 

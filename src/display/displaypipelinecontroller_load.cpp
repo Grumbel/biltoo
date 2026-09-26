@@ -784,7 +784,7 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
         const auto pol =
             (!ThumtooCache::hasDurableTilesKnown(path))
                 ? PathRasterService::ClimbPolicy::EscalateToFull
-                : PathRasterService::ClimbPolicy::SoftDisplay;
+                : PathRasterService::ClimbPolicy::TileDisplay;
         (void)applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol);
     }
     if (m_host->viewportWidget()) {

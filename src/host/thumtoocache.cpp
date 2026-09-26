@@ -188,7 +188,7 @@ int maxConcurrentPixelJobs()
     return n;
 }
 int g_pixelsActive = 0;
-/** Concurrent request_full_pixels jobs (Gallery SoftDisplay Fulls visibles). */
+/** Concurrent request_full_pixels jobs (Gallery TileDisplay Fulls visibles). */
 int g_fullActive = 0;
 constexpr int kMaxConcurrentFullJobs = 4;
 struct PendingPixels {

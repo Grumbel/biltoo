@@ -18,8 +18,9 @@
  * Policy lives in RasterClimb::Machine (pure SM). This service only:
  *   - maps path → Machine
  *   - reads ImageCache / ThumtooCache pending
- *   - executes Plan (schedule Soft / PreferCache / Full / tiles)
+ *   - executes Plan (TileSynth/pyramid, PreferCache overview, Full, tiles)
  *
+ * Soft ladder encode is not a product path (docs/KILL_SOFT.md).
  * Contract: docs/THUMTOO_HOST_CONTRACT.md
  */
 class PathRasterService : public QObject
@@ -27,7 +28,9 @@ class PathRasterService : public QObject
     Q_OBJECT
 public:
     enum class ClimbPolicy {
-        SoftDisplay = 0,
+        /** TileSynth / pyramid / overview; never Full native. */
+        TileDisplay = 0,
+        /** Same first steps, then one Full when need exceeds overview. */
         EscalateToFull = 1,
     };
 
@@ -35,7 +38,7 @@ public:
 
     void ensure(const QString &path, int wantEdge,
                 const QSize &knownNative = QSize(),
-                ClimbPolicy policy = ClimbPolicy::SoftDisplay);
+                ClimbPolicy policy = ClimbPolicy::TileDisplay);
 
     void cancel(const QString &path);
     void invalidateAll();

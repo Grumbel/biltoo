@@ -214,7 +214,7 @@ ImageView::ImageView(QWidget *parent)
                 if (m_slideshow.hud().isProgressActive()
                     && m_slideshow.phase().isPhasePath(path)) {
                     m_slideshow.onSlideshowRasterReady(path, img);
-                    // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
+                    // TileDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (hostPathRaster()) {
                         const int target = m_displayPipeline->cappedDisplayEdgeForPath(
                             path, m_slideshow.slideshowTargetEdge());
@@ -222,7 +222,7 @@ ImageView::ImageView(QWidget *parent)
                         if (longEdge > 0 && longEdge < need) {
                             hostPathRaster()->ensure(
                                 path, target, logicalSizeForPath(path),
-                                PathRasterService::ClimbPolicy::SoftDisplay);
+                                PathRasterService::ClimbPolicy::TileDisplay);
                         }
                     }
                     return;
