@@ -157,6 +157,8 @@ protected:
 
 private slots:
     void ocrCurrentPage();
+    void ocrDocument();
+    void cancelOcrBatch();
     void openFiles();
     void openLocation();
     void commitLocationBar();
@@ -641,6 +643,10 @@ private:
     QAction *m_toggleContentEditMarksAct = nullptr;
     QAction *m_showTextRegionsAct = nullptr;
     QAction *m_ocrPageAct = nullptr;
+    QAction *m_ocrDocumentAct = nullptr;
+    QAction *m_ocrCancelAct = nullptr;
+    int m_ocrGeneration = 0;
+    bool m_ocrRunning = false;
     QAction *m_findOnPageAct = nullptr;
     QAction *m_showSearchBarAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;

@@ -354,6 +354,22 @@ void MainWindow::createActions()
         "layer for search and selection on this page.</p>"));
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
+    m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
+    m_ocrDocumentAct->setStatusTip(
+        tr("Run OCR on all pages of the current document (language prompt)"));
+    m_ocrDocumentAct->setWhatsThis(tr(
+        "<p>OCR every page of the current multipage document. Language uses "
+        "Tesseract codes (e.g. <code>eng</code>, <code>eng+deu</code>). "
+        "Pages with a cached OCR layer are skipped unless you re-run with force "
+        "from a future option. Progress shows in the status bar; cancel with "
+        "View → Cancel OCR.</p>"));
+    connect(m_ocrDocumentAct, &QAction::triggered, this, &MainWindow::ocrDocument);
+
+    m_ocrCancelAct = new QAction(tr("Cancel O&CR"), this);
+    m_ocrCancelAct->setEnabled(false);
+    m_ocrCancelAct->setStatusTip(tr("Cancel an in-progress document OCR batch"));
+    connect(m_ocrCancelAct, &QAction::triggered, this, &MainWindow::cancelOcrBatch);
+
     m_findOnPageAct = new QAction(tr("&Find…"), this);
     m_findOnPageAct->setShortcut(QKeySequence::Find); // Ctrl+F
     m_findOnPageAct->setShortcutContext(Qt::WindowShortcut);
@@ -1022,6 +1038,8 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_ocrPageAct);
+    m_viewMenu->addAction(m_ocrDocumentAct);
+    m_viewMenu->addAction(m_ocrCancelAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();

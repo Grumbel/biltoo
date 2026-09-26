@@ -3111,7 +3111,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
     return convertLayer(*layer);
 }
 
-PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force)
+PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
+                                     const QString &lang)
 {
     init();
     thumtoo::Client *c = nullptr;
@@ -3127,6 +3128,9 @@ PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force)
         return {};
     }
     thumtoo::OcrOptions opts;
+    if (!lang.isEmpty()) {
+        opts.lang = lang.toStdString();
+    }
     auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
     if (!layer) {
         return {};
@@ -3144,7 +3148,7 @@ PageTextLayer ensurePageTextLayer(const QString &)
 {
     return {};
 }
-PageTextLayer ensureOcrPageTextLayer(const QString &, bool)
+PageTextLayer ensureOcrPageTextLayer(const QString &, bool, const QString &)
 {
     return {};
 }

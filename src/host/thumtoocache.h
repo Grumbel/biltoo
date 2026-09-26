@@ -481,7 +481,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath);
  * Empty if OCR unavailable or path not a page/image OCR can handle.
  */
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
-                                     bool force = false);
+                                     bool force = false,
+                                     const QString &lang = QString());
 
 /** Cache-only document outline (TOC). Empty if not stored. */
 DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath);

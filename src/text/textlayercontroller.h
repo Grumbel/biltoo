@@ -36,7 +36,9 @@ public:
     void setShowRegions(bool on);
     void refresh();
     /** Run OCR for the current page and install the OCR text layer. */
-    bool applyOcrLayer(bool force = false);
+    bool applyOcrLayer(bool force = false, const QString &lang = QString());
+    /** Install a pre-fetched layer (e.g. after worker OCR). */
+    void installLayer(const ThumtooCache::PageTextLayer &layer, const QString &path);
     void setSearchFuzzy(bool on);
     void recomputeSearchMatches();
     int setSearchQuery(const QString &query);

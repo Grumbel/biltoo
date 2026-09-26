@@ -76,7 +76,21 @@ void TextLayerController::refresh()
 }
 
 
-bool TextLayerController::applyOcrLayer(bool force)
+void TextLayerController::installLayer(const ThumtooCache::PageTextLayer &layer,
+                                            const QString &path)
+{
+    m_session.resetLayerContent();
+    m_session.clearSearchMatches();
+    m_session.setLayerContent(layer, path);
+    if (m_session.hasSearchQuery()) {
+        recomputeSearchMatches();
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
 {
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
@@ -85,7 +99,7 @@ bool TextLayerController::applyOcrLayer(bool force)
         return false;
     }
     ThumtooCache::PageTextLayer layer =
-        ThumtooCache::ensureOcrPageTextLayer(path, force);
+        ThumtooCache::ensureOcrPageTextLayer(path, force, lang);
     if (layer.regions.isEmpty() && !layer.pageBounds.isValid()) {
         return false;
     }
