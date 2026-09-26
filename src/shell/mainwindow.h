@@ -598,8 +598,9 @@ private:
     QMenu *m_editMenu = nullptr;
     QMenu *m_imageMenu = nullptr;
     QMenu *m_viewMenu = nullptr;
-    QMenu *m_goMenu = nullptr;
-    QMenu *m_debugMenu = nullptr;
+    /** Shared by View → Panels and the toolbar Panels tool button. */
+    QMenu *m_panelsMenu = nullptr;
+    QMenu *m_goMenu = nullptr;    QMenu *m_debugMenu = nullptr;
     QMenu *m_helpMenu = nullptr;
     QMenu *m_contextMenu = nullptr;
 

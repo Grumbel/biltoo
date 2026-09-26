@@ -1078,27 +1078,28 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleScrollBarsAct);
     m_viewMenu->addSeparator();
     // Panels submenu — single place for all dock toggles (IDE / GIMP style).
-    auto *panelsMenu = m_viewMenu->addMenu(tr("&Panels"));
-    panelsMenu->setStatusTip(tr("Show or hide side panels and the filmstrip"));
-    panelsMenu->addAction(m_toggleThumbnailBarAct);
-    panelsMenu->addAction(m_toggleMetadataAct);
-    panelsMenu->addAction(m_toggleTocAct);
-    panelsMenu->addAction(m_toggleHelpAct);
+    // Also used by the toolbar Panels tool button.
+    m_panelsMenu = m_viewMenu->addMenu(tr("&Panels"));
+    m_panelsMenu->setStatusTip(tr("Show or hide side panels and the filmstrip"));
+    m_panelsMenu->addAction(m_toggleThumbnailBarAct);
+    m_panelsMenu->addAction(m_toggleMetadataAct);
+    m_panelsMenu->addAction(m_toggleTocAct);
+    m_panelsMenu->addAction(m_toggleHelpAct);
     if (m_toggleAdjustmentsAct) {
-        panelsMenu->addAction(m_toggleAdjustmentsAct);
+        m_panelsMenu->addAction(m_toggleAdjustmentsAct);
     }
     if (m_toggleCropAct) {
-        panelsMenu->addAction(m_toggleCropAct);
+        m_panelsMenu->addAction(m_toggleCropAct);
     }
     if (m_toggleOcrAct) {
-        panelsMenu->addAction(m_toggleOcrAct);
+        m_panelsMenu->addAction(m_toggleOcrAct);
     }
     if (m_toggleTextAct) {
-        panelsMenu->addAction(m_toggleTextAct);
+        m_panelsMenu->addAction(m_toggleTextAct);
     }
-    panelsMenu->addAction(m_toggleLayoutPanelAct);
-    panelsMenu->addSeparator();
-    panelsMenu->addAction(m_resetDockLayoutAct);
+    m_panelsMenu->addAction(m_toggleLayoutPanelAct);
+    m_panelsMenu->addSeparator();
+    m_panelsMenu->addAction(m_resetDockLayoutAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_hideThumbLabelsAct);
     m_viewMenu->addAction(m_cropThumbnailsAct);
@@ -1379,6 +1380,19 @@ void MainWindow::createToolBar()
     }
     // Help sits with chrome toggles, immediately before Fullscreen.
     m_toolBar->addAction(m_toggleHelpAct);
+    // All panels in one popup (same menu as View → Panels).
+    if (m_panelsMenu) {
+        auto *panelsBtn = new QToolButton(m_toolBar);
+        panelsBtn->setObjectName(QStringLiteral("PanelsToolButton"));
+        panelsBtn->setIcon(themeIcon(QStringLiteral("view-list-details"),
+                                     QStyle::SP_FileDialogDetailedView));
+        panelsBtn->setToolTip(tr("Panels"));
+        panelsBtn->setStatusTip(tr("Show or hide side panels and the filmstrip"));
+        panelsBtn->setPopupMode(QToolButton::InstantPopup);
+        panelsBtn->setMenu(m_panelsMenu);
+        panelsBtn->setAutoRaise(true);
+        m_toolBar->addWidget(panelsBtn);
+    }
     m_toolBar->addAction(m_fullscreenAct);
 
     // Left vertical toolbar for workspace tools (hidden until workspace mode)
