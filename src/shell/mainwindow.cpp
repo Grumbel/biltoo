@@ -4732,22 +4732,25 @@ void MainWindow::updateOcrPanel()
         return;
     }
     const QString path = m_imageView->hostImage().classicPath();
-    if (path.isEmpty() || !PagePath::isPageRef(path)) {
-        m_ocrPanel->setLayerInfo(tr("Open a document page (PDF/DjVu/EPUB) to OCR"));
+    if (path.isEmpty()) {
+        m_ocrPanel->setLayerInfo(tr("No image selected"));
         return;
     }
     const int page = PagePath::pageNumber(path);
     const auto native = ThumtooCache::cachedPageTextLayer(path);
     const auto ocr = ThumtooCache::cachedOcrPageTextLayer(path);
-        const QString engine = ThumtooCache::ocrAvailable()
-            ? tr("Tesseract: available")
-            : tr("Tesseract: not available in this build");
-        m_ocrPanel->setLayerInfo(
-            tr("Page %1\nNative text: %2 region(s)\nOCR text: %3 region(s)\n%4")
-                .arg(page > 0 ? QString::number(page) : QStringLiteral("?"))
-                .arg(native.regions.size())
-                .arg(ocr.regions.size())
-                .arg(engine));
+    const QString engine = ThumtooCache::ocrAvailable()
+        ? tr("Tesseract: available")
+        : tr("Tesseract: not available in this build");
+    const QString where = page > 0
+        ? tr("Page %1").arg(page)
+        : QFileInfo(path).fileName();
+    m_ocrPanel->setLayerInfo(
+        tr("%1\nNative text: %2 region(s)\nOCR text: %3 region(s)\n%4")
+            .arg(where)
+            .arg(native.regions.size())
+            .arg(ocr.regions.size())
+            .arg(engine));
 }
 
 void MainWindow::startOcrCurrentPage(bool force)
@@ -4763,11 +4766,11 @@ void MainWindow::startOcrCurrentPage(bool force)
         return;
     }
     const QString path = m_imageView->hostImage().classicPath();
-    if (path.isEmpty() || !PagePath::isPageRef(path)) {
-        statusBar()->showMessage(tr("OCR is only available for document pages"), 4000);
+    if (path.isEmpty()) {
+        statusBar()->showMessage(tr("No image selected for OCR"), 4000);
         if (m_ocrPanel) {
-            m_ocrPanel->appendLog(tr("Error: current item is not a document page"));
-            m_ocrPanel->setSummary(tr("Not a document page"));
+            m_ocrPanel->appendLog(tr("Error: no current image path"));
+            m_ocrPanel->setSummary(tr("No image selected"));
         }
         return;
     }

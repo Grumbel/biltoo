@@ -36,10 +36,10 @@ void OcrPanel::buildUi()
     auto *opts = new QGroupBox(tr("Options"), inner);
     auto *form = new QFormLayout(opts);
     m_scope = new QComboBox(opts);
-    m_scope->addItem(tr("Current page"), int(Scope::CurrentPage));
-    m_scope->addItem(tr("Whole document"), int(Scope::Document));
-    m_scope->setToolTip(tr("Current page: one page only.\n"
-                           "Whole document: every page of the open multipage file."));
+    m_scope->addItem(tr("Current image"), int(Scope::CurrentPage));
+    m_scope->addItem(tr("All pages of multipage document"), int(Scope::Document));
+    m_scope->setToolTip(tr("Current image: the focused session image (any format).\n"
+                           "Multipage: every page when the path expands to a document (PDF/DjVu/EPUB)."));
     form->addRow(tr("Scope"), m_scope);
 
     m_lang = new QLineEdit(opts);
@@ -88,7 +88,7 @@ void OcrPanel::buildUi()
     progLay->addWidget(m_summary);
     layout->addWidget(prog);
 
-    auto *info = new QGroupBox(tr("Current page layers"), inner);
+    auto *info = new QGroupBox(tr("Current image layers"), inner);
     auto *infoLay = new QVBoxLayout(info);
     m_layerInfo = new QLabel(tr("—"), info);
     m_layerInfo->setWordWrap(true);

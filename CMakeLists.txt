@@ -533,6 +533,19 @@ set(PROJECT_VERSION_FULL "${_biltoo_saved_project_version_full}")
 unset(_biltoo_saved_project_version_full)
 target_link_libraries(biltoo_lib PUBLIC thumtoo)
 set(BILTOO_FEATURE_THUMTOO 1)
+# Surface nested thumtoo OCR capability in the biltoo configure log.
+if(NOT DEFINED THUMTOO_HAVE_TESSERACT)
+  set(THUMTOO_HAVE_TESSERACT 0)
+endif()
+if(THUMTOO_HAVE_TESSERACT)
+  message(STATUS "biltoo: thumtoo OCR enabled (THUMTOO_HAVE_TESSERACT=1, Tesseract linked)")
+else()
+  message(WARNING
+    "biltoo: thumtoo OCR DISABLED (THUMTOO_HAVE_TESSERACT=0). "
+    "Tesseract was not found when configuring thumtoo. "
+    "nix develop / biltoo-configure must include pkgs.tesseract via "
+    "thumtoo.lib.mkBuildInputs. Rebuild thumtoo after fixing PKG_CONFIG_PATH.")
+endif()
 # Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
 set(BILTOO_FEATURE_ARCHIVE 1)
 # Sub-features from thumtoo (PARENT_SCOPE after add_subdirectory).
