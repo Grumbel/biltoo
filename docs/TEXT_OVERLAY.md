@@ -44,3 +44,7 @@ model is integrated, regions stay **Body** (links still use Role=Link).
 
 Colour coding still distinguishes **Link** vs **Text**; Kind colours remain
 for future use when something authoritative sets Kind.
+
+## See also
+
+- Text-to-speech plan: [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md)
