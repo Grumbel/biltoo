@@ -95,7 +95,8 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                                const QPointF &contentOffset,
                                const QSize &nativeSize,
                                const ContentXform::Value &xform,
-                               bool freeRotPainter)
+                               bool freeRotPainter,
+                               const QString &itemPath)
 {
     if (!painter || !session) {
         return;
@@ -124,7 +125,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     // Classify underlay once for the item (EMB vs LQIP vs none).
     QString underTag;
     {
-        const QImage u = ImageCache::getUnderlay(path());
+        const QImage u = ImageCache::getUnderlay(itemPath);
         if (!u.isNull()) {
             const int le = ImageCache::longEdge(u);
             underTag = (le <= DisplayQuality::kLqipMaxEdge)
@@ -1390,7 +1391,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     // Map plan cells like tile paint (orient/flip/crop). Pixel
                     // TILE stamps still belong in thumtoo so they follow patches.
                     paintTilePlanDebugOverlay(painter, tileLodBag().controller->session(), plan,
-                                             contentRect(), off, native, x, freeRot);
+                                             contentRect(), off, native, x, freeRot, m_path);
                 }
                 painter->restore();
 

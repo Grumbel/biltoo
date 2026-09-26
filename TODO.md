@@ -2,24 +2,17 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2713.15-overlay-emb-lqip-tile-ram` (base `b9c3473`).
+**Tip:** `biltoo-2713.16-overlay-path-arg` (base `b9c3473`).
 
-### 2713.15 — Tile debug overlay EMB/LQIP + larger tile RAM
-**Overlay** (debug wash):
-- Yellow = EXACT, orange = PARENT
-- Magenta = **EMB**, cyan = **LQIP**, blue = HOLE
-- Cell tags when ≥40 device px; summary plate ends with EMB/LQIP when underlay present
+### 2713.16 — Fix paintTilePlanDebugOverlay path
+Free-function overlay takes `itemPath` for EMB/LQIP underlay classification
+(cannot call ImageItem::path()).
 
-**Tile RAM** (scroll was re-fetching edge cells):
-- Per-path budget default **512 MiB** (was 128)
-- Global registry **768 MiB** / max idle paths **128** (was 384 / 64)
-- Protect **1-cell ring** around visible keys so small pans keep tiles
-- Override: `BILTOO_TILE_RAM_MIB`, `BILTOO_TILE_MAX_IDLE`
+### 2713.15 — Overlay EMB/LQIP + larger tile RAM
+Magenta EMB / cyan LQIP / blue HOLE; 512 MiB path / 768 MiB global; protect ring.
+`BILTOO_TILE_RAM_MIB`, `BILTOO_TILE_MAX_IDLE`.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2713.15-overlay-emb-lqip-tile-ram-b9c3473.bundle HEAD
+git pull --ff-only …/biltoo-2713.16-overlay-path-arg-b9c3473.bundle HEAD
 ```
-
-## Prior
-2713.14 ERROR settled; underlay slot; Kill Soft; thumtoo-344.4 region page size
