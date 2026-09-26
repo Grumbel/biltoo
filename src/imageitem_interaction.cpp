@@ -1097,8 +1097,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             } else {
                 painter->drawImage(box, img);
             }
-            // Non-tile path: label what sample is on screen (EMB/LQIP/SOFT/HOST).
-            // Under live tiles the plan wash already tags EXACT/PARENT/EMB holes.
+            // Non-tile path: label the sample (product names only — Soft is dead).
+            // EMB / LQIP underlay, or RASTER = whole-frame process sample (not tiles).
             if (tilePlanDebugOverlayEnabled() && !tilesLive) {
                 const int le = qMax(img.width(), img.height());
                 QString tag;
@@ -1106,10 +1106,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tag = QStringLiteral("LQIP");
                 } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
                     tag = QStringLiteral("EMB");
-                } else if (le <= ImageCache::kPreviewEdge) {
-                    tag = QStringLiteral("SOFT");
                 } else {
-                    tag = QStringLiteral("HOST");
+                    tag = QStringLiteral("RASTER");
                 }
                 QFont hf = painter->font();
                 hf.setBold(true);

@@ -116,7 +116,7 @@ void remove(const QString &path);
 bool debugOverlayEnabled();
 void stampDebugOverlayIfEnabled(QImage *image, const QString &label = QString(),
                                 const QString &forceTag = QString());
-/** put() with explicit debug tag (EMB / LQIP / HOST). */
+/** put() with explicit debug tag (EMB / LQIP / RASTER). */
 void put(const QString &path, const QImage &image, const QString &forceTag);
 
 } // namespace ImageCache

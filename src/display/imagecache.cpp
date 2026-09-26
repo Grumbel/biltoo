@@ -184,14 +184,18 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label,
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
-    // HOST = process ImageCache soft/sample (not durable tiles). LQIP = ≤96 edge.
-    // No filename / pixel size — those made small filmstrip cells unreadable.
+    // Pixel stamp when debug overlay is on. Product names only (Soft is dead):
+    // LQIP / EMB underlay band, else RASTER = whole-frame process sample.
     const int le = qMax(w, h);
     QString tag = forceTag;
     if (tag.isEmpty()) {
-        tag = (le <= DisplayQuality::kLqipMaxEdge)
-            ? QStringLiteral("LQIP")
-            : QStringLiteral("HOST");
+        if (le <= DisplayQuality::kLqipMaxEdge) {
+            tag = QStringLiteral("LQIP");
+        } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+            tag = QStringLiteral("EMB");
+        } else {
+            tag = QStringLiteral("RASTER");
+        }
     }
 
     QFont f = p.font();
