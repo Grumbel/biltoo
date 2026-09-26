@@ -2,21 +2,23 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2712.10-feature-brainstorm` (on top of `2712.9-tts-plan-doc`).
+**Tip:** `biltoo-2712.11-tags-bookmarks-doc` (on top of origin / 2712.10).
 
-### 2712.10 — Feature brainstorm doc
-- [docs/FEATURE_BRAINSTORM.md](docs/FEATURE_BRAINSTORM.md) — native package,
-  JXL, tile codecs, RGBA, faces, annotations.
+### 2712.11 — Tags and bookmarks scope
+- [docs/TAGS_AND_BOOKMARKS.md](docs/TAGS_AND_BOOKMARKS.md)
+
+### 2712.10 — Feature brainstorm
+- [docs/FEATURE_BRAINSTORM.md](docs/FEATURE_BRAINSTORM.md)
 
 ### Apply
-If you already have **2712.9**:
 ```bash
-git pull --rebase …/biltoo-2712.10-feature-brainstorm.bundle HEAD
+git pull --rebase …/biltoo-2712.11-tags-bookmarks-doc.bundle HEAD
 ```
-If starting from origin only, apply **2712.9** tip bundle first (full stack),
-then this delta — or ask for a rebuilt cumulative bundle from `b65f69e`.
 
 ## Roadmap / later
+
+### Tags and bookmarks
+Scope brainstorm: [docs/TAGS_AND_BOOKMARKS.md](docs/TAGS_AND_BOOKMARKS.md)
 
 ### Feature brainstorm
 [docs/FEATURE_BRAINSTORM.md](docs/FEATURE_BRAINSTORM.md)
