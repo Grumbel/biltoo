@@ -178,6 +178,9 @@ private:
   int m_pending_scale = 0;
   std::chrono::steady_clock::time_point m_pending_since{};
   static constexpr std::chrono::milliseconds kScaleHold{150};
+  /// Incomplete pyramid: Failed exact cells must be re-issued (WAITING recovery).
+  std::chrono::steady_clock::time_point m_last_failed_retry{};
+  static constexpr std::chrono::milliseconds kFailedRetryBackoff{750};
 
   int stable_request_scale(int desired_scale);
   /** True when every visible key is Succeeded or Failed (not InFlight/missing). */
