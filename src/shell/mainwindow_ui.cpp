@@ -479,7 +479,7 @@ void MainWindow::createActions()
     m_panToolAct->setCheckable(true);
     m_panToolAct->setShortcut(Qt::Key_H);
     m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowRight));
-    m_panToolAct->setStatusTip(tr("Pan the view (middle-drag always pans)"));
+    m_panToolAct->setStatusTip(tr("Pan the view; wheel zooms (middle-drag always pans)"));
     connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
     m_zoomToolAct = new QAction(tr("&Zoom"), this);

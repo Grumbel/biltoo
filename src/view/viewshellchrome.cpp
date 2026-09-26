@@ -958,6 +958,8 @@ void ViewShellChrome::handleWheel(QWheelEvent *event)
     if (!m_view || !event) {
         return;
     }
+    // Gallery: Pan/Zoom tool → zoom; Select → scroll (Ctrl+wheel still zooms).
+    // Image / Workspace: wheel always zooms about the cursor.
     if (m_view->hostGallery().tryWheelGalleryZoom(event)
         || m_view->hostGallery().tryWheelGalleryScroll(event)) {
         return;

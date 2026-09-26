@@ -619,9 +619,14 @@ void GalleryController::updateGalleryHoverAt(const QPoint &viewPos)
 
 bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
 {
-    // Gallery: Ctrl+wheel zooms the view (inspection) and refreshes the
-    // ladder for the new on-screen cell size.
-    if (!m_view->isGalleryMode() || !(event->modifiers() & Qt::ControlModifier)) {
+    // Gallery: wheel zooms when Pan/Zoom tool is active (map-viewer UX), or
+    // with Ctrl under Select (inspection without changing tool).
+    if (!m_view->isGalleryMode()) {
+        return false;
+    }
+    const Tool tool = m_view->currentTool();
+    const bool toolZoom = (tool == Tool::Pan || tool == Tool::Zoom);
+    if (!toolZoom && !(event->modifiers() & Qt::ControlModifier)) {
         return false;
     }
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
