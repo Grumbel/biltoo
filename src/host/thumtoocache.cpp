@@ -750,16 +750,8 @@ QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
 /** True when ImageCache already holds a gallery-usable underlay (LQIP/EMB band). */
 static bool hasUsableUnderlaySample(const QString &path)
 {
-    if (path.isEmpty() || !ImageCache::has(path)) {
-        return false;
-    }
-    const QImage img = ImageCache::get(path);
-    if (img.isNull()) {
-        return false;
-    }
-    // PreferCache soft (512) is not gallery underlay; underlay installs clamp to
-    // kEmbeddedUnderlayMaxEdge but only when something ≤ that band is present.
-    return ImageCache::longEdge(img) <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+    // Underlay slot only — soft in the main ImageCache slot is not underlay.
+    return !path.isEmpty() && ImageCache::hasUnderlay(path);
 }
 
 /** Prefer EXIF/container JPEG underlay over ThumbHash LQIP; never tiles. */

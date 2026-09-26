@@ -174,7 +174,11 @@ ImageView::ImageView(QWidget *parent)
                     // Always rescale live cells to the probe size (even when
                     // book already matched — placement scale may still lag).
                     applyProbedImageSize(path, size);
-                    // LQIP may already be in ImageCache (size probe callback).
+                    // Size + underlay should arrive together (SizeReply). If the
+                    // underlay slot is still empty, pull Store EMB/LQIP now.
+                    if (!ImageCache::hasUnderlay(path)) {
+                        ThumtooCache::scheduleStoreUnderlaySeed(path);
+                    }
                     if (isGalleryMode()) {
                         for (ImageItem *item : m_items) {
                             if (item && item->path() == path) {
@@ -251,7 +255,11 @@ ImageView::ImageView(QWidget *parent)
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
             [this](const QString &path) {
-                Q_UNUSED(path);
+                // Tile pyramid often fills Store LQIP opportunistically — re-seed
+                // underlay after durable tiles appear (size probe may have missed).
+                if (!path.isEmpty() && !ImageCache::hasUnderlay(path)) {
+                    ThumtooCache::scheduleStoreUnderlaySeed(path);
+                }
                 // Warm durable discovery can fire during the Gallery size gate —
                 // do not start tile I/O while probes own the Store/CPU.
                 if (hostGallerySizeResolve().active()) {
@@ -259,6 +267,13 @@ ImageView::ImageView(QWidget *parent)
                 }
                 // Pyramid appeared mid-session; start tile pump if already in band.
                 m_displayPipeline->tickPrimaryTileLod(8);
+                if (isGalleryMode() && !path.isEmpty()) {
+                    for (ImageItem *item : m_items) {
+                        if (item && item->path() == path) {
+                            m_displayPipeline->tryInstallGalleryUnderlay(item);
+                        }
+                    }
+                }
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
