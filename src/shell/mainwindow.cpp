@@ -2104,19 +2104,19 @@ void MainWindow::toggleWorkspaceMode()
 
 void MainWindow::setSelectTool()
 {
-    m_imageView->hostWorkspace().setTool(ImageView::Tool::Select);
+    m_imageView->setTool(ImageView::Tool::Select);
     m_selectToolAct->setChecked(true);
 }
 
 void MainWindow::setPanTool()
 {
-    m_imageView->hostWorkspace().setTool(ImageView::Tool::Pan);
+    m_imageView->setTool(ImageView::Tool::Pan);
     m_panToolAct->setChecked(true);
 }
 
 void MainWindow::setZoomTool()
 {
-    m_imageView->hostWorkspace().setTool(ImageView::Tool::Zoom);
+    m_imageView->setTool(ImageView::Tool::Zoom);
     if (m_zoomToolAct) {
         m_zoomToolAct->setChecked(true);
     }

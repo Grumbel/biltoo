@@ -210,7 +210,7 @@ void MainWindow::createActions()
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
 
     m_zoomRegionAct = new QAction(tr("Zoom to &Region…"), this);
-    m_zoomRegionAct->setShortcut(Qt::Key_Z);
+    // Key_Z selects the Zoom tool (drag region). Menu action arms one-shot region zoom.
     m_zoomRegionAct->setStatusTip(
         tr("Drag a rectangle to zoom into that area (one-shot; Esc cancels)"));
     connect(m_zoomRegionAct, &QAction::triggered, this, [this]() {
@@ -469,21 +469,25 @@ void MainWindow::createActions()
     m_selectToolAct = new QAction(tr("&Select"), this);
     m_selectToolAct->setCheckable(true);
     m_selectToolAct->setChecked(true);
+    m_selectToolAct->setShortcut(Qt::Key_V);
     m_selectToolAct->setIcon(themeIcon(QStringLiteral("edit-select"), QStyle::SP_FileDialogContentsView));
-    m_selectToolAct->setStatusTip(tr("Select and move images on the workspace"));
+    m_selectToolAct->setStatusTip(
+        tr("Select items (Gallery/Workspace) or prepare for content selection (Image)"));
     connect(m_selectToolAct, &QAction::triggered, this, &MainWindow::setSelectTool);
 
     m_panToolAct = new QAction(tr("&Pan"), this);
     m_panToolAct->setCheckable(true);
+    m_panToolAct->setShortcut(Qt::Key_H);
     m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowRight));
-    m_panToolAct->setStatusTip(tr("Pan the workspace view"));
+    m_panToolAct->setStatusTip(tr("Pan the view (middle-drag always pans)"));
     connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
     m_zoomToolAct = new QAction(tr("&Zoom"), this);
     m_zoomToolAct->setCheckable(true);
+    m_zoomToolAct->setShortcut(Qt::Key_Z);
     m_zoomToolAct->setIcon(resourceIcon(QStringLiteral("zoom-tool")));
     m_zoomToolAct->setStatusTip(
-        tr("Drag a rectangle on the Workspace to zoom the view to that region"));
+        tr("Drag a rectangle to zoom the view to that region"));
     connect(m_zoomToolAct, &QAction::triggered, this, &MainWindow::setZoomTool);
 
     auto *toolGroup = new QActionGroup(this);

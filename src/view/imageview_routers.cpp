@@ -7,6 +7,7 @@
 #include "util/biltoo_thread.h"
 #include "util/biltoo_logging.h"
 #include "view/viewmodeflags.h"
+#include "image/toolpolicy.h"
 #include <QPainter>
 #include <QPaintEvent>
 #include <QResizeEvent>
@@ -153,7 +154,23 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     m_viewMode = mode;
     hostLayout().setMode(layout);
     m_shell.applyModeViewportPolicy(static_cast<int>(mode));
+    // Mode-appropriate default tool (Select for Gallery/Workspace, Pan for Image).
+    setTool(ViewInteraction::defaultToolForMode(static_cast<int>(mode)));
 }
+
+void ImageView::setTool(Tool tool)
+{
+    m_interaction.setTool(tool);
+    if (!hostChrome().isPanning()) {
+        setCursor(ToolPolicy::cursorFor(m_interaction.tool()));
+    }
+    if (isWorkspaceMode()) {
+        m_workspace.applyToolDragMode();
+    }
+    // Gallery keeps RubberBandDrag from enterGallery; Image mode left-drag
+    // policy is unchanged in Phase A (still driven by chrome preference).
+}
+
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
     if (!m_displayPipeline->loadGate().takePendingWorkspacePath(path)) {

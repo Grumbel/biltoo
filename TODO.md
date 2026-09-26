@@ -2,26 +2,23 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2711.3-panels-top-level-menu` (base `b65f69e`).
+**Tip:** `biltoo-2712.1-shared-view-tools` (base `b65f69e`).
 
-### 2711.3 — Panels as top-level menu
-- **Panels** is its own menu bar entry (not a View submenu).
-- Toolbar Panels popup still shares `m_panelsMenu`.
+### 2712.1 — Shared Select/Pan/Zoom tool (Phase A)
+- `ViewInteraction` owns `Tool` on ImageView (not Workspace-only).
+- Defaults on mode enter: Image → Pan, Gallery/Workspace → Select.
+- Left tools strip visible in all modes; V/H/Z shortcuts.
+- Zoom-region tool works outside Workspace when Zoom is active.
+- Image-mode left-drag behaviour **unchanged** (still chrome preference).
 
-### 2711.2 — Toolbar Panels popup
-### 2711.1 — Dock layout persistence (version-gated) + Reset Panel Layout
-### 2710.5 — Selection/hover paint order fix
+### 2711.x — Dock layout + Panels top-level menu
 
-Needs thumtoo **343.6** for EPUB OCR.
+### Next (tools)
+- Phase B/C: Image Select → text rubber-band; Space-to-pan override
+- Crop on toolbox (modal enter)
+- Multi-page TextSelection data
 
 ### Apply
 ```bash
-git pull --rebase …/biltoo-2711.3-panels-top-level-menu-b65f69e.bundle HEAD
+git pull --rebase …/biltoo-2712.1-shared-view-tools-b65f69e.bundle HEAD
 ```
-
----
-
-## Roadmap / later
-
-### 0.3.0 — KDDockWidgets (optional)
-Only if QMainWindow docks prove insufficient. Spike against nixpkgs first.

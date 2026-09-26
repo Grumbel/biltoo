@@ -57,7 +57,7 @@ bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
             || (event->button() == Qt::LeftButton
                 && ((m_view->isImageMode() && m_viewport.isImageModeLeftDragPan())
                     || (m_view->isWorkspaceMode()
-                        && m_view->hostWorkspace().currentTool() == Tool::Pan)
+                        && m_view->currentTool() == Tool::Pan)
                     || (m_view->isGalleryMode()
                         && (event->modifiers() & Qt::AltModifier))
                     || (event->modifiers() & Qt::AltModifier))))) {
@@ -128,7 +128,7 @@ void ViewShellChrome::restoreToolCursor()
     if (!m_view) {
         return;
     }
-    m_view->setCursor(ToolPolicy::cursorFor(m_view->hostWorkspace().currentTool()));
+    m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
 }
 
 void ViewShellChrome::updateMouseInfo(const QPoint &viewPos)

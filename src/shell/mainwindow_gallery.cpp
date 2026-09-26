@@ -719,12 +719,29 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_layoutFreeFormAct->setVisible(false);
         m_layoutFreeFormAct->setEnabled(false);
     }
-    // Workspace tools: keep menu entries stable; grey out outside Workspace.
-    // (Hiding them made the Workspace menu appear to grow/shrink with mode.)
+    // Shared canvas tools: enabled in Image / Gallery / Workspace.
+    for (QAction *act : {m_selectToolAct, m_panToolAct, m_zoomToolAct}) {
+        if (act) {
+            act->setVisible(true);
+            act->setEnabled(m_imageView != nullptr);
+        }
+    }
+    if (m_imageView) {
+        const Tool t = m_imageView->currentTool();
+        if (m_selectToolAct) {
+            m_selectToolAct->setChecked(t == Tool::Select);
+        }
+        if (m_panToolAct) {
+            m_panToolAct->setChecked(t == Tool::Pan);
+        }
+        if (m_zoomToolAct) {
+            m_zoomToolAct->setChecked(t == Tool::Zoom);
+        }
+    }
+    // Workspace-only chrome: keep menu entries stable; grey out outside Workspace.
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
                          m_resetScaleAct, m_resetRotationAct, m_resetShearAct,
-                         m_selectToolAct, m_panToolAct, m_zoomToolAct,
                          m_pageGuideAct, m_fitPageGuideAct,
                          m_workspaceBackgroundAct, m_workspaceBgDefaultAct}) {
         if (act) {
@@ -760,8 +777,9 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_undoAct->setVisible(true);
         m_redoAct->setVisible(true);
     }
+    // Tools strip: visible in all presentation modes (not only Workspace).
     if (m_workspaceToolBar) {
-        m_workspaceToolBar->setVisible(workspace && !isFullScreen());
+        m_workspaceToolBar->setVisible(m_imageView && !isFullScreen());
     }
     // Canvas materials: Gallery/Image → session View; Workspace → project.
     // Same main-toolbar action for all three modes (vertical bar no longer

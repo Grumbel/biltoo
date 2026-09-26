@@ -71,6 +71,10 @@
     const GalleryController &hostGallery() const override { return m_gallery; }
     WorkspaceController &hostWorkspace() override { return m_workspace; }
     const WorkspaceController &hostWorkspace() const override { return m_workspace; }
+    ViewInteraction &hostInteraction() { return m_interaction; }
+    const ViewInteraction &hostInteraction() const { return m_interaction; }
+    Tool currentTool() const { return m_interaction.tool(); }
+    void setTool(Tool tool);
     ItemInteractSession &hostItemInteract() { return m_workspace.itemInteract(); }
     const ItemInteractSession &hostItemInteract() const { return m_workspace.itemInteract(); }
     PerfStats &hostPerf() { return m_hud.perf(); }

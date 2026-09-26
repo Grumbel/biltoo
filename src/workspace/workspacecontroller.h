@@ -90,8 +90,8 @@ public:
     ItemInteractSession &itemInteract() { return m_itemInteract; }
     const ItemInteractSession &itemInteract() const { return m_itemInteract; }
 
-    /** Workspace / shell tool (Select / Pan / Zoom). */
-    Tool currentTool() const { return m_tool; }
+    /** Forwards to ImageView shared tool (Select / Pan / Zoom). */
+    Tool currentTool() const;
     void setTool(Tool tool);
     /** Sync QGraphicsView drag mode with current tool (Workspace Select rubber-band). */
     void applyToolDragMode();
@@ -274,7 +274,6 @@ private:
     void restoreFreeFormStates();
 
     ImageView *m_view = nullptr;
-    Tool m_tool = Tool::Select;
 
     QList<WorkspaceItemState> m_savedItems;
     QList<ImageItem *> m_stashedItems;

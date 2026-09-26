@@ -247,6 +247,8 @@
     AttentionController m_attentionCtrl;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;
+    /** Shared Select/Pan/Zoom tool across Image / Gallery / Workspace. */
+    ViewInteraction m_interaction;
     /** Image-mode collaborator (enter transition). */
     ImageController m_image;
     /** Page text / link overlay (search, rubber-band). */

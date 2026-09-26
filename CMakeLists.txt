@@ -231,6 +231,7 @@ set(BILTOO_LIB_SOURCES
   src/view/viewtransform.h
   src/workspace/workspacenavgeometry.h
   src/image/toolpolicy.h
+  src/view/viewinteraction.h
   src/hud/hudgeometry.h
   src/text/textsearchpolicy.h
   src/text/textsearchpolicy.cpp

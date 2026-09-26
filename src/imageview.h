@@ -20,6 +20,7 @@
 #include "slideshow/zoomregiongesture.h"
 #include "gallery/layoutprefs.h"
 #include "view/viewshellchrome.h"
+#include "view/viewinteraction.h"
 #include "hud/hudchrome.h"
 #include "session/sessionshell.h"
 #include "gallery/gallerydecodebook.h"

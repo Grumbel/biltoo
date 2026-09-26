@@ -878,21 +878,25 @@ void WorkspaceController::hardReloadFromDisk()
     }
 }
 
+Tool WorkspaceController::currentTool() const
+{
+    return m_view ? m_view->currentTool() : Tool::Select;
+}
+
 void WorkspaceController::setTool(Tool tool)
 {
-    if (m_tool == tool) {
-        return;
-    }
-    m_tool = tool;
-    m_view->setCursor(ToolPolicy::cursorFor(m_tool));
-    if (m_view->isWorkspaceMode()) {
-        applyToolDragMode();
+    // Tool state lives on ImageView::ViewInteraction (shared across modes).
+    if (m_view) {
+        m_view->setTool(tool);
     }
 }
 
 void WorkspaceController::applyToolDragMode()
 {
-    m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+    if (!m_view) {
+        return;
+    }
+    m_view->setDragMode(ToolPolicy::workspaceRubberBand(m_view->currentTool())
                             ? QGraphicsView::RubberBandDrag
                             : QGraphicsView::NoDrag);
 }
