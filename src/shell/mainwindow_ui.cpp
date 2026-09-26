@@ -839,6 +839,12 @@ void MainWindow::createActions()
             }
         });
     }
+    if (m_textDock) {
+        m_toggleTextAct = m_textDock->toggleViewAction();
+        m_toggleTextAct->setText(tr("Show Te&xt Panel"));
+        m_toggleTextAct->setStatusTip(
+            tr("Page text / OCR regions with selection mirrored on the page"));
+    }
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
@@ -1060,6 +1066,9 @@ void MainWindow::createMenus()
     // OCR actions kept for shortcuts; primary UI is the OCR dock panel.
     if (m_toggleOcrAct) {
         m_viewMenu->addAction(m_toggleOcrAct);
+    }
+    if (m_toggleTextAct) {
+        m_viewMenu->addAction(m_toggleTextAct);
     }
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_dualCompareAct);

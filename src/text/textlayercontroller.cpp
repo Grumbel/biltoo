@@ -21,7 +21,8 @@
 #include <QWidget>
 
 TextLayerController::TextLayerController(ImageView *view)
-    : m_view(view)
+    : QObject(view)
+    , m_view(view)
 {
 }
 
@@ -59,19 +60,19 @@ void TextLayerController::refresh()
 {
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
-    if (!m_session.needsLayer()) {
-        return;
-    }
     const QString path = m_view->hostImage().classicPath();
-    if (path.isEmpty() || !PagePath::isPageRef(path)) {
+    if (path.isEmpty()) {
+        emit layerChanged();
         return;
     }
+    // Explicit refresh always loads (Text panel, OCR install, show-regions).
     const ThumtooCache::PageTextLayer layer =
         TextLayerResolve::load(path, m_session.layerPreferValue());
     m_session.setLayerContent(layer, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
+    emit layerChanged();
 }
 
 
@@ -87,6 +88,7 @@ void TextLayerController::installLayer(const ThumtooCache::PageTextLayer &layer,
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+    emit layerChanged();
 }
 
 bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
@@ -396,6 +398,44 @@ void TextLayerController::finishRubberBand()
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+    emit selectionChanged();
+}
+
+
+void TextLayerController::setShowGlyphs(bool on)
+{
+    if (!m_session.setShowGlyphs(on)) {
+        return;
+    }
+    if (m_session.needsLayer() && !m_session.hasRegions()) {
+        refresh();
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void TextLayerController::setHoverRegion(int regionIndex)
+{
+    if (!m_session.setHoverRegion(regionIndex)) {
+        return;
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit hoverChanged(regionIndex);
+}
+
+void TextLayerController::setSelectedRegions(const QVector<int> &ids)
+{
+    if (m_session.selectedRegionsRef() == ids) {
+        return;
+    }
+    m_session.setSelectedRegions(ids);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit selectionChanged();
 }
 
 QString TextLayerController::selectedText() const
@@ -422,6 +462,7 @@ void TextLayerController::clearSelection()
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+    emit selectionChanged();
 }
 
 bool TextLayerController::copySelectedText()
@@ -638,6 +679,47 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->drawPolygon(scenePoly);
         }
     }
+
+    // Hover region (panel ↔ page).
+    if (m_session.hoverRegionIndex() >= 0
+        && m_session.hoverRegionIndex() < m_session.regionCount()) {
+        const auto &r = m_session.regionAt(m_session.hoverRegionIndex());
+        const QRectF img = regionImageRect(r);
+        if (!img.isEmpty()) {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(255, 200, 40, 90));
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+    // Glyphs: actual extracted/OCR text inside each box.
+    if (m_session.showsGlyphs()) {
+        painter->setBrush(Qt::NoBrush);
+        for (const ThumtooCache::TextRegion &r : m_session.regions()) {
+            if (r.text.isEmpty()) {
+                continue;
+            }
+            const QRectF img = regionImageRect(r);
+            if (img.isEmpty() || img.height() < 2.0) {
+                continue;
+            }
+            const QRectF local = img.translated(item->offset());
+            const QPolygonF scenePoly = item->mapToScene(local);
+            const QRectF sceneBox = scenePoly.boundingRect();
+            if (sceneBox.height() < 1.0 || sceneBox.width() < 1.0) {
+                continue;
+            }
+            QFont f = painter->font();
+            // Fit roughly to box height (scene units ≈ device if view scale applied by painter).
+            const qreal px = qBound(4.0, sceneBox.height() * 0.72, 72.0);
+            f.setPixelSize(qMax(4, int(px)));
+            painter->setFont(f);
+            painter->setPen(QColor(20, 20, 20, 220));
+            painter->drawText(sceneBox, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap,
+                              r.text);
+        }
+    }
+
     painter->restore();
 }
 

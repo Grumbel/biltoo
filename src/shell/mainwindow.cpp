@@ -439,6 +439,23 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_ocrPanel, &OcrPanel::runRequested, this, &MainWindow::runOcrFromPanel);
     connect(m_ocrPanel, &OcrPanel::cancelRequested, this, &MainWindow::cancelOcrBatch);
 
+    m_textPanel = new TextPanel(this);
+    m_textDock = new QDockWidget(tr("Text"), this);
+    m_textDock->setObjectName(QStringLiteral("TextDock"));
+    m_textDock->setWidget(m_textPanel);
+    m_textDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_textDock->setFeatures(QDockWidget::DockWidgetClosable
+                            | QDockWidget::DockWidgetMovable
+                            | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::RightDockWidgetArea, m_textDock);
+    m_textDock->hide();
+    connect(m_textDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible) {
+            updateTextPanel();
+            connectTextPanel();
+        }
+    });
+
     connect(m_cropDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (visible) {
             updateCropPanel();
@@ -3271,6 +3288,9 @@ void MainWindow::updateStatus()
     if (m_ocrDock && m_ocrDock->isVisible()) {
         updateOcrPanel();
     }
+    if (m_textDock && m_textDock->isVisible()) {
+        updateTextPanel();
+    }
     // Session index on ImageView so status bar and on-image HUD share n/N.
     if (m_imageView) {
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
@@ -4653,6 +4673,102 @@ void MainWindow::setDualCompareEnabled(bool on)
     });
 }
 
+
+
+void MainWindow::connectTextPanel()
+{
+    if (!m_textPanel || !m_imageView) {
+        return;
+    }
+    // Idempotent: disconnect previous then reconnect.
+    disconnect(m_textPanel, nullptr, this, nullptr);
+    TextLayerController &text = m_imageView->hostText();
+    disconnect(&text, nullptr, m_textPanel, nullptr);
+    disconnect(&text, nullptr, this, nullptr);
+
+    connect(m_textPanel, &TextPanel::selectionRegionsChanged, this,
+            [this](const QVector<int> &ids) {
+                if (!m_imageView) {
+                    return;
+                }
+                m_imageView->hostText().setSelectedRegions(ids);
+            });
+    connect(m_textPanel, &TextPanel::hoverRegionChanged, this,
+            [this](int regionIndex) {
+                if (!m_imageView) {
+                    return;
+                }
+                m_imageView->hostText().setHoverRegion(regionIndex);
+            });
+    connect(m_textPanel, &TextPanel::showGlyphsToggled, this, [this](bool on) {
+        if (!m_imageView) {
+            return;
+        }
+        m_imageView->hostText().setShowGlyphs(on);
+        if (on && m_showTextRegionsAct) {
+            // Glyphs are most useful with outlines visible; do not force outlines.
+        }
+    });
+    connect(m_textPanel, &TextPanel::showOutlinesToggled, this, [this](bool on) {
+        if (m_showTextRegionsAct) {
+            m_showTextRegionsAct->setChecked(on);
+        } else if (m_imageView) {
+            m_imageView->hostText().setShowRegions(on);
+        }
+    });
+    connect(m_textPanel, &TextPanel::refreshRequested, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        m_imageView->hostText().refresh();
+        updateTextPanel();
+    });
+
+    connect(&text, &TextLayerController::layerChanged, this, [this]() {
+        updateTextPanel();
+    });
+    connect(&text, &TextLayerController::selectionChanged, this, [this]() {
+        if (!m_textPanel || !m_imageView) {
+            return;
+        }
+        m_textPanel->setSelectedRegions(
+            m_imageView->hostText().session().selectedRegionsRef());
+    });
+    connect(&text, &TextLayerController::hoverChanged, this,
+            [this](int regionIndex) {
+                if (m_textPanel) {
+                    m_textPanel->setHoverRegion(regionIndex);
+                }
+            });
+}
+
+void MainWindow::updateTextPanel()
+{
+    if (!m_textPanel) {
+        return;
+    }
+    if (!m_imageView) {
+        m_textPanel->model()->clear();
+        m_textPanel->setLayerInfo(tr("No image view"));
+        return;
+    }
+    TextLayerController &text = m_imageView->hostText();
+    const auto &sess = text.session();
+    m_textPanel->setShowGlyphsChecked(sess.showsGlyphs());
+    m_textPanel->setShowOutlinesChecked(sess.showsRegions());
+    if (!sess.hasRegions()) {
+        // Load on demand when panel is open.
+        text.refresh();
+    }
+    const auto &layer = sess.layerRef();
+    m_textPanel->model()->setLayer(layer);
+    const QString path = m_imageView->hostImage().classicPath();
+    const int n = layer.regions.size();
+    m_textPanel->setLayerInfo(
+        tr("%1 — %n region(s)", "", n)
+            .arg(path.isEmpty() ? tr("(no path)") : QFileInfo(path).fileName()));
+    m_textPanel->setSelectedRegions(sess.selectedRegionsRef());
+}
 
 void MainWindow::cancelOcrBatch()
 {

@@ -8,9 +8,11 @@
 #include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
 
+#include <QObject>
 #include <QPoint>
 #include <QRectF>
 #include <QString>
+#include <QVector>
 
 class ImageView;
 class QPainter;
@@ -19,9 +21,11 @@ class QMouseEvent;
 /**
  * Page text / link overlay collaborator (search, rubber-band, hit-test).
  * Owns TextLayerSession; ImageView keeps thin public/shell forwards.
+ * QObject signals bridge panel ↔ page without MainWindow glue spaghetti.
  */
-class TextLayerController
+class TextLayerController : public QObject
 {
+    Q_OBJECT
 public:
     explicit TextLayerController(ImageView *view);
 
@@ -35,6 +39,10 @@ public:
      */
     void paintSceneOverlays(QPainter *painter) const;
     void setShowRegions(bool on);
+    void setShowGlyphs(bool on);
+    void setHoverRegion(int regionIndex);
+    /** Replace selection (panel or host); emits selectionChanged when changed. */
+    void setSelectedRegions(const QVector<int> &ids);
     void refresh();
     /** Run OCR for the current page and install the OCR text layer. */
     bool applyOcrLayer(bool force = false, const QString &lang = QString());
@@ -60,6 +68,11 @@ public:
     void updateMouseMoveLinkHover(QMouseEvent *event);
     /** Map a page text region bbox into content-display image coords. */
     QRectF regionImageRect(const ThumtooCache::TextRegion &region) const;
+
+signals:
+    void layerChanged();
+    void selectionChanged();
+    void hoverChanged(int regionIndex);
 
 private:
     bool pageYUp() const;

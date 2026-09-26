@@ -341,6 +341,11 @@ set(BILTOO_LIB_SOURCES
   src/shell/croppanel.h
   src/shell/ocrpanel.cpp
   src/shell/ocrpanel.h
+  src/shell/textpanel.cpp
+  src/shell/textpanel.h
+  src/text/textpanelmodel.cpp
+  src/text/textpanelmodel.h
+  src/text/textoverlaystate.h
   src/color/coloradjust.cpp
   src/color/coloradjust.h
   src/shell/layoutpanel.cpp

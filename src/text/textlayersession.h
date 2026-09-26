@@ -19,6 +19,10 @@
  */
 struct TextLayerSession {
     bool showRegions = false;
+    /** Draw region text inside bboxes (OCR/native glyphs). */
+    bool showGlyphs = false;
+    /** Region under pointer (−1 none); shared with Text panel. */
+    int hoverRegion = -1;
     ThumtooCache::PageTextLayer layer;
     QString layerPath;
     QString searchQuery;
@@ -33,7 +37,8 @@ struct TextLayerSession {
 
     bool needsLayer() const
     {
-        return showRegions || !searchQuery.isEmpty();
+        return showRegions || showGlyphs || !searchQuery.isEmpty()
+            || hoverRegion >= 0 || !selectedRegions.isEmpty();
     }
 
     bool isRubberbanding() const { return rubberbanding; }
@@ -44,6 +49,8 @@ struct TextLayerSession {
 
 
     bool showsRegions() const { return showRegions; }
+    bool showsGlyphs() const { return showGlyphs; }
+    int hoverRegionIndex() const { return hoverRegion; }
 
     bool isSearchFuzzy() const { return searchFuzzy; }
 
@@ -146,6 +153,7 @@ struct TextLayerSession {
         layerPath.clear();
         clearSearch();
         clearSelection();
+        hoverRegion = -1;
         linkHoverTip.clear();
     }
 
@@ -158,6 +166,26 @@ struct TextLayerSession {
         showRegions = on;
         return true;
     }
+
+    bool setShowGlyphs(bool on)
+    {
+        if (showGlyphs == on) {
+            return false;
+        }
+        showGlyphs = on;
+        return true;
+    }
+
+    bool setHoverRegion(int idx)
+    {
+        if (hoverRegion == idx) {
+            return false;
+        }
+        hoverRegion = idx;
+        return true;
+    }
+
+    void clearHoverRegion() { hoverRegion = -1; }
 
     void clearLayerPath() { layerPath.clear(); }
 
