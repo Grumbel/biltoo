@@ -346,6 +346,7 @@ set(BILTOO_LIB_SOURCES
   src/text/textpanelmodel.cpp
   src/text/textpanelmodel.h
   src/text/textoverlaystate.h
+  src/text/textregionstyle.h
   src/color/coloradjust.cpp
   src/color/coloradjust.h
   src/shell/layoutpanel.cpp

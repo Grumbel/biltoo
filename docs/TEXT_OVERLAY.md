@@ -33,3 +33,18 @@ hover highlight, checkboxes for outlines and “Show text in boxes” (glyphs).
 - Multi-page range in the panel (session slice).
 - Scripting API exposing `TextOverlayState` + region indices.
 - Hit-test hover from the page into the panel (mouse move over bboxes).
+
+## Layout analysis (Kind)
+
+| Kind | How it is assigned today |
+|------|---------------------------|
+| **Body** | Default |
+| **Header** | OCR post-pass: region centre in top ~8% of page |
+| **Footer** | OCR post-pass: centre in bottom ~8% |
+| **PageNumber** | Header/footer band + short numeric/roman token, outer or centred |
+| **Link** | Role=Link (native PDF), not a Kind |
+
+**Not implemented:** true headings (font-size/style), columns, reading-order
+clusters beyond `blockId`, native-PDF Kind annotation (usually all Body).
+
+Paint and the Text panel use `TextRegionStyle` (shared colours/labels).

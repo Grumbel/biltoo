@@ -3,6 +3,7 @@
 
 #include "text/textpanelmodel.h"
 #include "text/textlayergeometry.h"
+#include "text/textregionstyle.h"
 
 TextPanelModel::TextPanelModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -28,8 +29,7 @@ QVariant TextPanelModel::data(const QModelIndex &index, int role) const
     }
     const auto &r = m_layer.regions.at(ri);
     switch (role) {
-    case Qt::DisplayRole:
-    case TextRole: {
+    case Qt::DisplayRole: {
         QString t = r.text;
         if (t.isEmpty() && r.role == ThumtooCache::TextRegion::Role::Link) {
             t = r.linkUri.isEmpty() ? tr("[link]") : r.linkUri;
@@ -37,25 +37,24 @@ QVariant TextPanelModel::data(const QModelIndex &index, int role) const
         if (t.isEmpty()) {
             t = tr("[empty]");
         }
-        // Single-line display; full text via tooltip.
-        return t.simplified();
+        const QString kind = (r.role == ThumtooCache::TextRegion::Role::Link)
+            ? tr("link")
+            : TextRegionStyle::kindLabel(r.kind);
+        return QStringLiteral("[%1] %2").arg(kind, t.simplified());
+    }
+    case TextRole: {
+        return r.text;
     }
     case Qt::ToolTipRole:
         return r.text.isEmpty() ? r.linkUri : r.text;
     case KindRole: {
-        using K = ThumtooCache::TextRegion::Kind;
-        switch (r.kind) {
-        case K::Header:
-            return tr("header");
-        case K::Footer:
-            return tr("footer");
-        case K::PageNumber:
-            return tr("page#");
-        case K::Body:
-        default:
-            return r.role == ThumtooCache::TextRegion::Role::Link ? tr("link")
-                                                                   : tr("body");
+        if (r.role == ThumtooCache::TextRegion::Role::Link) {
+            return tr("link");
         }
+        return TextRegionStyle::kindLabel(r.kind);
+    }
+    case Qt::DecorationRole: {
+        return TextRegionStyle::outlineColor(r);
     }
     case RegionIndexRole:
         return ri;

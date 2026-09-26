@@ -25,6 +25,17 @@ TextPanel::TextPanel(QWidget *parent)
     m_info->setWordWrap(true);
     m_info->setStyleSheet(QStringLiteral("color: palette(mid);"));
     layout->addWidget(m_info);
+    auto *legend = new QLabel(
+        tr("Colours: body · header · footer · page# · link"), this);
+    legend->setWordWrap(true);
+    legend->setStyleSheet(QStringLiteral("color: palette(mid); font-size: small;"));
+    legend->setToolTip(
+        tr("Kind comes from OCR layout post-pass (top/bottom bands + token shape).
+"
+           "Native PDF text is usually all “body” until a similar pass runs.
+"
+           "Columns / true headings are not classified yet."));
+    layout->addWidget(legend);
 
     auto *opts = new QHBoxLayout;
     m_outlines = new QCheckBox(tr("Outlines"), this);

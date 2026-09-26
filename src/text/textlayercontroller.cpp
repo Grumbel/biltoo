@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "text/textlayergeometry.h"
+#include "text/textregionstyle.h"
 #include "text/textsearchpolicy.h"
 #include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
@@ -665,17 +666,10 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             }
             const QRectF local = img.translated(item->offset());
             const QPolygonF scenePoly = item->mapToScene(local);
-            if (r.role == ThumtooCache::TextRegion::Role::Link) {
-                QPen pen(QColor(40, 180, 80, 200));
-                pen.setCosmetic(true);
-                pen.setWidthF(0);
-                painter->setPen(pen);
-            } else {
-                QPen pen(QColor(220, 80, 40, 180));
-                pen.setCosmetic(true);
-                pen.setWidthF(0);
-                painter->setPen(pen);
-            }
+            QPen pen(TextRegionStyle::outlineColor(r));
+            pen.setCosmetic(true);
+            pen.setWidthF(0);
+            painter->setPen(pen);
             painter->drawPolygon(scenePoly);
         }
     }
