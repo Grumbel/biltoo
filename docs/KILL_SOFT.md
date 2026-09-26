@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Kill Soft — tiles everywhere
 
 **Status:** decided 2026-09-26. Soft ladder is **not** a product path.
-Phases **A–C** landed (rename, climb band vocabulary, underlay cut).
+Phases **A–D** landed (rename, climb band, underlay cut, thumtoo PreferCache→tiles).
 
 Related: [GALLERY_SOFT.md](GALLERY_SOFT.md) (Gallery done), [TILE_LOD.md](TILE_LOD.md),
 [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md), thumtoo
@@ -73,11 +73,11 @@ not soft ladder encode.
   soft/HOST samples are not drawn; placeholder if none.
 - Nav-hot stays cache-only (already: no soft generate).
 
-### Phase D — thumtoo (optional, separate tip)
+### Phase D — thumtoo PreferCache → tiles (**done**, thumtoo-344.1)
 
-- SoftOnly remains for external CLI hosts if needed; biltoo does not call it.
-- PreferCache miss path: prefer coarse tile build over soft ladder encode when
-  the consumer is tile-capable (already the long-term PIXEL_AND_ARCHIVE policy).
+- SoftOnly remains for external CLI hosts; biltoo uses PreferCache.
+- `request_raster(PreferCache|Overview)`: TileSynth hit, else
+  `request_tile_pyramid` + one-shot ephemeral reply.
 
 ## Non-goals
 
