@@ -1411,7 +1411,11 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
     if (!item || !m_host->isGalleryMode()) {
         return false;
     }
-    if (item->hasDisplayPixels()) {
+    // Soft/HOST on the item is not product underlay under tiles (KILL_SOFT).
+    // Only treat as done when the item already holds an EMB/LQIP-band sample.
+    const int itemEdge = item->displayPixelLongEdge();
+    if (item->hasDisplayPixels() && itemEdge > 0
+        && itemEdge <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
         return true;
     }
     const QString path = item->path();
@@ -1423,23 +1427,11 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
         return false;
     }
     QImage under = ImageCache::get(path);
-    // Prefer underlay-band samples (LQIP/EMB). A larger PreferCache soft in
-    // ImageCache still works after clamp below; null means Store seed needed.
+    // Only EMB/LQIP-band samples count (KILL_SOFT). Soft in ImageCache is not
+    // underlay — seed Store and wait; do not downscale soft into a fake LQIP.
     if (under.isNull()
         || ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-        // Durable tiles often imply Store LQIP from prepare, but process
-        // ImageCache may never have been seeded (warm size-only memo).
-        if (under.isNull()) {
-            ThumtooCache::scheduleStoreUnderlaySeed(path);
-            return false;
-        }
-    }
-    if (ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-        const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
-        under = under.scaled(cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    }
-    if (under.isNull()
-        || ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        ThumtooCache::scheduleStoreUnderlaySeed(path);
         return false;
     }
     const SessionImageId sid = item->sessionId();

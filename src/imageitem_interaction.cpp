@@ -1064,7 +1064,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 if (tilesPreferEmbeddedUnderlay
                     && qMax(pixmap().width(), pixmap().height())
                         > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                    // leave underlay to EMB/LQIP branch / placeholder
+                    // Soft pixmap: try live displayImage if emb-band, else later branches.
+                    const QImage &live = displayImage();
+                    if (!live.isNull()
+                        && isEmbeddedUnderlaySample(live)) {
+                        painter->setRenderHint(QPainter::SmoothPixmapTransform,
+                                               DisplayQuality::smoothScaling());
+                        painter->drawImage(box, live);
+                    }
+                    // else leave underlay to m_source / m_preview / placeholder
                 } else {
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                 {
@@ -1085,17 +1093,25 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         && isEmbeddedUnderlaySample(pixmap().toImage()));
                 // Under tiles: only EMB/LQIP; never soft/HOST (KILL_SOFT).
                 if (tilesPreferEmbeddedUnderlay && !sourceIsEmbedded) {
-                    if (haveEmbeddedUnderlay) {
-                        // Prefer a true EMB/LQIP sample elsewhere in this branch.
-                    } else if (!pixmap().isNull()
+                    bool drewEmbedded = false;
+                    if (!pixmap().isNull()
                         && isEmbeddedUnderlaySample(pixmap().toImage())) {
                         painter->setRenderHint(QPainter::SmoothPixmapTransform,
                                                DisplayQuality::smoothScaling());
                         painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                        drewEmbedded = true;
                     } else if (isEmbeddedUnderlaySample(m_preview)) {
                         drawSampleInContentRect(m_preview);
+                        drewEmbedded = true;
+                    } else if (haveEmbeddedUnderlay && isEmbeddedUnderlaySample(m_source)) {
+                        drawSampleInContentRect(m_source);
+                        drewEmbedded = true;
                     }
-                    // else: placeholder already drawn when nothing embeds
+                    if (!drewEmbedded) {
+                        // Soft on item must not blank the cell — placeholder until
+                        // EMB/LQIP install or tiles land (debug plan H holes).
+                        ItemFrameGeometry::paintNeutralPlaceholder(painter, box);
+                    }
                 } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
                     && (!tilesPreferEmbeddedUnderlay
                         || isEmbeddedUnderlaySample(pixmap().toImage()))) {

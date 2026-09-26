@@ -398,8 +398,8 @@ void ImageItem::prepareTileLodPlan()
     }
     tileLodBag().lastDpc = dpc;
     tileLodBag().lastVisSource = visSource;
-    // Draw-plan Underlay: has_lqip when an EMB/LQIP-band sample exists
-    // (KILL_SOFT — soft host under tiles is not product underlay).
+    // Draw-plan Underlay: has_lqip when an EMB/LQIP-band sample exists on the
+    // item or in ImageCache (install may lag one frame after Store seed).
     {
         auto embBand = [](const QImage &img) {
             return !img.isNull() && qMax(img.width(), img.height())
@@ -409,6 +409,10 @@ void ImageItem::prepareTileLodPlan()
         if (!haveSample && !pixmap().isNull()) {
             haveSample = qMax(pixmap().width(), pixmap().height())
                 <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+        }
+        if (!haveSample && !m_path.isEmpty()) {
+            const QImage cached = ImageCache::get(m_path);
+            haveSample = embBand(cached);
         }
         tileLodBag().controller->setHasLqip(haveSample);
     }
