@@ -56,10 +56,13 @@ public:
         if (path.isEmpty()) {
             return;
         }
+        // Snapshot before clearing provisional — otherwise a stand-in size
+        // left in m_byPath becomes "definitive" and is kept by mistake.
+        const bool keepDefinitiveSize =
+            m_byPath.contains(path) && !m_provisionalPaths.contains(path);
         m_failedPaths.insert(path);
         m_provisionalPaths.remove(path);
-        // Drop any provisional stand-in; leave map empty if never definitive.
-        if (!hasDefinitive(path)) {
+        if (!keepDefinitiveSize) {
             m_byPath.remove(path);
         }
     }
