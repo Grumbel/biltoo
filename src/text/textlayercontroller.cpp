@@ -602,8 +602,11 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
     if (!painter || !m_view || !m_view->isImageMode()) {
         return;
     }
+    // Paint when any overlay layer is active (not only region outlines / search).
     if (!m_session.hasRegions()
-        || !(m_session.showsRegions() || m_session.hasSearchMatches())) {
+        || !(m_session.showsRegions() || m_session.showsGlyphs()
+             || m_session.hasSearchMatches() || m_session.hasSelection()
+             || m_session.hoverRegionIndex() >= 0)) {
         return;
     }
     ImageItem *item = m_view->primaryItem();
@@ -615,7 +618,7 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         return;
     }
     painter->save();
-    // Search hits: filled yellow first (under outlines / selection).
+    // Search hits: filled yellow first (under outlines / glyphs / selection).
     if (m_session.hasSearchMatches()) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 220, 40, 110));
@@ -701,7 +704,11 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->translate(sceneBox.topLeft());
             painter->scale(sx, sy);
             painter->drawText(QPointF(0.0, fm.ascent()), line);
-                // Selection / hover on top of glyphs so cyan stays readable over paper fill.
+            painter->restore();
+        }
+    }
+
+    // Selection / hover on top of glyphs so cyan stays readable over paper fill.
     if (m_session.hasSelection()) {
         painter->setPen(QPen(QColor(20, 90, 200, 230), 0));
         painter->setBrush(QColor(40, 140, 255, 110));
@@ -727,9 +734,6 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->setBrush(QColor(255, 160, 40, 80));
             const QRectF local = img.translated(item->offset());
             painter->drawPolygon(item->mapToScene(local));
-        }
-    }
-painter->restore();
         }
     }
 
