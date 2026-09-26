@@ -2,27 +2,28 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2713.11-underlay-seed-on-size-tiles` (base `b9c3473`).
+**Tip:** `biltoo-2713.12-underlay-seed-ensure-lqip` (base `b9c3473`).
 
-### 2713.11 — Seed underlay with size and after durable tiles
-- `hasUsableUnderlaySample` → `ImageCache::hasUnderlay` (not main-slot soft)
-- `sizeReady`: `scheduleStoreUnderlaySeed` when underlay slot empty
-- `durableTilesReady`: re-seed (tiles often write Store LQIP) + tryInstall
+### 2713.12 — Underlay seed: tiles-without-LQIP recovery
+- `cachedLqipImage`: if Store EMB/LQIP miss but durable tiles exist, call
+  `ensure_lqip` (free TileSynth data only — fills holes from quit mid-pyramid)
+- GUI path uses `getUnderlay` only (never main soft slot)
+
+### Pair with thumtoo
+**thumtoo-344.2** — SizeReply warm path includes EMB (`get_embedded_preview`).
+Hot-cache size probes were returning size without PDF/EXIF thumbs because
+`get_lqip` excludes EmbeddedJpeg.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2713.11-underlay-seed-on-size-tiles-b9c3473.bundle HEAD
+git pull --ff-only …/biltoo-2713.12-underlay-seed-ensure-lqip-b9c3473.bundle HEAD
+git pull --ff-only …/thumtoo-344.2-sizereply-embedded-aeb5159.bundle HEAD
 ```
 
-## Prior
-2713.10 underlay slot on origin; Kill Soft A–D
-
 ## Next
-Runtime: pages without Store EMB/LQIP until tiles still lag; after pyramid expect more lqip=1
+True single-SQL size+underlay join in Store (optional); Resolving sizes should
+look uniform once EMB rides on SizeReply.
 
 ## Roadmap / later
-### Kill Soft
-[docs/KILL_SOFT.md](docs/KILL_SOFT.md)
-
-### Tile draw / LOD investigation
-[docs/TILE_DRAW_INVESTIGATION.md](docs/TILE_DRAW_INVESTIGATION.md)
+### Kill Soft / Tile LOD
+See docs/KILL_SOFT.md, docs/TILE_DRAW_INVESTIGATION.md

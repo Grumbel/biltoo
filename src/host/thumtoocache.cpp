@@ -965,7 +965,7 @@ QImage cachedLqipImage(const QString &path)
     }
     // GUI: no Store I/O — scheduleStoreUnderlaySeed fills the cache off-thread.
     if (QThread::isMainThread()) {
-        return ImageCache::get(path);
+        return ImageCache::getUnderlay(path);
     }
     ASSERT_NOT_GUI_THREAD();
     init();
@@ -982,6 +982,7 @@ QImage cachedLqipImage(const QString &path)
         return {};
     }
     // EMB first (sharper container thumb), then ThumbHash/Handsum LQIP.
+    // These are Store reads only — same rows SizeReply should already return.
     try {
         if (auto emb = c->get_embedded_preview(uri); emb && !emb->bytes.empty()) {
             QImage img;
@@ -1001,6 +1002,20 @@ QImage cachedLqipImage(const QString &path)
             if (!lqip.isNull()) {
                 ImageCache::put(path, lqip, QStringLiteral("LQIP"));
                 return lqip;
+            }
+        }
+    } catch (...) {
+    }
+    // Tiles present but LQIP missing (quit mid-pyramid): free-data-only encode
+    // from TileSynth ≤64 — never opens the source (PIXEL_AND_ARCHIVE_POLICY).
+    try {
+        if (hasDurableTiles(path)) {
+            if (auto blob = c->ensure_lqip(uri); blob && !blob->empty()) {
+                const QImage lqip = qimageFromLqipBlob(*blob);
+                if (!lqip.isNull()) {
+                    ImageCache::put(path, lqip, QStringLiteral("LQIP"));
+                    return lqip;
+                }
             }
         }
     } catch (...) {
