@@ -49,6 +49,37 @@ bool tilePlanDebugOverlayEnabled()
     return debugFlag(DebugFlags::Overlay) || debugFlag(DebugFlags::TileDebug);
 }
 
+/** Debug-only sample label. Does not change cache mode or tile RAM. */
+void paintSampleKindTag(QPainter *painter, const QRectF &box, const QImage &img)
+{
+    if (!painter || box.width() < 4.0 || box.height() < 4.0) {
+        return;
+    }
+    QString tag;
+    if (img.isNull()) {
+        tag = QStringLiteral("EMPTY");
+    } else {
+        const int le = qMax(img.width(), img.height());
+        if (le <= DisplayQuality::kLqipMaxEdge) {
+            tag = QStringLiteral("LQIP");
+        } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+            tag = QStringLiteral("EMB");
+        } else {
+            tag = QStringLiteral("RASTER");
+        }
+    }
+    QFont hf = painter->font();
+    hf.setBold(true);
+    hf.setWeight(QFont::Black);
+    const int px = qBound(14, qRound(qMin(box.width(), box.height()) * 0.28), 256);
+    hf.setPixelSize(px);
+    painter->setFont(hf);
+    painter->setPen(QColor(0, 0, 0, 220));
+    painter->drawText(box.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
+    painter->setPen(QColor(0, 255, 220));
+    painter->drawText(box, Qt::AlignCenter, tag);
+}
+
 /** SmoothPixmapTransform is expensive; skip only at true pixel-perfect
  *  1:1 or 2:1 tile→device mapping. Parent stand-ins still need smooth.
  *
@@ -208,7 +239,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
 
         // Cell tag when large enough on screen (device px).
         const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
-        if (cellDev >= 40.0 && !cellTag.isEmpty()) {
+        if (cellDev >= 16.0 && !cellTag.isEmpty()) {
             QFont cf = painter->font();
             cf.setBold(true);
             const int cpx = qBound(10, qRound(cellDev * 0.22), 48);
@@ -1097,28 +1128,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             } else {
                 painter->drawImage(box, img);
             }
-            // Non-tile path: label the sample (product names only — Soft is dead).
-            // EMB / LQIP underlay, or RASTER = whole-frame process sample (not tiles).
             if (tilePlanDebugOverlayEnabled() && !tilesLive) {
-                const int le = qMax(img.width(), img.height());
-                QString tag;
-                if (le <= DisplayQuality::kLqipMaxEdge) {
-                    tag = QStringLiteral("LQIP");
-                } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                    tag = QStringLiteral("EMB");
-                } else {
-                    tag = QStringLiteral("RASTER");
-                }
-                QFont hf = painter->font();
-                hf.setBold(true);
-                hf.setWeight(QFont::Black);
-                const int px = qBound(16, qRound(qMin(box.width(), box.height()) * 0.28), 256);
-                hf.setPixelSize(px);
-                painter->setFont(hf);
-                painter->setPen(QColor(0, 0, 0, 200));
-                painter->drawText(box.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
-                painter->setPen(QColor(0, 255, 220));
-                painter->drawText(box, Qt::AlignCenter, tag);
+                paintSampleKindTag(painter, box, img);
             }
         };
         if (drawLqipBase) {
@@ -1217,6 +1228,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // Refresh *plan* here so zoom-out does not keep painting scale-0 cells
         // until the debounced tick runs. Requests stay on tick only (cheap
         // set_viewport; cancel only when plan_changed).
+        // Debug overlay only: label pixmap/placeholder paths that never called
+        // drawSampleInContentRect. Does not touch ItemCoordinateCache policy.
+        if (tilePlanDebugOverlayEnabled() && !tilesLive) {
+            const QRectF box = contentRect();
+            QImage sample = displayImage();
+            if (sample.isNull() && !pixmap().isNull()) {
+                sample = pixmap().toImage();
+            }
+            paintSampleKindTag(painter, box, sample);
+        }
+
         // Nav-hot: skip plan + tile paint — soft underlay only (IMAGE_MODE_NAV_SOFT).
         bool navHot = false;
         if (scene() && !scene()->views().isEmpty()) {
