@@ -2104,18 +2104,37 @@ void MainWindow::toggleWorkspaceMode()
 
 void MainWindow::setSelectTool()
 {
+    if (m_imageView && m_imageView->hostCrop().active()) {
+        // Leaving crop via another tool commits the draft (same as toolbar off).
+        m_imageView->hostCrop().setCropMode(false);
+        if (m_cropAct) {
+            m_cropAct->setChecked(false);
+        }
+    }
     m_imageView->setTool(ImageView::Tool::Select);
     m_selectToolAct->setChecked(true);
 }
 
 void MainWindow::setPanTool()
 {
+    if (m_imageView && m_imageView->hostCrop().active()) {
+        m_imageView->hostCrop().setCropMode(false);
+        if (m_cropAct) {
+            m_cropAct->setChecked(false);
+        }
+    }
     m_imageView->setTool(ImageView::Tool::Pan);
     m_panToolAct->setChecked(true);
 }
 
 void MainWindow::setZoomTool()
 {
+    if (m_imageView && m_imageView->hostCrop().active()) {
+        m_imageView->hostCrop().setCropMode(false);
+        if (m_cropAct) {
+            m_cropAct->setChecked(false);
+        }
+    }
     m_imageView->setTool(ImageView::Tool::Zoom);
     if (m_zoomToolAct) {
         m_zoomToolAct->setChecked(true);

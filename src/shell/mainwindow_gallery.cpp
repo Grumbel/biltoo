@@ -720,7 +720,7 @@ void MainWindow::updateWorkspaceActionVisibility()
         m_layoutFreeFormAct->setEnabled(false);
     }
     // Shared canvas tools: enabled in Image / Gallery / Workspace.
-    for (QAction *act : {m_selectToolAct, m_panToolAct, m_zoomToolAct}) {
+    for (QAction *act : {m_selectToolAct, m_panToolAct, m_zoomToolAct, m_cropAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(m_imageView != nullptr);

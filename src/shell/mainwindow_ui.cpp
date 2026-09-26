@@ -1398,19 +1398,21 @@ void MainWindow::createToolBar()
     }
     m_toolBar->addAction(m_fullscreenAct);
 
-    // Left vertical toolbar for workspace tools (hidden until workspace mode)
-    m_workspaceToolBar = new QToolBar(tr("Workspace Tools"), this);
-    m_workspaceToolBar->setObjectName(QStringLiteral("WorkspaceToolBar"));
+    // Left vertical tools strip (Select/Pan/Zoom/Crop + Workspace chrome).
+    m_workspaceToolBar = new QToolBar(tr("Tools"), this);
+    m_workspaceToolBar->setObjectName(QStringLiteral("ToolsToolBar"));
     m_workspaceToolBar->setMovable(false);
     m_workspaceToolBar->setFloatable(false);
     m_workspaceToolBar->setIconSize(QSize(24, 24));
     m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_workspaceToolBar->setOrientation(Qt::Vertical);
     addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
-    // Select / Pan, then Workspace-centric guides and layout (print/export stay under File).
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addAction(m_zoomToolAct);
+    if (m_cropAct) {
+        m_workspaceToolBar->addAction(m_cropAct);
+    }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.
     // Background itself lives on the main toolbar (mode-dispatch) and in the
