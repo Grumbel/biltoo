@@ -88,6 +88,20 @@ void TextPanel::setLayerInfo(const QString &info)
     }
 }
 
+void TextPanel::setLayer(const ThumtooCache::PageTextLayer &layer)
+{
+    if (m_model) {
+        m_model->setLayer(layer);
+    }
+}
+
+void TextPanel::clearLayer()
+{
+    if (m_model) {
+        m_model->clear();
+    }
+}
+
 void TextPanel::setShowGlyphsChecked(bool on)
 {
     if (m_glyphs) {

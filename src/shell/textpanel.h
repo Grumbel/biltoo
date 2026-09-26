@@ -3,6 +3,8 @@
 #ifndef TEXTPANEL_H
 #define TEXTPANEL_H
 
+#include "host/thumtoocache.h"
+
 #include <QWidget>
 
 class QEvent;
@@ -26,6 +28,8 @@ public:
     TextPanelModel *model() const { return m_model; }
 
     void setLayerInfo(const QString &info);
+    void setLayer(const ThumtooCache::PageTextLayer &layer);
+    void clearLayer();
     void setShowGlyphsChecked(bool on);
     void setShowOutlinesChecked(bool on);
 

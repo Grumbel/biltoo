@@ -4748,7 +4748,7 @@ void MainWindow::updateTextPanel()
         return;
     }
     if (!m_imageView) {
-        m_textPanel->model()->clear();
+        m_textPanel->clearLayer();
         m_textPanel->setLayerInfo(tr("No image view"));
         return;
     }
@@ -4761,7 +4761,7 @@ void MainWindow::updateTextPanel()
         text.refresh();
     }
     const auto &layer = sess.layerRef();
-    m_textPanel->model()->setLayer(layer);
+    m_textPanel->setLayer(layer);
     const QString path = m_imageView->hostImage().classicPath();
     const int n = layer.regions.size();
     m_textPanel->setLayerInfo(
