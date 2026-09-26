@@ -157,6 +157,8 @@ protected:
 
 private slots:
     void ocrCurrentPage();
+    void ocrCurrentPageForced();
+    void startOcrCurrentPage(bool force);
     void ocrDocument();
     void cancelOcrBatch();
     void openFiles();
@@ -643,6 +645,7 @@ private:
     QAction *m_toggleContentEditMarksAct = nullptr;
     QAction *m_showTextRegionsAct = nullptr;
     QAction *m_ocrPageAct = nullptr;
+    QAction *m_ocrForcePageAct = nullptr;
     QAction *m_ocrDocumentAct = nullptr;
     QAction *m_ocrCancelAct = nullptr;
     int m_ocrGeneration = 0;

@@ -2,22 +2,16 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2705.2-ocr-batch-async` (base `6c3e877`).
+**Tip:** `biltoo-2705.3-ocr-force-prefer` (base `6c3e877`).
 
-### 2705.2 — OCR batch + async
-- **OCR This Page**: `QThreadPool` worker + install layer on GUI
-- **OCR Document…**: language prompt (QSettings `ocr/lang`), all pages from
-  `documentPagePathsForSearch()`, centre progress + status, cancel
-- **Cancel OCR** stops batch via generation counter
-- `ensureOcrPageTextLayer(..., lang)`, `installLayer` for worker results
-- Needs thumtoo **342.1** OCR APIs
-
-### Next
-- Force re-OCR option; skip-empty stats
-- Semantic header/page-number tags
-- Prefer OCR vs native in Find when user chooses
+### 2705.3 — Force re-OCR, prefer OCR layer, region kinds
+- View → **Re-OCR This Page** (force=true)
+- OCR Document asks whether to force re-OCR cached pages
+- `refresh()` prefers cached OCR layer over native when present
+- `cachedOcrPageTextLayer`; region Kind (Body/PageNumber/Header/Footer)
+- Needs thumtoo **342.2**
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2705.2-ocr-batch-async-6c3e877.bundle HEAD
+git pull --ff-only …/biltoo-2705.3-ocr-force-prefer-6c3e877.bundle HEAD
 ```

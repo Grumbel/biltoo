@@ -354,6 +354,14 @@ void MainWindow::createActions()
         "layer for search and selection on this page.</p>"));
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
+    m_ocrForcePageAct = new QAction(tr("Re-OCR This &Page"), this);
+    m_ocrForcePageAct->setStatusTip(
+        tr("Force a new OCR pass on the current page (ignore cached OCR layer)"));
+    connect(m_ocrForcePageAct, &QAction::triggered, this, [this]() {
+        // Reuse ocrCurrentPage path with force via property on the action sender.
+        ocrCurrentPageForced();
+    });
+
     m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
     m_ocrDocumentAct->setStatusTip(
         tr("Run OCR on all pages of the current document (language prompt)"));
@@ -1038,6 +1046,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_ocrPageAct);
+    m_viewMenu->addAction(m_ocrForcePageAct);
     m_viewMenu->addAction(m_ocrDocumentAct);
     m_viewMenu->addAction(m_ocrCancelAct);
     m_viewMenu->addAction(m_fullscreenAct);

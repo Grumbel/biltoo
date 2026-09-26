@@ -16,6 +16,7 @@
 #include <QDebug>
 #include <QThreadPool>
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QSettings>
 #include <QPointer>
 #include <QSet>
@@ -4529,6 +4530,9 @@ void MainWindow::cancelOcrBatch()
     if (m_ocrPageAct) {
         m_ocrPageAct->setEnabled(true);
     }
+    if (m_ocrForcePageAct) {
+        m_ocrForcePageAct->setEnabled(true);
+    }
     if (m_ocrDocumentAct) {
         m_ocrDocumentAct->setEnabled(true);
     }
@@ -4539,6 +4543,16 @@ void MainWindow::cancelOcrBatch()
 }
 
 void MainWindow::ocrCurrentPage()
+{
+    startOcrCurrentPage(/*force=*/false);
+}
+
+void MainWindow::ocrCurrentPageForced()
+{
+    startOcrCurrentPage(/*force=*/true);
+}
+
+void MainWindow::startOcrCurrentPage(bool force)
 {
     if (!m_imageView) {
         return;
@@ -4556,15 +4570,15 @@ void MainWindow::ocrCurrentPage()
     if (m_ocrCancelAct) {
         m_ocrCancelAct->setEnabled(true);
     }
-    statusBar()->showMessage(tr("OCR in progress…"));
+    statusBar()->showMessage(force ? tr("Re-OCR in progress…") : tr("OCR in progress…"));
     m_imageView->hostShell().setCentreProgress(tr("OCR"), tr("This page…"));
 
     QPointer<MainWindow> self(this);
     const QString pathCopy = path;
     const QString langCopy = lang;
-    QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen]() {
+    QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen, force]() {
         const ThumtooCache::PageTextLayer layer =
-            ThumtooCache::ensureOcrPageTextLayer(pathCopy, /*force=*/false, langCopy);
+            ThumtooCache::ensureOcrPageTextLayer(pathCopy, force, langCopy);
         if (!self) {
             return;
         }
@@ -4627,6 +4641,13 @@ void MainWindow::ocrDocument()
     }
     settings.setValue(QStringLiteral("ocr/lang"), lang);
 
+    const bool force = QMessageBox::question(
+                           this, tr("OCR Document"),
+                           tr("Force re-OCR of pages that already have an OCR layer?"),
+                           QMessageBox::Yes | QMessageBox::No,
+                           QMessageBox::No)
+        == QMessageBox::Yes;
+
     const int gen = ++m_ocrGeneration;
     m_ocrRunning = true;
     if (m_ocrCancelAct) {
@@ -4635,6 +4656,9 @@ void MainWindow::ocrDocument()
     if (m_ocrPageAct) {
         m_ocrPageAct->setEnabled(false);
     }
+    if (m_ocrForcePageAct) {
+        m_ocrForcePageAct->setEnabled(false);
+    }
     if (m_ocrDocumentAct) {
         m_ocrDocumentAct->setEnabled(false);
     }
@@ -4642,7 +4666,7 @@ void MainWindow::ocrDocument()
     QPointer<MainWindow> self(this);
     const QStringList pagesCopy = pages;
     const QString langCopy = lang;
-    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, gen]() {
+    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, gen, force]() {
         int done = 0;
         int okCount = 0;
         const int total = pagesCopy.size();
@@ -4669,7 +4693,7 @@ void MainWindow::ocrDocument()
             }, Qt::QueuedConnection);
 
             const auto layer =
-                ThumtooCache::ensureOcrPageTextLayer(pagePath, /*force=*/false, langCopy);
+                ThumtooCache::ensureOcrPageTextLayer(pagePath, force, langCopy);
             if (!layer.regions.isEmpty() || layer.pageBounds.isValid()) {
                 ++okCount;
             }
@@ -4689,13 +4713,15 @@ void MainWindow::ocrDocument()
             if (self->m_ocrPageAct) {
                 self->m_ocrPageAct->setEnabled(true);
             }
+            if (self->m_ocrForcePageAct) {
+                self->m_ocrForcePageAct->setEnabled(true);
+            }
             if (self->m_ocrDocumentAct) {
                 self->m_ocrDocumentAct->setEnabled(true);
             }
             if (self->m_imageView) {
                 self->m_imageView->hostShell().clearCentreProgress();
-                // Refresh text layer for the current page if it is part of the doc.
-                self->m_imageView->hostText().applyOcrLayer(false);
+                self->m_imageView->hostText().refresh();
                 if (self->m_showTextRegionsAct) {
                     self->m_showTextRegionsAct->setChecked(true);
                 }

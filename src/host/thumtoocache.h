@@ -431,8 +431,10 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath);
 /** One text or link region in page space (see pageBounds for coordinate system). */
 struct TextRegion {
     enum class Role { Text, Link };
+    enum class Kind { Body, PageNumber, Header, Footer };
     QRectF bbox;  ///< page space (PDF/EPUB: points Y-up; DjVu: pixels Y-up)
     Role role = Role::Text;
+    Kind kind = Kind::Body;
     QString text;
     /** Link target: internal 1-based page (0 = none) and/or URI. */
     int linkPage = 0;
@@ -483,6 +485,9 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath);
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
                                      bool force = false,
                                      const QString &lang = QString());
+
+/** Cache-only OCR layer (empty if never OCR'd). */
+PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath);
 
 /** Cache-only document outline (TOC). Empty if not stored. */
 DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath);

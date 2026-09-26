@@ -3020,6 +3020,20 @@ TextRegion convertRegion(const thumtoo::TextRegion &r)
     out.bbox = QRectF(r.bbox.x0, r.bbox.y0, r.bbox.width(), r.bbox.height());
     out.role = (r.role == thumtoo::TextRegionRole::Link) ? TextRegion::Role::Link
                                                          : TextRegion::Role::Text;
+    switch (r.kind) {
+    case thumtoo::TextRegionKind::PageNumber:
+        out.kind = TextRegion::Kind::PageNumber;
+        break;
+    case thumtoo::TextRegionKind::Header:
+        out.kind = TextRegion::Kind::Header;
+        break;
+    case thumtoo::TextRegionKind::Footer:
+        out.kind = TextRegion::Kind::Footer;
+        break;
+    default:
+        out.kind = TextRegion::Kind::Body;
+        break;
+    }
     // Text layers are UTF-8 (MuPDF codepoints encoded in thumtoo).
     out.text = QString::fromUtf8(r.text.data(), int(r.text.size()));
     out.blockId = r.block_id;
@@ -3138,6 +3152,29 @@ PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
     return convertLayer(*layer);
 }
 
+
+PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath)
+{
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    const std::string uri = toThumtooUri(sessionPath);
+    if (uri.empty()) {
+        return {};
+    }
+    auto layer = c->get_ocr_page_text_layer(uri);
+    if (!layer) {
+        return {};
+    }
+    return convertLayer(*layer);
+}
+
 #else // BILTOO_HAVE_THUMTOO_TEXT
 
 PageTextLayer cachedPageTextLayer(const QString &)
@@ -3149,6 +3186,10 @@ PageTextLayer ensurePageTextLayer(const QString &)
     return {};
 }
 PageTextLayer ensureOcrPageTextLayer(const QString &, bool, const QString &)
+{
+    return {};
+}
+PageTextLayer cachedOcrPageTextLayer(const QString &)
 {
     return {};
 }

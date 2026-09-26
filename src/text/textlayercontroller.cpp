@@ -65,7 +65,11 @@ void TextLayerController::refresh()
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
     }
-    ThumtooCache::PageTextLayer layer = ThumtooCache::cachedPageTextLayer(path);
+    // Prefer a user-generated OCR layer when present (dual Store slot).
+    ThumtooCache::PageTextLayer layer = ThumtooCache::cachedOcrPageTextLayer(path);
+    if (layer.regions.isEmpty()) {
+        layer = ThumtooCache::cachedPageTextLayer(path);
+    }
     if (layer.regions.isEmpty()) {
         layer = ThumtooCache::ensurePageTextLayer(path);
     }
