@@ -87,7 +87,10 @@ bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
  *
  *   Exact (target-scale cache)  — yellow
  *   Parent (coarser cache)      — amber / orange
- *   Hole (soft / ladder under)  — cyan
+ *   Underlay hole EMB           — magenta (only cells still on underlay)
+ *   Underlay hole LQIP          — cyan
+ *   Empty hole                  — blue
+ * Summary lists EMB/LQIP only when the plan still has underlay commands.
  */
 void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                                const tilelod::DrawPlan &plan,
@@ -249,7 +252,16 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     } else {
         summary << QStringLiteral("WAITING");
     }
-    if (!underTag.isEmpty()) {
+    // EMB/LQIP in the summary only when the plan still has underlay holes —
+    // not when every visible cell is EXACT (underlay may still sit under tiles
+    // in the paint path, but it is not what you are looking at).
+    int underCmds = 0;
+    for (const tilelod::DrawCommand &c : plan.commands) {
+        if (c.kind == tilelod::DrawKind::Underlay) {
+            ++underCmds;
+        }
+    }
+    if (underCmds > 0 && !underTag.isEmpty()) {
         summary << underTag;
     }
 
@@ -1084,6 +1096,31 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->drawImage(box, img, src);
             } else {
                 painter->drawImage(box, img);
+            }
+            // Non-tile path: label what sample is on screen (EMB/LQIP/SOFT/HOST).
+            // Under live tiles the plan wash already tags EXACT/PARENT/EMB holes.
+            if (tilePlanDebugOverlayEnabled() && !tilesLive) {
+                const int le = qMax(img.width(), img.height());
+                QString tag;
+                if (le <= DisplayQuality::kLqipMaxEdge) {
+                    tag = QStringLiteral("LQIP");
+                } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                    tag = QStringLiteral("EMB");
+                } else if (le <= ImageCache::kPreviewEdge) {
+                    tag = QStringLiteral("SOFT");
+                } else {
+                    tag = QStringLiteral("HOST");
+                }
+                QFont hf = painter->font();
+                hf.setBold(true);
+                hf.setWeight(QFont::Black);
+                const int px = qBound(16, qRound(qMin(box.width(), box.height()) * 0.28), 256);
+                hf.setPixelSize(px);
+                painter->setFont(hf);
+                painter->setPen(QColor(0, 0, 0, 200));
+                painter->drawText(box.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
+                painter->setPen(QColor(0, 255, 220));
+                painter->drawText(box, Qt::AlignCenter, tag);
             }
         };
         if (drawLqipBase) {
