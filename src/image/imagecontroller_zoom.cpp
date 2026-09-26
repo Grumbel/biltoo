@@ -69,7 +69,21 @@ bool ImageController::tryMouseReleaseZoomRegion(QMouseEvent *event)
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();
             m_framing.clearFitFill();
+            // Gallery AlignCenter + bar-range recenter pins fitInView to top-left;
+            // suppress that path and centre on the rubber target explicitly.
+            if (m_view->isGalleryMode()) {
+                m_view->hostGallery().prepareInteractiveViewTransform();
+            }
+            m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
+            m_view->setResizeAnchor(QGraphicsView::NoAnchor);
             m_view->fitInView(sceneRect, Qt::KeepAspectRatio);
+            m_view->centerOn(sceneRect.center());
+            m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            m_view->setResizeAnchor(QGraphicsView::AnchorViewCenter);
+            if (m_view->isGalleryMode()) {
+                m_view->hostGallery().endInteractiveViewTransformDeferred();
+                m_view->hostGallery().scheduleDecodeWindowRefresh();
+            }
             emit m_view->statusChanged();
         }
     }

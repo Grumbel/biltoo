@@ -116,6 +116,9 @@ public:
     // Input (Tier 6c) — ImageView thin-forwards
     void updateGalleryHoverAt(const QPoint &viewPos);
     bool tryWheelGalleryZoom(QWheelEvent *event);
+    /** Suppress Gallery bar-range recenter while applying an interactive zoom. */
+    void prepareInteractiveViewTransform();
+    void endInteractiveViewTransformDeferred();
     bool tryWheelGalleryScroll(QWheelEvent *event);
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);

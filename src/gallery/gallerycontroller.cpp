@@ -617,6 +617,32 @@ void GalleryController::updateGalleryHoverAt(const QPoint &viewPos)
     }
 }
 
+
+void GalleryController::prepareInteractiveViewTransform()
+{
+    // Interactive zoom must not be followed by onScrollBarRangeChanged →
+    // centerOn(viewport centre) / reassertViewport — that cancels the target
+    // (Image/Workspace do not run that Gallery bar-range path).
+    m_suppressBarRangeRecenter = true;
+    m_haveViewCenter = false;
+    m_haveScroll = false;
+    m_barRangeHaveCenter = false;
+}
+
+void GalleryController::endInteractiveViewTransformDeferred()
+{
+    if (!m_view) {
+        return;
+    }
+    QPointer<ImageView> guard(m_view);
+    QTimer::singleShot(0, m_view, [this, guard]() {
+        if (!guard) {
+            return;
+        }
+        m_suppressBarRangeRecenter = false;
+    });
+}
+
 bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
 {
     // Gallery: wheel zooms when Pan/Zoom tool is active (map-viewer UX), or
@@ -633,13 +659,7 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
     // Gallery inspection zoom is view-local. Do not release Image sticky-zoom
     // preference — that is owned by Image framing and must survive Gallery.
     m_view->hostFraming().clearFitFill();
-    // Interactive zoom must not be followed by onScrollBarRangeChanged →
-    // centerOn(viewport centre) / reassertViewport — that cancels under-mouse
-    // zoom (Image/Workspace do not run that Gallery bar-range path).
-    m_suppressBarRangeRecenter = true;
-    m_haveViewCenter = false;
-    m_haveScroll = false;
-    m_barRangeHaveCenter = false;
+    prepareInteractiveViewTransform();
     // Explicit about-cursor zoom: AnchorUnderMouse alone loses to AlignCenter
     // + scrollbar range churn in Gallery.
     const QPoint viewPos = event->position().toPoint();
@@ -652,13 +672,7 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
     m_view->translate(delta.x(), delta.y());
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     m_view->setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    QPointer<ImageView> guard(m_view);
-    QTimer::singleShot(0, m_view, [this, guard]() {
-        if (!guard) {
-            return;
-        }
-        m_suppressBarRangeRecenter = false;
-    });
+    endInteractiveViewTransformDeferred();
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
     // every high-res underlay, freezing the UI while zooming out.
