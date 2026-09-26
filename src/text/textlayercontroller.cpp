@@ -71,6 +71,7 @@ void TextLayerController::refresh()
     const ThumtooCache::PageTextLayer layer =
         TextLayerResolve::load(path, m_session.layerPreferValue());
     m_session.setLayerContent(layer, path);
+    restoreCurrentPageSelectionFromMulti();
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
@@ -84,6 +85,7 @@ void TextLayerController::installLayer(const ThumtooCache::PageTextLayer &layer,
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
     m_session.setLayerContent(layer, path);
+    restoreCurrentPageSelectionFromMulti();
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
@@ -107,6 +109,7 @@ bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
         return false;
     }
     m_session.setLayerContent(layer, path);
+    restoreCurrentPageSelectionFromMulti();
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
@@ -381,11 +384,11 @@ void TextLayerController::selectRegionAtViewPos(const QPoint &viewPos)
 {
     const int idx = regionIndexAtViewPos(viewPos);
     if (idx < 0) {
-        emit selectionChanged();
+        // Keep multi-page bag for other pages; clear only current page projection.
+        setSelectedRegions({});
         return;
     }
-    m_session.setSelectedRegions(QVector<int>{idx});
-    emit selectionChanged();
+    setSelectedRegions(QVector<int>{idx});
 }
 
 void TextLayerController::finishRubberBand()
@@ -447,11 +450,7 @@ void TextLayerController::finishRubberBand()
         selBlocks[i] = m_session.regionAt(i).blockId;
     }
     TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks);
-    m_session.setSelectedRegions(selected);
-    if (m_view->viewport()) {
-        m_view->viewport()->update();
-    }
-    emit selectionChanged();
+    setSelectedRegions(selected);
 }
 
 
@@ -479,12 +478,58 @@ void TextLayerController::setHoverRegion(int regionIndex)
     emit hoverChanged(regionIndex);
 }
 
-void TextLayerController::setSelectedRegions(const QVector<int> &ids)
+SessionImageId TextLayerController::currentSessionId() const
 {
+    ImageItem *item = m_view->primaryItem();
+    if (item && item->sessionId() != kInvalidSessionImageId) {
+        return item->sessionId();
+    }
+    if (m_view->isImageMode()) {
+        return m_view->hostSessionId().currentIdValue();
+    }
+    return kInvalidSessionImageId;
+}
+
+void TextLayerController::syncMultiSelectionFromCurrentPage(const QVector<int> &ids)
+{
+    const SessionImageId sid = currentSessionId();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    QVector<QString> texts;
+    texts.reserve(ids.size());
+    for (int idx : ids) {
+        if (idx >= 0 && idx < m_session.regionCount()) {
+            texts.append(m_session.regionAt(idx).text);
+        } else {
+            texts.append(QString());
+        }
+    }
+    m_session.multiSelection.setForSession(sid, ids, texts);
+}
+
+void TextLayerController::restoreCurrentPageSelectionFromMulti()
+{
+    const SessionImageId sid = currentSessionId();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    const QVector<int> ids = m_session.multiSelection.regionIndicesFor(sid);
     if (m_session.selectedRegionsRef() == ids) {
         return;
     }
     m_session.setSelectedRegions(ids);
+}
+
+void TextLayerController::setSelectedRegions(const QVector<int> &ids)
+{
+    if (m_session.selectedRegionsRef() == ids) {
+        // Still refresh multi snapshots if same indices (text may have loaded).
+        syncMultiSelectionFromCurrentPage(ids);
+        return;
+    }
+    m_session.setSelectedRegions(ids);
+    syncMultiSelectionFromCurrentPage(ids);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -493,6 +538,13 @@ void TextLayerController::setSelectedRegions(const QVector<int> &ids)
 
 QString TextLayerController::selectedText() const
 {
+    // Prefer multi-page snapshots so copy survives page changes.
+    if (!m_session.multiSelection.isEmpty()) {
+        const QString multi = m_session.multiSelection.joinedText();
+        if (!multi.isEmpty()) {
+            return multi;
+        }
+    }
     QStringList lines;
     for (int idx : m_session.selectedRegionsRef()) {
         if (idx < 0 || idx >= m_session.regionCount()) {

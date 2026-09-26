@@ -8,6 +8,7 @@
 #include "text/textsearchpolicy.h"
 #include "text/textlayerresolve.h"
 #include "view/viewtransform.h"
+#include "text/textselection.h"
 
 #include <QPoint>
 #include <QRect>
@@ -33,6 +34,8 @@ struct TextLayerSession {
     QPoint rubberOrigin;
     QRect rubberRect;
     QVector<int> selectedRegions;
+    /** Multi-page selection; selectedRegions is the current-page projection. */
+    TextSelection multiSelection;
     QString linkHoverTip;
 
     bool needsLayer() const
@@ -108,12 +111,13 @@ struct TextLayerSession {
 
     int selectionCount() const { return selectedRegions.size(); }
 
-    bool hasSelection() const { return !selectedRegions.isEmpty(); }
+    bool hasSelection() const { return !selectedRegions.isEmpty() || !multiSelection.isEmpty(); }
 
     void clearSelection()
     {
         endRubber();
         selectedRegions.clear();
+        multiSelection.clear();
     }
 
     /** Start rubber-band region select at @p origin (viewport). */

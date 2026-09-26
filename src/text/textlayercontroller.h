@@ -75,6 +75,10 @@ signals:
     void hoverChanged(int regionIndex);
 
 private:
+    SessionImageId currentSessionId() const;
+    void syncMultiSelectionFromCurrentPage(const QVector<int> &ids);
+    void restoreCurrentPageSelectionFromMulti();
+
     bool pageYUp() const;
     QRectF rubberBandImageRect() const;
     void finishRubberBand();

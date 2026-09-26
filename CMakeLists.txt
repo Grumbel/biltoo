@@ -216,6 +216,7 @@ set(BILTOO_LIB_SOURCES
   src/hud/hudflash.h
   src/view/viewframing.h
   src/text/textlayersession.h
+  src/text/textselection.h
   src/slideshow/zoomregiongesture.h
   src/view/canvasbackground.h
   src/gallery/layoutprefs.h
