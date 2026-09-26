@@ -967,12 +967,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         const bool tilesLive = tilesWanted && tileLodActive();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        // LQIP/soft base until exact target coverage. Interactive Workspace
-        // tiles always keep soft under the grid: coverage can report true
-        // with an empty plan after zoom on rotated items, which blanked the
-        // tile with no soft and no tile paint.
+        // EMB/LQIP underlay until exact tile coverage (KILL_SOFT). Soft host
+        // samples are not drawn under tileLodWanted. Interactive Workspace may
+        // keep any display sample only when tiles are not the display path.
         const bool drawLqipBase = !tilesFullyCover
-            || (m_interactive && hasDisplayPixels());
+            || (m_interactive && hasDisplayPixels() && !tilesWanted);
         // Live tiles must not sit under a frozen ItemCoordinateCache pixmap.
         if (tilesLive && cacheMode() != QGraphicsItem::NoCache) {
             setCacheMode(QGraphicsItem::NoCache);
@@ -985,13 +984,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             return qMax(img.width(), img.height())
                 <= DisplayQuality::kLqipMaxEdge;
         };
+        // EMB (≤320) or LQIP (≤96) only under tiles — not soft/HOST (KILL_SOFT).
+        auto isEmbeddedUnderlaySample = [](const QImage &img) {
+            if (img.isNull()) {
+                return false;
+            }
+            return qMax(img.width(), img.height())
+                <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+        };
 
-        // Gallery packed cells under tileLodWanted: prefer LQIP underlay, but
-        // never refuse soft/host if LQIP is missing — otherwise holes while
-        // tiles stream (TILE_DRAW_INVESTIGATION H2). Soft PreferCache climb is
-        // still not the primary product path; this is paint-time fallback only.
-        const bool galleryPreferLqipUnderTiles =
-            tilesWanted && !m_galleryCellSize.isEmpty();
+        // All modes under tileLodWanted: EMB/LQIP underlay only (Gallery + Image).
+        const bool tilesPreferEmbeddedUnderlay = tilesWanted;
         // When crop is durable, samples may still be host-raw full frame (LQIP,
         // late ladder, or bake skipped). Stretching full into crop contentRect
         // squishes; UV-crop from cropSourceSize → sample size matches tile paint.
@@ -1030,11 +1033,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
-            if (galleryPreferLqipUnderTiles && !isLqipSample(img)
-                && (isLqipSample(m_source) || isLqipSample(m_preview)
-                    || (!pixmap().isNull()
-                        && isLqipSample(pixmap().toImage())))) {
-                // Prefer LQIP underlay when one exists; otherwise paint soft.
+            if (tilesPreferEmbeddedUnderlay && !isEmbeddedUnderlaySample(img)) {
+                // Soft/HOST under tiles is product-dead (KILL_SOFT).
                 return;
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
@@ -1067,11 +1067,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         setCacheMode(QGraphicsItem::ItemCoordinateCache);
                     }
                 }
-                // Gallery tile cells: only LQIP-sized pixmap as underlay.
-                if (galleryPreferLqipUnderTiles
+                // Tile cells: only EMB/LQIP-band pixmap as underlay (KILL_SOFT).
+                if (tilesPreferEmbeddedUnderlay
                     && qMax(pixmap().width(), pixmap().height())
-                        > DisplayQuality::kLqipMaxEdge) {
-                    // leave underlay to LQIP branch / placeholder
+                        > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                    // leave underlay to EMB/LQIP branch / placeholder
                 } else {
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                 {
@@ -1084,22 +1084,28 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 }
                 }
             } else if (!m_source.isNull() && !m_previewPixels) {
-                const bool sourceIsLqip =
-                    qMax(m_source.width(), m_source.height())
-                    <= DisplayQuality::kLqipMaxEdge;
-                const bool haveLqipUnderlay =
-                    sourceIsLqip || isLqipSample(m_preview)
+                const bool sourceIsEmbedded =
+                    isEmbeddedUnderlaySample(m_source);
+                const bool haveEmbeddedUnderlay =
+                    sourceIsEmbedded || isEmbeddedUnderlaySample(m_preview)
                     || (!pixmap().isNull()
-                        && qMax(pixmap().width(), pixmap().height())
-                            <= DisplayQuality::kLqipMaxEdge);
-                // Prefer LQIP when present; otherwise fall back to soft/host.
-                if (galleryPreferLqipUnderTiles && !sourceIsLqip && haveLqipUnderlay) {
-                    // Skip soft host when a LQIP sample is available elsewhere.
+                        && isEmbeddedUnderlaySample(pixmap().toImage()));
+                // Under tiles: only EMB/LQIP; never soft/HOST (KILL_SOFT).
+                if (tilesPreferEmbeddedUnderlay && !sourceIsEmbedded) {
+                    if (haveEmbeddedUnderlay) {
+                        // Prefer a true EMB/LQIP sample elsewhere in this branch.
+                    } else if (!pixmap().isNull()
+                        && isEmbeddedUnderlaySample(pixmap().toImage())) {
+                        painter->setRenderHint(QPainter::SmoothPixmapTransform,
+                                               DisplayQuality::smoothScaling());
+                        painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                    } else if (isEmbeddedUnderlaySample(m_preview)) {
+                        drawSampleInContentRect(m_preview);
+                    }
+                    // else: placeholder already drawn when nothing embeds
                 } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
-                    && (!galleryPreferLqipUnderTiles
-                        || qMax(pixmap().width(), pixmap().height())
-                            <= DisplayQuality::kLqipMaxEdge
-                        || !haveLqipUnderlay)) {
+                    && (!tilesPreferEmbeddedUnderlay
+                        || isEmbeddedUnderlaySample(pixmap().toImage()))) {
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                     painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 } else if (!m_source.isNull()) {

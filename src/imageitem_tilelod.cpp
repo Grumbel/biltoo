@@ -398,14 +398,18 @@ void ImageItem::prepareTileLodPlan()
     }
     tileLodBag().lastDpc = dpc;
     tileLodBag().lastVisSource = visSource;
-    // Draw-plan Underlay commands need has_lqip when the item has any
-    // whole-frame sample (LQIP or soft). Was hard-coded false → plan never
-    // flagged underlay holes (host paint still draws base separately).
+    // Draw-plan Underlay: has_lqip when an EMB/LQIP-band sample exists
+    // (KILL_SOFT — soft host under tiles is not product underlay).
     {
-        const bool haveSample =
-            (!m_source.isNull() && m_source.width() > 0)
-            || (!m_preview.isNull() && m_preview.width() > 0)
-            || !pixmap().isNull();
+        auto embBand = [](const QImage &img) {
+            return !img.isNull() && qMax(img.width(), img.height())
+                <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+        };
+        bool haveSample = embBand(m_source) || embBand(m_preview);
+        if (!haveSample && !pixmap().isNull()) {
+            haveSample = qMax(pixmap().width(), pixmap().height())
+                <= DisplayQuality::kEmbeddedUnderlayMaxEdge;
+        }
         tileLodBag().controller->setHasLqip(haveSample);
     }
     // Prefetch margin in content pixels: ~one tile side of *screen* space
