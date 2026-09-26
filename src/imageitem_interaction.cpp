@@ -986,12 +986,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 <= DisplayQuality::kLqipMaxEdge;
         };
 
-        // Gallery packed cells (non-empty galleryCellSize): LQIP-only under
-        // tileLodWanted (soft PreferCache removed — GALLERY_PIXELS.md).
-        // Image mode also uses m_interactive=false, so do NOT key off that —
-        // filmstrip thumbs (>96) must underlay when tiles are wanted but not
-        // yet painted (nav-hot skips tile paint).
-        const bool galleryLqipOnlyUnderTiles =
+        // Gallery packed cells under tileLodWanted: prefer LQIP underlay, but
+        // never refuse soft/host if LQIP is missing — otherwise holes while
+        // tiles stream (TILE_DRAW_INVESTIGATION H2). Soft PreferCache climb is
+        // still not the primary product path; this is paint-time fallback only.
+        const bool galleryPreferLqipUnderTiles =
             tilesWanted && !m_galleryCellSize.isEmpty();
         // When crop is durable, samples may still be host-raw full frame (LQIP,
         // late ladder, or bake skipped). Stretching full into crop contentRect
@@ -1031,7 +1030,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
-            if (galleryLqipOnlyUnderTiles && !isLqipSample(img)) {
+            if (galleryPreferLqipUnderTiles && !isLqipSample(img)
+                && (isLqipSample(m_source) || isLqipSample(m_preview)
+                    || (!pixmap().isNull()
+                        && isLqipSample(pixmap().toImage())))) {
+                // Prefer LQIP underlay when one exists; otherwise paint soft.
                 return;
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
@@ -1065,7 +1068,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                 }
                 // Gallery tile cells: only LQIP-sized pixmap as underlay.
-                if (galleryLqipOnlyUnderTiles
+                if (galleryPreferLqipUnderTiles
                     && qMax(pixmap().width(), pixmap().height())
                         > DisplayQuality::kLqipMaxEdge) {
                     // leave underlay to LQIP branch / placeholder
@@ -1081,14 +1084,22 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 }
                 }
             } else if (!m_source.isNull() && !m_previewPixels) {
-                if (galleryLqipOnlyUnderTiles
-                    && qMax(m_source.width(), m_source.height())
-                        > DisplayQuality::kLqipMaxEdge) {
-                    // Gallery: skip non-LQIP host under tiles
+                const bool sourceIsLqip =
+                    qMax(m_source.width(), m_source.height())
+                    <= DisplayQuality::kLqipMaxEdge;
+                const bool haveLqipUnderlay =
+                    sourceIsLqip || isLqipSample(m_preview)
+                    || (!pixmap().isNull()
+                        && qMax(pixmap().width(), pixmap().height())
+                            <= DisplayQuality::kLqipMaxEdge);
+                // Prefer LQIP when present; otherwise fall back to soft/host.
+                if (galleryPreferLqipUnderTiles && !sourceIsLqip && haveLqipUnderlay) {
+                    // Skip soft host when a LQIP sample is available elsewhere.
                 } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
-                    && (!galleryLqipOnlyUnderTiles
+                    && (!galleryPreferLqipUnderTiles
                         || qMax(pixmap().width(), pixmap().height())
-                            <= DisplayQuality::kLqipMaxEdge)) {
+                            <= DisplayQuality::kLqipMaxEdge
+                        || !haveLqipUnderlay)) {
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
                     painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 } else if (!m_source.isNull()) {

@@ -398,8 +398,16 @@ void ImageItem::prepareTileLodPlan()
     }
     tileLodBag().lastDpc = dpc;
     tileLodBag().lastVisSource = visSource;
-    // Soft is continuous base; only set once (set_has_lqip no-ops on same value).
-    tileLodBag().controller->setHasLqip(false);
+    // Draw-plan Underlay commands need has_lqip when the item has any
+    // whole-frame sample (LQIP or soft). Was hard-coded false → plan never
+    // flagged underlay holes (host paint still draws base separately).
+    {
+        const bool haveSample =
+            (!m_source.isNull() && m_source.width() > 0)
+            || (!m_preview.isNull() && m_preview.width() > 0)
+            || !pixmap().isNull();
+        tileLodBag().controller->setHasLqip(haveSample);
+    }
     // Prefetch margin in content pixels: ~one tile side of *screen* space
     // (256 device px). Enough to absorb small pans without issuing a second
     // ring of cells; not a full off-screen ring (that multiplies issue work).

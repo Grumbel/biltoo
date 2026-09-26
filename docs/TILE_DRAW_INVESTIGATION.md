@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile drawing & request path — investigation plan
 
-Status: **investigation / hardening plan** (not a completed fix). Captures
+Status: **investigation in progress** — Phase 0 audit done; underlay fixes in tree. Captures
 current symptoms, architecture map, hypotheses, instrumentation needs, and
 phased work to make paint **always show the best available pixels** and unify
 filmstrip vs main-view paths where possible.
@@ -359,3 +359,50 @@ Start **Phase 0** with a focused code audit of:
 
 Log findings under this document’s §4 hypotheses (accept/reject) before large
 behavioural changes.
+
+---
+
+## 12. Investigation findings (Phase 0 audit)
+
+Date: 2026-09-26. Code walk of `draw_plan`, `TileSession` protect/issue,
+`ImageItem` underlay paint, filmstrip schedule.
+
+### Plan sanity check
+
+The investigation plan’s target fallback order matches product need. One
+correction to the architecture map:
+
+- **Draw-plan `use_lqip` was effectively dead** — host always called
+  `setHasLqip(false)` in `prepareTileLodPlan`, so plan Underlay commands never
+  fired. Whole-frame underlay is painted only in `ImageItem` paint, not via
+  `tile_painter` LQIP args (except when an underlay QImage is passed into
+  `paint()`).
+
+Protect list for trim **does** include all coarser parents of visible keys
+(full chain). Cancel-obsolete keeps the same set. H1 (eviction of parents) is
+less likely for *visible* parents; still possible for non-visible mid scales
+or path-idle registry drops.
+
+### Accepted / refined hypotheses
+
+| Id | Verdict | Evidence |
+|----|---------|----------|
+| **H2** | **Confirmed (primary)** | Gallery `tileLodWanted` path used **LQIP-only** underlay: soft/HOST samples were skipped (`galleryLqipOnlyUnderTiles`). If LQIP never landed, cells showed placeholder/holes while tiles streamed. Image mode keeps soft more often. |
+| **H2b** | **Confirmed** | `setHasLqip(false)` every prepare — plan never marked underlay holes. |
+| **H3** | **Partially confirmed** | Cold climb requests at most **one** coarser step; parent chain is **not** bulk-requested (by design). Fallback paint depends on underlay or residual parents already in RAM. |
+| **H1** | Open | Protect list looks correct for visible parents; still verify under budget pressure with debug histograms. |
+| **H5** | Open | Coordinator limits still relevant for time-to-exact, not for empty underlay. |
+| **H6** | **Partially confirmed** | Filmstrip is a separate climb (`scheduleFilmstripTilePixels` / ImageCache). Warm ImageCache short-circuit exists; still not shared “best sample” helper with gallery. |
+| **H4/H7** | Open | Need runtime traces. |
+
+### Fixes landed with this investigation slice
+
+1. **Gallery underlay:** Prefer LQIP when present; **allow soft/host when LQIP is missing** so tiles never float over empty cells.
+2. **`setHasLqip`:** Set from presence of any whole-frame sample so draw-plan underlay flags stay consistent with host paint.
+
+### Still TODO (Phase 1–3)
+
+- Issue optional parent prefetch when exact is slow (without flooding coordinator).
+- Shared `resolveDisplaySample` for filmstrip + gallery.
+- Alive InFlight placeholder distinct from neutral provisional.
+- Instrumentation histograms behind `BILTOO_TILE_DEBUG`.
