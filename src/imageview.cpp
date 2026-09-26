@@ -155,13 +155,24 @@ ImageView::ImageView(QWidget *parent)
                 m_size.book().clearProbeScheduled(path);
                 const bool valid = size.isValid() && size.width() > 0 && size.height() > 0;
                 if (valid) {
-                    // Book may already be definitive (decode or prior probe).
-                    // Always run applyProbedImageSize so Gallery can rescale the
-                    // packed cell immediately — do not hostSetIntrinsicSize here
-                    // without matching placement scale (race: huge cells).
-                    if (!m_size.book().hasDefinitive(path)) {
+                    // SizeReply is authoritative. A stale larger definitive
+                    // (wrong sample, old dpi) must not stick: virtual plan
+                    // packs from the book, so skipping remember left cells at
+                    // the wrong aspect while tiles used thumtoo native size
+                    // (top-left-only paint). noteDefinitive refuses much-smaller
+                    // updates — take() first when the book disagrees.
+                    if (m_size.book().hasDefinitive(path)) {
+                        const QSize have = m_size.book().known(path);
+                        if (have != size) {
+                            QSize discarded;
+                            m_size.book().take(path, &discarded);
+                            rememberImageSize(path, size);
+                        }
+                    } else {
                         rememberImageSize(path, size);
                     }
+                    // Always rescale live cells to the probe size (even when
+                    // book already matched — placement scale may still lag).
                     applyProbedImageSize(path, size);
                     // LQIP may already be in ImageCache (size probe callback).
                     if (isGalleryMode()) {

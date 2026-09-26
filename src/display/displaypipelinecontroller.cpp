@@ -2443,9 +2443,18 @@ void DisplayPipelineController::applyProbedImageSize(const QString &path, const 
         }
     }
     if (any && m_host->isGalleryMode() && !m_host->hostLayout().isFreeForm()) {
-        // ContentChange is allowed during the size gate (prefix pack). Debounced
-        // so sizeReady chunks do not reflow every path.
-        m_host->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        // During the size gate the virtual plan owns packing (coalesced
+        // scheduleSizeGatePlanRefresh → ensurePlaceholders). A parallel
+        // ContentChange applyLayout raced the plan and re-applied poses from
+        // half-updated live geometry — wrong cell sizes on cold open.
+        if (m_host->hostGallerySizeResolve().active()) {
+            if (m_host->viewportWidget()) {
+                m_host->viewportWidget()->update();
+            }
+        } else {
+            // After gate: debounced pack so size corrections reflow cells.
+            m_host->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        }
     } else if (any && m_host->viewportWidget()) {
         m_host->viewportWidget()->update();
     }
