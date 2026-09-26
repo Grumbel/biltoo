@@ -2,22 +2,21 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2712.3-tools-strip-crop` (base `b65f69e`).
+**Tip:** `biltoo-2712.4-text-click-select` (base `b65f69e`).
+
+### 2712.4 — Click-select text region
+- Tiny rubber (click) selects the tightest region under the pointer.
+- Miss clears selection (via clear before hit).
 
 ### 2712.3 — Tools strip + Crop
-- Left strip renamed **Tools**; includes Select / Pan / Zoom / **Crop**.
-- Switching Select/Pan/Zoom while crop is active **commits** the crop draft.
-- Crop still on main toolbar + Image menu (C).
-
 ### 2712.2 — Tool-aware pan + Select→text rubber
-### 2712.1 — Shared ViewInteraction tool ownership
+### 2712.1 — Shared ViewInteraction
 
 ### Next
-- Multi-page TextSelection data
-- Click-select single text region
-- Attention on tools strip (optional)
+- Multi-page TextSelection (`SessionImageId` + region index)
+- Ctrl/Shift multi-region click modifiers
 
 ### Apply
 ```bash
-git pull --rebase …/biltoo-2712.3-tools-strip-crop-b65f69e.bundle HEAD
+git pull --rebase …/biltoo-2712.4-text-click-select-b65f69e.bundle HEAD
 ```

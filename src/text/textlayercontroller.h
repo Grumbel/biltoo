@@ -78,6 +78,9 @@ private:
     bool pageYUp() const;
     QRectF rubberBandImageRect() const;
     void finishRubberBand();
+    /** Tightest text region under @p viewPos, or -1. */
+    int regionIndexAtViewPos(const QPoint &viewPos) const;
+    void selectRegionAtViewPos(const QPoint &viewPos);
 
     ImageView *m_view = nullptr;
     TextLayerSession m_session;

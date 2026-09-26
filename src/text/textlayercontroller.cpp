@@ -340,12 +340,63 @@ QRectF TextLayerController::rubberBandImageRect() const
     return local.translated(-item->offset());
 }
 
+
+int TextLayerController::regionIndexAtViewPos(const QPoint &viewPos) const
+{
+    if (!m_view->isImageMode() || !hasLayer() || !m_session.pageBoundsValid()) {
+        return -1;
+    }
+    ImageItem *item = m_view->primaryItem();
+    if (!item) {
+        return -1;
+    }
+    const QPointF scene = m_view->mapToScene(viewPos);
+    const QPointF local = item->mapFromScene(scene);
+    if (!item->contentRect().contains(local)) {
+        return -1;
+    }
+    const QPointF imgPt = local - item->offset();
+    int best = -1;
+    qreal bestArea = -1.0;
+    for (int i = 0; i < m_session.regionCount(); ++i) {
+        const auto &r = m_session.regionAt(i);
+        if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+            continue;
+        }
+        const QRectF img = regionImageRect(r);
+        if (!img.contains(imgPt)) {
+            continue;
+        }
+        const qreal area = img.width() * img.height();
+        // Prefer the smallest containing region (tighter hit).
+        if (best < 0 || area < bestArea) {
+            best = i;
+            bestArea = area;
+        }
+    }
+    return best;
+}
+
+void TextLayerController::selectRegionAtViewPos(const QPoint &viewPos)
+{
+    const int idx = regionIndexAtViewPos(viewPos);
+    if (idx < 0) {
+        emit selectionChanged();
+        return;
+    }
+    m_session.setSelectedRegions(QVector<int>{idx});
+    emit selectionChanged();
+}
+
 void TextLayerController::finishRubberBand()
 {
     const QRect viewRect = m_session.rubberRectRef().normalized();
+    const QPoint clickView = m_session.rubberOrigin;
     m_session.endRubber();
     m_session.clearSelectedRegions();
+    // Click (tiny drag): select the text region under the pointer, if any.
     if (viewRect.width() < 4 || viewRect.height() < 4) {
+        selectRegionAtViewPos(clickView);
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
