@@ -5,6 +5,7 @@
 #define TEXTLAYERCONTROLLER_H
 
 #include "text/textlayersession.h"
+#include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
 
 #include <QPoint>
@@ -40,6 +41,8 @@ public:
     /** Install a pre-fetched layer (e.g. after worker OCR). */
     void installLayer(const ThumtooCache::PageTextLayer &layer, const QString &path);
     void setSearchFuzzy(bool on);
+    void setLayerPrefer(TextLayerResolve::Prefer prefer);
+    TextLayerResolve::Prefer layerPrefer() const;
     void recomputeSearchMatches();
     int setSearchQuery(const QString &query);
     bool hasLayer() const;

@@ -29,6 +29,7 @@
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "host/pagepath.h"
+#include "text/textlayerresolve.h"
 #include "util/debugflags.h"
 
 #include <QAbstractButton>
@@ -37,6 +38,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QClipboard>
+#include <QComboBox>
 #include <QColor>
 #include <QColorDialog>
 #include <QCollator>

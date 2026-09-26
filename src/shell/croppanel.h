@@ -45,6 +45,7 @@ signals:
     void resetCropOnSelectionRequested();
     void applyToCurrentRequested(const CropPanelRecipe &recipe);
     void resetCropOnCurrentRequested();
+    void suggestFromTextRequested();
 
 private:
     void buildUi();
@@ -81,6 +82,7 @@ private:
     QPushButton *m_resetCurrentBtn = nullptr;
     QPushButton *m_applySelectionBtn = nullptr;
     QPushButton *m_resetSelectionBtn = nullptr;
+    QPushButton *m_suggestTextBtn = nullptr;
     QSize m_pageSize;
     bool m_block = false;
     bool m_syncingNorm = false;

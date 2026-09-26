@@ -5,6 +5,7 @@
 #include "host/imageloader.h"
 
 #include <QtGlobal>
+#include <QtMath>
 #include <QRect>
 
 namespace CropRecipeUtil {
@@ -87,6 +88,50 @@ QRect computeCropRect(const CropPanelRecipe &recipe, const QSize &logicalSize,
         return {};
     }
     return core;
+}
+
+SuggestedMargins suggestMarginsFromBandRegions(const QSize &logicalSize,
+                                               const QVector<QRectF> &bandRegions)
+{
+    SuggestedMargins out;
+    const int w = logicalSize.width();
+    const int h = logicalSize.height();
+    if (w < 8 || h < 8 || bandRegions.isEmpty()) {
+        return out;
+    }
+    const qreal topBand = h * 0.25;
+    const qreal botBand = h * 0.75;
+    int top = 0;
+    int bottom = 0;
+    for (const QRectF &r : bandRegions) {
+        if (!r.isValid() || r.isEmpty()) {
+            continue;
+        }
+        const QRectF clipped = r.intersected(QRectF(0, 0, w, h));
+        if (clipped.isEmpty()) {
+            continue;
+        }
+        const qreal cy = clipped.center().y();
+        if (cy <= topBand) {
+            top = qMax(top, int(qCeil(clipped.bottom())));
+        } else if (cy >= botBand) {
+            bottom = qMax(bottom, h - int(qFloor(clipped.top())));
+        }
+    }
+    // Leave at least ~40% of the page as content.
+    const int maxInset = qMax(1, h * 3 / 10);
+    top = qBound(0, top, maxInset);
+    bottom = qBound(0, bottom, maxInset);
+    if (top + bottom >= h - 4) {
+        return out;
+    }
+    if (top == 0 && bottom == 0) {
+        return out;
+    }
+    out.top = top;
+    out.bottom = bottom;
+    out.ok = true;
+    return out;
 }
 
 bool isUsableCrop(const QRect &rect, const QSize &logicalSize)

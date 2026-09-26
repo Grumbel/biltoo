@@ -15,6 +15,9 @@
 
 #include <QDebug>
 #include <QThreadPool>
+#include <atomic>
+#include <thread>
+#include <vector>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QSettings>
@@ -484,6 +487,99 @@ MainWindow::MainWindow(QWidget *parent)
                 tr("Crop reset on %n image(s)", "", n), 4000);
         }
         updateCropPanel();
+    });
+
+    connect(m_cropPanel, &CropPanel::suggestFromTextRequested, this, [this]() {
+        if (!m_imageView || !m_cropPanel) {
+            return;
+        }
+        const QString path = m_imageView->hostImage().classicPath();
+        if (path.isEmpty() || !PagePath::isPageRef(path)) {
+            if (statusBar()) {
+                statusBar()->showMessage(tr("Suggest margins needs a document page"), 4000);
+            }
+            m_cropPanel->setStatusText(tr("No document page"));
+            return;
+        }
+        QSize logical = m_imageView->hostSizeBook().known(path);
+        if (logical.isEmpty()) {
+            logical = ThumtooCache::cachedSize(path);
+        }
+        if (logical.width() < 8 || logical.height() < 8) {
+            if (statusBar()) {
+                statusBar()->showMessage(tr("Page size unknown — open the page first"), 4000);
+            }
+            m_cropPanel->setStatusText(tr("Page size unknown"));
+            return;
+        }
+        // Prefer OCR (has region kinds); fall back to native / Auto policy.
+        ThumtooCache::PageTextLayer layer =
+            TextLayerResolve::load(path, TextLayerResolve::Prefer::Ocr);
+        if (layer.regions.isEmpty()) {
+            layer = TextLayerResolve::load(path, TextLayerResolve::Prefer::Auto);
+        }
+        if (layer.regions.isEmpty() || !layer.pageBounds.isValid()) {
+            if (statusBar()) {
+                statusBar()->showMessage(
+                    tr("No text layer — View → OCR This Page or open a text PDF"), 5000);
+            }
+            m_cropPanel->setStatusText(tr("No text layer with regions"));
+            return;
+        }
+        const QString docPath = PagePath::documentFilePath(path);
+        const bool pageYUp = PagePath::isDjvuFile(docPath);
+        QVector<QRectF> bands;
+        bands.reserve(layer.regions.size());
+        for (const ThumtooCache::TextRegion &r : layer.regions) {
+            if (r.kind != ThumtooCache::TextRegion::Kind::Header
+                && r.kind != ThumtooCache::TextRegion::Kind::Footer
+                && r.kind != ThumtooCache::TextRegion::Kind::PageNumber) {
+                continue;
+            }
+            const QRectF img = ThumtooCache::pageRectToImageRect(
+                r.bbox, layer.pageBounds, logical, pageYUp);
+            if (img.isValid() && !img.isEmpty()) {
+                bands.append(img);
+            }
+        }
+        const SuggestedMargins sug =
+            CropRecipeUtil::suggestMarginsFromBandRegions(logical, bands);
+        if (!sug.ok) {
+            if (statusBar()) {
+                statusBar()->showMessage(
+                    tr("No header/footer/page-number bands to crop"), 4000);
+            }
+            m_cropPanel->setStatusText(tr("No header/footer bands found"));
+            return;
+        }
+        CropPanelRecipe recipe = m_cropPanel->recipe();
+        recipe.mode = CropPanelRecipe::Mode::ManualMargins;
+        recipe.marginLeft = sug.left;
+        recipe.marginTop = sug.top;
+        recipe.marginRight = sug.right;
+        recipe.marginBottom = sug.bottom;
+        m_cropPanel->setRecipe(recipe);
+        // setRecipe does not emit; drive the same debounced preview path.
+        ImageItem *item = m_imageView->targetItem();
+        if (!item && m_imageView->isImageMode()
+            && !m_imageView->liveItems().isEmpty()) {
+            item = m_imageView->liveItems().first();
+        }
+        if (item) {
+            m_imageView->hostCrop().previewCropRecipeOnItem(item, recipe);
+        }
+        updateCropPanel();
+        if (statusBar()) {
+            statusBar()->showMessage(
+                tr("Suggested margins T=%1 B=%2 (from text bands)")
+                    .arg(sug.top)
+                    .arg(sug.bottom),
+                5000);
+        }
+        m_cropPanel->setStatusText(
+            tr("Suggested from text: top %1 px, bottom %2 px")
+                .arg(sug.top)
+                .arg(sug.bottom));
     });
 
     connect(m_cropPanel, &CropPanel::recipeChanged, this, [this](const CropPanelRecipe &recipe) {
@@ -1110,6 +1206,16 @@ void MainWindow::openSearchBar()
         QSignalBlocker block(m_searchFuzzyCheck);
         m_searchFuzzyCheck->setChecked(m_imageView->hostTextLayer().isSearchFuzzy());
     }
+    if (m_searchSourceCombo && m_imageView) {
+        QSignalBlocker block(m_searchSourceCombo);
+        const int idx = m_searchSourceCombo->findData(int(m_imageView->hostText().layerPrefer()));
+        if (idx >= 0) {
+            m_searchSourceCombo->setCurrentIndex(idx);
+        }
+        // Ensure controller matches settings (first open after startup).
+        m_imageView->hostText().setLayerPrefer(
+            static_cast<TextLayerResolve::Prefer>(m_searchSourceCombo->currentData().toInt()));
+    }
     updateSearchMatchLabel();
     m_searchBar->setVisible(true);
     m_searchEdit->setFocus(Qt::ShortcutFocusReason);
@@ -1363,8 +1469,15 @@ void MainWindow::startDocumentSearch(const QString &query)
     updateSearchMatchLabel();
 
     const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
+    TextLayerResolve::Prefer prefer = TextLayerResolve::Prefer::Auto;
+    if (m_searchSourceCombo) {
+        prefer = static_cast<TextLayerResolve::Prefer>(
+            m_searchSourceCombo->currentData().toInt());
+    } else if (m_imageView) {
+        prefer = m_imageView->hostText().layerPrefer();
+    }
     const QPointer<MainWindow> guard(this);
-    QThreadPool::globalInstance()->start([guard, pages, trimmed, fuzzy, gen]() {
+    QThreadPool::globalInstance()->start([guard, pages, trimmed, fuzzy, gen, prefer]() {
         QVector<QPair<QString, int>> pathHits;
         pathHits.reserve(64);
         QVector<int> hitPages;
@@ -1373,10 +1486,8 @@ void MainWindow::startDocumentSearch(const QString &query)
             if (!guard) {
                 return;
             }
-            ThumtooCache::PageTextLayer layer = ThumtooCache::cachedPageTextLayer(pagePath);
-            if (layer.regions.isEmpty()) {
-                layer = ThumtooCache::ensurePageTextLayer(pagePath);
-            }
+            const ThumtooCache::PageTextLayer layer =
+                TextLayerResolve::load(pagePath, prefer);
             QVector<QString> texts;
             QVector<QRectF> bboxes;
             QVector<int> blockIds;
@@ -4663,46 +4774,84 @@ void MainWindow::ocrDocument()
         m_ocrDocumentAct->setEnabled(false);
     }
 
+    const int jobs = qBound(1, settings.value(QStringLiteral("ocr/jobs"), 2).toInt(), 4);
+
     QPointer<MainWindow> self(this);
     const QStringList pagesCopy = pages;
     const QString langCopy = lang;
-    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, gen, force]() {
-        int done = 0;
-        int okCount = 0;
+    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, gen, force, jobs]() {
         const int total = pagesCopy.size();
-        for (const QString &pagePath : pagesCopy) {
-            if (!self || gen != self->m_ocrGeneration) {
-                return;
-            }
-            const int pageNo = PagePath::pageNumber(pagePath);
+        std::atomic<int> nextIndex{0};
+        std::atomic<int> doneCount{0};
+        std::atomic<int> okCount{0};
+        std::atomic<int> failCount{0};
+
+        auto reportProgress = [self, total](int done, int ok, int fail, int pageNo) {
             if (!self) {
                 return;
             }
-            QMetaObject::invokeMethod(self, [self, done, total, pageNo]() {
+            QMetaObject::invokeMethod(self, [self, done, total, ok, fail, pageNo]() {
                 if (!self || !self->m_imageView) {
                     return;
                 }
                 self->m_imageView->hostShell().setCentreProgress(
                     self->tr("OCR document"),
-                    self->tr("Page %1 (%2/%3)")
+                    self->tr("Page %1 — %2/%3 done (%4 ok, %5 failed)")
                         .arg(pageNo)
-                        .arg(done + 1)
-                        .arg(total));
+                        .arg(done)
+                        .arg(total)
+                        .arg(ok)
+                        .arg(fail));
                 self->statusBar()->showMessage(
-                    self->tr("OCR document: %1 / %2").arg(done + 1).arg(total));
+                    self->tr("OCR document: %1 / %2 (%3 ok)")
+                        .arg(done)
+                        .arg(total)
+                        .arg(ok));
             }, Qt::QueuedConnection);
+        };
 
-            const auto layer =
-                ThumtooCache::ensureOcrPageTextLayer(pagePath, force, langCopy);
-            if (!layer.regions.isEmpty() || layer.pageBounds.isValid()) {
-                ++okCount;
+        auto worker = [self, &pagesCopy, &langCopy, gen, force, total,
+                       &nextIndex, &doneCount, &okCount, &failCount,
+                       reportProgress]() {
+            while (true) {
+                if (!self || gen != self->m_ocrGeneration) {
+                    return;
+                }
+                const int i = nextIndex.fetch_add(1);
+                if (i >= total) {
+                    return;
+                }
+                const QString &pagePath = pagesCopy.at(i);
+                const int pageNo = PagePath::pageNumber(pagePath);
+                const auto layer =
+                    ThumtooCache::ensureOcrPageTextLayer(pagePath, force, langCopy);
+                const bool ok = !layer.regions.isEmpty() || layer.pageBounds.isValid();
+                if (ok) {
+                    okCount.fetch_add(1);
+                } else {
+                    failCount.fetch_add(1);
+                }
+                const int done = doneCount.fetch_add(1) + 1;
+                reportProgress(done, okCount.load(), failCount.load(), pageNo);
             }
-            ++done;
+        };
+
+        const int nWorkers = qMin(jobs, total);
+        std::vector<std::thread> threads;
+        threads.reserve(static_cast<size_t>(nWorkers));
+        for (int w = 0; w < nWorkers; ++w) {
+            threads.emplace_back(worker);
         }
+        for (std::thread &th : threads) {
+            th.join();
+        }
+
         if (!self) {
             return;
         }
-        QMetaObject::invokeMethod(self, [self, gen, okCount, total]() {
+        const int okFinal = okCount.load();
+        const int failFinal = failCount.load();
+        QMetaObject::invokeMethod(self, [self, gen, okFinal, failFinal, total]() {
             if (!self || gen != self->m_ocrGeneration) {
                 return;
             }
@@ -4726,11 +4875,20 @@ void MainWindow::ocrDocument()
                     self->m_showTextRegionsAct->setChecked(true);
                 }
             }
-            self->statusBar()->showMessage(
-                self->tr("OCR document finished — %1 / %2 pages")
-                    .arg(okCount)
-                    .arg(total),
-                6000);
+            if (failFinal > 0) {
+                self->statusBar()->showMessage(
+                    self->tr("OCR document finished — %1 ok, %2 failed / %3 pages")
+                        .arg(okFinal)
+                        .arg(failFinal)
+                        .arg(total),
+                    8000);
+            } else {
+                self->statusBar()->showMessage(
+                    self->tr("OCR document finished — %1 / %2 pages")
+                        .arg(okFinal)
+                        .arg(total),
+                    6000);
+            }
         }, Qt::QueuedConnection);
     });
 }

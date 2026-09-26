@@ -5,7 +5,9 @@
 
 #include <QImage>
 #include <QRect>
+#include <QRectF>
 #include <QSize>
+#include <QVector>
 
 /** Panel recipe for batch / current-page crop (BATCH_APPEARANCE_BRAINSTORM §14). */
 struct CropPanelRecipe {
@@ -39,6 +41,16 @@ struct CropPanelRecipe {
 
 namespace CropRecipeUtil {
 
+/** Manual-margin suggestion from text band regions (image / logical pixel space). */
+struct SuggestedMargins {
+    int left = 0;
+    int top = 0;
+    int right = 0;
+    int bottom = 0;
+    bool ok = false;
+};
+
+
 /**
  * Compute axis-aligned crop in @p logicalSize pixel space from a panel recipe.
  * @p sample may be empty for Manual mode; required (non-null) for Autocrop.
@@ -48,6 +60,16 @@ QRect computeCropRect(const CropPanelRecipe &recipe, const QSize &logicalSize,
 
 /** True when rect is usable crop (non-empty, inside logical, not full frame). */
 bool isUsableCrop(const QRect &rect, const QSize &logicalSize);
+
+/**
+ * Suggest manual L/T/R/B insets that exclude header/footer/page-number bands.
+ * @p bandRegions are axis-aligned boxes in the same pixel space as @p logicalSize
+ * (image / logical page pixels, top-left origin).
+ * Only regions whose centre lies in the top or bottom 25% of the page contribute.
+ * Side insets stay 0 in v1.
+ */
+SuggestedMargins suggestMarginsFromBandRegions(const QSize &logicalSize,
+                                               const QVector<QRectF> &bandRegions);
 
 } // namespace CropRecipeUtil
 

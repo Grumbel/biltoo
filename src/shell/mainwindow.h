@@ -40,6 +40,7 @@ class QAction;
 class QActionGroup;
 class QLabel;
 class QCheckBox;
+class QComboBox;
 class QToolButton;
 class QMenu;
 class QSpinBox;
@@ -603,6 +604,7 @@ private:
     QLineEdit *m_searchEdit = nullptr;
     QLabel *m_searchMatchLabel = nullptr;
     QCheckBox *m_searchFuzzyCheck = nullptr;
+    QComboBox *m_searchSourceCombo = nullptr;
     QToolButton *m_searchPrevBtn = nullptr;
     QToolButton *m_searchNextBtn = nullptr;
     bool m_searchBarPinned = false;

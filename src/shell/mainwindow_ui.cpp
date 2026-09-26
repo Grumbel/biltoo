@@ -1444,6 +1444,51 @@ void MainWindow::createToolBar()
         }
         updateSearchMatchLabel();
     });
+    m_searchSourceCombo = new QComboBox(m_searchBar);
+    m_searchSourceCombo->setObjectName(QStringLiteral("SearchSourceCombo"));
+    m_searchSourceCombo->addItem(tr("Auto"), int(TextLayerResolve::Prefer::Auto));
+    m_searchSourceCombo->addItem(tr("Native"), int(TextLayerResolve::Prefer::Native));
+    m_searchSourceCombo->addItem(tr("OCR"), int(TextLayerResolve::Prefer::Ocr));
+    m_searchSourceCombo->setToolTip(
+        tr("Text layer for Find:\n"
+           "Auto — OCR when available, otherwise native PDF/DjVu text\n"
+           "Native — embedded text only\n"
+           "OCR — OCR layer only (run View → OCR if empty)"));
+    {
+        QSettings settings;
+        const int pref = settings.value(QStringLiteral("find/textSource"),
+                                        int(TextLayerResolve::Prefer::Auto)).toInt();
+        const int idx = m_searchSourceCombo->findData(pref);
+        if (idx >= 0) {
+            m_searchSourceCombo->setCurrentIndex(idx);
+        }
+        if (m_imageView) {
+            m_imageView->hostText().setLayerPrefer(
+                static_cast<TextLayerResolve::Prefer>(
+                    m_searchSourceCombo->currentData().toInt()));
+        }
+    }
+    connect(m_searchSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) {
+        if (!m_searchSourceCombo || !m_imageView) {
+            return;
+        }
+        const auto prefer = static_cast<TextLayerResolve::Prefer>(
+            m_searchSourceCombo->currentData().toInt());
+        QSettings settings;
+        settings.setValue(QStringLiteral("find/textSource"), int(prefer));
+        m_imageView->hostText().setLayerPrefer(prefer);
+        if (prefer == TextLayerResolve::Prefer::Ocr
+            && !m_imageView->hostText().hasLayer()
+            && statusBar()) {
+            statusBar()->showMessage(
+                tr("No OCR layer — View → OCR This Page"), 4000);
+        }
+        if (m_searchEdit) {
+            // Re-run page-local + document search against the chosen layer.
+            onSearchTextChanged(m_searchEdit->text());
+        }
+    });
     m_searchPrevBtn = new QToolButton(m_searchBar);
     m_searchPrevBtn->setText(tr("◀"));
     m_searchPrevBtn->setToolTip(tr("Previous match (Shift+F3)"));
@@ -1463,6 +1508,7 @@ void MainWindow::createToolBar()
     searchLay->addWidget(m_searchPrevBtn);
     searchLay->addWidget(m_searchNextBtn);
     searchLay->addWidget(m_searchMatchLabel);
+    searchLay->addWidget(m_searchSourceCombo);
     searchLay->addWidget(m_searchFuzzyCheck);
     m_searchBar->addWidget(searchHost);
     m_searchBar->installEventFilter(this);

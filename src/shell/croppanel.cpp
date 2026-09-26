@@ -105,6 +105,14 @@ void CropPanel::buildUi()
     addMarginRow(tr("Top"), &m_marginT, &m_normT);
     addMarginRow(tr("Right"), &m_marginR, &m_normR);
     addMarginRow(tr("Bottom"), &m_marginB, &m_normB);
+    m_suggestTextBtn = new QPushButton(tr("Suggest from headers/footers"), m_manualBox);
+    m_suggestTextBtn->setToolTip(
+        tr("Set top/bottom margins from OCR or native text regions labelled "
+           "Header, Footer, or PageNumber. Requires a text layer on the current page."));
+    connect(m_suggestTextBtn, &QPushButton::clicked, this, [this]() {
+        emit suggestFromTextRequested();
+    });
+    manForm->addRow(QString(), m_suggestTextBtn);
     layout->addWidget(m_manualBox);
 
     m_autoBox = new QGroupBox(tr("Autocrop"), inner);

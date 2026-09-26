@@ -6,6 +6,7 @@
 
 #include "host/thumtoocache.h"
 #include "text/textsearchpolicy.h"
+#include "text/textlayerresolve.h"
 #include "view/viewtransform.h"
 
 #include <QPoint>
@@ -22,6 +23,7 @@ struct TextLayerSession {
     QString layerPath;
     QString searchQuery;
     bool searchFuzzy = true;
+    TextLayerResolve::Prefer layerPrefer = TextLayerResolve::Prefer::Auto;
     QVector<TextSearchPolicy::SearchHit> searchMatches;
     bool rubberbanding = false;
     QPoint rubberOrigin;
@@ -177,6 +179,17 @@ struct TextLayerSession {
             return false;
         }
         searchFuzzy = on;
+        return true;
+    }
+
+    TextLayerResolve::Prefer layerPreferValue() const { return layerPrefer; }
+
+    bool setLayerPrefer(TextLayerResolve::Prefer prefer)
+    {
+        if (layerPrefer == prefer) {
+            return false;
+        }
+        layerPrefer = prefer;
         return true;
     }
 

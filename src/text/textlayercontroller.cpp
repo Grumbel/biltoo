@@ -8,6 +8,7 @@
 #include "imageitem.h"
 #include "text/textlayergeometry.h"
 #include "text/textsearchpolicy.h"
+#include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
 #include "host/pagepath.h"
 #include "session/sessionappearance.h"
@@ -65,14 +66,8 @@ void TextLayerController::refresh()
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
     }
-    // Prefer a user-generated OCR layer when present (dual Store slot).
-    ThumtooCache::PageTextLayer layer = ThumtooCache::cachedOcrPageTextLayer(path);
-    if (layer.regions.isEmpty()) {
-        layer = ThumtooCache::cachedPageTextLayer(path);
-    }
-    if (layer.regions.isEmpty()) {
-        layer = ThumtooCache::ensurePageTextLayer(path);
-    }
+    const ThumtooCache::PageTextLayer layer =
+        TextLayerResolve::load(path, m_session.layerPreferValue());
     m_session.setLayerContent(layer, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
@@ -128,6 +123,24 @@ void TextLayerController::setSearchFuzzy(bool on)
             m_view->viewport()->update();
         }
     }
+}
+
+void TextLayerController::setLayerPrefer(TextLayerResolve::Prefer prefer)
+{
+    if (!m_session.setLayerPrefer(prefer)) {
+        return;
+    }
+    if (m_session.needsLayer()) {
+        refresh();
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
+        }
+    }
+}
+
+TextLayerResolve::Prefer TextLayerController::layerPrefer() const
+{
+    return m_session.layerPreferValue();
 }
 
 void TextLayerController::recomputeSearchMatches()

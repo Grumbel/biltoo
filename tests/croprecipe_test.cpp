@@ -26,6 +26,9 @@ private slots:
     void autocrop_nullSample_returnsEmpty();
     void autocrop_uniformImage_noContentTrim();
     void autocrop_centerBlob_trimsBorder();
+    void suggest_emptyBands_notOk();
+    void suggest_headerFooter_insets();
+    void suggest_clampsExtremeInsets();
 };
 
 void CropRecipeTest::identity_isIdentity()
@@ -158,3 +161,35 @@ void CropRecipeTest::autocrop_centerBlob_trimsBorder()
 
 QTEST_MAIN(CropRecipeTest)
 #include "croprecipe_test.moc"
+
+void CropRecipeTest::suggest_emptyBands_notOk()
+{
+    const SuggestedMargins s =
+        CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), {});
+    QVERIFY(!s.ok);
+}
+
+void CropRecipeTest::suggest_headerFooter_insets()
+{
+    QVector<QRectF> bands;
+    bands.append(QRectF(10, 5, 180, 20));   // header near top
+    bands.append(QRectF(20, 270, 160, 20)); // footer near bottom
+    const SuggestedMargins s =
+        CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), bands);
+    QVERIFY(s.ok);
+    QCOMPARE(s.left, 0);
+    QCOMPARE(s.right, 0);
+    QVERIFY(s.top >= 25);
+    QVERIFY(s.bottom >= 20);
+}
+
+void CropRecipeTest::suggest_clampsExtremeInsets()
+{
+    QVector<QRectF> bands;
+    // Huge "header" covering half the page — must clamp.
+    bands.append(QRectF(0, 0, 200, 150));
+    const SuggestedMargins s =
+        CropRecipeUtil::suggestMarginsFromBandRegions(QSize(200, 300), bands);
+    QVERIFY(s.ok);
+    QVERIFY(s.top <= 300 * 3 / 10);
+}
