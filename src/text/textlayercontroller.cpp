@@ -641,23 +641,6 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->drawPolygon(item->mapToScene(local));
         }
     }
-    // Rubber-band text selection (cyan).
-    if (m_session.hasSelection()) {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(60, 160, 255, 100));
-        for (int idxSel : m_session.selectedRegionsRef()) {
-            if (idxSel < 0 || idxSel >= m_session.regionCount()) {
-                continue;
-            }
-            const auto &r = m_session.regionAt(idxSel);
-            const QRectF img = regionImageRect(r);
-            if (img.isEmpty()) {
-                continue;
-            }
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
-        }
-    }
     if (m_session.showsRegions()) {
         painter->setBrush(Qt::NoBrush);
         for (const ThumtooCache::TextRegion &r : m_session.regions()) {
@@ -675,18 +658,6 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         }
     }
 
-    // Hover region (panel ↔ page).
-    if (m_session.hoverRegionIndex() >= 0
-        && m_session.hoverRegionIndex() < m_session.regionCount()) {
-        const auto &r = m_session.regionAt(m_session.hoverRegionIndex());
-        const QRectF img = regionImageRect(r);
-        if (!img.isEmpty()) {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(QColor(255, 200, 40, 90));
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
-        }
-    }
     // Glyphs: recognized text stretched to the OCR/native bbox (readable fill).
     if (m_session.showsGlyphs()) {
         for (const ThumtooCache::TextRegion &r : m_session.regions()) {
@@ -730,7 +701,35 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             painter->translate(sceneBox.topLeft());
             painter->scale(sx, sy);
             painter->drawText(QPointF(0.0, fm.ascent()), line);
-            painter->restore();
+                // Selection / hover on top of glyphs so cyan stays readable over paper fill.
+    if (m_session.hasSelection()) {
+        painter->setPen(QPen(QColor(20, 90, 200, 230), 0));
+        painter->setBrush(QColor(40, 140, 255, 110));
+        for (int idxSel : m_session.selectedRegionsRef()) {
+            if (idxSel < 0 || idxSel >= m_session.regionCount()) {
+                continue;
+            }
+            const auto &r = m_session.regionAt(idxSel);
+            const QRectF img = regionImageRect(r);
+            if (img.isEmpty()) {
+                continue;
+            }
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+    if (m_session.hoverRegionIndex() >= 0
+        && m_session.hoverRegionIndex() < m_session.regionCount()) {
+        const auto &r = m_session.regionAt(m_session.hoverRegionIndex());
+        const QRectF img = regionImageRect(r);
+        if (!img.isEmpty()) {
+            painter->setPen(QPen(QColor(180, 100, 0, 220), 0));
+            painter->setBrush(QColor(255, 160, 40, 80));
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+painter->restore();
         }
     }
 

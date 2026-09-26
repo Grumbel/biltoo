@@ -4754,15 +4754,17 @@ void MainWindow::updateTextPanel()
     }
     TextLayerController &text = m_imageView->hostText();
     const auto &sess = text.session();
-    m_textPanel->setShowGlyphsChecked(sess.showsGlyphs());
-    m_textPanel->setShowOutlinesChecked(sess.showsRegions());
-    if (!sess.hasRegions()) {
-        // Load on demand when panel is open.
+    const QString path = m_imageView->hostImage().classicPath();
+    // Load once if panel needs data for a new path. Never call refresh while
+    // handling layerChanged — that would recurse: refresh → emit → updateTextPanel.
+    if (!path.isEmpty() && sess.layerPathRef() != path) {
+        QSignalBlocker blockSignals(&text);
         text.refresh();
     }
+    m_textPanel->setShowGlyphsChecked(sess.showsGlyphs());
+    m_textPanel->setShowOutlinesChecked(sess.showsRegions());
     const auto &layer = sess.layerRef();
     m_textPanel->setLayer(layer);
-    const QString path = m_imageView->hostImage().classicPath();
     const int n = layer.regions.size();
     m_textPanel->setLayerInfo(
         tr("%1 — %n region(s)", "", n)
