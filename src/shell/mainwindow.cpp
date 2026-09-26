@@ -4914,10 +4914,11 @@ void MainWindow::startOcrCurrentPage(bool force)
         m_ocrPanel->setProgress(-1, force ? tr("Re-OCR this page…") : tr("OCR this page…"));
         m_ocrPanel->setSummary(tr("Working…"));
         m_ocrPanel->appendLog(
-            tr("Start page OCR (force=%1, lang=%2, page=%3)")
+            tr("Start page OCR (force=%1, lang=%2, page=%3): %4")
                 .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
-                .arg(lang)
-                .arg(PagePath::pageNumber(path)));
+                .arg(lang.isEmpty() ? QStringLiteral("eng") : lang)
+                .arg(PagePath::pageNumber(path))
+                .arg(path));
     }
     statusBar()->showMessage(force ? tr("Re-OCR in progress…") : tr("OCR in progress…"));
     m_imageView->hostShell().setCentreProgress(tr("OCR"), tr("This page…"));
@@ -4971,12 +4972,14 @@ void MainWindow::startOcrCurrentPage(bool force)
             if (host->m_ocrPanel) {
                 host->m_ocrPanel->setSummary(msg);
                 host->m_ocrPanel->appendLog(
-                    ok ? host->tr("Page done (force=%1): %2")
+                    ok ? host->tr("Page done (force=%1): %2 — %3")
                              .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
                              .arg(msg)
-                       : host->tr("Page failed (force=%1): %2")
+                             .arg(pathCopy)
+                       : host->tr("Page failed (force=%1): %2 — %3")
                              .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
-                             .arg(msg));
+                             .arg(msg)
+                             .arg(pathCopy));
             }
             host->updateOcrPanel();
         }, Qt::QueuedConnection);

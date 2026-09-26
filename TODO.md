@@ -2,12 +2,12 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2709.9-drop-kind-heuristic` (base `b65f69e`).
+**Tip:** `biltoo-2710.1-ocr-log-path` (base `b65f69e`).
 
-Removed host-side Kind band heuristics. Needs thumtoo **343.5**.
+OCR panel log includes full session path on start/fail. Needs thumtoo **343.6** for EPUB OCR.
 
 ### Apply
 ```bash
-git pull --ff-only …/thumtoo-343.5-drop-kind-heuristic-66fc03e.bundle HEAD
-git pull --ff-only …/biltoo-2709.9-drop-kind-heuristic-b65f69e.bundle HEAD
+git pull --ff-only …/thumtoo-343.6-ocr-epub-pages-66fc03e.bundle HEAD
+git pull --ff-only …/biltoo-2710.1-ocr-log-path-b65f69e.bundle HEAD
 ```

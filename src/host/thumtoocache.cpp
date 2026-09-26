@@ -3209,6 +3209,7 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     const std::string uri = toThumtooUri(sessionPath);
     if (uri.empty()) {
         out.status = OcrRunResult::Status::BadUri;
+        out.detail = sessionPath;
         return out;
     }
     if (!thumtoo::ocr_available()) {
