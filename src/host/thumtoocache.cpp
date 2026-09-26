@@ -3157,6 +3157,12 @@ QString OcrRunResult::message() const
         return QCoreApplication::translate(
             "ThumtooCache", "OCR unavailable — thumtoo cache client is not open");
     case Status::BadUri:
+        if (!detail.isEmpty()) {
+            return QCoreApplication::translate(
+                       "ThumtooCache",
+                       "OCR unavailable — path could not be mapped to a document URI: %1")
+                .arg(detail);
+        }
         return QCoreApplication::translate(
             "ThumtooCache",
             "OCR unavailable — path could not be mapped to a document URI");
