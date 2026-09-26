@@ -99,12 +99,6 @@
 namespace ThumtooCache {
 
 namespace {
-thread_local QString g_lastOcrDetail;
-void set_last_ocr_detail(const QString &s) { g_lastOcrDetail = s; }
-QString last_ocr_detail() { return g_lastOcrDetail; }
-}  // namespace
-
-namespace {
 QSet<QString> g_pixelsInflight;
 
 /** THUMTOO_DEBUG or BILTOO_THUMTOO_DEBUG = non-empty non-0 → stderr traces. */
@@ -3172,7 +3166,6 @@ QString OcrRunResult::message() const
             "OCR unavailable — Tesseract was not built into thumtoo "
             "(rebuild with Tesseract / check flake inputs)");
     case Status::Failed: {
-        const QString detail = last_ocr_detail();
         if (!detail.isEmpty()) {
             return QCoreApplication::translate(
                        "ThumtooCache", "OCR failed — %1")
@@ -3180,8 +3173,8 @@ QString OcrRunResult::message() const
         }
         return QCoreApplication::translate(
             "ThumtooCache",
-            "OCR failed — could not rasterize or Tesseract returned an error "
-            "(unsupported format, missing tessdata, or bad language code?)");
+            "OCR failed — no further detail from thumtoo "
+            "(rebuild thumtoo ≥343.3 for ocr_last_error, or check tessdata / format)");
     }
     case Status::EmptyText:
         return QCoreApplication::translate(
@@ -3229,17 +3222,17 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
     if (!layer) {
         out.status = OcrRunResult::Status::Failed;
-        // Pull thumtoo thread-local detail (rasterize / tessdata / …).
-        const std::string_view detail = thumtoo::ocr_last_error();
-        if (!detail.empty()) {
-            set_last_ocr_detail(QString::fromUtf8(detail.data(),
-                                                  static_cast<int>(detail.size())));
+        // Capture on this worker thread before returning to the GUI.
+        const std::string_view err = thumtoo::ocr_last_error();
+        if (!err.empty()) {
+            out.detail = QString::fromUtf8(err.data(), static_cast<int>(err.size()));
         } else {
-            set_last_ocr_detail({});
+            out.detail = QCoreApplication::translate(
+                "ThumtooCache",
+                "engine returned no layer (rasterize/Init/Recognize failed)");
         }
         return out;
     }
-    set_last_ocr_detail({});
     out.layer = convertLayer(*layer);
     if (out.layer.regions.isEmpty()) {
         // Valid OCR pass with no glyphs — not a hard engine failure.

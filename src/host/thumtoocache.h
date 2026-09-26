@@ -498,7 +498,12 @@ struct OcrRunResult {
     };
     Status status = Status::Failed;
     PageTextLayer layer;
-    /** Localized one-line explanation (English fallback in .cpp). */
+    /**
+     * Engine detail captured on the worker thread (thumtoo::ocr_last_error).
+     * Must live on the result — not thread_local — so the GUI can show it.
+     */
+    QString detail;
+    /** Localized one-line explanation (uses @c detail when set). */
     QString message() const;
 };
 
