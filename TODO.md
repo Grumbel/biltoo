@@ -2,24 +2,25 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2713.13-failed-tile-retry` (base `b9c3473`).
+**Tip:** `biltoo-2713.14-no-failed-retry-error` (base `b9c3473`).
 
-### 2713.13 — Failed exact tiles retry (WAITING recovery)
-Incomplete Store pyramid: miss → Failed same generation → never re-issue →
-bottom row stuck on parent stand-in, overlay **WAITING**.
-Re-open Failed visible keys after 750ms backoff when nothing is in flight.
+### 2713.14 — No Failed tile retry spam; ERROR when settled
+- **Removed** 750ms Failed re-issue (LOADING↔WAITING loop on incomplete pyramid).
+- Failed is **terminal for the viewport generation** (reopens only on plan/gen bump).
+- Overlay: `ERROR failed/visible` when settled with failures; not WAITING.
+- Coverage: `failed`/`missing` counts + `settled()`.
+
+Root cause of persistent exact-miss cells is still Store/encode (incomplete
+pyramid or request returning null). Host must not poll; thumtoo must encode
+on request_tile miss or return a clean permanent miss.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2713.13-failed-tile-retry-b9c3473.bundle HEAD
-# still pair thumtoo-344.2 for SizeReply EMB
+git pull --ff-only …/biltoo-2713.14-no-failed-retry-error-b9c3473.bundle HEAD
 ```
 
-## Prior
-2713.12 underlay ensure_lqip; 2713.10–11 underlay slot/seed; Kill Soft A–D
-
 ## Next
-Runtime: WAITING should flip to LOADING then COMPLETE as pyramid fills
+Trace why exact cells return null while others succeed (page with plan U holes).
 
-## Roadmap
-docs/KILL_SOFT.md, docs/TILE_DRAW_INVESTIGATION.md
+## Prior
+2713.13 retry (reverted in spirit); underlay slot; Kill Soft; thumtoo-344.2

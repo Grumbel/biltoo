@@ -201,6 +201,11 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         summary << QStringLiteral("COMPLETE");
     } else if (cov.in_flight > 0) {
         summary << QStringLiteral("LOADING");
+    } else if (cov.settled() && cov.failed > 0) {
+        // Terminal fails this generation — not an infinite retry loop.
+        summary << QStringLiteral("ERROR %1/%2")
+                       .arg(cov.failed)
+                       .arg(cov.visible);
     } else {
         summary << QStringLiteral("WAITING");
     }

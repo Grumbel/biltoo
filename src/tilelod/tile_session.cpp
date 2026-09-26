@@ -407,7 +407,6 @@ int TileSession::pump()
 
 int TileSession::issue_requests(int budget)
 {
-  using clock = std::chrono::steady_clock;
   if (!m_source || budget <= 0 || m_content_w <= 0) {
     return 0;
   }
@@ -419,6 +418,10 @@ int TileSession::issue_requests(int budget)
   // Coarser parents are drawn as stand-ins via draw_plan; requesting every
   // parent chain in the same batch mixed overview with target and felt like
   // "proper res first". Progressive scale already walks max → desired.
+  //
+  // Failed is terminal for this generation (no retry spam). Generation bumps
+  // on viewport/plan change reopen Failed. Incomplete Store cells must be
+  // fixed by encode-on-request in thumtoo, not host polling.
   struct Scored {
     TileKey key;
     double dist2 = 0;
@@ -429,15 +432,12 @@ int TileSession::issue_requests(int budget)
   double const cx = m_viewport.content_rect.x + m_viewport.content_rect.w * 0.5;
   double const cy = m_viewport.content_rect.y + m_viewport.content_rect.h * 0.5;
 
-  auto const now = clock::now();
-
   for (TileKey const& key : m_visible_keys) {
     CacheEntry const* e = m_cache->find(key);
     if (e && (e->state == TileState::Succeeded ||
               e->state == TileState::InFlight)) {
       continue;
     }
-    // Same-generation Failed: hold for backoff (incomplete Store pyramid).
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
       continue;
     }
@@ -452,47 +452,6 @@ int TileSession::issue_requests(int budget)
     double const dx = tx - cx;
     double const dy = ty - cy;
     missing.push_back({key, dx * dx + dy * dy});
-  }
-
-  // WAITING recovery: all remaining misses are Failed, nothing in flight —
-  // re-open Failed after backoff so incomplete pyramids can fill in.
-  if (missing.empty()) {
-    bool any_failed = false;
-    bool any_inflight = false;
-    for (TileKey const& key : m_visible_keys) {
-      CacheEntry const* e = m_cache->find(key);
-      if (!e) {
-        continue;
-      }
-      if (e->state == TileState::InFlight) {
-        any_inflight = true;
-      }
-      if (e->state == TileState::Failed) {
-        any_failed = true;
-      }
-    }
-    if (any_failed && !any_inflight) {
-      if (m_last_failed_retry.time_since_epoch().count() == 0) {
-        m_last_failed_retry = now;  // arm backoff; do not spam this tick
-      } else if (now - m_last_failed_retry >= kFailedRetryBackoff) {
-        for (TileKey const& key : m_visible_keys) {
-          CacheEntry const* e = m_cache->find(key);
-          if (!e || e->state != TileState::Failed) {
-            continue;
-          }
-          if (key.scale == 0 && m_max_scale > 0 && !has_succeeded_scale_ge(1)) {
-            continue;
-          }
-          RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
-          double const tx = cr.x + cr.w * 0.5;
-          double const ty = cr.y + cr.h * 0.5;
-          double const dx = tx - cx;
-          double const dy = ty - cy;
-          missing.push_back({key, dx * dx + dy * dy});
-        }
-        m_last_failed_retry = now;
-      }
-    }
   }
 
   std::sort(missing.begin(), missing.end(),
@@ -620,12 +579,17 @@ TileSession::Coverage TileSession::coverage() const
   for (TileKey const& key : m_visible_keys) {
     CacheEntry const* e = m_cache->find(key);
     if (!e) {
+      ++c.missing;
       continue;
     }
     if (e->state == TileState::Succeeded && e->bitmap.valid()) {
       ++c.exact_succeeded;
     } else if (e->state == TileState::InFlight) {
       ++c.in_flight;
+    } else if (e->state == TileState::Failed) {
+      ++c.failed;
+    } else {
+      ++c.missing;
     }
   }
   return c;

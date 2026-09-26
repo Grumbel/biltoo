@@ -94,10 +94,18 @@ public:
     int visible = 0;
     int exact_succeeded = 0;
     int in_flight = 0;
+    int failed = 0;
+    int missing = 0;  ///< no cache entry yet
     bool fully_covered() const
     {
       return visible > 0 && exact_succeeded >= visible && in_flight == 0
              && exact_succeeded > 0;
+    }
+    /** Every visible key is Succeeded or Failed — no work left this generation. */
+    bool settled() const
+    {
+      return visible > 0 && in_flight == 0 && missing == 0
+             && (exact_succeeded + failed) >= visible;
     }
   };
   Coverage coverage() const;
@@ -178,9 +186,6 @@ private:
   int m_pending_scale = 0;
   std::chrono::steady_clock::time_point m_pending_since{};
   static constexpr std::chrono::milliseconds kScaleHold{150};
-  /// Incomplete pyramid: Failed exact cells must be re-issued (WAITING recovery).
-  std::chrono::steady_clock::time_point m_last_failed_retry{};
-  static constexpr std::chrono::milliseconds kFailedRetryBackoff{750};
 
   int stable_request_scale(int desired_scale);
   /** True when every visible key is Succeeded or Failed (not InFlight/missing). */
