@@ -1175,7 +1175,8 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // a later soft install (or forever if soft/LQIP never arrives).
         const SessionImageId sid = m_host->hostSessionId().currentIdValue();
         const QSize sz = m_host->contentLayoutSize(path, sid);
-        ImageItem *item = createPlaceholderItem(path, isPositiveSize(sz) ? sz : QSize(1, 1));
+        ImageItem *item = isPositiveSize(sz) && sz.width() > 1 && sz.height() > 1
+            ? createPlaceholderItem(path, sz) : nullptr;
         if (item) {
             bindImageModeSessionCursor(item);
             resetImageModeItemPlacement(item);
@@ -1308,7 +1309,8 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         m_host->captureStickyPanAnchor(m_host->liveItems().first());
     }
     m_host->clearLiveCanvas();
-    item = createPlaceholderItem(path, isPositiveSize(sz) ? sz : QSize(1, 1));
+    item = (isPositiveSize(sz) && sz.width() > 1 && sz.height() > 1)
+        ? createPlaceholderItem(path, sz) : nullptr;
     if (!item) {
         m_host->setUpdatesEnabled(true);
         return;
@@ -1459,9 +1461,9 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
         && !m_host->hostGallerySizeResolve().active()) {
         return nullptr;
     }
-    if (m_host->isGalleryMode()
-        && (!isPositiveSize(intrinsicSize) || intrinsicSize.width() <= 1
-            || intrinsicSize.height() <= 1)) {
+    // Real size or nothing — never 1×1 / provisional stand-ins.
+    if (!isPositiveSize(intrinsicSize) || intrinsicSize.width() <= 1
+        || intrinsicSize.height() <= 1) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);

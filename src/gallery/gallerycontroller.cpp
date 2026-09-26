@@ -1874,19 +1874,17 @@ void GalleryController::rebuildVirtualPlan()
     for (int i = 0; i < pack.size(); ++i) {
         const QString path = pack.pathAt(i);
         const SessionImageId sid = pack.idAt(i);
-        // Never invent square stand-ins (1000²) for pack — that made every cell
-        // square and galleryClipLocal cropped real content into the wrong aspect.
-        // Only definitive probe/fail sizes participate in the plan.
-        if (!book.hasDefinitive(path) && !book.isFailed(path)) {
+        // Real size or nothing: only definitive sizes enter the plan.
+        // Failed probes get no cell (no 256² stand-in). Unresolved holes are
+        // skipped; Fill layouts wait for the full definitive set.
+        if (book.isFailed(path) || book.isProvisional(path)) {
+            continue;
+        }
+        if (!book.hasDefinitive(path)) {
             if (layoutNeedsAllSizes(m_layout.currentMode())) {
-                // Fill layouts need the full aspect set — empty plan until done.
                 m_virtualSlots.clear();
                 return;
             }
-            // Sparse progressive: skip unresolved holes. SizeReply is out of
-            // order (bounded workers); an ordered prefix stopped the plan at the
-            // first gap so ~dozens of cells appeared then nothing until the
-            // whole gate finished. Include every definitive/failed row.
             continue;
         }
         // Orient-aware layout size without Store I/O (allowStoreAppearance=false).
@@ -1894,12 +1892,7 @@ void GalleryController::rebuildVirtualPlan()
         if (!isPositiveSize(lay) || lay.width() <= 1) {
             lay = book.known(path);
         }
-        // Still nothing usable — skip row rather than standInNeutral square.
         if (!isPositiveSize(lay) || lay.width() <= 1) {
-            continue;
-        }
-        // Reject provisional-shaped geometry if it slipped into known().
-        if (book.isProvisional(path) && !book.isFailed(path)) {
             continue;
         }
         VirtualSlot slot;

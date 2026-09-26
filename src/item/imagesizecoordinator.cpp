@@ -88,42 +88,24 @@ void ImageSizeCoordinator::rememberSizeFromDecode(const QString &path, const QIm
 QSize ImageSizeCoordinator::imageSizeForPath(const QString &path)
 {
     if (path.isEmpty()) {
-        return ImageSizeBook::standInNeutral();
+        return {};
     }
     const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known)) {
+    if (isPositiveSize(known) && !m_book.isProvisional(path)) {
         if (!m_book.contains(path)) {
             rememberImageSize(path, known); // install thumtoo hit into map
         }
-        // Do not treat provisional stand-ins as known geometry for Gallery.
-        if (m_view->isGalleryMode() && m_book.isProvisional(path)) {
-            scheduleImageSizeProbe(path);
-            return {};
-        }
         return known;
     }
-    // Gallery size-first: never install 1000² / square stand-ins into the book.
-    // Probe only; ordered pack waits for definitive size or explicit failure.
-    if (m_view->isGalleryMode()) {
-        scheduleImageSizeProbe(path);
-        return {};
-    }
-    // Archives / multipage / embedded PDF: async probe; neutral stand-in.
+    // Real size or nothing — never provisional 1000² / square stand-ins.
     scheduleImageSizeProbe(path);
-    const bool compound = ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
-        || PagePath::isPdfImageRef(path);
-    // Square is only a last resort for compound refs until soft aspect or probe.
-    const QSize standIn = ImageSizeBook::standInForCompoundPath(compound);
-    m_book.markProvisional(path, standIn);
-    return standIn;
+    return {};
 }
 
 QSize ImageSizeCoordinator::layoutSizeForPath(const QString &path, const QImage &previewHint)
 {
     // File-native size only (map / thumtoo) — not content-oriented layout.
-    // Prefer contentLayoutSize(path, sessionId) for placeholder / pack cells.
-    // previewHint is display-only; using it for aspect made layout jump when LQIP
-    // (wrong aspect / tiny box) was replaced by the size probe.
+    // Real size or nothing: never provisional stand-ins.
     Q_UNUSED(previewHint);
     const QSize known = logicalSizeForPath(path);
     if (isPositiveSize(known) && !m_book.isProvisional(path)) {
@@ -132,16 +114,7 @@ QSize ImageSizeCoordinator::layoutSizeForPath(const QString &path, const QImage 
     if (!path.isEmpty()) {
         scheduleImageSizeProbe(path);
     }
-    // Provisional or definitive entry already in the book (layout needs a size).
-    const QSize bookSize = m_book.known(path);
-    if (!bookSize.isEmpty() && !m_book.isProvisional(path)) {
-        return bookSize;
-    }
-    if (m_view->isGalleryMode()) {
-        scheduleImageSizeProbe(path);
-        return {};
-    }
-    return imageSizeForPath(path);
+    return {};
 }
 
 void ImageSizeCoordinator::primeGalleryGeometryFromCache(const QStringList &paths)
@@ -191,7 +164,7 @@ void ImageSizeCoordinator::scheduleImageSizeProbe(const QString &path)
     QThreadPool::globalInstance()->start([guard, path]() {
         QSize s = ImageLoader::probeSize(path);
         if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-            s = ImageSizeBook::standInNeutral();
+            s = QSize(); // failure — no stand-in
         }
         if (!guard) {
             return;

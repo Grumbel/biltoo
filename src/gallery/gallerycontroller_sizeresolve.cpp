@@ -33,17 +33,15 @@ void GalleryController::adoptSizeProbeFailed(const QString &path)
         return;
     }
     m_view->hostSizeBook().markFailed(path);
-    if (const QSize native = m_view->hostSizeBook().contains(path)
-            ? m_view->logicalSizeForPath(path)
-            : QSize(256, 256);
-        isPositiveSize(native)) {
-        m_view->applyProbedImageSize(path, native);
-    }
+    // No stand-in size — drop any live cell (plan will omit the path).
+    QList<ImageItem *> doomed;
     for (ImageItem *item : m_view->liveItems()) {
         if (item && item->path() == path) {
-            item->setToolTip(
-                m_view->tr("Failed to read image size:\n%1").arg(path));
+            doomed.append(item);
         }
+    }
+    for (ImageItem *item : doomed) {
+        m_view->destroyCanvasItem(item, /*persistState=*/false);
     }
 }
 

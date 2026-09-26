@@ -111,17 +111,17 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
                 m_host->itemWorld().hasContentOrient(sidLayout), app);
         }
     }
-    // Logical size only from probe / map — never sample (LQIP/soft) dims.
+    // Logical size only from probe / map — never sample or 1×1 stand-ins.
     QSize native = m_host->layoutSizeForPath(path, QImage());
     if (m_host->hostSizeBook().isProvisional(path)
         || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
-        // Cold: 1×1 until sizeReady; soft install must not invent geometry.
-        native = QSize(1, 1);
         m_host->scheduleImageSizeProbe(path);
+        return nullptr;
     }
     QSize intrinsic = ContentXform::layoutSize(native, app);
     if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
-        intrinsic = QSize(1, 1);
+        m_host->scheduleImageSizeProbe(path);
+        return nullptr;
     }
 
     auto *item = new ImageItem(path, intrinsic);

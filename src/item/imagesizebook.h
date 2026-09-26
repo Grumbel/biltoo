@@ -47,8 +47,9 @@ public:
     }
 
     /**
-     * Size probe failed — record failure and install a fixed error-cell native
-     * size so ordered Gallery pack can proceed without a wall-clock timeout.
+     * Size probe failed. Record failure only — do **not** invent a stand-in
+     * size (no 256² / 1000²). Gallery packs skip failed paths; Image waits
+     * for a real SizeReply or stays empty.
      */
     void markFailed(const QString &path)
     {
@@ -57,9 +58,9 @@ public:
         }
         m_failedPaths.insert(path);
         m_provisionalPaths.remove(path);
+        // Drop any provisional stand-in; leave map empty if never definitive.
         if (!hasDefinitive(path)) {
-            // Modest cell so layout does not use 1000² stand-ins for errors.
-            m_byPath.insert(path, QSize(256, 256));
+            m_byPath.remove(path);
         }
     }
 

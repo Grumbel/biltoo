@@ -2,23 +2,22 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2703.3-cold-gallery-size-book` (base `6c3e877`).
+**Tip:** `biltoo-2703.4-no-placeholder-sizes` (base `6c3e877`).
 
-### 2703.3 — Cold Gallery sizeReady vs book / dual pack
-Audit: cold open size gate → virtual plan packs from size **book**.
-`Bridge::sizeReady` skipped `rememberImageSize` when any definitive existed,
-so a stale larger book entry kept wrong plan geometry while tiles used
-thumtoo native (top-left paint). Parallel `ContentChange` applyLayout during
-the gate raced the virtual plan.
+### 2703.4 — Real size or nothing
+No provisional / 1×1 / 256² stand-in sizes for geometry:
+- `markFailed`: failure flag only, no invented size
+- Virtual plan: definitive sizes only (skip failed / provisional)
+- `createPlaceholderItem`: reject size ≤ 1 in all modes
+- `imageSizeForPath` / `layoutSizeForPath`: return {} and probe, never markProvisional
+- `createItemFromImage`: nullptr until definitive size
+- Failed probe: drop live cells, no tooltip 256 cell
 
-Fix:
-- sizeReady: take+remember when book ≠ SizeReply; always applyProbedImageSize
-- applyProbedImageSize: no ContentChange pack while size gate active
-
-### 2703.2 — Workspace delete BSP UAF
-### 2703.1 — Soft F5 size book take
+### 2703.3 — cold sizeReady book + no dual pack during gate
+### 2703.2 — Workspace delete BSP
+### 2703.1 — Soft F5 size book
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2703.3-cold-gallery-size-book-6c3e877.bundle HEAD
+git pull --ff-only …/biltoo-2703.4-no-placeholder-sizes-6c3e877.bundle HEAD
 ```
