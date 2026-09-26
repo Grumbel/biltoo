@@ -709,7 +709,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             f.setPixelSize(qMax(4, int(px)));
             painter->setFont(f);
             painter->setPen(QColor(20, 20, 20, 220));
-            painter->drawText(sceneBox, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextWordWrap,
+            // Single line, no wrap — wrap uses Qt metrics, not OCR glyph boxes.
+            painter->drawText(sceneBox, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine,
                               r.text);
         }
     }
