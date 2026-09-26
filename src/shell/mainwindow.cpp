@@ -1424,7 +1424,7 @@ void MainWindow::scheduleDocumentSearch(const QString &query)
 {
     const QString trimmed = query.trimmed();
     if (trimmed.isEmpty()) {
-        ++m_docSearchGeneration;
+        m_docSearchGeneration.fetch_add(1);
         m_docSearchRunning = false;
         m_docSearchHitPages.clear();
         m_docSearchHitIndex = -1;
@@ -1464,7 +1464,7 @@ void MainWindow::startDocumentSearch(const QString &query)
         updateSearchMatchLabel();
         return;
     }
-    const quint64 gen = ++m_docSearchGeneration;
+    const quint64 gen = m_docSearchGeneration.fetch_add(1) + 1;
     m_docSearchRunning = true;
     updateSearchMatchLabel();
 
@@ -1516,7 +1516,7 @@ void MainWindow::startDocumentSearch(const QString &query)
             guard.data(),
             [guard, gen, trimmed, hitPages, pathHits]() {
                 MainWindow *host = guard.data();
-                if (!host || gen != host->m_docSearchGeneration) {
+                if (!host || gen != host->m_docSearchGeneration.load()) {
                     return;
                 }
                 host->onDocumentSearchFinished(gen, trimmed, hitPages, pathHits);
@@ -1529,7 +1529,7 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
                                           const QVector<int> &hitPages,
                                           const QVector<QPair<QString, int>> &pathMatchCounts)
 {
-    if (generation != m_docSearchGeneration) {
+    if (generation != m_docSearchGeneration.load()) {
         return;
     }
     m_docSearchRunning = false;
@@ -4633,7 +4633,7 @@ void MainWindow::setDualCompareEnabled(bool on)
 
 void MainWindow::cancelOcrBatch()
 {
-    ++m_ocrGeneration;
+    m_ocrGeneration.fetch_add(1);
     m_ocrRunning = false;
     if (m_ocrCancelAct) {
         m_ocrCancelAct->setEnabled(false);
@@ -4676,7 +4676,7 @@ void MainWindow::startOcrCurrentPage(bool force)
     QSettings settings;
     const QString lang = settings.value(QStringLiteral("ocr/lang"), QStringLiteral("eng")).toString();
 
-    const int gen = ++m_ocrGeneration;
+    const int gen = m_ocrGeneration.fetch_add(1) + 1;
     m_ocrRunning = true;
     if (m_ocrCancelAct) {
         m_ocrCancelAct->setEnabled(true);
@@ -4695,7 +4695,7 @@ void MainWindow::startOcrCurrentPage(bool force)
         }
         QMetaObject::invokeMethod(self, [self, pathCopy, layer, gen]() {
             MainWindow *host = self.data();
-            if (!host || gen != host->m_ocrGeneration) {
+            if (!host || gen != host->m_ocrGeneration.load()) {
                 return;
             }
             host->m_ocrRunning = false;
@@ -4760,7 +4760,7 @@ void MainWindow::ocrDocument()
                            QMessageBox::No)
         == QMessageBox::Yes;
 
-    const int gen = ++m_ocrGeneration;
+    const int gen = m_ocrGeneration.fetch_add(1) + 1;
     m_ocrRunning = true;
     if (m_ocrCancelAct) {
         m_ocrCancelAct->setEnabled(true);
@@ -4818,7 +4818,7 @@ void MainWindow::ocrDocument()
                        reportProgress]() {
             while (true) {
                 MainWindow *host = self.data();
-                if (!host || gen != host->m_ocrGeneration) {
+                if (!host || gen != host->m_ocrGeneration.load()) {
                     return;
                 }
                 const int i = nextIndex.fetch_add(1);
@@ -4858,7 +4858,7 @@ void MainWindow::ocrDocument()
         const int failFinal = failCount.load();
         QMetaObject::invokeMethod(host, [self, gen, okFinal, failFinal, total]() {
             MainWindow *h = self.data();
-            if (!h || gen != h->m_ocrGeneration) {
+            if (!h || gen != h->m_ocrGeneration.load()) {
                 return;
             }
             h->m_ocrRunning = false;

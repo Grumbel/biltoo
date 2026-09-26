@@ -13,6 +13,7 @@
 #include "session/projectfile.h"
 
 #include <QMainWindow>
+#include <atomic>
 #include <QLineEdit>
 #include <QToolBar>
 #include <functional>
@@ -609,7 +610,7 @@ private:
     QToolButton *m_searchNextBtn = nullptr;
     bool m_searchBarPinned = false;
     QTimer *m_docSearchDebounce = nullptr;
-    quint64 m_docSearchGeneration = 0;
+    std::atomic<quint64> m_docSearchGeneration{0};
     QString m_docSearchQuery;
     /** 1-based page numbers with ≥1 match (document-wide scan). */
     QVector<int> m_docSearchHitPages; // 1-based PDF pages for next/prev (legacy)
@@ -650,7 +651,7 @@ private:
     QAction *m_ocrForcePageAct = nullptr;
     QAction *m_ocrDocumentAct = nullptr;
     QAction *m_ocrCancelAct = nullptr;
-    int m_ocrGeneration = 0;
+    std::atomic<int> m_ocrGeneration{0};
     bool m_ocrRunning = false;
     QAction *m_findOnPageAct = nullptr;
     QAction *m_showSearchBarAct = nullptr;
