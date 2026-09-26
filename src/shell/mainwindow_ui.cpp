@@ -879,6 +879,12 @@ void MainWindow::createActions()
     m_toggleScrollBarsAct->setStatusTip(tr("Show or hide scrollbars on the image view"));
     connect(m_toggleScrollBarsAct, &QAction::triggered, this, &MainWindow::toggleScrollBars);
 
+    m_resetDockLayoutAct = new QAction(tr("&Reset Panel Layout"), this);
+    m_resetDockLayoutAct->setStatusTip(
+        tr("Restore default dock positions and clear the saved layout "
+           "(use after a bad layout or upgrade crash)"));
+    connect(m_resetDockLayoutAct, &QAction::triggered, this, &MainWindow::resetDockLayout);
+
     m_preferencesAct = new QAction(tr("&Preferences…"), this);
     m_preferencesAct->setShortcut(QKeySequence::Preferences);
     m_prepareTileCacheAct = new QAction(tr("Prepare &Tile Cache…"), this);
@@ -1063,32 +1069,37 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
-    // OCR actions kept for shortcuts; primary UI is the OCR dock panel.
-    if (m_toggleOcrAct) {
-        m_viewMenu->addAction(m_toggleOcrAct);
-    }
-    if (m_toggleTextAct) {
-        m_viewMenu->addAction(m_toggleTextAct);
-    }
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_showLocationBarAct);
     m_viewMenu->addAction(m_showSearchBarAct);
-    m_viewMenu->addAction(m_toggleMetadataAct);
-    m_viewMenu->addAction(m_toggleTocAct);
-    m_viewMenu->addAction(m_toggleHelpAct);
-    if (m_toggleAdjustmentsAct) {
-        m_viewMenu->addAction(m_toggleAdjustmentsAct);
-    }
-    if (m_toggleCropAct) {
-        m_viewMenu->addAction(m_toggleCropAct);
-    }
-    m_viewMenu->addAction(m_toggleLayoutPanelAct);
     m_viewMenu->addAction(m_toggleScrollBarsAct);
     m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_toggleThumbnailBarAct);
+    // Panels submenu — single place for all dock toggles (IDE / GIMP style).
+    auto *panelsMenu = m_viewMenu->addMenu(tr("&Panels"));
+    panelsMenu->setStatusTip(tr("Show or hide side panels and the filmstrip"));
+    panelsMenu->addAction(m_toggleThumbnailBarAct);
+    panelsMenu->addAction(m_toggleMetadataAct);
+    panelsMenu->addAction(m_toggleTocAct);
+    panelsMenu->addAction(m_toggleHelpAct);
+    if (m_toggleAdjustmentsAct) {
+        panelsMenu->addAction(m_toggleAdjustmentsAct);
+    }
+    if (m_toggleCropAct) {
+        panelsMenu->addAction(m_toggleCropAct);
+    }
+    if (m_toggleOcrAct) {
+        panelsMenu->addAction(m_toggleOcrAct);
+    }
+    if (m_toggleTextAct) {
+        panelsMenu->addAction(m_toggleTextAct);
+    }
+    panelsMenu->addAction(m_toggleLayoutPanelAct);
+    panelsMenu->addSeparator();
+    panelsMenu->addAction(m_resetDockLayoutAct);
+    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_hideThumbLabelsAct);
     m_viewMenu->addAction(m_cropThumbnailsAct);
 

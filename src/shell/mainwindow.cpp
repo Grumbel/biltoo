@@ -29,6 +29,15 @@
 #include <algorithm>
 #include <QtMath>
 
+namespace {
+
+// Bump when dock object names / structure change, or when a saved
+// dockLayoutState blob is known to crash on restore (Qt QDockAreaLayout).
+// Mismatched version → ignore blob and use built-in defaults.
+constexpr int kDockLayoutStateVersion = 1;
+
+} // namespace
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -3657,16 +3666,26 @@ void MainWindow::readSettings()
         showMaximized();
     }
 
-    // QMainWindow::restoreState can SIGSEGV inside QDockAreaLayout on show()
-    // (Qt 6.11). Never restore or keep dock-layout blobs.
-    if (settings.contains(QStringLiteral("windowState"))) {
+    // Dock layout (positions + tabbing + sizes). Version-gated — see
+    // kDockLayoutStateVersion. Mismatched / missing version → ignore blob.
+    {
+        const int ver = settings.value(QStringLiteral("dockLayoutVersion"), 0).toInt();
+        const QByteArray state =
+            settings.value(QStringLiteral("dockLayoutState")).toByteArray();
+        // Drop legacy keys from older experiments.
         settings.remove(QStringLiteral("windowState"));
+        settings.remove(QStringLiteral("windowStateVersion"));
+        settings.remove(QStringLiteral("windowStateQt"));
+        if (ver == kDockLayoutStateVersion && !state.isEmpty()) {
+            restoreState(state);
+        } else if (ver != 0 && ver != kDockLayoutStateVersion) {
+            settings.remove(QStringLiteral("dockLayoutState"));
+            settings.remove(QStringLiteral("dockLayoutVersion"));
+        }
     }
-    settings.remove(QStringLiteral("windowStateVersion"));
-    settings.remove(QStringLiteral("windowStateQt"));
 
-    // Adjustments is opt-in: restoreState may re-show it from an old windowState.
-    // Prefer an explicit setting (default: hidden).
+    // Adjustments is opt-in when no matching dock layout was restored.
+    // Explicit key still wins after restore so Preferences can force hide.
     if (m_adjustmentsDock) {
         const bool showAdj =
             settings.value(QStringLiteral("adjustmentsPanelVisible"), false).toBool();
@@ -3676,8 +3695,8 @@ void MainWindow::readSettings()
         }
     }
     // Per-mode chrome preferences (defaults: Workspace thumbs on, Gallery off,
-    // Layout panel off). restoreState may have re-shown docks — Layout is forced
-    // through updateLayoutPanelForMode after mode is applied below.
+    // Layout panel off). Layout visibility is forced through
+    // updateLayoutPanelForMode after mode is applied below.
     m_thumbnailsPreferredWorkspace =
         settings.value(QStringLiteral("thumbnailsPreferredWorkspace"), true).toBool();
     m_thumbnailsPreferredGallery =
@@ -3986,7 +4005,8 @@ void MainWindow::writeSettings()
     }
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
-    // Intentionally not saving windowState — restoreState SEGV on Qt 6.11.
+    settings.setValue(QStringLiteral("dockLayoutVersion"), kDockLayoutStateVersion);
+    settings.setValue(QStringLiteral("dockLayoutState"), saveState());
     settings.remove(QStringLiteral("windowState"));
     settings.remove(QStringLiteral("windowStateVersion"));
     settings.remove(QStringLiteral("windowStateQt"));
@@ -4110,6 +4130,92 @@ void MainWindow::writeSettings()
     }
 }
 
+void MainWindow::resetDockLayout()
+{
+    QSettings settings;
+    settings.remove(QStringLiteral("dockLayoutState"));
+    settings.remove(QStringLiteral("dockLayoutVersion"));
+    settings.remove(QStringLiteral("windowState"));
+    settings.remove(QStringLiteral("windowStateVersion"));
+    settings.remove(QStringLiteral("windowStateQt"));
+
+    // Built-in defaults: filmstrip bottom (mode prefs still apply later),
+    // metadata right, help/toc left-ish as constructed, tool panels hidden.
+    if (m_thumbnailDock) {
+        removeDockWidget(m_thumbnailDock);
+        addDockWidget(Qt::BottomDockWidgetArea, m_thumbnailDock);
+    }
+    if (m_metadataDock) {
+        removeDockWidget(m_metadataDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
+        m_metadataDock->show();
+        if (m_toggleMetadataAct) {
+            m_toggleMetadataAct->setChecked(true);
+        }
+    }
+    if (m_helpDock) {
+        removeDockWidget(m_helpDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_helpDock);
+        m_helpDock->hide();
+        if (m_toggleHelpAct) {
+            m_toggleHelpAct->setChecked(false);
+        }
+    }
+    if (m_tocDock) {
+        removeDockWidget(m_tocDock);
+        addDockWidget(Qt::LeftDockWidgetArea, m_tocDock);
+        m_tocDock->hide();
+        if (m_toggleTocAct) {
+            m_toggleTocAct->setChecked(false);
+        }
+    }
+    if (m_adjustmentsDock) {
+        removeDockWidget(m_adjustmentsDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_adjustmentsDock);
+        m_adjustmentsDock->hide();
+        if (m_toggleAdjustmentsAct) {
+            m_toggleAdjustmentsAct->setChecked(false);
+        }
+        settings.setValue(QStringLiteral("adjustmentsPanelVisible"), false);
+    }
+    if (m_cropDock) {
+        removeDockWidget(m_cropDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_cropDock);
+        m_cropDock->hide();
+        if (m_toggleCropAct) {
+            m_toggleCropAct->setChecked(false);
+        }
+    }
+    if (m_ocrDock) {
+        removeDockWidget(m_ocrDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_ocrDock);
+        m_ocrDock->hide();
+        if (m_toggleOcrAct) {
+            m_toggleOcrAct->setChecked(false);
+        }
+    }
+    if (m_textDock) {
+        removeDockWidget(m_textDock);
+        addDockWidget(Qt::RightDockWidgetArea, m_textDock);
+        m_textDock->hide();
+        if (m_toggleTextAct) {
+            m_toggleTextAct->setChecked(false);
+        }
+    }
+    if (m_layoutDock) {
+        removeDockWidget(m_layoutDock);
+        addDockWidget(Qt::LeftDockWidgetArea, m_layoutDock);
+        m_layoutDock->hide();
+        m_layoutPreferredInWorkspace = false;
+        settings.setValue(QStringLiteral("layoutPreferredInWorkspace"), false);
+        if (m_toggleLayoutPanelAct) {
+            m_toggleLayoutPanelAct->setChecked(false);
+        }
+    }
+    updateLayoutPanelForMode();
+    updateWorkspaceActionVisibility();
+    statusBar()->showMessage(tr("Panel layout reset to defaults"), 3000);
+}
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {

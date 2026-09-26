@@ -2,31 +2,32 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2710.5-fix-selection-paint-order` (base `b65f69e`).
+**Tip:** `biltoo-2711.1-dock-layout-panels-menu` (base `b65f69e`).
+
+### 2711.1 — Dock layout persistence + Panels menu
+- Version-gated `dockLayoutState` / `dockLayoutVersion` (`kDockLayoutStateVersion = 1`).
+  Bump the constant if a saved layout crashes on restore; mismatched version is ignored.
+- **View → Panels** submenu: all dock toggles in one place + **Reset Panel Layout**.
+- Still applies mode-specific overrides (Layout workspace-only, adjustments explicit key).
 
 ### 2710.5 — Fix selection/hover paint (regression from 2710.4)
-- 2710.4 inserted selection/hover *inside* the glyph loop → wrong transform,
-  drawn once per region, only when glyphs on. Restored clean order:
-  search → outlines → glyphs → selection → hover.
-- Stronger cyan (pen + fill) kept so selection stays readable over glyph paper.
-- Early-out also allows glyphs-only / selection-only / hover-only overlays.
+- Selection/hover restored to: search → outlines → glyphs → selection → hover.
+- Stronger cyan kept; early-out allows glyphs/selection/hover-only overlays.
 
-### 2710.4 — Text panel recursion + selection over glyphs
-- `updateTextPanel` no longer calls `refresh` while handling `layerChanged`
-  (was infinite: refresh → emit → updateTextPanel → refresh…)
-- (Selection paint was attempted here but the edit was corrupted; fixed in 2710.5.)
+### 2710.4 — Text panel recursion
+- `updateTextPanel` no longer refresh()es while handling `layerChanged`.
 
 Needs thumtoo **343.6** for EPUB OCR.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2710.5-fix-selection-paint-order-b65f69e.bundle HEAD
+git pull --rebase …/biltoo-2711.1-dock-layout-panels-menu-b65f69e.bundle HEAD
 ```
 
 ---
 
 ## Roadmap / later
 
-### 0.3.0 — Dock layout persistence (evaluate KDDockWidgets)
-
-See prior note: careful `saveState` vs nixpkgs `kddockwidgets` spike-first.
+### 0.3.0 — KDDockWidgets (optional)
+Only if QMainWindow docks prove insufficient (nested docking, advanced layouts).
+Spike against nixpkgs first; keep version-gated save/restore either way.

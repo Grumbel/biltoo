@@ -455,6 +455,8 @@ private:
     LayoutMode initialGalleryLayoutForOpen() const;
     void readSettings();
     void writeSettings();
+    /** Discard saved dock layout and restore built-in defaults. */
+    void resetDockLayout();
     void rememberSessionHistory(const QStringList &paths);
     void rebuildHistoryMenu();
     void openHistoryEntry();
@@ -749,6 +751,7 @@ private:
     QAction *m_toggleHelpAct = nullptr;
     QAction *m_toggleLayoutPanelAct = nullptr;
     QAction *m_toggleScrollBarsAct = nullptr;
+    QAction *m_resetDockLayoutAct = nullptr;
     QAction *m_preferencesAct = nullptr;
     QAction *m_prepareTileCacheAct = nullptr;
     QAction *m_epubLayoutAct = nullptr;
