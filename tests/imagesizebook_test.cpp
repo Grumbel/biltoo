@@ -85,12 +85,15 @@ void ImageSizeBookTest::markFailed_isPackEligible()
 {
     ImageSizeBook book;
     const QString path = QStringLiteral("/tmp/broken.jpg");
+    book.markProvisional(path, ImageSizeBook::standInNeutral());
     book.markFailed(path);
     QVERIFY(book.isFailed(path));
-    // Error cell is 256² (not 1000² stand-in) so pack can place the row.
-    QCOMPARE(book.known(path), QSize(256, 256));
-    // Failed installs a non-provisional size → hasDefinitive is also true;
-    // plan eligibility is still hasDefinitive || isFailed.
+    // Failure records flag only — do not invent 256² / 1000² geometry.
+    // Gallery skips failed paths; Image waits for a real size or stays empty.
+    QVERIFY(book.known(path).isEmpty());
+    QVERIFY(!book.hasDefinitive(path));
+    QVERIFY(!book.isProvisional(path));
+    // Plan eligibility is still hasDefinitive || isFailed (not stand-in alone).
     QVERIFY(book.hasDefinitive(path) || book.isFailed(path));
 }
 
