@@ -156,6 +156,7 @@ protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
+    void ocrCurrentPage();
     void openFiles();
     void openLocation();
     void commitLocationBar();
@@ -639,6 +640,7 @@ private:
     QAction *m_smoothScalingAct = nullptr;
     QAction *m_toggleContentEditMarksAct = nullptr;
     QAction *m_showTextRegionsAct = nullptr;
+    QAction *m_ocrPageAct = nullptr;
     QAction *m_findOnPageAct = nullptr;
     QAction *m_showSearchBarAct = nullptr;
     QAction *m_hideThumbLabelsAct = nullptr;

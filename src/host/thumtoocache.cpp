@@ -3111,6 +3111,29 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
     return convertLayer(*layer);
 }
 
+PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force)
+{
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    const std::string uri = toThumtooUri(sessionPath);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::OcrOptions opts;
+    auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
+    if (!layer) {
+        return {};
+    }
+    return convertLayer(*layer);
+}
+
 #else // BILTOO_HAVE_THUMTOO_TEXT
 
 PageTextLayer cachedPageTextLayer(const QString &)
@@ -3118,6 +3141,10 @@ PageTextLayer cachedPageTextLayer(const QString &)
     return {};
 }
 PageTextLayer ensurePageTextLayer(const QString &)
+{
+    return {};
+}
+PageTextLayer ensureOcrPageTextLayer(const QString &, bool)
 {
     return {};
 }

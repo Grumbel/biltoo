@@ -4514,3 +4514,31 @@ void MainWindow::setDualCompareEnabled(bool on)
     });
 }
 
+
+void MainWindow::ocrCurrentPage()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const QString path = m_imageView->hostImage().classicPath();
+    if (path.isEmpty() || !PagePath::isPageRef(path)) {
+        statusBar()->showMessage(tr("OCR is only available for document pages"), 4000);
+        return;
+    }
+    statusBar()->showMessage(tr("OCR in progress…"));
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const bool ok = m_imageView->hostText().applyOcrLayer(false);
+    QApplication::restoreOverrideCursor();
+    if (ok) {
+        if (m_showTextRegionsAct) {
+            m_showTextRegionsAct->setChecked(true);
+        }
+        statusBar()->showMessage(
+            tr("OCR finished — %n text region(s)", "",
+               m_imageView->hostText().regionCount()),
+            5000);
+    } else {
+        statusBar()->showMessage(
+            tr("OCR failed (unavailable, unsupported page, or no text)"), 5000);
+    }
+}

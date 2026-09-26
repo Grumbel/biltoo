@@ -476,6 +476,13 @@ PageTextLayer cachedPageTextLayer(const QString &sessionPath);
  */
 PageTextLayer ensurePageTextLayer(const QString &sessionPath);
 
+/**
+ * OCR text layer (dual Store slot). Runs Tesseract when missing or @p force.
+ * Empty if OCR unavailable or path not a page/image OCR can handle.
+ */
+PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
+                                     bool force = false);
+
 /** Cache-only document outline (TOC). Empty if not stored. */
 DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath);
 

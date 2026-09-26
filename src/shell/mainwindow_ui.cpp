@@ -344,6 +344,16 @@ void MainWindow::createActions()
             m_imageView->hostText().setShowRegions(on);
         }
     });
+
+    m_ocrPageAct = new QAction(tr("OCR &This Page"), this);
+    m_ocrPageAct->setStatusTip(
+        tr("Run OCR on the current document page and use the result for Find/select"));
+    m_ocrPageAct->setWhatsThis(tr(
+        "<p>Rasterize the current page and run Tesseract OCR. The OCR text layer "
+        "is stored separately from native PDF text (dual slot). Opens the OCR "
+        "layer for search and selection on this page.</p>"));
+    connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
+
     m_findOnPageAct = new QAction(tr("&Find…"), this);
     m_findOnPageAct->setShortcut(QKeySequence::Find); // Ctrl+F
     m_findOnPageAct->setShortcutContext(Qt::WindowShortcut);
@@ -1011,6 +1021,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
+    m_viewMenu->addAction(m_ocrPageAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();

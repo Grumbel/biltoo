@@ -2,20 +2,19 @@
 
 ## Status (2026-09-26)
 
-**Tip:** `biltoo-2704.1-debug-menu` (base `6c3e877`).
+**Tip:** `biltoo-2705.1-ocr-this-page` (base `6c3e877`).
 
-### 2704.1 — Debug menu (runtime flags)
-- `src/util/debugflags.{h,cpp}` — central on/off flags, seed from env, `qputenv` mirror
-- **Debug** menu (before Help): checkable items for overlay, tile, crop, drop,
-  find, appearance, filmstrip, slideshow, mode, load, perf, TTFP, GUI budget,
-  thumtoo client
-- Load/mode/overlay/tile/crop/perf/TTFP paths read `DebugFlags` (not static getenv)
-- docs/ENVIRONMENT.md notes the menu
+### 2705.1 — OCR this page (thumtoo Tesseract)
+- Requires thumtoo with `ensure_ocr_page_text_layer` (tip 342.1)
+- `ThumtooCache::ensureOcrPageTextLayer`
+- `TextLayerController::applyOcrLayer`
+- View → **OCR This Page** (wait cursor; enables Show Text Regions on success)
 
-### Prior
-2703.4 real size or nothing; 2703.3 cold gallery size book; …
+### Next
+- Batch OCR document + language picker
+- Prefer OCR vs native in Find when user chooses
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2704.1-debug-menu-6c3e877.bundle HEAD
+git pull --ff-only …/biltoo-2705.1-ocr-this-page-6c3e877.bundle HEAD
 ```

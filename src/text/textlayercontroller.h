@@ -35,6 +35,8 @@ public:
     void paintSceneOverlays(QPainter *painter) const;
     void setShowRegions(bool on);
     void refresh();
+    /** Run OCR for the current page and install the OCR text layer. */
+    bool applyOcrLayer(bool force = false);
     void setSearchFuzzy(bool on);
     void recomputeSearchMatches();
     int setSearchQuery(const QString &query);

@@ -75,6 +75,30 @@ void TextLayerController::refresh()
     }
 }
 
+
+bool TextLayerController::applyOcrLayer(bool force)
+{
+    m_session.resetLayerContent();
+    m_session.clearSearchMatches();
+    const QString path = m_view->hostImage().classicPath();
+    if (path.isEmpty() || !PagePath::isPageRef(path)) {
+        return false;
+    }
+    ThumtooCache::PageTextLayer layer =
+        ThumtooCache::ensureOcrPageTextLayer(path, force);
+    if (layer.regions.isEmpty() && !layer.pageBounds.isValid()) {
+        return false;
+    }
+    m_session.setLayerContent(layer, path);
+    if (m_session.hasSearchQuery()) {
+        recomputeSearchMatches();
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    return m_session.hasRegions();
+}
+
 void TextLayerController::setSearchFuzzy(bool on)
 {
     if (!m_session.setSearchFuzzy(on)) {
