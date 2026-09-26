@@ -109,7 +109,7 @@ public:
 
   /**
    * Cap on total Succeeded tile RAM retained process-wide (active + idle).
-   * Default ~384 MiB. When over budget, oldest zero-ref path entries are
+   * Default ~768 MiB. When over budget, oldest zero-ref path entries are
    * dropped whole; active paths rely on per-session trim_to_budget.
    */
   void set_global_budget_bytes(std::size_t bytes);
@@ -118,14 +118,14 @@ public:
   /**
    * Cap on zero-ref path entries retained for LRU (in addition to the byte
    * budget). Long Image ←/→ sessions otherwise accumulate many small overview
-   * caches under the byte cap. Default 64.
+   * caches under the byte cap. Default 128.
    */
   void set_max_idle_paths(std::size_t n);
   std::size_t max_idle_paths() const;
 
   static constexpr std::size_t kDefaultGlobalBudgetBytes =
-      384ull * 1024ull * 1024ull;
-  static constexpr std::size_t kDefaultMaxIdlePaths = 64;
+      768ull * 1024ull * 1024ull;
+  static constexpr std::size_t kDefaultMaxIdlePaths = 128;
   /** Overview-warm threshold shared with neighbor prefetch skip. */
   static constexpr std::size_t kWarmSucceededMin = 4;
 

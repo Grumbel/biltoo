@@ -105,18 +105,35 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const QTransform dt = painter->deviceTransform();
     const qreal sx = ViewTransform::scaleFrom(dt);
 
-    // Yellow = exact tile, orange = coarser parent, cyan = underlay hole.
+    // Yellow = exact, orange = parent, magenta = EMB, cyan = LQIP, blue = hole.
     // Host-side coverage debug only. Durable TILE text on pixels belongs in
     // thumtoo (bitmap stamps rotate/flip with the patch automatically).
     constexpr int kWashAlpha = 90;
     const QColor fillExact(255, 220, 40, kWashAlpha);
     const QColor fillParent(255, 140, 20, kWashAlpha);
-    const QColor fillHole(40, 200, 255, kWashAlpha);
+    const QColor fillEmb(220, 40, 200, kWashAlpha);   // magenta — EXIF/PDF thumb
+    const QColor fillLqip(40, 200, 255, kWashAlpha);  // cyan — ThumbHash
+    const QColor fillHole(80, 80, 200, kWashAlpha);   // blue — empty underlay
     const QColor edgeExact(255, 230, 60);
     const QColor edgeParent(255, 160, 40);
-    const QColor edgeHole(60, 220, 255);
+    const QColor edgeEmb(255, 80, 220);
+    const QColor edgeLqip(60, 220, 255);
+    const QColor edgeHole(120, 120, 255);
 
     const int target = session->target_scale();
+    // Classify underlay once for the item (EMB vs LQIP vs none).
+    QString underTag;
+    {
+        const QImage u = ImageCache::getUnderlay(path());
+        if (!u.isNull()) {
+            const int le = ImageCache::longEdge(u);
+            underTag = (le <= DisplayQuality::kLqipMaxEdge)
+                ? QStringLiteral("LQIP")
+                : QStringLiteral("EMB");
+        } else if (session->has_lqip()) {
+            underTag = QStringLiteral("LQIP");
+        }
+    }
 
     for (const tilelod::DrawCommand &cmd : plan.commands) {
         // Same mapping as tile paint: source content rect → oriented display.
@@ -154,16 +171,29 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
 
         QColor fill;
         QColor edge;
-        // Per-cell TILE text is thumtoo bitmap stamps; host wash only needs kind.
+        QString cellTag;
         if (cmd.kind == tilelod::DrawKind::ExactTile) {
             fill = fillExact;
             edge = edgeExact;
+            cellTag = QStringLiteral("EXACT");
         } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
             fill = fillParent;
             edge = edgeParent;
+            cellTag = QStringLiteral("PARENT");
         } else if (cmd.kind == tilelod::DrawKind::Underlay) {
-            fill = fillHole;
-            edge = edgeHole;
+            if (underTag == QLatin1String("EMB")) {
+                fill = fillEmb;
+                edge = edgeEmb;
+                cellTag = QStringLiteral("EMB");
+            } else if (underTag == QLatin1String("LQIP")) {
+                fill = fillLqip;
+                edge = edgeLqip;
+                cellTag = QStringLiteral("LQIP");
+            } else {
+                fill = fillHole;
+                edge = edgeHole;
+                cellTag = QStringLiteral("HOLE");
+            }
         } else {
             continue;
         }
@@ -172,9 +202,19 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
 
-        // Pixel TILE text is stamped by thumtoo on the bitmap (source space;
-        // orient follows the patch). Host overlay is coverage wash only.
-
+        // Cell tag when large enough on screen (device px).
+        const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
+        if (cellDev >= 40.0 && !cellTag.isEmpty()) {
+            QFont cf = painter->font();
+            cf.setBold(true);
+            const int cpx = qBound(10, qRound(cellDev * 0.22), 48);
+            cf.setPixelSize(cpx);
+            painter->setFont(cf);
+            painter->setPen(QColor(0, 0, 0, 200));
+            painter->drawText(dst.adjusted(1, 1, 1, 1), Qt::AlignCenter, cellTag);
+            painter->setPen(edge);
+            painter->drawText(dst, Qt::AlignCenter, cellTag);
+        }
     }
 
     // Large centred summary over the whole content box — not a fixed ~14px
@@ -202,12 +242,14 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     } else if (cov.in_flight > 0) {
         summary << QStringLiteral("LOADING");
     } else if (cov.settled() && cov.failed > 0) {
-        // Terminal fails this generation — not an infinite retry loop.
         summary << QStringLiteral("ERROR %1/%2")
                        .arg(cov.failed)
                        .arg(cov.visible);
     } else {
         summary << QStringLiteral("WAITING");
+    }
+    if (!underTag.isEmpty()) {
+        summary << underTag;
     }
 
     const int nlines = summary.size();

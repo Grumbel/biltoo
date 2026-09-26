@@ -379,13 +379,21 @@ int TileSession::pump()
     }
     ++applied;
   }
-  // Protect current visible keys and their coarser parents (draw-plan
-  // stand-ins). Evict other Succeeded tiles under budget.
+  // Protect visible keys, a 1-cell ring (scroll reuse), and coarser parents.
+  // Without the ring, a small pan drops edge cells and forces full re-fetch.
   std::vector<TileKey> protect;
-  protect.reserve(m_visible_keys.size() * 4);
+  protect.reserve(m_visible_keys.size() * 12);
   for (TileKey const& k : m_visible_keys) {
-    m_cache->touch(k, m_generation);
-    protect.push_back(k);
+    for (int dy = -1; dy <= 1; ++dy) {
+      for (int dx = -1; dx <= 1; ++dx) {
+        if (k.x + dx < 0 || k.y + dy < 0) {
+          continue;
+        }
+        TileKey const nk{k.scale, k.x + dx, k.y + dy};
+        m_cache->touch(nk, m_generation);
+        protect.push_back(nk);
+      }
+    }
     for (int d = 1; k.scale + d <= m_max_scale; ++d) {
       TileKey const pk = parent_key(k, d);
       m_cache->touch(pk, m_generation);

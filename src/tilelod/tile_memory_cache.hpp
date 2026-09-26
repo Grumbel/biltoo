@@ -57,7 +57,7 @@ public:
   std::map<TileKey, CacheEntry> const& map() const { return m_map; }
 
   /// Default shared-path budget (~128 MiB of RGBA tiles).
-  static constexpr std::size_t kDefaultBudgetBytes = 128ull * 1024ull * 1024ull;
+  static constexpr std::size_t kDefaultBudgetBytes = 512ull * 1024ull * 1024ull;
 
 private:
   void note_leaving_succeeded(CacheEntry const& e);
