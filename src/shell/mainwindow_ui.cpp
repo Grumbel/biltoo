@@ -470,7 +470,7 @@ void MainWindow::createActions()
     m_selectToolAct->setCheckable(true);
     m_selectToolAct->setChecked(true);
     m_selectToolAct->setShortcut(Qt::Key_V);
-    m_selectToolAct->setIcon(themeIcon(QStringLiteral("edit-select"), QStyle::SP_FileDialogContentsView));
+    m_selectToolAct->setIcon(resourceIcon(QStringLiteral("edit-select")));
     m_selectToolAct->setStatusTip(
         tr("Select items (Gallery/Workspace) or prepare for content selection (Image)"));
     connect(m_selectToolAct, &QAction::triggered, this, &MainWindow::setSelectTool);
@@ -478,7 +478,7 @@ void MainWindow::createActions()
     m_panToolAct = new QAction(tr("&Pan"), this);
     m_panToolAct->setCheckable(true);
     m_panToolAct->setShortcut(Qt::Key_H);
-    m_panToolAct->setIcon(themeIcon(QStringLiteral("transform-move"), QStyle::SP_ArrowRight));
+    m_panToolAct->setIcon(resourceIcon(QStringLiteral("transform-move")));
     m_panToolAct->setStatusTip(tr("Pan the view; wheel zooms (middle-drag always pans)"));
     connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
