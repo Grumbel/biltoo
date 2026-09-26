@@ -34,17 +34,13 @@ hover highlight, checkboxes for outlines and “Show text in boxes” (glyphs).
 - Scripting API exposing `TextOverlayState` + region indices.
 - Hit-test hover from the page into the panel (mouse move over bboxes).
 
-## Layout analysis (Kind)
 
-| Kind | How it is assigned today |
-|------|---------------------------|
-| **Body** | Default |
-| **Header** | OCR post-pass: region centre in top ~8% of page |
-| **Footer** | OCR post-pass: centre in bottom ~8% |
-| **PageNumber** | Header/footer band + short numeric/roman token, outer or centred |
-| **Link** | Role=Link (native PDF), not a Kind |
+## Region labels (Kind)
 
-**Not implemented:** true headings (font-size/style), columns, reading-order
-clusters beyond `blockId`, native-PDF Kind annotation (usually all Body).
+Kind (Header / Footer / PageNumber) is **not** inferred by biltoo or by a
+homemade geometry pass. Tesseract does not expose semantic page-structure
+labels either — only a hierarchy of blocks/lines/words. Until a real layout
+model is integrated, regions stay **Body** (links still use Role=Link).
 
-Paint and the Text panel use `TextRegionStyle` (shared colours/labels).
+Colour coding still distinguishes **Link** vs **Text**; Kind colours remain
+for future use when something authoritative sets Kind.

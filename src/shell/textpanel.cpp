@@ -26,13 +26,12 @@ TextPanel::TextPanel(QWidget *parent)
     m_info->setStyleSheet(QStringLiteral("color: palette(mid);"));
     layout->addWidget(m_info);
     auto *legend = new QLabel(
-        tr("Colours: body · header · footer · page# · link"), this);
+        tr("Colours: text · link (layout kinds not classified yet)"), this);
     legend->setWordWrap(true);
     legend->setStyleSheet(QStringLiteral("color: palette(mid); font-size: small;"));
     legend->setToolTip(
-        tr("Kind comes from OCR layout post-pass (top/bottom bands + token shape).\n"
-           "Native PDF text is usually all body until a similar pass runs.\n"
-           "Columns / true headings are not classified yet."));
+        tr("Tesseract does not provide header/footer/page-number labels. "
+           "Regions stay body until a real layout model is integrated."));
     layout->addWidget(legend);
 
     auto *opts = new QHBoxLayout;

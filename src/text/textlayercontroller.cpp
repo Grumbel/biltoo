@@ -8,7 +8,6 @@
 #include "imageitem.h"
 #include "text/textlayergeometry.h"
 #include "text/textregionstyle.h"
-#include "text/textregionkind.h"
 #include "text/textsearchpolicy.h"
 #include "text/textlayerresolve.h"
 #include "host/thumtoocache.h"
@@ -69,9 +68,8 @@ void TextLayerController::refresh()
         return;
     }
     // Explicit refresh always loads (Text panel, OCR install, show-regions).
-    ThumtooCache::PageTextLayer layer =
+    const ThumtooCache::PageTextLayer layer =
         TextLayerResolve::load(path, m_session.layerPreferValue());
-    TextRegionKindAnnotate::annotate(&layer);
     m_session.setLayerContent(layer, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
@@ -85,9 +83,7 @@ void TextLayerController::installLayer(const ThumtooCache::PageTextLayer &layer,
 {
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
-    ThumtooCache::PageTextLayer annotated = layer;
-    TextRegionKindAnnotate::annotate(&annotated);
-    m_session.setLayerContent(annotated, path);
+    m_session.setLayerContent(layer, path);
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
     }
