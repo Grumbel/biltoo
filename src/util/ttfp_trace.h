@@ -4,6 +4,7 @@
 
 #include <QElapsedTimer>
 #include <QString>
+#include "util/debugflags.h"
 #include <QVector>
 #include <cstdio>
 #include <cstdlib>
@@ -18,13 +19,7 @@ namespace TtfpTrace {
 
 inline bool enabled()
 {
-    static int s = -1;
-    if (s < 0) {
-        const char *e = std::getenv("BILTOO_TTFP");
-        const char *p = std::getenv("BILTOO_PERF");
-        s = ((e && e[0] && e[0] != '0') || (p && p[0] && p[0] != '0')) ? 1 : 0;
-    }
-    return s != 0;
+    return debugFlag(DebugFlags::Ttfp) || debugFlag(DebugFlags::Perf);
 }
 
 struct Stage {

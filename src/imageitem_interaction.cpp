@@ -15,6 +15,7 @@
 #include "tilelod/tile_lod_registry.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
+#include "util/debugflags.h"
 #include "content/contentxform.h"
 #include "color/coloradjust.h"
 
@@ -45,11 +46,7 @@ namespace {
 
 bool tilePlanDebugOverlayEnabled()
 {
-    if (ImageCache::debugOverlayEnabled()) {
-        return true;
-    }
-    const char *e = std::getenv("BILTOO_TILE_DEBUG");
-    return e && e[0] && e[0] != '0';
+    return debugFlag(DebugFlags::Overlay) || debugFlag(DebugFlags::TileDebug);
 }
 
 /** SmoothPixmapTransform is expensive; skip only at true pixel-perfect

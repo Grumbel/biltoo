@@ -4,6 +4,7 @@
 #include "shell/mainwindow.h"
 #include "view/viewtransform.h"
 #include "util/biltoo_logging.h"
+#include "util/debugflags.h"
 #include "shell/metadatapanel.h"
 #include "host/imageloader.h"
 #include "display/imagecache.h"
@@ -75,6 +76,8 @@ int main(int argc, char *argv[])
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the
     // linker may drop the RCC object and :/icons/* is empty at runtime.
     Q_INIT_RESOURCE(icons);
+    // Seed runtime debug menu flags from the environment (and keep getenv in sync).
+    DebugFlags::instance().initFromEnvironment();
     tilelod::TileLodRegistry::instance().apply_environment_overrides();
     // Leave headroom for the GUI thread under tile/soft background load.
     {

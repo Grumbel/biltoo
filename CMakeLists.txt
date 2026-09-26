@@ -118,6 +118,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/icons.h
   src/util/biltoo_logging.cpp
   src/util/biltoo_logging.h
+  src/util/debugflags.cpp
+  src/util/debugflags.h
   src/gallery/gallerylayout.cpp
   src/gallery/gallerylayout.h
   src/imageview.cpp

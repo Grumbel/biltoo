@@ -34,6 +34,10 @@ and `man biltoo`.
 | **`BILTOO_TILE_DEBUG`** | Tile LOD coordinator / per-item lines on stderr (~500 ms). Reports `regPaths` / `idle` / `ramMiB` / `maxIdle` (global path RAM) and per-item `pathRam=K`. |
 | **`THUMTOO_DEBUG_OVERLAY`** / **`BILTOO_DEBUG_OVERLAY`** | Stamp a tiled watermark + border on decoded samples so soft vs full vs host origin is visible on the canvas. |
 
+These flag-style diagnostics can also be toggled at runtime from the
+**Debug** menu (initial state follows the environment). Menu changes update
+in-process flags and mirror into `qputenv` for code that still reads `getenv`.
+
 ### Thumtoo cache policy (Store-only, library ≥ 272)
 
 Durable pixels on disk are **tiles** (and full decode paths), not schema-4 soft

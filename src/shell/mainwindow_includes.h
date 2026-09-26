@@ -29,6 +29,7 @@
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "host/pagepath.h"
+#include "util/debugflags.h"
 
 #include <QAbstractButton>
 #include <QAction>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/imagecache.h"
+#include "util/debugflags.h"
 #include "host/imageloader.h"
 #include "display/displayquality.h"
 
@@ -149,11 +150,7 @@ void ensureRoomUnlocked(int needKiB)
 
 bool debugOverlayEnabled()
 {
-    auto on = [](const char *v) {
-        return v && v[0] && v[0] != '0';
-    };
-    return on(std::getenv("THUMTOO_DEBUG_OVERLAY"))
-        || on(std::getenv("BILTOO_DEBUG_OVERLAY"));
+    return debugFlag(DebugFlags::Overlay);
 }
 
 void stampDebugOverlayIfEnabled(QImage *image, const QString &label,

@@ -5,6 +5,8 @@
 #define PERFSTATS_H
 
 #include <QElapsedTimer>
+
+#include "util/debugflags.h"
 #include <QString>
 #include <QtGlobal>
 
@@ -41,13 +43,20 @@ struct PerfStats {
 
     void enableFromEnv()
     {
-        const char *p = std::getenv("BILTOO_PERF");
-        const char *d = std::getenv("THUMTOO_DEBUG");
-        enabled = (p && p[0] && p[0] != '0')
-                  || (d && d[0] && d[0] != '0');
+        enabled = debugFlag(DebugFlags::Perf) || debugFlag(DebugFlags::ThumtooDebug);
         if (enabled) {
             fpsClock.start();
         }
+    }
+
+    /** Refresh enabled from DebugFlags (runtime menu toggles). */
+    void syncFromFlags()
+    {
+        const bool on = debugFlag(DebugFlags::Perf) || debugFlag(DebugFlags::ThumtooDebug);
+        if (on && !enabled) {
+            fpsClock.start();
+        }
+        enabled = on;
     }
 
     /** Record end of a timed paintEvent; updates FPS every ~500 ms. */

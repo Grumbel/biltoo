@@ -3,6 +3,14 @@
 
 #include "util/biltoo_logging.h"
 
+#include "util/debugflags.h"
+
+#include <QDateTime>
+#include <QThread>
+
+#include <cstdarg>
+#include <cstdio>
+
 Q_LOGGING_CATEGORY(lcSlideshow, "biltoo.slideshow")
 
 void configureBiltooDebugLogging(bool verbose)
@@ -16,33 +24,9 @@ void configureBiltooDebugLogging(bool verbose)
     }
 }
 
-#include <QDateTime>
-#include <QThread>
-
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-
-namespace {
-
-bool biltooLoadDebugEnabled()
-{
-    static const bool on = []() {
-        auto env = [](const char *k) {
-            const char *e = std::getenv(k);
-            return e && e[0] && e[0] != '0';
-        };
-        return env("THUMTOO_DEBUG") || env("BILTOO_LOAD_DEBUG")
-            || env("BILTOO_THUMTOO_DEBUG");
-    }();
-    return on;
-}
-
-} // namespace
-
 void biltooLoadDbg(const char *fmt, ...)
 {
-    if (!biltooLoadDebugEnabled()) {
+    if (!debugFlag(DebugFlags::Load) && !debugFlag(DebugFlags::ThumtooDebug)) {
         return;
     }
     const qint64 ms = QDateTime::currentMSecsSinceEpoch();
@@ -55,22 +39,9 @@ void biltooLoadDbg(const char *fmt, ...)
     fputc('\n', stderr);
 }
 
-namespace {
-
-bool biltooModeDebugEnabled()
-{
-    static const bool on = []() {
-        const char *e = std::getenv("BILTOO_MODE_DEBUG");
-        return e && e[0] && e[0] != '0';
-    }();
-    return on;
-}
-
-} // namespace
-
 void biltooModeDbg(const char *fmt, ...)
 {
-    if (!biltooModeDebugEnabled()) {
+    if (!debugFlag(DebugFlags::Mode)) {
         return;
     }
     const qint64 ms = QDateTime::currentMSecsSinceEpoch();

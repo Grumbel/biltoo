@@ -5,6 +5,8 @@
 #define CROPDEBUG_H
 
 #include <QString>
+
+#include "util/debugflags.h"
 #include <QSize>
 #include <QRect>
 #include <QtGlobal>
@@ -17,7 +19,7 @@ namespace CropDebug {
 
 inline bool enabled()
 {
-    return qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP");
+    return debugFlag(DebugFlags::Crop);
 }
 
 inline void keepEnterDisplay(int displayEdge, const QString &path)

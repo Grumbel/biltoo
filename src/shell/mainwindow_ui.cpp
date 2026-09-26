@@ -1132,6 +1132,32 @@ void MainWindow::createMenus()
         "current session or delete any image files. Recent Projects are unaffected.</p>"));
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
+    // Runtime toggles for the usual BILTOO_* / THUMTOO_* debug env vars.
+    // Initial state comes from the environment; changes apply immediately.
+    m_debugMenu = menuBar()->addMenu(tr("&Debug"));
+    m_debugMenu->setStatusTip(
+        tr("Enable or disable diagnostic overlays and stderr traces at runtime"));
+    for (int i = 0; i < DebugFlags::FlagCount; ++i) {
+        const auto flag = static_cast<DebugFlags::Flag>(i);
+        auto *act = m_debugMenu->addAction(DebugFlags::label(flag));
+        act->setCheckable(true);
+        act->setChecked(debugFlag(flag));
+        act->setStatusTip(DebugFlags::statusTip(flag));
+        act->setWhatsThis(
+            tr("<p>Toggle <code>%1</code> for this process. Equivalent to setting "
+               "the environment variable, but takes effect without restarting. "
+               "Some thumtoo paths also see the mirrored environment value.</p>")
+                .arg(DebugFlags::envName(flag)));
+        connect(act, &QAction::toggled, this, [this, flag](bool on) {
+            DebugFlags::instance().setEnabled(flag, on);
+            if ((flag == DebugFlags::Overlay || flag == DebugFlags::TileDebug)
+                && m_imageView && m_imageView->viewport()) {
+                m_imageView->viewport()->update();
+            }
+        });
+    }
+    installMenuHelpTracking(m_debugMenu);
+
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_toggleHelpAct);
     m_helpMenu->addAction(m_keyboardShortcutsAct);
