@@ -97,6 +97,13 @@
 
 
 namespace ThumtooCache {
+
+namespace {
+thread_local QString g_lastOcrDetail;
+void set_last_ocr_detail(const QString &s) { g_lastOcrDetail = s; }
+QString last_ocr_detail() { return g_lastOcrDetail; }
+}  // namespace
+
 namespace {
 QSet<QString> g_pixelsInflight;
 
@@ -3225,9 +3232,10 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
         // Pull thumtoo thread-local detail (rasterize / tessdata / …).
         const std::string_view detail = thumtoo::ocr_last_error();
         if (!detail.empty()) {
-            // Stash on message via a thread-local we re-read in message().
             set_last_ocr_detail(QString::fromUtf8(detail.data(),
                                                   static_cast<int>(detail.size())));
+        } else {
+            set_last_ocr_detail({});
         }
         return out;
     }
