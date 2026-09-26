@@ -30,10 +30,8 @@ TextPanel::TextPanel(QWidget *parent)
     legend->setWordWrap(true);
     legend->setStyleSheet(QStringLiteral("color: palette(mid); font-size: small;"));
     legend->setToolTip(
-        tr("Kind comes from OCR layout post-pass (top/bottom bands + token shape).
-"
-           "Native PDF text is usually all “body” until a similar pass runs.
-"
+        tr("Kind comes from OCR layout post-pass (top/bottom bands + token shape).\n"
+           "Native PDF text is usually all body until a similar pass runs.\n"
            "Columns / true headings are not classified yet."));
     layout->addWidget(legend);
 
