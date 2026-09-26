@@ -48,7 +48,7 @@ void RasterClimbSmTest::soft_first_when_blank()
     m.setWant(256, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
     QVERIFY(!p.scheduleFull);
 }
 
@@ -58,13 +58,13 @@ void RasterClimbSmTest::soft_then_display_under_overview()
     m.setWant(800, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
     // PreferCache may also be requested while soft climbs
     QVERIFY(!p.scheduleFull);
 
     m.setHaveFromHost(512, kSoft);
     p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.scheduleBand);
     QVERIFY(p.scheduleDisplay);
     QVERIFY(!p.scheduleFull); // need 800 ≤ overview
 }
@@ -75,7 +75,7 @@ void RasterClimbSmTest::soft_covered_high_need_prefers_before_full()
     m.setWant(4096, 6048, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.scheduleBand);
     // Soft covered + high need: Prefer first — Full only after Prefer plateau
     // (same-plan Full starved intermediate paints).
     QVERIFY(p.scheduleDisplay);
@@ -151,23 +151,23 @@ void RasterClimbSmTest::host_lru_demotion_resets_queues()
     Machine m;
     m.setWant(512, 0, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
-    m.state().softQueued = true;
+    m.state().bandQueued = true;
     m.setHaveFromHost(0, kSoft); // LRU eviction
     QCOMPARE(m.state().have, 0);
-    QVERIFY(!m.state().softQueued);
+    QVERIFY(!m.state().bandQueued);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
 }
 
 void RasterClimbSmTest::reconcile_clears_sticky_queued()
 {
     Machine m;
     m.setWant(512, 0, Policy::TileDisplay, kSoft, kOverview);
-    m.state().softQueued = true;
+    m.state().bandQueued = true;
     m.state().displayQueued = true;
     PendingFlags none;
     m.reconcilePending(none);
-    QVERIFY(!m.state().softQueued);
+    QVERIFY(!m.state().bandQueued);
     QVERIFY(!m.state().displayQueued);
 }
 
@@ -198,17 +198,17 @@ void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
     m.setWant(256, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
 
     m.noteDelivery(/*requestEdge=*/512, /*got=*/128, kSoft);
-    QVERIFY(m.state().softAttempted);
+    QVERIFY(m.state().bandAttempted);
     QCOMPARE(m.state().have, 128);
     QVERIFY(!m.state().preferGaveUp); // soft-band shortfall is not Prefer plateau
     p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.scheduleBand);
     // Prefer soft-band / display may still run; Full must not.
     QVERIFY(!p.scheduleFull);
-    QVERIFY(!p.forgetSoftSettled);
+    QVERIFY(!p.forgetBandSettled);
 }
 
 void RasterClimbSmTest::host_mid_soft_skips_softonly()
@@ -217,24 +217,24 @@ void RasterClimbSmTest::host_mid_soft_skips_softonly()
     Machine m;
     m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(100, kSoft);
-    QVERIFY(m.state().softAttempted);
+    QVERIFY(m.state().bandAttempted);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.scheduleBand);
     QVERIFY(p.scheduleDisplay);
     QCOMPARE(p.displayEdge, kSoft);
 }
 
 void RasterClimbSmTest::soft_mid_rung_marks_attempted()
 {
-    // SoftOnly returned 100 (above LQIP, below old 128 floor): softAttempted
+    // SoftOnly returned 100 (above LQIP, below old 128 floor): bandAttempted
     // so Prefer soft at softMax runs instead of SoftOnly forever.
     Machine m;
     m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.noteDelivery(/*requestEdge=*/256, /*got=*/100, kSoft);
-    QVERIFY(m.state().softAttempted);
+    QVERIFY(m.state().bandAttempted);
     QVERIFY(!m.state().preferGaveUp);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.scheduleBand);
     QVERIFY(p.scheduleDisplay);
     QCOMPARE(p.displayEdge, kSoft);
 }
@@ -246,14 +246,14 @@ void RasterClimbSmTest::lqip_delivery_still_schedules_soft()
     m.setWant(512, 4000, Policy::TileDisplay, kSoft, kOverview);
     m.setHaveFromHost(0, kSoft);
     Plan p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
 
     m.noteDelivery(/*requestEdge=*/512, /*got=*/64, kSoft);
-    QVERIFY(!m.state().softAttempted);
+    QVERIFY(!m.state().bandAttempted);
     QVERIFY(!m.state().preferGaveUp);
     QCOMPARE(m.state().have, 64);
     p = m.plan(kSoft, kOverview, kDispMax);
-    QVERIFY(p.scheduleSoft);
+    QVERIFY(p.scheduleBand);
 }
 
 QTEST_MAIN(RasterClimbSmTest)

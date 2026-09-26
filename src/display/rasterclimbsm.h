@@ -12,13 +12,13 @@
  * PreferCache-before-Full deadlocks cannot recur.
  *
  * Product: Soft ladder encode is dead ([docs/KILL_SOFT.md]). Plan field
- * scheduleSoft still means "first ≤softMax band via TileSynth or pyramid"
+ * scheduleBand still means "first ≤softMax band via TileSynth or pyramid"
  * (PathRasterService wires it that way).
  *
  * Invariants:
  * 1. have comes only from setHaveFromHost / noteDelivery (host is authority).
- * 2. softQueued/displayQueued/fullQueued are cleared when external pending is false.
- * 2b. softAttempted: first band already returned pixels; do not re-issue while
+ * 2. bandQueued/displayQueued/fullQueued are cleared when external pending is false.
+ * 2b. bandAttempted: first band already returned pixels; do not re-issue while
  *     host still holds a sample (avoids loops when returned edge < softMax).
  * 3. When first band is covered and effectiveNeed > overviewCap, plan may emit
  *    Full in the same tick as PreferCache — PreferCache cannot monopolize the path.
@@ -49,20 +49,20 @@ enum class Policy {
 };
 
 struct PendingFlags {
-    bool soft = false;
+    bool band = false;
     bool display = false;
     bool full = false;
 };
 
 struct Plan {
-    bool scheduleSoft = false;
+    bool scheduleBand = false;
     bool scheduleDisplay = false;
     bool scheduleTiles = false;
     bool scheduleFull = false;
-    bool forgetSoftSettled = false;
+    bool forgetBandSettled = false;
     bool forgetDisplaySettled = false;
     bool forgetFullSettled = false;
-    int softEdge = 0;
+    int bandEdge = 0;
     int displayEdge = 0;
     int fullEdge = 0;
 };
@@ -74,9 +74,9 @@ struct State {
     int lastDisplayWant = 0;
     int lastDisplayGot = 0;
     int postTilePreferAttempts = 0;
-    bool softQueued = false;
-    /** Soft PreferCache already ran and returned pixels (may be < softMax). */
-    bool softAttempted = false;
+    bool bandQueued = false;
+    /** First ≤bandMax delivery already returned pixels (may be < bandMax). */
+    bool bandAttempted = false;
     bool displayQueued = false;
     bool fullQueued = false;
     bool preferGaveUp = false;

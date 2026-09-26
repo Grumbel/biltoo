@@ -30,7 +30,7 @@ RasterClimb::PendingFlags PathRasterService::pendingFlagsFor(const QString &path
                                                              int want)
 {
     RasterClimb::PendingFlags f;
-    f.soft = ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge);
+    f.band = ThumtooCache::isPixelsPending(path, ThumtooCache::kGalleryLadderEdge);
     f.display = ThumtooCache::isPixelsPending(path, want > 0 ? want
                                                             : ThumtooCache::kBatchOverviewEdge)
         || ThumtooCache::isPixelsPending(path, ThumtooCache::kBatchOverviewEdge);
@@ -124,7 +124,7 @@ bool PathRasterService::isClimbPending(const QString &path) const
             return true;
         }
     }
-    if (ext.soft || ext.display || ext.full) {
+    if (ext.band || ext.display || ext.full) {
         return true;
     }
     return false;
@@ -194,7 +194,7 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     constexpr int kAssertScheduleCycles = 32;
     if (entry.scheduleCycles >= kMaxScheduleCycles) {
         m.state().preferGaveUp = true;
-        m.state().softQueued = false;
+        m.state().bandQueued = false;
         m.state().displayQueued = false;
         m.state().fullQueued = false;
         if (entry.scheduleCycles >= kAssertScheduleCycles) {
@@ -207,7 +207,7 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     const RasterClimb::Plan plan =
         m.plan(ThumtooCache::kGalleryLadderEdge, ThumtooCache::kBatchOverviewEdge,
                ImageCache::kDisplayMaxEdge);
-    if (plan.forgetSoftSettled) {
+    if (plan.forgetBandSettled) {
         ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
     }
     if (plan.forgetDisplaySettled) {
@@ -224,16 +224,16 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     }
 
     RasterClimb::Plan accepted;
-    accepted.softEdge = plan.softEdge;
+    accepted.bandEdge = plan.bandEdge;
     accepted.displayEdge = plan.displayEdge;
     accepted.fullEdge = plan.fullEdge;
 
-    if (plan.scheduleSoft) {
-        const int edge = plan.softEdge > 0 ? plan.softEdge
+    if (plan.scheduleBand) {
+        const int edge = plan.bandEdge > 0 ? plan.bandEdge
                                            : ThumtooCache::kGalleryLadderEdge;
         if (ThumtooCache::scheduleTileSynthOrPyramid(path, edge)) {
             if (ThumtooCache::hasDurableTilesKnown(path)) {
-                accepted.scheduleSoft = true; // TileSynth via PreferCache
+                accepted.scheduleBand = true; // TileSynth via PreferCache
             } else {
                 accepted.scheduleTiles = true;
             }
@@ -262,7 +262,7 @@ void PathRasterService::pump(const QString &path, Entry &entry)
             accepted.scheduleFull = true;
         }
     }
-    if (accepted.scheduleSoft || accepted.scheduleDisplay || accepted.scheduleFull
+    if (accepted.scheduleBand || accepted.scheduleDisplay || accepted.scheduleFull
         || accepted.scheduleTiles) {
         ++entry.scheduleCycles;
     }

@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Kill Soft — tiles everywhere
 
 **Status:** decided 2026-09-26. Soft ladder is **not** a product path.
+Phases **A–C** landed (rename, climb band vocabulary, underlay cut).
 
 Related: [GALLERY_SOFT.md](GALLERY_SOFT.md) (Gallery done), [TILE_LOD.md](TILE_LOD.md),
 [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md), thumtoo
@@ -53,22 +54,23 @@ not soft ladder encode.
 
 ## Phases
 
-### Phase A — policy + naming (this tip)
+### Phase A — policy + naming (**done**)
 
 - This document; TODO handoff.
 - Rename `SoftDisplay` → `TileDisplay` in climb API and call sites.
 - Comments: `scheduleSoft` in the plan still means “first ≤512 band via
   TileSynth or pyramid” (already wired that way); SoftOnly encode is not used.
 
-### Phase B — climb SM simplification
+### Phase B — climb SM simplification (**done**)
 
-- Collapse plan `scheduleSoft` into a single “need sample → TileSynth/pyramid”
-  action (drop softAttempted SoftOnly loop vocabulary).
-- Tests: no SoftOnly; TileDisplay never schedules Full.
+- Plan `scheduleSoft` → **`scheduleBand`** (TileSynth/pyramid first band).
+- `softAttempted` / `softQueued` → **`bandAttempted` / `bandQueued`**.
+- Tests updated; TileDisplay still never schedules Full.
 
-### Phase C — Image / Workspace underlay
+### Phase C — Image / Workspace underlay (**done**)
 
-- Paint underlay = EMB/LQIP/placeholder only under `tileLodWanted` (match Gallery).
+- Under `tileLodWanted`, paint underlay = **EMB/LQIP only** (≤ `kEmbeddedUnderlayMaxEdge`);
+  soft/HOST samples are not drawn; placeholder if none.
 - Nav-hot stays cache-only (already: no soft generate).
 
 ### Phase D — thumtoo (optional, separate tip)

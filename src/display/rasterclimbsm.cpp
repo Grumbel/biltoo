@@ -46,14 +46,14 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
 {
     if (hostHave < m_.have) {
         // Host lost the sample (LRU) — allow Soft/PreferCache again.
-        m_.softQueued = false;
+        m_.bandQueued = false;
         m_.displayQueued = false;
         m_.preferGaveUp = false;
         m_.lastDisplayGot = 0;
         m_.fullDone = false;
         m_.fullQueued = false;
         if (hostHave <= 0) {
-            m_.softAttempted = false;
+            m_.bandAttempted = false;
         }
     }
     m_.have = std::max(0, hostHave);
@@ -61,11 +61,11 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
     // do not PreferCache SoftOnly-loop on ≤96 forever.
     constexpr int kLqipCeiling = 96;
     if (m_.have > 0 && m_.have <= kLqipCeiling) {
-        m_.softAttempted = true;
+        m_.bandAttempted = true;
     } else if (m_.have > kLqipCeiling && m_.have < softMax) {
         // Mid soft already in host (e.g. SoftOnly 100): Prefer soft next, not
         // another SoftOnly cycle that re-delivers the same rung.
-        m_.softAttempted = true;
+        m_.bandAttempted = true;
     }
     if (covers(m_.have, effectiveNeed())) {
         m_.preferGaveUp = false;
@@ -79,8 +79,8 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
 
 void Machine::reconcilePending(const PendingFlags &pending)
 {
-    if (m_.softQueued && !pending.soft) {
-        m_.softQueued = false;
+    if (m_.bandQueued && !pending.band) {
+        m_.bandQueued = false;
     }
     if (m_.displayQueued && !pending.display) {
         m_.displayQueued = false;
@@ -103,11 +103,11 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
         // soft attempted so SoftOnly does not loop on 97–127 while Prefer soft
         // at softMax never runs. LQIP (≤96) must NOT set this.
         if (requestEdge <= softMax && got > kLqipCeiling) {
-            m_.softAttempted = true;
+            m_.bandAttempted = true;
         }
     }
     m_.displayQueued = false;
-    m_.softQueued = false;
+    m_.bandQueued = false;
     m_.fullQueued = false;
 
     // PreferCache plateau is for *display* band (request > softMax), not soft
@@ -155,10 +155,10 @@ bool Machine::isGaveUp(int overviewCap) const
 
 bool Machine::isClimbPending(const PendingFlags &external, int overviewCap) const
 {
-    if (m_.softQueued || m_.displayQueued || m_.fullQueued) {
+    if (m_.bandQueued || m_.displayQueued || m_.fullQueued) {
         return true;
     }
-    if (external.soft || external.display || external.full) {
+    if (external.band || external.display || external.full) {
         return true;
     }
     if (m_.preferGaveUp && !isGaveUp(overviewCap)) {
@@ -170,7 +170,7 @@ bool Machine::isClimbPending(const PendingFlags &external, int overviewCap) cons
 Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
 {
     Plan p;
-    p.softEdge = softMax;
+    p.bandEdge = softMax;
     p.displayEdge = m_.want;
     const int need = effectiveNeed();
     if (need <= 0 || covers(m_.have, need)) {
@@ -180,13 +180,13 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     const bool softCovered = covers(m_.have, softMax) || m_.have >= softMax;
 
     // --- Soft ---
-    // softAttempted: SoftOnly already returned pixels (possibly < softMax).
+    // bandAttempted: SoftOnly already returned pixels (possibly < softMax).
     // Re-requesting SoftOnly when have is 85–128 and softMax is 512 spun forever
     // (DEBUG_OVERLAY soft 85x128 req=256/512 loop in Gallery).
-    if (!softCovered && !m_.softQueued && !m_.softAttempted) {
-        p.scheduleSoft = true;
+    if (!softCovered && !m_.bandQueued && !m_.bandAttempted) {
+        p.scheduleBand = true;
         // Do not forget settled on shortfall — that re-opened SoftOnly forever.
-        p.forgetSoftSettled = false;
+        p.forgetBandSettled = false;
     }
 
     // Full edge: min(want, native, displayMax)
@@ -220,10 +220,10 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     }
     if (!softCovered) {
         // PreferCache display plateaued, but soft max not covered (LQIP/soft
-        // shortfall). SoftOnly is gated by softAttempted; Prefer soft-band
+        // shortfall). SoftOnly is gated by bandAttempted; Prefer soft-band
         // still needs to run or Gallery freezes on LQIP.
-        if (!m_.softQueued && !m_.softAttempted) {
-            p.scheduleSoft = true;
+        if (!m_.bandQueued && !m_.bandAttempted) {
+            p.scheduleBand = true;
         } else if (!m_.displayQueued) {
             p.scheduleDisplay = true;
             p.displayEdge = softMax;
@@ -260,8 +260,8 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
 
 void Machine::markScheduled(const Plan &plan)
 {
-    if (plan.scheduleSoft) {
-        m_.softQueued = true;
+    if (plan.scheduleBand) {
+        m_.bandQueued = true;
     }
     if (plan.scheduleDisplay) {
         m_.displayQueued = true;
