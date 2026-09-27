@@ -612,6 +612,9 @@ DocumentOutline ensureDocumentOutline(const QString &sessionOrFilePath);
  */
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp = true);
+/** Inverse of pageRectToImageRect. */
+QRectF imageRectToPageRect(const QRectF &imageRect, const QRectF &pageBounds,
+                           const QSize &imageSize, bool pageYUp = true);
 
 /**
  * Local content-appearance state (XDG_STATE_HOME/thumtoo) — not the pixel cache.
