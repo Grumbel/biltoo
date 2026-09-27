@@ -367,6 +367,8 @@
           );
 
           # Debug build + gdb. Extra args are biltoo's (via gdb --args).
+          # Starts the inferior immediately (-ex run); quiet until stop/crash
+          # (no manual "run" at the gdb prompt).
           biltooRunGdb = pkgs.writeShellScriptBin "biltoo-run-gdb" (
             biltooDevPreamble
             + ''
@@ -382,8 +384,14 @@
               # Inherit QT_PLUGIN_PATH / XDG_DATA_DIRS from shellHook.
               export PATH="${piperServerFull}/bin:$PATH"
               export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+              # -q: less banner noise. -ex run: start biltoo without typing "run".
+              # Pagination off so long backtraces are not blocked on a pager.
               # No exec: return to the interactive shell when gdb exits.
-              gdb --args "$BILTOO_BUILD_DIR/biltoo" "$@"
+              gdb -q \
+                -ex "set pagination off" \
+                -ex "set confirm off" \
+                -ex run \
+                --args "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
 
@@ -484,7 +492,7 @@
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
             echo "  TTS: piper-server on PATH; voices → $TEXT2SPRECH_PIPER_MODELS"
-            echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
+            echo "  biltoo-run-gdb [args]  # build + gdb -q -ex run --args biltoo"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"
             echo "  nix build .#biltoo.withCcache  # same + shared-host ccache"

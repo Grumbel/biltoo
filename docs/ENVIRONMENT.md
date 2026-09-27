@@ -111,3 +111,13 @@ setting `THUMTOO_STORE_ONLY=0` has no effect.
 
 Durable pixels/meta live on the redesign Store (`index.sqlite` + `bulk.sqlite`
 at the cache root by default).
+
+### `biltoo-run-gdb`
+
+Builds the debug binary, then starts it under gdb without a manual `run`:
+
+```bash
+gdb -q -ex "set pagination off" -ex "set confirm off" -ex run --args "$BILTOO_BUILD_DIR/biltoo" …
+```
+
+GDB stays quiet until the inferior stops (crash, signal, or normal exit); then you get an interactive prompt for `bt`, etc.
