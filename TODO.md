@@ -2,20 +2,14 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.15-tts-pause-timer` (base `d456ffc`).
+**Tip:** `biltoo-2715.16-tts-controls-highlight` (base `d456ffc`).
 
-### Text-to-speech Phase A (runtime-hardened)
-- QAudioSink WAV playback (no QMediaPlayer backend required).
-- Multi-sentence: **duration timer** advances queue; pause/resume re-arms timer.
-- Text panel: hover does not clear multi-select; signal dedupe.
-- UI: Speak/Stop, Edit menu, `--piper-socket`, connect retry, server lifecycle.
-- Test: `ctest -R sentence-splitter`.
+### TTS UI
+- Voice combo, Tempo spin, Vol 0–150% (PCM gain >100%).
+- Green speaking-region highlight with LTR progress clip.
+- Prior: QAudioSink, multi-sentence duration timer, panel selection hover fix.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.15-tts-pause-timer-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.16-tts-controls-highlight-d456ffc.bundle HEAD
 ```
-
-### Still needs host check
-- Multi-sentence Speak → Finished.
-- Text panel multi-select while hovering list.
