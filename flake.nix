@@ -4,9 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     thumtoo.url = "github:Grumbel/thumtoo";
+    # Piper TTS server + default voice (Speak works without manual --piper-socket).
+    text2sprech = {
+      url = "github:Grumbel/text2sprech";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, thumtoo }:
+  outputs = { self, nixpkgs, thumtoo, text2sprech }:
     let
       system = "x86_64-linux";
       # Default pkgs: no ccache overlay. Plain `nix build .#biltoo` must not
@@ -71,6 +76,12 @@
         else
           versionBase;
 
+      # text2sprech flake packages (piper-server + bundled en_US-lessac-medium).
+      t2sPkgs = text2sprech.packages.${system};
+      piperServerFull = t2sPkgs.piper-server-full;
+      piperVoiceDir =
+        "${t2sPkgs.piper-voice-en_US-lessac-medium}/share/piper/voices";
+
       biltooArgs = pkgsSet: {
         inherit version;
         kimageformats = pkgsSet.kdePackages.kimageformats;
@@ -79,6 +90,9 @@
         # Same pkg-config deps as standalone thumtoo (libunarr, mupdf, …). Without
         # these, nested CMake configure silently disables optional backends.
         thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgsSet;
+        # TTS: hard-wire piper-server + default voice so Speak works out of the box.
+        piperServer = piperServerFull;
+        piperModelsDir = piperVoiceDir;
       };
 
       # Default package: stock stdenv, no ccache requirement.
@@ -170,6 +184,10 @@
         # Plain build (no ccache / no shared host cache required).
         #   nix build .#biltoo
         biltoo = biltoo;
+        # TTS helpers (same as text2sprech flake; also wrapped into biltoo PATH).
+        piper-server = t2sPkgs.piper-server;
+        piper-server-full = piperServerFull;
+        piper-voice-en_US-lessac-medium = t2sPkgs.piper-voice-en_US-lessac-medium;
         # Optional ccacheStdenv + shared host CCACHE_DIR:
         #   nix build .#biltoo.withCcache
         #   (also: packages.biltoo.withCcache / .#biltoo.withCcache)
@@ -342,6 +360,8 @@
               # shellHook / inputsFrom already put Qt plugins on QT_PLUGIN_PATH.
               # No exec: keep an interactive shell after biltoo exits when typed
               # by hand; under `nix develop -c` the process ends either way.
+              export PATH="${piperServerFull}/bin:$PATH"
+              export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
               "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
@@ -360,6 +380,8 @@
                 exit 1
               fi
               # Inherit QT_PLUGIN_PATH / XDG_DATA_DIRS from shellHook.
+              export PATH="${piperServerFull}/bin:$PATH"
+              export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
               # No exec: return to the interactive shell when gdb exits.
               gdb --args "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
@@ -392,6 +414,7 @@
         # ccacheStdenv: CC/CXX are ccache wrappers for out-of-tree cmake/ninja.
         pkgs.mkShell.override { stdenv = pkgs.ccacheStdenv; } {
           inputsFrom = [ biltoo ];
+          # piper-server on PATH for out-of-tree biltoo-run (unwrapped binary).
           packages = (with pkgs; [
             cmake
             ninja
@@ -404,6 +427,7 @@
             biltooRun
             biltooRunGdb
             biltooTest
+            piperServerFull
           ];
           CMAKE_BUILD_TYPE = "Debug";
           shellHook = ''
@@ -458,6 +482,8 @@
             echo "  biltoo-configure   # cmake once; then biltoo-build is incremental"
             echo "  biltoo-build       # incremental cmake --build (picks up thumtoo .cpp edits)"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
+            export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+            echo "  TTS: piper-server on PATH; voices → $TEXT2SPRECH_PIPER_MODELS"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"

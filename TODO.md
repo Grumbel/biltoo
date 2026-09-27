@@ -2,13 +2,17 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2716.8-messages-panel-menu` (base `d456ffc`).
+**Tip:** `biltoo-2716.9-piper-server-flake` (base `d456ffc`).
 
-- Messages dock in **Panels** menu (`Show Messages`).
-- Source DPI Auto toggle; text overlays via applied ContentXform.
-- Requires thumtoo **345.2**.
+### TTS / flake
+- Flake input `text2sprech`; `biltoo` wraps `piper-server-full` on PATH +
+  default voice (`TEXT2SPRECH_PIPER_MODELS`).
+- `nix develop` / `biltoo-run` also get piper-server.
+- **After pull:** `nix flake lock --update-input text2sprech` (lock not updated
+  in this sandbox — no `nix` binary).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2716.8-messages-panel-menu-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2716.9-piper-server-flake-d456ffc.bundle HEAD
+nix flake lock --update-input text2sprech
 ```

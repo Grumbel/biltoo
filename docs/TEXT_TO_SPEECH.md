@@ -44,6 +44,9 @@ Checked without a full biltoo GUI build (sandbox lacks Qt6 Multimedia):
 - **Framing:** `PiperClient` uses BE uint32 length + UTF-8 JSON, same as `protocol.py` / PROTOCOL.md.
 - **Lifecycle:** connect retry on `connectionError` (~6s); owned-server reconnect; stop/respawn after exhausted retries.
 - Run after pull: `ctest -R sentence-splitter`; Speak with `piper-server` on PATH or `--piper-socket`.
+- **Nix:** `nix build .#biltoo` and `nix develop` hard-wire `text2sprech`’s `piper-server-full`
+  (PATH + default `en_US-lessac-medium` via `TEXT2SPRECH_PIPER_MODELS`). No manual
+  `--piper-socket` needed for the packaged binary / `biltoo-run`.
 
 ## Goals
 

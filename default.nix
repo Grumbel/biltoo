@@ -18,6 +18,8 @@
 , kimageformats
 , thumtooSrc ? null
 , thumtooBuildInputs ? [ ]  # from thumtoo.lib.mkBuildInputs (libunarr, …)
+, piperServer ? null  # text2sprech piper-server (bin/piper-server on PATH)
+, piperModelsDir ? null  # TEXT2SPRECH_PIPER_MODELS (bundled voice directory)
 , sqlite
 , libjxl
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
@@ -54,6 +56,15 @@ stdenv.mkDerivation (finalAttrs: {
     pkg-config
     wrapQtAppsHook
   ];
+
+  # TTS: piper-server on PATH so PiperServerManager finds it without --piper-socket.
+  # MODELS points at the bundled voice when provided by the flake.
+  qtWrapperArgs = lib.optionals (piperServer != null) [
+    "--prefix" "PATH" ":" "${piperServer}/bin"
+  ] ++ lib.optionals (piperModelsDir != null) [
+    "--set-default" "TEXT2SPRECH_PIPER_MODELS" piperModelsDir
+  ];
+
 
   buildInputs = [
     qt6.qtbase
