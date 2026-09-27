@@ -428,35 +428,41 @@ void PlaybackController::onSinkStateChanged()
     }
     const QAudio::State st = m_sink->state();
     if (st == QAudio::ActiveState) {
-        // Only treat later Idle as end-of-sentence after we have actually played.
+        // Only treat later Idle/Stopped as end-of-sentence after we have played.
         m_sinkReachedActive = true;
         return;
     }
     if (!m_playing || m_paused || !m_sinkReachedActive) {
         return;
     }
-    // End of sentence: device drained the QBuffer (Idle) or clean Stopped.
-    const bool bufferDone = m_pcmBuffer && m_pcmBuffer->atEnd();
-    if (st == QAudio::IdleState && bufferDone) {
+    // Do not require QBuffer::atEnd(): some backends go Idle after pulling data
+    // into the hardware buffer while the QIODevice position is not yet atEnd,
+    // which left us stuck on "Speaking…" after the first sentence.
+    if (st == QAudio::IdleState) {
         advanceToNext();
         return;
     }
     if (st == QAudio::StoppedState) {
         if (m_sink->error() != QAudio::NoError) {
             emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
-            advanceToNext();
-        } else if (bufferDone) {
-            advanceToNext();
         }
+        advanceToNext();
     }
 }
 
 void PlaybackController::onPositionTick()
 {
-    if (!m_playing || m_paused) {
+    if (!m_playing || m_paused || m_advancing) {
         return;
     }
-    emit audioPositionChanged(currentPositionMs(), durationForCurrentSentence());
+    const qint64 pos = currentPositionMs();
+    const qint64 dur = durationForCurrentSentence();
+    emit audioPositionChanged(pos, dur);
+    // Fallback: if the sink never reports Idle after Active, still advance
+    // once wall-clock playback has reached the WAV duration (+ small slack).
+    if (m_sinkReachedActive && dur > 0 && pos >= dur + 50) {
+        advanceToNext();
+    }
 }
 
 void PlaybackController::advanceToNext()
