@@ -553,7 +553,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath);
  */
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
                                      bool force = false,
-                                     const QString &lang = QString());
+                                     const QString &lang = QString(),
+                                     const QRectF &pageCrop = {});
 
 /** Result of an OCR attempt with a specific failure reason for UI. */
 struct OcrRunResult {
@@ -585,7 +586,8 @@ bool ocrAvailable();
  */
 OcrRunResult runOcrPageTextLayer(const QString &sessionPath,
                                  bool force = false,
-                                 const QString &lang = QString());
+                                 const QString &lang = QString(),
+                                 const QRectF &pageCrop = {});
 
 /** Cache-only OCR layer (empty if never OCR'd). */
 PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath);
