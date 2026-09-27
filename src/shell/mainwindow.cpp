@@ -4965,8 +4965,15 @@ void MainWindow::connectTextToSpeech()
                 m_speakAct->setStatusTip(tr("Pause text-to-speech"));
             }
         }
-        if (!on && m_imageView) {
-            m_imageView->hostText().clearSpeakingHighlight();
+        if (!on) {
+            m_ttsSpeakPath.clear();
+            m_ttsSpeakSpans.clear();
+            m_ttsSpeakRegions.clear();
+            m_ttsSentenceStart = 0;
+            m_ttsSentenceEnd = 0;
+            if (m_imageView) {
+                m_imageView->hostText().clearSpeakingHighlight();
+            }
         }
     });
     connect(m_tts, &TextToSpeechController::pausedChanged, this, [this](bool paused) {
@@ -5011,9 +5018,13 @@ void MainWindow::connectTextToSpeech()
                     return;
                 }
                 TextLayerController &text = m_imageView->hostText();
+                // Region indices belong to m_ttsSpeakPath only — not the page on screen.
+                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath) {
+                    text.clearSpeakingHighlight();
+                    return;
+                }
                 QVector<int> regions;
-                // Full-page spans (must match the plan passed to m_tts->speak).
-                for (const auto &sp : text.buildSpeakPlan(/*pageOnly=*/true).spans) {
+                for (const auto &sp : m_ttsSpeakSpans) {
                     if (sp.end > start && sp.start < end) {
                         regions.append(sp.regionIndex);
                     }
@@ -5028,14 +5039,18 @@ void MainWindow::connectTextToSpeech()
                 if (!m_imageView || dur <= 0 || m_ttsSpeakRegions.isEmpty()) {
                     return;
                 }
-                // Map audio fraction → char offset in SpeakPlan, then active region.
+                TextLayerController &text = m_imageView->hostText();
+                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath) {
+                    text.clearSpeakingHighlight();
+                    return;
+                }
+                // Map audio fraction → char offset in the SpeakPlan captured at Speak.
                 const double frac = double(pos) / double(dur);
                 const int spanLen = qMax(1, m_ttsSentenceEnd - m_ttsSentenceStart);
                 const int globalOff =
                     m_ttsSentenceStart
                     + int(qBound(0.0, frac, 1.0) * double(spanLen - 1) + 0.5);
-                TextLayerController &text = m_imageView->hostText();
-                const auto spans = text.buildSpeakPlan(/*pageOnly=*/true).spans;
+                const auto &spans = m_ttsSpeakSpans;
                 int activeRi = m_ttsSpeakRegions.first();
                 double localProg = frac;
                 for (const auto &sp : spans) {
@@ -5132,6 +5147,11 @@ void MainWindow::speakSelectionOrPage()
             }
         }
     }
+    m_ttsSpeakPath = text.session().layerPathRef();
+    if (m_ttsSpeakPath.isEmpty()) {
+        m_ttsSpeakPath = m_imageView->hostImage().classicPath();
+    }
+    m_ttsSpeakSpans = plan.spans;
     m_tts->speakText(plan.text, startSentence);
 }
 
@@ -5140,6 +5160,8 @@ void MainWindow::stopSpeech()
     if (m_tts) {
         m_tts->stop();
     }
+    m_ttsSpeakPath.clear();
+    m_ttsSpeakSpans.clear();
     m_ttsSpeakRegions.clear();
     m_ttsSentenceStart = 0;
     m_ttsSentenceEnd = 0;

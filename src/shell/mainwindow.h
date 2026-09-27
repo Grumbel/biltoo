@@ -571,6 +571,9 @@ private:
     QDockWidget *m_messageLogDock = nullptr;
     QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
+    /** Session path the active SpeakPlan was built for (region indices are page-local). */
+    QString m_ttsSpeakPath;
+    QVector<TextLayerController::SpeakSpan> m_ttsSpeakSpans;
     QVector<int> m_ttsSpeakRegions;
     int m_ttsSentenceStart = 0;
     int m_ttsSentenceEnd = 0;
