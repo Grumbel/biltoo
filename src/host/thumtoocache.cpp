@@ -3403,6 +3403,31 @@ QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                   (nx1 - nx0) * imageSize.width(), (ny1 - ny0) * imageSize.height());
 }
 
+QRectF imageRectToPageRect(const QRectF &imageRect, const QRectF &pageBounds,
+                           const QSize &imageSize, bool pageYUp)
+{
+    const qreal pw = pageBounds.width();
+    const qreal ph = pageBounds.height();
+    if (pw <= 0 || ph <= 0 || imageSize.width() <= 0 || imageSize.height() <= 0) {
+        return {};
+    }
+    const qreal nx0 = imageRect.left() / imageSize.width();
+    const qreal nx1 = imageRect.right() / imageSize.width();
+    const qreal ny0 = imageRect.top() / imageSize.height();
+    const qreal ny1 = imageRect.bottom() / imageSize.height();
+    const qreal px0 = pageBounds.left() + nx0 * pw;
+    const qreal px1 = pageBounds.left() + nx1 * pw;
+    if (pageYUp) {
+        const qreal pyTop = pageBounds.bottom() - ny0 * ph;
+        const qreal pyBottom = pageBounds.bottom() - ny1 * ph;
+        return QRectF(QPointF(px0, pyBottom), QPointF(px1, pyTop)).normalized();
+    }
+    const qreal py0 = pageBounds.top() + ny0 * ph;
+    const qreal py1 = pageBounds.top() + ny1 * ph;
+    return QRectF(QPointF(px0, py0), QPointF(px1, py1)).normalized();
+}
+
+
 #if defined(BILTOO_HAVE_THUMTOO_TEXT)
 
 namespace {
@@ -3525,9 +3550,9 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
 }
 
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
-                                     const QString &lang)
+                                     const QString &lang, const QRectF &pageCrop)
 {
-    return runOcrPageTextLayer(sessionPath, force, lang).layer;
+    return runOcrPageTextLayer(sessionPath, force, lang, pageCrop).layer;
 }
 
 bool ocrAvailable()
@@ -3589,13 +3614,14 @@ QString OcrRunResult::message() const
 }
 
 OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
-                                 const QString &lang)
+                                 const QString &lang, const QRectF &pageCrop)
 {
     OcrRunResult out;
 #if !defined(BILTOO_HAVE_THUMTOO_TEXT)
     Q_UNUSED(sessionPath);
     Q_UNUSED(force);
     Q_UNUSED(lang);
+    Q_UNUSED(pageCrop);
     out.status = OcrRunResult::Status::Unavailable;
     return out;
 #else
@@ -3622,6 +3648,13 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     thumtoo::OcrOptions opts;
     if (!lang.isEmpty()) {
         opts.lang = lang.toStdString();
+    }
+    if (pageCrop.isValid() && pageCrop.width() > 1.0 && pageCrop.height() > 1.0) {
+        opts.has_crop = true;
+        opts.crop_x0 = pageCrop.left();
+        opts.crop_y0 = pageCrop.top();
+        opts.crop_x1 = pageCrop.right();
+        opts.crop_y1 = pageCrop.bottom();
     }
     auto layer = c->ensure_ocr_page_text_layer(uri, opts, force);
     if (!layer) {
@@ -3681,7 +3714,7 @@ PageTextLayer ensurePageTextLayer(const QString &)
 {
     return {};
 }
-PageTextLayer ensureOcrPageTextLayer(const QString &, bool, const QString &)
+PageTextLayer ensureOcrPageTextLayer(const QString &, bool, const QString &, const QRectF &)
 {
     return {};
 }
@@ -3695,7 +3728,7 @@ QString OcrRunResult::message() const
         "ThumtooCache",
         "OCR unavailable — text/OCR support not compiled into this biltoo build");
 }
-OcrRunResult runOcrPageTextLayer(const QString &, bool, const QString &)
+OcrRunResult runOcrPageTextLayer(const QString &, bool, const QString &, const QRectF &)
 {
     OcrRunResult out;
     out.status = OcrRunResult::Status::Unavailable;

@@ -5186,9 +5186,16 @@ void MainWindow::startOcrCurrentPage(bool force)
     QPointer<MainWindow> self(this);
     const QString pathCopy = path;
     const QString langCopy = lang;
-    QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen, force]() {
+    const QRectF pageCrop = m_imageView->hostText().currentPageCropInPageSpace();
+    if (pageCrop.isValid() && m_ocrPanel) {
+        m_ocrPanel->appendLog(
+            tr("Using session crop for OCR (%1×%2 in page space)")
+                .arg(pageCrop.width(), 0, 'f', 1)
+                .arg(pageCrop.height(), 0, 'f', 1));
+    }
+    QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen, force, pageCrop]() {
         const ThumtooCache::OcrRunResult result =
-            ThumtooCache::runOcrPageTextLayer(pathCopy, force, langCopy);
+            ThumtooCache::runOcrPageTextLayer(pathCopy, force, langCopy, pageCrop);
         if (!self) {
             return;
         }

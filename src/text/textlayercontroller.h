@@ -46,6 +46,8 @@ public:
     void refresh();
     /** Run OCR for the current page and install the OCR text layer. */
     bool applyOcrLayer(bool force = false, const QString &lang = QString());
+    /** Session crop mapped into page space for OCR (empty if no crop). */
+    QRectF currentPageCropInPageSpace() const;
     /** Install a pre-fetched layer (e.g. after worker OCR). */
     void installLayer(const ThumtooCache::PageTextLayer &layer, const QString &path);
     void setSearchFuzzy(bool on);

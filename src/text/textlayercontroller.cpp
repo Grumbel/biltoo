@@ -4,6 +4,7 @@
 // Page text / link regions, search, rubber-band selection (owned by TextLayerController).
 
 #include "text/textlayercontroller.h"
+#include "content/contentxform.h"
 #include "imageview.h"
 #include "imageitem.h"
 #include "text/textlayergeometry.h"
@@ -104,7 +105,7 @@ bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
         return false;
     }
     ThumtooCache::PageTextLayer layer =
-        ThumtooCache::ensureOcrPageTextLayer(path, force, lang);
+        ThumtooCache::ensureOcrPageTextLayer(path, force, lang, currentPageCropInPageSpace());
     if (layer.regions.isEmpty() && !layer.pageBounds.isValid()) {
         return false;
     }
