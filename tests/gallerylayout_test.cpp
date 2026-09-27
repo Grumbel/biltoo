@@ -243,6 +243,13 @@ void GalleryLayoutTest::packPoses_contactSheetAndStripRows()
     QCOMPARE(one.at(0).scale, 1.0);
     QCOMPARE(one.at(0).center, QPointF(25.0, 20.0));
 
+    // Mixed heights: landscape 50×20 + portrait 50×40 share a row; landscape mid-band.
+    const auto mixed = GalleryLayout::packPosesContactSheet(
+        {QSizeF(50, 20), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(mixed.size(), 2);
+    QCOMPARE(mixed.at(0).center, QPointF(25.0, 20.0)); // rowMid = 20
+    QCOMPARE(mixed.at(1).center, QPointF(85.0, 20.0));
+
     // Strip: 1 band, availH=100 → rowH=100; 50×40 → scale 2.5, w=125.
     const auto strip = GalleryLayout::packPosesStripRows(
         {QSizeF(50, 40), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 100.0, 1);

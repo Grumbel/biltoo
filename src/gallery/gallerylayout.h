@@ -326,8 +326,8 @@ inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes
 /**
  * Contact sheet: order-preserving wrap L→R, T→B with **one global scale**.
  * Scale is target column width / max page width so relative page sizes stay
- * true and every page fits a nominal column. Last row is left-aligned (never
- * stretched to full width).
+ * true and every page fits a nominal column. Last row is left-aligned (never stretched to full width).
+ * Short pages in a mixed-height row are vertically centred (valign middle).
  */
 inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSizes,
                                                qreal margin, qreal gap, qreal availW,
@@ -379,17 +379,19 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
     out.reserve(layoutSizes.size());
     qreal y = margin;
     for (const QVector<Entry> &row : rows) {
-        qreal x = margin;
         qreal placedH = 0.0;
         for (const Entry &e : row) {
-            const qreal w = e.w;
-            const qreal h = e.h;
+            placedH = qMax(placedH, e.h);
+        }
+        // Vertical centre within the row band (short/landscape pages mid-row).
+        const qreal rowMidY = y + placedH / 2.0;
+        qreal x = margin;
+        for (const Entry &e : row) {
             PackPose p;
             p.scale = e.scale;
-            p.center = QPointF(x + w / 2.0, y + h / 2.0);
+            p.center = QPointF(x + e.w / 2.0, rowMidY);
             out.append(p);
-            x += w + gap;
-            placedH = qMax(placedH, h);
+            x += e.w + gap;
         }
         y += placedH + gap;
     }
