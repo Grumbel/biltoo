@@ -19,7 +19,10 @@ bool prepare_and_paint_cover(QPainter *painter, CoverPaintArgs const& args)
       args.native.width() > args.native.height() ? args.native.width()
                                                  : args.native.height();
   const double dpc = cover_device_per_content(args.dest.size(), args.native);
-  if (!TileLodController::shouldUseTiles(dpc, long_edge)) {
+  // Retained path tiles: always paint (min-scale overview). shouldUseTiles is
+  // for *issuing* new work, not for refusing warm RAM already in the registry.
+  const bool retained = args.lod->hasRetainedTiles() || args.lod->hasAnyTile();
+  if (!retained && !TileLodController::shouldUseTiles(dpc, long_edge)) {
     return false;
   }
 
@@ -30,7 +33,6 @@ bool prepare_and_paint_cover(QPainter *painter, CoverPaintArgs const& args)
     (void)args.lod->tick(args.tick_budget);
   }
 
-  // Warm shared path cache counts even before this session's first success.
   if (!args.lod->hasAnyTile() && !args.lod->hasRetainedTiles()) {
     return false;
   }

@@ -820,12 +820,17 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // Gallery product: LQIP underlay only until tiles cover. Never soft/HOST
         // whole-frame under tileLodWanted cells.
         const bool tilesWanted = tileLodWanted();
+        // Adopt retained path tiles before underlay decisions (warm registry
+        // must not paint as EMB-only while Succeeded tiles sit unused).
+        if (tilesWanted && m_tileLodAttached) {
+            prepareTileLodPlan();
+        }
+        const bool pathHasTiles = tilesWanted && tileLodHasPathRam();
         const bool tilesLive = tilesWanted && tileLodActive();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        // EMB/LQIP underlay until exact tile coverage (KILL_SOFT). Soft host
-        // samples are not drawn under tileLodWanted. Interactive Workspace may
-        // keep any display sample only when tiles are not the display path.
+        // Underlay fills holes / cold cells. When pathHasTiles, tiles paint on
+        // top this same frame (prepare already ran). Soft/HOST never under tiles.
         const bool drawLqipBase = !tilesFullyCover
             || (m_interactive && hasDisplayPixels() && !tilesWanted);
         // Live tiles / debug overlay must not sit under frozen ItemCoordinateCache.
@@ -894,7 +899,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             } else {
                 painter->drawImage(box, img);
             }
-            if (tilePlanDebugOverlayEnabled() && !tilesLive) {
+            if (tilePlanDebugOverlayEnabled() && !tilesLive && !pathHasTiles) {
                 paintSampleKindTag(painter, box, img);
             }
         };
@@ -996,7 +1001,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // set_viewport; cancel only when plan_changed).
         // Debug overlay only: label pixmap/placeholder paths that never called
         // drawSampleInContentRect. Does not touch ItemCoordinateCache policy.
-        if (tilePlanDebugOverlayEnabled() && !tilesLive) {
+        if (tilePlanDebugOverlayEnabled() && !tilesLive && !pathHasTiles) {
             const QRectF box = contentRect();
             QImage sample = displayImage();
             if (sample.isNull() && !pixmap().isNull()) {
@@ -1012,8 +1017,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 navHot = iv->hostSlideshow().hud().isNavHot();
             }
         }
-        if (tileLodWanted() && !navHot && m_tileLodAttached) {
-            prepareTileLodPlan();
+        if (tilesWanted && !navHot && m_tileLodAttached) {
             if (tileLodBag().controller && tileLodBag().controller->path() == m_path
                 && tileLodBag().controller->session()) {
                 tilelod::DrawPlan plan = tileLodBag().controller->session()->draw_plan();

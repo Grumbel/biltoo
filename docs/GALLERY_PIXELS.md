@@ -5,27 +5,61 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Gallery display pixels
 
-**LQIP underlay + grid tiles.** Soft PreferCache / soft ladder whole-frame
-encode is **not** used in Gallery (removed).
+**Authoritative stack for what you see in Gallery cells.** Soft whole-frame
+ladder is not a product path ([KILL_SOFT.md](KILL_SOFT.md)).
 
-| Layer | Role |
-|-------|------|
-| **LQIP** (≤96) | ThumbHash placeholder until tiles cover. |
-| **EMB** (≤320) | EXIF / PDF `/Thumb` container preview (`SizeReply.embedded`); stamped **EMB** in debug overlay. Not tiles. |
-| **Tiles** | Sharpness for cells with on-screen long edge > 32 px. Durable Store hits preferred; encode only when coverage missing. |
+## Priority (top wins)
 
-Filmstrip uses the same product rule via `scheduleFilmstripTilePixels` /
-`scheduleTileSynthOrPyramid` (LQIP + TileSynth). Gallery never requests soft
-PreferCache for underlay.
+```text
+1. Exact / parent 256² tiles   ← product display when path has Succeeded tiles
+2. Coarser retained tiles        (same TileLodRegistry, min_scale / overview)
+3. EMB or LQIP underlay          only cold, or holes under incomplete coverage
+4. Neutral placeholder           no underlay and no tiles yet
+```
 
-## Open path
+| Layer | What it is | When it may show |
+|-------|------------|------------------|
+| **Tiles** | Durable / process `TileLodRegistry` grid | Path has Succeeded tiles **or** cell is issuing. Painted by `paint_tiles_display` (live `ImageItem`) or `prepare_and_paint_cover` (virtual background when RAM already warm). |
+| **EMB** | EXIF / PDF `/Thumb` ≤320 | **Cold only** as full-cell floor, or under tile **holes**. Must not remain the only visible layer when registry already has tiles for that path. |
+| **LQIP** | ThumbHash / ≤96 | Same role as EMB; often replaced in cache when a larger EMB arrives. |
+| **Soft / PreferCache** | — | **Removed** in Gallery. |
 
-See **[GALLERY_OPEN.md](GALLERY_OPEN.md)** for fences and phase order.
+## One rasterizer, shared RAM
 
-1. **Size gate** — `request_size` for the session (warm skip only if size +
-   ImageCache underlay); tiles blocked until the set settles.
-2. **Underlay** — SizeReply EMB/LQIP → ImageCache → `tryInstallGalleryUnderlay`
-   and virtual-slot paint (never layout authority).
-3. **Plan + virtual window** — definitive sizes only; no stand-in squares.
-4. **Tiles** — after gate complete, TileLoadCoordinator for visible cells.
-5. HUD shows resolving progress (`N / M sizes`, failures, rough ETA).
+| API | Role |
+|-----|------|
+| `TileLodRegistry` | Process-wide **path-keyed** Succeeded tiles. Shared across Image / Gallery / Workspace / Slideshow. |
+| `paint_tiles_display` | Oriented tile paint + plan overlay (`ImageItem`). |
+| `prepare_and_paint_cover` | Identity native→dest cover (Slideshow, virtual warm floor). Retained tiles **bypass** the 32px screen floor so min-scale overview still paints while scrolling. |
+| `tileLodActive()` | True if this controller has tiles **or** retained path RAM. |
+| `tileLodHasPathRam()` | Registry (or controller retained) has Succeeded tiles for the path. |
+
+## Paint order (live `ImageItem`)
+
+1. `prepareTileLodPlan()` — bind session, adopt retained path tiles, set viewport.
+2. Underlay (EMB/LQIP) if coverage incomplete or still cold.
+3. `paint_tiles_display` — plan cells from shared cache (must run when path has tiles).
+4. Plan debug overlay when enabled.
+
+**Bug this document guards against:** treating `tileLodActive()` as session-only
+(`hasAnyTile()` without retained RAM) so paint drew full-cell EMB while the
+registry already held the pyramid.
+
+## Virtual slots (drawBackground)
+
+Background under live items. Order:
+
+1. If registry has Succeeded tiles for the path → `prepare_and_paint_cover`
+   (min_scale) + optional plan overlay; `touch()` path for LRU.
+2. Else EMB/LQIP from `ImageCache::getUnderlay`.
+3. Else neutral placeholder.
+
+## Open / scroll
+
+1. Size gate → definitive sizes.
+2. SizeReply seeds underlay into `ImageCache`.
+3. Visible window materializes live items; warm paths preferred.
+4. Coordinator ticks tiles; registry retains Succeeded tiles across scroll.
+
+Filmstrip uses TileSynth whole-frame into `ImageCache` for strip icons (same
+Store, not grid paint on the strip widget).

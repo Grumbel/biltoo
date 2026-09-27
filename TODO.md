@@ -2,14 +2,22 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.13-scroll-min-tiles` (base `bcbb97e`).
+**Tip:** `biltoo-2714.14-tiles-over-emb` (base `bcbb97e`).
 
-### 2714.13 — Keep min-scale tiles on screen while scrolling
-Virtual plan cells paint retained `TileLodRegistry` tiles via
-`prepare_and_paint_cover` (durable min_scale) before EMB/LQIP fallback.
-`touch()` keeps on-screen paths preferred under process LRU.
+### Root causes (EMB while tiles exist)
+1. `tileLodActive()` ignored retained path RAM → underlay-only frame.
+2. `prepareTileLodPlan` ran *after* underlay decision.
+3. `prepare_and_paint_cover` refused retained tiles via 32px `shouldUseTiles`.
+4. EMB put could replace LQIP in underlay map without care.
+
+### Fixes
+- `tileLodActive` = any tile **or** retained registry tiles.
+- Prepare plan before underlay; path-RAM aware debug tags.
+- Cover paint always allows retained tiles (min-scale scroll floor).
+- Underlay put refined for LQIP vs EMB.
+- **docs/GALLERY_PIXELS.md** rewritten as priority authority.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.13-scroll-min-tiles-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.14-tiles-over-emb-bcbb97e.bundle HEAD
 ```

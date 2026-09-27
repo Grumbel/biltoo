@@ -517,7 +517,14 @@ void ImageItem::tickTileLod(int budget)
 
 bool ImageItem::tileLodActive() const
 {
-    return tileLodBag().controller && tileLodBag().controller->enabled() && tileLodBag().controller->hasAnyTile();
+    // Succeeded tiles in the *shared path cache* count even before this
+    // session's first pump — otherwise paint treats the cell as underlay-only
+    // and draws EMB while TileLodRegistry already holds the pyramid.
+    if (!tileLodBag().controller || !tileLodBag().controller->enabled()) {
+        return false;
+    }
+    return tileLodBag().controller->hasAnyTile()
+        || tileLodBag().controller->hasRetainedTiles();
 }
 
 bool ImageItem::tileLodHasPathRam() const

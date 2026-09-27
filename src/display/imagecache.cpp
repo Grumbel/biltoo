@@ -264,11 +264,21 @@ void put(const QString &path, const QImage &image, const QString &forceTag)
 
     QMutexLocker lock(&mutex());
     // Separate underlay slot: soft/full must not prevent EMB/LQIP install.
+    // Prefer better underlay, but never drop a LQIP-only entry when an equal
+    // or only-slightly-larger sample arrives without an explicit tag — and
+    // never replace a tagged LQIP with an untagged emb-band guess that is
+    // not clearly larger (EMB overwriting LQIP hid cold placeholders).
     if (isUnderlayTag || embBand) {
         QHash<QString, QImage> &um = underlayMap();
-        if (!um.contains(path) || longEdge(um.value(path)) < incoming
-            || isUnderlayTag) {
+        if (!um.contains(path)) {
             um.insert(path, stored);
+        } else {
+            const int have = longEdge(um.value(path));
+            if (forceTag == QLatin1String("LQIP") && have > DisplayQuality::kLqipMaxEdge) {
+                // Explicit LQIP must not clobber a better EMB already stored.
+            } else if (incoming > have || isUnderlayTag) {
+                um.insert(path, stored);
+            }
         }
     }
     QHash<QString, QImage> &m = map();
