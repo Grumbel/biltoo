@@ -161,6 +161,21 @@ void TextPanel::setSelectedRegions(const QVector<int> &regionIndices)
     if (!m_view || !m_model) {
         return;
     }
+    // Avoid selection churn when page→panel sync repeats the same set.
+    if (regionIndices == m_lastEmittedSelection) {
+        const auto rows = m_view->selectionModel()->selectedRows();
+        QVector<int> current;
+        current.reserve(rows.size());
+        for (const QModelIndex &idx : rows) {
+            const int ri = m_model->regionIndexAt(idx.row());
+            if (ri >= 0) {
+                current.append(ri);
+            }
+        }
+        if (current == regionIndices) {
+            return;
+        }
+    }
     m_blockSel = true;
     QItemSelection sel;
     for (int ri : regionIndices) {
@@ -178,6 +193,7 @@ void TextPanel::setSelectedRegions(const QVector<int> &regionIndices)
             m_view->scrollTo(m_model->index(row, 0), QAbstractItemView::EnsureVisible);
         }
     }
+    m_lastEmittedSelection = regionIndices;
     m_blockSel = false;
 }
 
@@ -210,6 +226,10 @@ void TextPanel::onViewSelectionChanged()
             regions.append(ri);
         }
     }
+    if (regions == m_lastEmittedSelection) {
+        return;
+    }
+    m_lastEmittedSelection = regions;
     emit selectionRegionsChanged(regions);
 }
 
@@ -218,10 +238,19 @@ void TextPanel::onViewEntered(const QModelIndex &index)
     if (!m_model || !index.isValid()) {
         return;
     }
-    emit hoverRegionChanged(m_model->regionIndexAt(index.row()));
+    const int ri = m_model->regionIndexAt(index.row());
+    if (ri == m_lastHoverRegion) {
+        return;
+    }
+    m_lastHoverRegion = ri;
+    emit hoverRegionChanged(ri);
 }
 
 void TextPanel::onViewLeft()
 {
+    if (m_lastHoverRegion == -1) {
+        return;
+    }
+    m_lastHoverRegion = -1;
     emit hoverRegionChanged(-1);
 }

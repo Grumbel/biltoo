@@ -6,6 +6,7 @@
 #include "host/thumtoocache.h"
 
 #include <QWidget>
+#include <QVector>
 
 class QEvent;
 
@@ -68,6 +69,9 @@ private:
     QPushButton *m_speakBtn = nullptr;
     QPushButton *m_stopSpeechBtn = nullptr;
     bool m_blockSel = false;
+    int m_lastHoverRegion = -2; // -2 = never; -1 = cleared
+    QVector<int> m_lastEmittedSelection;
 };
+
 
 #endif

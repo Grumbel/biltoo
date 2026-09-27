@@ -428,25 +428,30 @@ void PlaybackController::onSinkStateChanged()
     }
     const QAudio::State st = m_sink->state();
     if (st == QAudio::ActiveState) {
-        // Only treat later Idle/Stopped as end-of-sentence after we have played.
         m_sinkReachedActive = true;
         return;
     }
     if (!m_playing || m_paused || !m_sinkReachedActive) {
         return;
     }
-    // Do not require QBuffer::atEnd(): some backends go Idle after pulling data
-    // into the hardware buffer while the QIODevice position is not yet atEnd,
-    // which left us stuck on "Speaking…" after the first sentence.
-    if (st == QAudio::IdleState) {
-        advanceToNext();
-        return;
-    }
-    if (st == QAudio::StoppedState) {
-        if (m_sink->error() != QAudio::NoError) {
+
+    const qint64 dur = durationForCurrentSentence();
+    const qint64 processedMs = m_sink->processedUSecs() / 1000;
+    // True end-of-sentence: pull device exhausted, or nearly all samples played.
+    // Ignore brief Idle underruns early in the sentence.
+    const bool nearEnd = (dur > 0 && processedMs >= (dur * 85) / 100)
+        || (m_pcmBuffer && m_pcmBuffer->atEnd() && processedMs > 0)
+        || (dur <= 0 && m_pcmBuffer && m_pcmBuffer->atEnd());
+
+    if (st == QAudio::IdleState || st == QAudio::StoppedState) {
+        if (st == QAudio::StoppedState && m_sink->error() != QAudio::NoError) {
             emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
+            advanceToNext();
+            return;
         }
-        advanceToNext();
+        if (nearEnd) {
+            advanceToNext();
+        }
     }
 }
 
@@ -458,10 +463,16 @@ void PlaybackController::onPositionTick()
     const qint64 pos = currentPositionMs();
     const qint64 dur = durationForCurrentSentence();
     emit audioPositionChanged(pos, dur);
-    // Fallback: if the sink never reports Idle after Active, still advance
-    // once wall-clock playback has reached the WAV duration (+ small slack).
-    if (m_sinkReachedActive && dur > 0 && pos >= dur + 50) {
+    // Fallback when the sink stays Active until teardown: advance past duration.
+    if (m_sinkReachedActive && dur > 0 && pos >= dur + 80) {
         advanceToNext();
+        return;
+    }
+    if (m_sink && m_sinkReachedActive && dur > 0) {
+        const qint64 processedMs = m_sink->processedUSecs() / 1000;
+        if (processedMs >= dur + 40) {
+            advanceToNext();
+        }
     }
 }
 
