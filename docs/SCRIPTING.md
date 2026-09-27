@@ -6,253 +6,243 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Scripting API — brainstorm (hypothetical)
 
 **Status:** design sketch only. No implementation commitment. No runtime code
-in this note.
+in this note. Second pass: tighten layering, handles vs values, ambient
+“current”, and anti-patterns.
 
 **Related:** [DOMAIN.md](../DOMAIN.md) (especially
 [World vs viewpoint](../DOMAIN.md#world-vs-viewpoint)),
 [SCENE_LANGUAGE_BRAINSTORM.md](SCENE_LANGUAGE_BRAINSTORM.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [ACTIVITY.md](ACTIVITY.md),
 [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [IDENTITY.md](../IDENTITY.md),
-[TAGS_AND_BOOKMARKS.md](TAGS_AND_BOOKMARKS.md).
+[HANDLES.md](../HANDLES.md), [TAGS_AND_BOOKMARKS.md](TAGS_AND_BOOKMARKS.md).
 
 ---
 
-## 1. Why script biltoo at all?
+## 1. Problem
 
-Users and power users eventually want to:
+Biltoo already has a rich **world**: ordered session, stable
+`SessionImageId`s, content appearance, text layers, speech plans, async tile
+and OCR work. Most of that is only reachable by clicking through modes.
 
-- Drive the **session** from outside (batch open, reorder, export, tag).
-- Observe and control **background world state** (speech cursor, tile activity)
-  without clicking through modes.
-- Automate recurring chores (OCR this range, speak from here, pack Gallery
-  layout X, dump selection) without shipping a new C++ feature each time.
-- Prototype UI experiments and research workflows against real domain objects.
+Power users and future automation want to:
 
-The hard constraint from domain philosophy: scripts should talk to the
-**world**, not to “whatever widget is focused.” Modes are viewpoints; a script
-that only works while Image mode is up is already the wrong shape.
+- Inspect and reshape the session without playing Gallery ↔ Image ping-pong.
+- Drive **speech** and watch the **speech cursor** while the canvas shows
+  something else.
+- Observe **activity** (tiles, soft, archives) as data, not only a status line.
+- Automate chores (OCR a range, export, retag, reorder) without a new C++
+  feature each time.
 
-This is **orthogonal** to the scene-description idea in
-[SCENE_LANGUAGE_BRAINSTORM.md](SCENE_LANGUAGE_BRAINSTORM.md). That note is about
-*declarative presentation graphs* (HyperCard-ish cards, closed action
-vocabulary). This note is about an **embeddable / external programming
-surface** over the same world. They can coexist: SDL might one day call into
-script handlers; scripts might emit scene ops. Neither requires the other on
-day one.
+**Hard rule:** scripts address the **world**, not “whatever widget has focus.”
+A script that only works in Image mode is the wrong shape — same law as
+[World vs viewpoint](../DOMAIN.md#world-vs-viewpoint).
 
----
-
-## 2. What Emacs/Elisp gets right — and what to improve
-
-### Worth stealing
-
-| Elisp idea | Biltoo translation |
-|------------|-------------------|
-| **Commands are first-class** | Named ops (`session-next`, `speak-selection`) invokable from script, keys, and menus from one table. |
-| **Hooks** | World events (`on-session-changed`, `on-speech-cursor`, `on-activity`) not only keymaps. |
-| **Buffer-local vs global** | Session-local vs process-global bindings; avoid one ambient “current buffer” for everything. |
-| **Advice / wrappers** | Optional thin wrappers around existing ops for logging and metrics — not a second implementation. |
-| **REPL for exploration** | A live console against a running biltoo is worth more than a batch-only CLI. |
-| **Self-describing help** | Every exported op has name, args, docstring; `help` / completion from the same metadata. |
-
-### Improve on Emacs
-
-Emacs grew by treating the **editor UI** as the data model (buffers, windows,
-points). That couples automation to display. Biltoo should invert that:
-
-1. **Domain objects are the API.** Session, session image, text layer, speech
-   plan, activity snapshot — not `QGraphicsScene` items or dock widgets.
-2. **Handles, not raw pointers.** Stable ids (`SessionImageId`, speech plan
-   id, activity id) survive mode switches and stashes; scripts never hold
-   `ImageItem*`.
-3. **Explicit viewpoint.** “Current mode” and “current session index” are
-   readable properties of the shell, not the only way to name a target.
-   Prefer `session.image(id)` over “whatever is on screen.”
-4. **Structured results.** Ops return values (tables, lists, errors) suitable
-   for composition — not only side effects and echo area strings.
-5. **Capability tiers.** Read-only observation, session mutation, and
-   “may shell out / write disk” are separate privileges — not one omnipotent
-   interpreter.
-6. **No second widget tree.** Scripts do not build Qt UIs. They may request
-   host-defined panels later; v1 is data + commands + hooks.
+**Not the same as** [SCENE_LANGUAGE_BRAINSTORM.md](SCENE_LANGUAGE_BRAINSTORM.md).
+That note is declarative *presentation graphs* (scenes, closed actions).
+This note is a *programming surface* (loops, hooks, composition) over domain
+ops. They may meet later; neither blocks the other.
 
 ---
 
-## 3. Language choice
+## 2. Layer cake
 
-The host is C++/Qt. The script surface must be embeddable, sandboxable, and
-small enough that “biltoo without scripting” stays a supported build.
+Keep three layers distinct so the idea does not collapse into “embed a
+language and hope.”
 
-| Candidate | Pros | Cons |
-|-----------|------|------|
-| **Lua** | De-facto standard for C++ games/tools; tiny; excellent C API; coroutines. | 1-based arrays surprise some; less “OO” than Squirrel. |
-| **Squirrel** | C-like / JS-like syntax; native classes; used in game tools; embeds cleanly. | Smaller ecosystem; fewer biltoo contributors will already know it. |
-| **Wren** | Small, class-based, pleasant. | Niche; fewer battle-tested host bindings. |
-| **Python** | Everyone knows it; great for batch. | Heavy runtime; versioning pain; harder to ship “optional and small.” |
-| **Scheme / Guile** | Maximum Emacs kinship; macros. | Syntax and culture mismatch for many image-viewer users. |
-| **JavaScript (e.g. QuickJS)** | Familiar; JSON-native. | Easy to accidentally promise web-scale APIs we do not want. |
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Transports (optional)                                      │
+│  REPL dock · script file · --script CLI · later: RPC        │
+├─────────────────────────────────────────────────────────────┤
+│  Language skin (optional embed)                             │
+│  Lua or Squirrel (or none — JSON command stream is enough)  │
+├─────────────────────────────────────────────────────────────┤
+│  Host command table  ←── single source of truth             │
+│  Named ops + args + docstring + capability tier             │
+│  Same table keybindings / menus should eventually call      │
+├─────────────────────────────────────────────────────────────┤
+│  Domain / world (already exists in C++)                     │
+│  Session · appearance · text · speech · activity · view ops │
+└─────────────────────────────────────────────────────────────┘
+```
 
-**Recommendation (hypothetical):** prefer **Lua** as the default embed for
-v1 (maturity, size, C++ interop). Treat **Squirrel** as an equally valid
-choice if the project prefers stricter OO syntax and is willing to own the
-embedding — nothing in the *API shape* below depends on Lua vs Squirrel.
+The valuable design work is the **command table and value types**, not the
+choice of Lua vs Squirrel. A language skin is sugar over `invoke("session.append", …)`.
 
-Surface the same **host object model** either way. Language is a skin over
-handles and ops.
+---
 
-Illustrative snippets below use a Lua-ish dialect for readability; a Squirrel
-skin would look similar with `class` / `<-` syntax.
+## 3. Lessons from Emacs — kept and rejected
+
+### Keep
+
+| Idea | Biltoo form |
+|------|-------------|
+| Commands as data | One registry: name, parameters, docstring, tier, handler. |
+| Hooks | Finite set of **world** events (session, speech, activity, mode). |
+| REPL | Live console against a running process beats batch-only. |
+| Self-description | `help` / completion from the same registry metadata. |
+| Advice (light) | Optional pre/post wrappers for logging — not forks of ops. |
+
+### Reject or invert
+
+| Emacs habit | Why not |
+|-------------|---------|
+| Buffer / point as the universe | Canvas items and “current path” are viewpoints. Prefer `SessionImageId`. |
+| Ambient global “current” for everything | Ambient *session current* may exist for UX, but every op should accept an **explicit id** when the caller has one. |
+| Scripts building arbitrary UI | No script-built Qt trees in v1. Host-defined surfaces only. |
+| Omnipotent interpreter by default | Capability tiers (observe / session / file). |
+| Lisp-required culture | Language is a skin; contributors should not need Scheme to automate a session. |
 
 ---
 
 ## 4. Design principles
 
-1. **World first** — API centres on session, speech, activity, tags; mode is
-   one property among many ([DOMAIN.md](../DOMAIN.md#world-vs-viewpoint)).
-2. **No core forks** — scripting calls the same domain operations the UI uses.
-   No parallel “script-only” session model.
-3. **Ids over indices** — `SessionImageId` is the durable key; list index is
-   order only and may shift ([IDENTITY.md](../IDENTITY.md)).
-4. **Observe without owning** — reading speech cursor or activity must not
-   require Image mode or a visible tile.
-5. **Fail honestly** — missing OCR layer, cancelled speech, unknown id →
-   structured errors, not silent no-ops.
-6. **Host thread policy is explicit** — scripts scheduled on a worker must not
-   touch Qt; world mutations go through a documented marshal point (GUI thread
-   or a dedicated session lock). Detail is an implementation concern; the API
-   docs must state which ops are sync vs async.
-7. **Closed core, open composition** — the host exports a finite op set;
-   scripts compose them. Prefer adding one well-named op over opening raw
-   C++ internals.
-8. **Optional** — builds without the interpreter remain first-class.
+1. **World first** — session, speech, activity, tags; mode is a readable
+   property, not the namespace for all ops.
+2. **One core** — scripts call the same domain operations the UI uses. No
+   parallel session model for “script mode.”
+3. **Ids over indices** — `SessionImageId` is durable; list index is order and
+   may shift ([IDENTITY.md](../IDENTITY.md)).
+4. **Values cross the boundary; pointers do not** — scripts never see
+   `ImageItem*`, `QGraphicsScene`, or raw Qt types.
+5. **Explicit targets preferred** — `speak.page(id)` over “speak whatever is
+   current” when the script already knows the id.
+6. **Snapshots for reads** — iterating `session.ids()` uses a consistent
+   snapshot; mutations do not magically resize a live iterator mid-loop.
+7. **Honest failure** — unknown id, missing text layer, cancelled speech →
+   structured errors, not silent success.
+8. **Thread policy is documented per op** — mutations marshal like UI actions;
+   long work stays async (hooks / completion events).
+9. **Finite surface** — grow the command table deliberately; do not expose
+   internal controllers “for convenience.”
+10. **Optional** — a build without an interpreter remains first-class; the
+    command table can still serve tests and a future RPC.
 
 ---
 
-## 5. Object model (handles)
+## 5. Handles vs values
 
-Conceptual namespaces. Names are illustrative.
+**Handles** are small host-owned references the script may hold:
+
+| Handle | Identifies | Goes stale when |
+|--------|------------|-----------------|
+| `SessionImageId` | One session row | Row removed (id never reused) |
+| Speech plan id (optional) | Active plan | Plan stopped / replaced |
+| Activity id | One tracked op | Op leaves the recent ring |
+
+**Values** are plain data copies returned from queries:
+
+- paths (strings), dimensions, layout name, mode name  
+- appearance records (crop rect, flips, content rotation)  
+- text regions (id, kind, page-space bbox, text)  
+- activity records (kind, uri, phase, units)  
+- speech cursor `{ session_image_id, region_id, … }`
+
+Rules:
+
+- Returning a value **copies**; later UI edits do not mutate the script’s table.
+- Holding a handle across a mode switch is **fine** (world outlives viewpoint).
+- Holding a handle across **remove** yields a defined error on next use.
+- No deep object graphs of live host objects in the script heap.
+
+---
+
+## 6. Ambient “current” vs explicit targets
+
+The UI has a session cursor and a mode. Scripts may read them:
 
 ```text
-biltoo                          -- process / host
-  .version
-  .mode                         -- "image" | "gallery" | "workspace"
-  .session                      -- current session (world)
-  .speech                       -- speech subsystem
-  .activity                     -- async work snapshot
-  .view                         -- viewpoint helpers (camera, layout name)
-
-session
-  .length / #session
-  .current_id                   -- SessionImageId or nil
-  .current_index                -- 0-based order (may shift)
-  .image(id) / .image_at(i)
-  .ids()                        -- list of SessionImageId
-  .append(paths)
-  .remove(ids)
-  .reorder(ids_in_new_order)
-  .select(ids)                  -- session selection (filmstrip)
-
-session_image                   -- one row in the session
-  .id
-  .path
-  .index
-  .appearance                   -- crop, flips, content rotation (data)
-  .text_layer                   -- nil or text_layer handle
-  .speak_page() / .speak_from(region_id)
-
-text_layer
-  .regions()                    -- id, kind, bbox page-space, text
-  .region(id)
-
-speech
-  .state                        -- idle | speaking | paused
-  .plan                         -- current plan or nil
-  .cursor                       -- { session_image_id, region_id, … } or nil
-  .speak_selection()
-  .speak_page(id)
-  .pause() / .resume() / .stop()
-
-activity
-  .snapshot()                   -- list of running/recent ops (kind, uri, phase, …)
-  .on_change(handler)
-
-view                            -- viewpoint, not world ownership
-  .mode / .set_mode(m)
-  .goto_image(id)               -- enter Image on that session image
-  .gallery_layout() / .set_gallery_layout(name)
-  .highlight_speech_cursor()    -- request Gallery/Image cues (host paints)
+session.current_id
+session.current_index
+view.mode
 ```
 
-Scripts hold **handles** (small integer or userdata keyed by host tables), never
-C++ pointers. When a session image is removed, its handle goes stale and ops
-return a clear error.
+But **mutating ops should take explicit targets** whenever the caller has them:
+
+| Prefer | Avoid as the only form |
+|--------|------------------------|
+| `session.remove({ id1, id2 })` | `session.remove_current()` only |
+| `speech.speak_page(id)` | `speech.speak()` meaning “whatever Image shows” |
+| `view.goto_image(id)` | `view.goto_current()` as the sole navigation API |
+
+Convenience wrappers that use ambient current are OK if they are thin aliases
+documented as such. Automation and tests should prefer explicit ids so hooks
+and multi-step scripts do not race the user’s cursor.
 
 ---
 
-## 6. Hypothetical API surface (illustrative)
+## 7. Namespaces (illustrative)
 
-Not a promise of function names — a shape check against real workflows.
+```text
+host.version / host.invoke(name, args) / host.help(name?)
+host.commands()                     -- registry dump
 
-### 6.1 Session inspection and mutation
+session                             -- world: membership + order
+  .snapshot() -> { ids, current_id, paths_by_id }
+  .ids() / .length
+  .current_id / .current_index
+  .get(id) -> session_image value
+  .append(paths) / .remove(ids) / .reorder(ids)
+  .set_current(id)
 
-```lua
--- List paths without caring about mode
-for i, id in ipairs(session.ids()) do
-  local im = session.image(id)
-  print(i, id, im.path)
-end
+appearance                          -- world: per-id content transforms
+  .get(id) / .set(id, record)       -- enters undo like UI
 
--- Append and focus without requiring Gallery
-session.append({ "/data/scan/page-42.png" })
-local id = session.ids()[#session.ids()]
-view.goto_image(id)
+text                                -- world: layers & OCR
+  .layer(id) -> nil | { regions… }
+  .ocr(id, opts?) -> async job id
+
+speech                              -- world: plan + cursor
+  .state / .cursor / .plan_info
+  .speak_page(id) / .speak_selection()
+  .pause() / .resume() / .stop()
+
+activity                            -- world: async work
+  .snapshot() -> { running, recent }
+
+view                                -- viewpoint (allowed to change presentation)
+  .mode / .set_mode(m)
+  .goto_image(id)
+  .gallery_layout / .set_gallery_layout(name)
+  .request_highlight_speech_cursor()  -- host paints; script does not pack tiles
+
+tags / bookmarks                    -- when those features exist
+  … see TAGS_AND_BOOKMARKS.md
 ```
 
-### 6.2 Speech as world state
+`view.*` is intentionally small. Scripts do not set per-tile scene positions in
+Gallery; they do not own Workspace chrome. Presentation engines stay in C++
+(or future SDL).
 
-```lua
--- Start speech; user may switch to Gallery — plan keeps running
-speech.speak_page(session.current_id)
+---
 
-biltoo.on("speech.cursor", function(cur)
-  -- Gallery may highlight cur.session_image_id; script can log or auto-scroll
-  print("speaking", cur.session_image_id, cur.region_id)
-end)
+## 8. Commands and hooks
 
--- Later, from any mode:
-if speech.state == "speaking" then
-  speech.pause()
-end
+### Command table
+
+Every exported op is a row:
+
+```text
+name:        "session.append"
+args:        paths: string[]
+returns:     ids: SessionImageId[]
+tier:        session
+doc:         "Append paths to the session; returns new ids in order."
+undo:        yes   -- joins the UI undo stack when it mutates document state
+thread:      gui   -- marshalled
 ```
 
-### 6.3 Activity observation
+Keybindings and menus should eventually call the **same** names. Scripts call
+`host.invoke("session.append", { paths = { … } })` or sugar methods that do.
 
-```lua
-local snap = activity.snapshot()
-for _, op in ipairs(snap.running) do
-  print(op.kind, op.uri, op.phase, op.units_done, op.units_total)
-end
-```
+Growing the table: start from an inventory of actions MainWindow / ImageView
+already expose (open, append, next, speak, layout). Do not invent script-only
+ops that the UI cannot perform.
 
-### 6.4 Text / OCR
+### Hooks (finite, host-defined)
 
-```lua
-local layer = session.image(id).text_layer
-if not layer then
-  biltoo.ocr.run(id)          -- async; completion via hook
-else
-  for _, r in ipairs(layer.regions()) do
-    if r.kind == "body" then print(r.text) end
-  end
-end
-```
-
-### 6.5 Hooks (world events)
-
-Suggested event names (finite set, host-defined):
-
-| Event | Payload (sketch) |
-|-------|------------------|
+| Event | Typical payload |
+|-------|-----------------|
 | `session.replaced` | `{ reason }` |
 | `session.changed` | `{ added, removed, reordered }` |
 | `session.current` | `{ id, index }` |
@@ -261,129 +251,187 @@ Suggested event names (finite set, host-defined):
 | `speech.cursor` | `{ session_image_id, region_id, … }` |
 | `activity.changed` | `{ snapshot }` |
 | `ocr.finished` | `{ id, ok, error }` |
+| `command.failed` | `{ name, error }` |
 
-Hooks must not assume a particular mode. A `speech.cursor` handler that calls
-into Gallery highlight goes through `view.highlight_speech_cursor()` (or the
-host paints automatically); the script does not dig into pack items.
-
-### 6.6 Commands table (Emacs-like)
-
-Every user-visible action that is safe to automate is registered once:
-
-```text
-command "session-next"     → session navigation
-command "speak-selection"  → speech.speak_selection
-command "gallery-layout"   → args: layout name
-```
-
-Keybindings and menus invoke the same commands scripts call. Scripts can
-`(command-run "session-next")` without reimplementing edge behaviour.
+Handlers run on the host’s script/dispatch policy (document whether re-entrant
+session mutation is allowed; safest default: queue mutations).
 
 ---
 
-## 7. Ways to run scripts
+## 9. Worked scenarios
+
+Illustrative Lua-ish sugar. Real syntax follows the chosen skin.
+
+### 9.1 Dump session from any mode
+
+```lua
+local snap = session.snapshot()
+for i, id in ipairs(snap.ids) do
+  local im = session.get(id)
+  print(i, id, im.path)
+end
+```
+
+### 9.2 Speak a page, then watch in Gallery
+
+```lua
+local id = session.current_id
+speech.speak_page(id)
+view.set_mode("gallery")
+-- plan keeps running; cursor events still fire
+host.on("speech.cursor", function(cur)
+  print("cursor", cur.session_image_id, cur.region_id)
+end)
+```
+
+### 9.3 OCR every page that lacks a layer
+
+```lua
+for _, id in ipairs(session.ids()) do
+  if text.layer(id) == nil then
+    text.ocr(id)
+  end
+end
+host.on("ocr.finished", function(ev)
+  print(ev.id, ev.ok and "ok" or ev.error)
+end)
+```
+
+### 9.4 Activity pulse
+
+```lua
+local s = activity.snapshot()
+for _, op in ipairs(s.running) do
+  print(op.kind, op.uri, op.phase, op.units_done, op.units_total)
+end
+```
+
+---
+
+## 10. Language skin
+
+| Candidate | Notes |
+|-----------|------|
+| **Lua** | Default lean: tiny, proven C API, enough for hooks and tables. |
+| **Squirrel** | Fine if the project wants C-like classes and accepts a smaller ecosystem. |
+| **None (JSON ops)** | Valid v0: stdin/REPL sends `{ "op": "session.ids" }` → JSON value. Proves the table before embedding. |
+| Python / JS / Scheme | Possible later skins over the **same** table; not required to start. |
+
+Pick the skin when someone embeds; until then, specify ops and values as data.
+
+---
+
+## 11. Transports
 
 | Channel | Role |
 |---------|------|
-| **REPL dock / console** | Live exploration against the running world; print handles and snapshots. |
-| **Script files** | `biltoo --script job.lua` or File → Run Script; batch jobs. |
-| **Init / config scripts** | Optional user config directory (`…/biltoo/scripts/init.lua`) for hooks and personal commands. |
-| **Headless / CI** | Same ops with offscreen Qt where needed; activity and session still real. |
-| **External control (later)** | Optional JSON-RPC or socket speaking the *same* op names — not a second API. |
+| REPL dock | Exploration, support, agent debugging of world state. |
+| Script file | `biltoo --script job.lua` or Run Script. |
+| Init hooks | Optional user `scripts/init.*` registering hooks/commands. |
+| Headless | Offscreen Qt where needed; session/speech/activity still real. |
+| RPC (later) | Transport only — same op names, not a second API. |
 
-v1 can be “REPL + file run” only. External control is a transport over the same
-command table.
-
----
-
-## 8. Concurrency and the GUI
-
-- **Reads** of snapshot-style data (`activity.snapshot`, speech cursor copy,
-  session id list) should be safe from a documented context (GUI thread or
-  locked snapshot).
-- **Mutations** to session, mode, and speech control marshal to the host’s
-  session/GUI thread — same as UI actions.
-- Long work (OCR, prepare tiles) stays asynchronous; scripts await via hooks
-  or futures, not by spinning on the GUI thread.
-- Script errors never abort the host process; they surface in the Messages /
-  script console path.
+Multi-window ([DOMAIN.md](../DOMAIN.md) shortcuts): v1 binds scripts to the
+**window that owns the REPL** / the process’s primary session. A future
+`host.windows[]` can wait until multi-session exists.
 
 ---
 
-## 9. Capabilities and safety
+## 12. Concurrency, undo, capabilities
 
-Suggested tiers (configuration, not deep OS sandbox on day one):
+**Threading.** Queries that return snapshots should be consistent as of a
+point in time. Mutations follow the same path as UI (GUI/session thread).
+Async jobs (OCR, prepare) return a job id; completion is a hook.
 
-| Tier | Allowed |
-|------|---------|
-| **Observe** | session read, speech state, activity snapshot, mode read |
-| **Session** | append/remove/reorder, appearance tweaks, mode changes, speak control |
-| **File** | export, explicit write paths, shell-out (if ever) |
+**Undo.** Document-mutating ops (`session.*`, `appearance.*`) should push the
+same undo stack as the equivalent UI action. Transient view changes (mode,
+scroll) need not.
 
-Default interactive REPL = Session. Batch `--script` may require an explicit
-`--allow-file` for export. Never implicit full filesystem from a downloaded
-script.
+**Capabilities.**
 
----
+| Tier | Examples |
+|------|----------|
+| `observe` | snapshots, cursor, mode read, help |
+| `session` | membership, appearance, speak control, mode change |
+| `file` | export, explicit writes |
 
-## 10. Relation to scene language
-
-| | Scene language (SDL) | Scripting API (this note) |
-|--|----------------------|---------------------------|
-| Nature | Data: scenes, targets, closed actions | Program: loops, hooks, composition |
-| Author | Generators + optional hand-edit | User / extension author |
-| Risk if overgrown | Second app framework | Second session model |
-| Stay honest by | Closed action vocabulary | Finite command table + handles |
-
-Scripts should not become an alternate Gallery implementation. If a script
-needs a new presentation, that is an SDL or C++ feature — not an unbounded
-`draw_tile()` surface in v1.
+Interactive REPL defaults to `session`. Batch scripts request `file` explicitly.
 
 ---
 
-## 11. Non-goals
+## 13. Anti-patterns
 
-- Replacing Qt UI with a script-built widget tree.
-- Full OS scripting (files, network) as the default posture.
-- Guaranteeing binary-stable C ABI for scripts across releases (stabilize
-  *names and meanings* first; version the module).
-- Porting Emacs or shipping Guile unless the project explicitly chooses Lisp.
-- Blocking current Gallery / OCR / TTS work on an interpreter landing.
+Flag these in review (script surface *or* C++ “helpers” for scripts):
 
----
-
-## 12. Phased dream (only if this ever leaves the napkin)
-
-| Phase | Deliverable |
-|-------|-------------|
-| **0** | This doc + command inventory: list existing UI actions worth exporting. |
-| **A** | In-process interpreter, observe-only: session list, mode, speech state, activity snapshot; REPL dock. |
-| **B** | Session mutations + speak control + hooks (`session.*`, `speech.*`). |
-| **C** | Command table unified with keybindings; script files; init hooks. |
-| **D** | Optional external transport; capability tiers; package user scripts. |
-
-Each phase must keep “world first”: if a feature only works while Image mode is
-active for an accidental reason, that is a bug in the export layer.
+1. **Mode-gated world reads** — “speech.cursor only works in Image mode.”
+2. **Pointer smuggling** — userdata that is really `ImageItem*`.
+3. **Second session list** — script-side cache of paths that can drift from
+   `MainWindow` / `SessionDocument`.
+4. **Silent ambient targeting** — op mutates “current” without documenting it
+   when the user moved the cursor mid-script.
+5. **Script-owned Gallery layout** — setting per-cell poses from script
+   instead of asking for a named layout / SDL action.
+6. **Unbounded `eval` of trusted host internals** — expose ops, not the C++
+   heap.
+7. **Blocking the GUI** on OCR/network inside `host.invoke`.
 
 ---
 
-## 13. Open questions
+## 14. Relation to scene language
 
-1. Lua vs Squirrel vs QuickJS — pick when someone is ready to embed, not before.
-2. Should appearance edits from scripts enter the same undo stack as UI?
-   (Almost certainly yes.)
-3. Multi-document world: is `biltoo.session` the only session, or
-   `biltoo.sessions[k]` with a current pointer? Design handles now so a second
-   session does not break scripts.
-4. How much text-layer mutation (not just OCR run) belongs in scripts vs UI?
-5. Do we expose thumtoo prepare/status directly, or only via `activity` and a
-   few high-level `cache.ensure_tiles(id)` ops?
+| | Scene language | Scripting (this note) |
+|--|----------------|------------------------|
+| Kind | Data: scenes, targets, closed actions | Program: control flow + hooks |
+| Failure mode if overgrown | Second app framework | Second session model |
+| Discipline | Closed action vocabulary | Finite command table + handles |
+
+Scripts must not reimplement Gallery packing. If presentation must be data-
+driven, that is SDL (or C++ engines), not an open draw API in v1.
 
 ---
 
-## 14. One-sentence summary
+## 15. Non-goals
 
-**Export the world (session, speech, activity) through stable handles, a finite
-command table, and mode-independent hooks — so automation and a live REPL can
-drive biltoo without caring which viewpoint is on the canvas, and without
-growing a second core.**
+- Script-built widget trees or a general GUI toolkit in-process.
+- Full OS automation (arbitrary filesystem/network) as the default tier.
+- Binary-stable C ABI on day one — stabilize **op names and value shapes**
+  first; version the module (`host.api_version`).
+- Blocking Gallery / OCR / TTS work on an interpreter.
+- Requiring any particular language community (Emacs, Python, …) to use biltoo.
+
+---
+
+## 16. Phased path (napkin)
+
+| Phase | Outcome |
+|-------|---------|
+| **0** | This doc + inventory of UI actions → candidate command names. |
+| **A** | Command table in C++ callable from tests; JSON or minimal REPL; **observe-only**. |
+| **B** | Session mutation + speech control + hooks; undo participation. |
+| **C** | Language skin (Lua or Squirrel); init scripts; unify a few keybindings onto the table. |
+| **D** | Optional external transport; `file` tier; user script directory conventions. |
+
+Each phase is judged by world-first behaviour: if an op fails only because the
+wrong mode is up, the export layer is wrong.
+
+---
+
+## 17. Open questions
+
+1. **Lua vs Squirrel vs JSON-only v0** — decide at embed time; table first.
+2. **Undo granularity** for bulk `session.append` of hundreds of paths.
+3. **Multi-session** — `host.sessions[k]` vs single session; design handles so
+   a second document does not break scripts.
+4. **Text mutation** — beyond OCR run, how much region editing belongs here?
+5. **Thumtoo** — expose `cache.ensure_tiles(id)` or only `activity` + existing
+   prepare UX?
+6. **Hook re-entrancy** — queue vs allow nested `invoke` from handlers.
+
+---
+
+## 18. One-sentence summary
+
+**Publish the existing world through a finite, id-centred command table and
+plain value snapshots — so a REPL, a script file, or a later RPC can automate
+biltoo without caring which mode is on the canvas and without growing a second
+core.**
