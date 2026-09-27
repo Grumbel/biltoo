@@ -20,9 +20,11 @@ Vendored from text2sprech (same license) under `src/speech/`:
 
 Biltoo-specific:
 
-- `TextToSpeechController` — lazy server start, external `--piper-socket`
+- `TextToSpeechController` — lazy server start, external `--piper-socket`,
+  connect retry (~6s on `connectionError`), owned-server reconnect/respawn
 - `TextLayerController::pageTextInReadingOrder()` / `speakableText()`
 - Text panel Speak / Stop + Edit menu (`Ctrl+Shift+S`, `Ctrl+.`)
+- Test: `tests/sentence_splitter_test.cpp` (`ctest -R sentence-splitter`)
 
 Do **not** change PROTOCOL framing without updating text2sprech in lockstep.
 Qt6 Multimedia + Network linked for WAV playback and `QLocalSocket`.

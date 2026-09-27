@@ -169,11 +169,13 @@ void TextToSpeechController::speakText(const QString &text)
 void TextToSpeechController::stop()
 {
     m_pendingSpeak.clear();
+    // Do not abandon an in-flight server connect entirely — ready may still
+    // arrive for a later Speak — but drop the pending utterance.
     if (m_playback) {
         m_playback->stop();
     }
     setSpeaking(false);
-    if (m_ready) {
+    if (m_ready || m_connectPending) {
         setStatus(tr("Stopped"));
     }
 }
