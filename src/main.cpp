@@ -165,8 +165,9 @@ int main(int argc, char *argv[])
     parser.addPositionalArgument(
         QStringLiteral("files"),
         QCoreApplication::translate("main",
-            "Image files, directories, or a .biltoo project to open"),
-        QStringLiteral("[file|dir|project...]"));
+            "Image files, directories, http(s) URLs (downloaded to cache), "
+            "or a .biltoo project to open"),
+        QStringLiteral("[file|dir|url|project...]"));
 
     // --- Input / session ---
     QCommandLineOption recursiveOption(

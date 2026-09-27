@@ -2,30 +2,26 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2719.2-scripting-brainstorm` (base `ec60473`).
+**Tip:** `biltoo-2720.2-session-input-path` (base `f7c0a46` / origin/master).
 
-### 2719.2 — Scripting API brainstorm (docs polish)
-- [docs/SCRIPTING.md](docs/SCRIPTING.md): second pass — layer cake (transport /
-  skin / command table / world), handles vs values, explicit targets vs ambient
-  current, anti-patterns, phased path with JSON/table-first option.
-- Still hypothetical; no runtime code.
+### 2720.2 — SessionInputPath + tests (URL ≠ filesystem path)
+- `SessionInputPath::classify` / `canonicalForSession` / `urlPathLeafName` /
+  `remoteCachePath` — QUrl classification; no QFileInfo on URL strings.
+- `SessionExpand` uses it for http(s) download-to-cache and canonical paths.
+- Unit test `sessioninputpath`.
 
-### Stack
-- `ec60473` origin/master (includes 2717.1 gdb quit + 2718.2 world vs viewpoint)
-- 2719.1 first scripting draft → 2719.2 polish (this tip; full stack in one bundle)
+### 2720.1 — Open http(s) via expand (download to cache)
+
+### Already on origin
+- 2719.x scripting brainstorm docs, 2718.2 world vs viewpoint, 2717.1 gdb quit.
 
 ### Open product direction (not scheduled)
 - TTS across modes / pages; Gallery speech-cursor highlight.
 - Activity reporting as world state.
 - Scripting remains napkin-level until a command-table inventory is worth doing.
-
-### Later — crop-based packs (careful)
-- Re-enable Grid Crop as layout-only clip; do not invent more Fill modes early.
-
-### OCR / rotation (later)
-- Tesseract OSD / per-line baseline for rotated overlays.
+- Grid crop layout-only; OCR OSD.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2719.2-scripting-brainstorm-ec60473.bundle HEAD
+git pull --ff-only …/biltoo-2720.2-session-input-path-f7c0a46.bundle HEAD
 ```

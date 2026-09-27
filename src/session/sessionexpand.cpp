@@ -8,28 +8,183 @@
 #include "host/pagepath.h"
 #include "host/thumtoocache.h"
 
+#include <QCryptographicHash>
 #include <QDir>
 #include <QDirIterator>
+#include <QEventLoop>
+#include <QFile>
 #include <QFileInfo>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QObject>
+#include <QStandardPaths>
+#include <QTimer>
+#include <QUrl>
 
 namespace SessionExpand {
+
+void expandReport(const ReportFn &report, const QString &message,
+                  int current = -1, int total = -1);
+
+namespace {
+
+bool isHttpUrlString(const QString &s)
+{
+    const QString t = s.trimmed();
+    return t.startsWith(QLatin1String("https://"), Qt::CaseInsensitive)
+        || t.startsWith(QLatin1String("http://"), Qt::CaseInsensitive);
+}
+
+/** file:// → local path; leave other schemes unchanged. */
+QString normalizeUserPath(const QString &path)
+{
+    if (path.startsWith(QLatin1String("file:"), Qt::CaseInsensitive)) {
+        const QUrl url(path);
+        if (url.isLocalFile()) {
+            return url.toLocalFile();
+        }
+    }
+    return path;
+}
+
+QString remoteCachePathForUrl(const QUrl &url)
+{
+    const QString root = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QDir dir(root);
+    dir.mkpath(QStringLiteral("remote"));
+    const QByteArray digest = QCryptographicHash::hash(
+        url.toEncoded(QUrl::FullyEncoded), QCryptographicHash::Sha256);
+    const QString hex = QString::fromLatin1(digest.toHex().left(16));
+    QString name = QFileInfo(url.path()).fileName();
+    if (name.isEmpty()) {
+        name = QStringLiteral("download");
+    }
+    // Keep a short, filesystem-safe leaf name.
+    name.replace(QLatin1Char('/'), QLatin1Char('_'));
+    name.replace(QLatin1Char('\\'), QLatin1Char('_'));
+    return dir.filePath(QStringLiteral("remote/%1_%2").arg(hex, name));
+}
+
+/**
+ * Download http(s) URL to the biltoo cache (or reuse an existing file).
+ * Returns a local filesystem path, or empty on failure / cancel.
+ * Safe on a QThreadPool worker (local QEventLoop).
+ */
+QString materializeHttpUrl(const QString &urlString, const ReportFn &report,
+                           const CancelFn &cancel)
+{
+    const QUrl url(urlString.trimmed());
+    if (!url.isValid() || (url.scheme() != QLatin1String("http")
+                           && url.scheme() != QLatin1String("https"))) {
+        return {};
+    }
+
+    const QString dest = remoteCachePathForUrl(url);
+    {
+        const QFileInfo existing(dest);
+        if (existing.isFile() && existing.size() > 0) {
+            expandReport(report,
+                         QObject::tr("Using cached “%1”…").arg(existing.fileName()));
+            return dest;
+        }
+    }
+
+    expandReport(report, QObject::tr("Downloading “%1”…").arg(
+                             url.fileName().isEmpty() ? url.host() : url.fileName()));
+
+    QNetworkAccessManager nam;
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::UserAgentHeader,
+                  QStringLiteral("biltoo/0.2 (session open; +https://github.com/Grumbel/biltoo)"));
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                     QNetworkRequest::NoLessSafeRedirectPolicy);
+    // Prefer identity; let Qt/IA negotiate. Large PDFs stream to disk below.
+    req.setAttribute(QNetworkRequest::Http2AllowedAttribute, true);
+
+    QNetworkReply *reply = nam.get(req);
+    if (!reply) {
+        return {};
+    }
+
+    QFile out(dest + QStringLiteral(".part"));
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        reply->abort();
+        reply->deleteLater();
+        return {};
+    }
+
+    QObject::connect(reply, &QNetworkReply::readyRead, reply, [reply, &out]() {
+        out.write(reply->readAll());
+    });
+
+    QEventLoop loop;
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+
+    QTimer cancelTimer;
+    if (cancel) {
+        cancelTimer.setInterval(200);
+        QObject::connect(&cancelTimer, &QTimer::timeout, reply, [reply, &cancel, &loop]() {
+            if (cancel && cancel()) {
+                reply->abort();
+                loop.quit();
+            }
+        });
+        cancelTimer.start();
+    }
+
+    loop.exec();
+    cancelTimer.stop();
+
+    // Drain any remaining bytes.
+    if (reply->bytesAvailable() > 0) {
+        out.write(reply->readAll());
+    }
+    out.close();
+
+    const qint64 written = QFileInfo(dest + QStringLiteral(".part")).size();
+    const bool aborted = reply->error() == QNetworkReply::OperationCanceledError
+        || (cancel && cancel());
+    const bool ok = !aborted && reply->error() == QNetworkReply::NoError && written > 0;
+    // Content-Type is advisory only — IA may serve application/pdf after redirects.
+    reply->deleteLater();
+
+    if (!ok) {
+        QFile::remove(dest + QStringLiteral(".part"));
+        return {};
+    }
+
+    QFile::remove(dest);
+    if (!QFile::rename(dest + QStringLiteral(".part"), dest)) {
+        QFile::remove(dest + QStringLiteral(".part"));
+        return {};
+    }
+    return dest;
+}
+
+} // namespace
 
 QString canonicalImagePath(const QString &path)
 {
     if (path.isEmpty()) {
         return {};
     }
-    const QFileInfo info(path);
+    // Never resolve http(s) through QFileInfo — that produces cwd-relative junk
+    // like "$PWD/https:/example.com/file.pdf".
+    if (isHttpUrlString(path)) {
+        return path.trimmed();
+    }
+    const QString local = normalizeUserPath(path);
+    const QFileInfo info(local);
     const QString abs = info.absoluteFilePath();
-    return abs.isEmpty() ? path : abs;
+    return abs.isEmpty() ? local : abs;
 }
 
 using ReportFn = std::function<void(const QString &message, int current, int total)>;
 using CancelFn = std::function<bool()>; // true → abort
 
 void expandReport(const ReportFn &report, const QString &message,
-                  int current = -1, int total = -1)
+                  int current, int total)
 {
     if (report) {
         report(message, current, total);
@@ -101,12 +256,24 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
  * Expand one user-supplied path into session image URIs.
  * Returns false if @a cancel requested an abort (partial @a images may remain).
  */
-bool expandOneInputPath(QStringList &images, const QString &path, bool recursive,
+bool expandOneInputPath(QStringList &images, const QString &pathIn, bool recursive,
                         const ReportFn &report, const CancelFn &cancel)
 {
     if (cancel && cancel()) {
         return false;
     }
+
+    QString path = normalizeUserPath(pathIn);
+    if (isHttpUrlString(path)) {
+        const QString local = materializeHttpUrl(path, report, cancel);
+        if (local.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("Failed to download “%1”").arg(path.trimmed()));
+            return true; // continue other inputs; empty overall handled by caller
+        }
+        path = local;
+    }
+
     if (PagePath::isPageRef(path)) {
         const PagePath::Ref ref = PagePath::parse(path);
         if (ref.valid) {
@@ -220,13 +387,22 @@ QString emptyResultMessage(const QStringList &paths, bool append)
 {
     bool anyPdf = false;
     bool anyEpub = false;
+    bool anyRemote = false;
     for (const QString &p : paths) {
+        if (isHttpUrlString(p)) {
+            anyRemote = true;
+        }
         if (PagePath::isPdfFile(p)) {
             anyPdf = true;
         }
         if (PagePath::isEpubFile(p)) {
             anyEpub = true;
         }
+    }
+    if (anyRemote) {
+        return QObject::tr(
+            "Could not download remote URL (network error, redirect, or empty body). "
+            "Try: curl -L -o file.pdf '<url>' and open the local file.");
     }
     if ((anyPdf || anyEpub) && !ThumtooCache::isAvailable()) {
         return QObject::tr("Cannot open PDF/EPUB: thumtoo is not available.");
