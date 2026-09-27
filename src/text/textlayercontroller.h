@@ -86,9 +86,13 @@ public:
      * false: selection if any, else full page.
      */
     SpeakPlan buildSpeakPlan(bool pageOnly = false) const;
-    /** SpeakPlan::text (selection or page). Prefer this over newline-joined export. */
+    /**
+     * Full-page SpeakPlan text (same as buildSpeakPlan(true)).
+     * Selection does not shrink this — Speak uses the full page; selection is
+     * only a start anchor.
+     */
     QString speakableText() const;
-    /** Same as buildSpeakPlan().spans — offsets into speakableText(). */
+    /** Spans into speakableText() — always full-page plan offsets. */
     QVector<SpeakSpan> speakSpans() const;
 
     /** Highlight region(s) currently being spoken; progress 0..1 within the active span. */

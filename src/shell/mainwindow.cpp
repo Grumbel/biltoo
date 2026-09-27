@@ -5012,7 +5012,8 @@ void MainWindow::connectTextToSpeech()
                 }
                 TextLayerController &text = m_imageView->hostText();
                 QVector<int> regions;
-                for (const auto &sp : text.speakSpans()) {
+                // Full-page spans (must match the plan passed to m_tts->speak).
+                for (const auto &sp : text.buildSpeakPlan(/*pageOnly=*/true).spans) {
                     if (sp.end > start && sp.start < end) {
                         regions.append(sp.regionIndex);
                     }
@@ -5034,7 +5035,7 @@ void MainWindow::connectTextToSpeech()
                     m_ttsSentenceStart
                     + int(qBound(0.0, frac, 1.0) * double(spanLen - 1) + 0.5);
                 TextLayerController &text = m_imageView->hostText();
-                const auto spans = text.speakSpans();
+                const auto spans = text.buildSpeakPlan(/*pageOnly=*/true).spans;
                 int activeRi = m_ttsSpeakRegions.first();
                 double localProg = frac;
                 for (const auto &sp : spans) {

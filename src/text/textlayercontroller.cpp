@@ -782,12 +782,15 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
 
 QString TextLayerController::speakableText() const
 {
-    return buildSpeakPlan().text;
+    // Full page — same plan Speak uses (selection is only a start anchor).
+    return buildSpeakPlan(/*pageOnly=*/true).text;
 }
 
 QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
 {
-    return buildSpeakPlan().spans;
+    // Must match speakableText() / Speak offsets. pageOnly=false would rebuild a
+    // selection-only plan whose start/end no longer match the playing audio.
+    return buildSpeakPlan(/*pageOnly=*/true).spans;
 }
 
 void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices, double progress)
