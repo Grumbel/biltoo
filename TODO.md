@@ -2,12 +2,12 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.20-imageRectToPageRect-decl` (base `d456ffc`).
+**Tip:** `biltoo-2715.21-currentPageCrop-def` (base `d456ffc`).
 
 ### Fix
-- Declare `ThumtooCache::imageRectToPageRect` (compile error on OCR remap).
+- Define `TextLayerController::currentPageCropInPageSpace()` (link error).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.20-imageRectToPageRect-decl-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.21-currentPageCrop-def-d456ffc.bundle HEAD
 ```
