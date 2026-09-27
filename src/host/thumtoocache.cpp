@@ -3682,6 +3682,67 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
 }
 
 
+
+OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang)
+{
+    OcrRunResult out;
+#if !defined(BILTOO_HAVE_THUMTOO_TEXT)
+    Q_UNUSED(image);
+    Q_UNUSED(lang);
+    out.status = OcrRunResult::Status::Unavailable;
+    return out;
+#else
+    if (image.isNull() || image.width() < 8 || image.height() < 8) {
+        out.status = OcrRunResult::Status::Failed;
+        out.detail = QCoreApplication::translate(
+            "ThumtooCache", "OCR image too small or null");
+        return out;
+    }
+    if (!thumtoo::ocr_available()) {
+        out.status = OcrRunResult::Status::Unavailable;
+        return out;
+    }
+    QImage rgb = image;
+    if (rgb.format() != QImage::Format_RGB888) {
+        rgb = rgb.convertToFormat(QImage::Format_RGB888);
+    }
+    // Ensure tight scanline for thumtoo (bytesPerLine == width*3).
+    if (rgb.bytesPerLine() != rgb.width() * 3) {
+        QImage tight(rgb.width(), rgb.height(), QImage::Format_RGB888);
+        for (int y = 0; y < rgb.height(); ++y) {
+            memcpy(tight.scanLine(y), rgb.constScanLine(y),
+                   size_t(rgb.width()) * 3);
+        }
+        rgb = tight;
+    }
+    thumtoo::OcrOptions opts;
+    if (!lang.isEmpty()) {
+        opts.lang = lang.toStdString();
+    }
+    const thumtoo::TextRect bounds{
+        0.0, 0.0,
+        static_cast<double>(rgb.width()),
+        static_cast<double>(rgb.height())};
+    auto layer = thumtoo::ocr_rgb_page_text_layer(
+        rgb.constBits(), rgb.width(), rgb.height(), bounds, opts);
+    if (!layer) {
+        out.status = OcrRunResult::Status::Failed;
+        const std::string_view err = thumtoo::ocr_last_error();
+        if (!err.empty()) {
+            out.detail = QString::fromUtf8(err.data(), int(err.size()));
+        }
+        return out;
+    }
+    out.layer = convertLayer(*layer);
+    if (out.layer.regions.isEmpty()) {
+        out.status = OcrRunResult::Status::EmptyText;
+        return out;
+    }
+    out.status = OcrRunResult::Status::Ok;
+    return out;
+#endif
+}
+
 PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath)
 {
     init();

@@ -589,6 +589,13 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath,
                                  const QString &lang = QString(),
                                  const QRectF &pageCrop = {});
 
+/**
+ * OCR a host-prepared RGB image (already cropped / oriented / graded).
+ * Region bboxes use pageBounds (0,0)–(width,height) in image pixel space
+ * (Y-down). Caller remaps into document page space when needed.
+ */
+OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang = {});
+
 /** Cache-only OCR layer (empty if never OCR'd). */
 PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath);
 

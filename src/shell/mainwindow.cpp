@@ -5129,6 +5129,45 @@ void MainWindow::updateOcrPanel()
             .arg(engine));
 }
 
+
+namespace {
+
+/** Map OCR regions from display-pixel page box back to document page space. */
+void remapOcrLayerFromDisplayToPage(ThumtooCache::PageTextLayer *layer,
+                                    const QSize &nativeSource,
+                                    const WorkspaceItemState &st,
+                                    const QRectF &pageBounds,
+                                    bool pageYUp)
+{
+    if (!layer || nativeSource.width() < 1 || nativeSource.height() < 1
+        || !pageBounds.isValid()) {
+        return;
+    }
+    const ContentXform::Value x = ContentXform::Value::fromState(st);
+    for (ThumtooCache::TextRegion &reg : layer->regions) {
+        const QRectF disp = reg.bbox;
+        if (disp.isEmpty()) {
+            continue;
+        }
+        const QRectF src =
+            ContentXform::mapDisplayRectToSource(disp, nativeSource, x);
+        if (src.isEmpty()) {
+            continue;
+        }
+        reg.bbox = ThumtooCache::imageRectToPageRect(
+            src, pageBounds, nativeSource, pageYUp);
+    }
+    layer->pageBounds = pageBounds;
+}
+
+bool appearanceAffectsOcr(const WorkspaceItemState &st)
+{
+    return SessionAppearance::hasContentAppearance(st)
+           || !st.colorAdjust.isIdentity();
+}
+
+} // namespace
+
 void MainWindow::startOcrCurrentPage(bool force)
 {
     if (!m_imageView) {
@@ -5186,16 +5225,70 @@ void MainWindow::startOcrCurrentPage(bool force)
     QPointer<MainWindow> self(this);
     const QString pathCopy = path;
     const QString langCopy = lang;
+    WorkspaceItemState ocrState;
+    {
+        ImageItem *item = m_imageView->primaryItem();
+        SessionImageId sid = item ? item->sessionId() : kInvalidSessionImageId;
+        if (sid == kInvalidSessionImageId && m_imageView->isImageMode()) {
+            sid = m_imageView->hostSessionId().currentIdValue();
+        }
+        if (sid != kInvalidSessionImageId) {
+            ocrState = m_imageView->sessionAppearanceValue(sid);
+        }
+    }
     const QRectF pageCrop = m_imageView->hostText().currentPageCropInPageSpace();
-    if (pageCrop.isValid() && m_ocrPanel) {
+    if (appearanceAffectsOcr(ocrState) && m_ocrPanel) {
+        m_ocrPanel->appendLog(
+            tr("OCR uses on-screen appearance (orient/crop/colour grade)"));
+    } else if (pageCrop.isValid() && m_ocrPanel) {
         m_ocrPanel->appendLog(
             tr("Using session crop for OCR (%1×%2 in page space)")
                 .arg(pageCrop.width(), 0, 'f', 1)
                 .arg(pageCrop.height(), 0, 'f', 1));
     }
-    QThreadPool::globalInstance()->start([self, pathCopy, langCopy, gen, force, pageCrop]() {
-        const ThumtooCache::OcrRunResult result =
-            ThumtooCache::runOcrPageTextLayer(pathCopy, force, langCopy, pageCrop);
+    const bool useDisplay = appearanceAffectsOcr(ocrState);
+    QThreadPool::globalInstance()->start(
+        [self, pathCopy, langCopy, gen, force, pageCrop, ocrState, useDisplay]() {
+        ThumtooCache::OcrRunResult result;
+        if (!useDisplay) {
+            result = ThumtooCache::runOcrPageTextLayer(
+                pathCopy, force, langCopy, pageCrop);
+        } else {
+            // Decode → materialize (crop/orient/grade) → OCR pixels as seen.
+            QImage raw = ImageLoader::load(pathCopy);
+            if (raw.isNull()) {
+                raw = ImageLoader::loadThumbnail(pathCopy, 4000);
+            }
+            if (raw.isNull()) {
+                result.status = ThumtooCache::OcrRunResult::Status::Failed;
+                result.detail = QStringLiteral("decode failed for appearance OCR");
+            } else {
+                const QSize native = raw.size();
+                QImage view = SessionAppearance::materializeDisplay(
+                    raw, ocrState, SessionAppearance::PixelKind::FullSource);
+                if (view.isNull()) {
+                    view = raw;
+                }
+                result = ThumtooCache::runOcrRgbImage(view, langCopy);
+                if (result.status == ThumtooCache::OcrRunResult::Status::Ok
+                    || result.status
+                           == ThumtooCache::OcrRunResult::Status::EmptyText) {
+                    QRectF pageBounds;
+                    const auto nativeLayer =
+                        ThumtooCache::cachedPageTextLayer(pathCopy);
+                    if (nativeLayer.pageBounds.isValid()) {
+                        pageBounds = nativeLayer.pageBounds;
+                    } else {
+                        pageBounds = QRectF(0, 0, native.width(), native.height());
+                    }
+                    // PDF/DjVu page Y-up when path is a document page.
+                    const bool yUp = PagePath::isPageRef(pathCopy)
+                                     && !pathCopy.contains(QStringLiteral("epub"));
+                    remapOcrLayerFromDisplayToPage(
+                        &result.layer, native, ocrState, pageBounds, yUp);
+                }
+            }
+        }
         if (!self) {
             return;
         }
