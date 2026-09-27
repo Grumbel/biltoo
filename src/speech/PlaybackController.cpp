@@ -3,82 +3,153 @@
 
 #include "PlaybackController.h"
 
-#include <QAudioOutput>
+#include <QAudioDevice>
+#include <QAudioFormat>
+#include <QAudioSink>
+#include <QDateTime>
+#include <QMediaDevices>
 #include <QtEndian>
-#include <QtGlobal>
+#include <QTimer>
+#include <algorithm>
+#include <cstring>
+#include <optional>
 
 namespace {
 
-// Duration of a PCM WAV from its header/data chunk. Used so mid-sentence
-// seeks do not depend on QMediaPlayer having finished probing the buffer.
-qint64 wavDurationMs(const QByteArray &wav)
+// Parse a PCM WAV (RIFF) into format + interleaved sample bytes.
+struct ParsedWav {
+    QAudioFormat format;
+    QByteArray pcm;
+    qint64 durationMs = 0;
+};
+
+std::optional<ParsedWav> parseWavPcm(const QByteArray &wav)
 {
     if (wav.size() < 44) {
-        return 0;
+        return std::nullopt;
     }
-    if (!(wav[0] == 'R' && wav[1] == 'I' && wav[2] == 'F' && wav[3] == 'F'
-          && wav[8] == 'W' && wav[9] == 'A' && wav[10] == 'V' && wav[11] == 'E')) {
-        return 0;
+    const auto *d = reinterpret_cast<const uchar *>(wav.constData());
+    if (std::memcmp(d, "RIFF", 4) != 0 || std::memcmp(d + 8, "WAVE", 4) != 0) {
+        return std::nullopt;
     }
 
     int sampleRate = 0;
     int channels = 0;
     int bitsPerSample = 0;
-    int dataBytes = 0;
+    int audioFormatTag = 0; // 1 = PCM
+    QByteArray pcm;
 
     int offset = 12;
     while (offset + 8 <= wav.size()) {
-        const char *chunkId = wav.constData() + offset;
+        const char *id = wav.constData() + offset;
         const quint32 chunkSize = qFromLittleEndian<quint32>(
             reinterpret_cast<const uchar *>(wav.constData() + offset + 4));
         const int dataStart = offset + 8;
-        if (chunkId[0] == 'f' && chunkId[1] == 'm' && chunkId[2] == 't' && chunkId[3] == ' ') {
-            if (dataStart + 16 <= wav.size()) {
-                channels = qFromLittleEndian<quint16>(
-                    reinterpret_cast<const uchar *>(wav.constData() + dataStart + 2));
-                sampleRate = int(qFromLittleEndian<quint32>(
-                    reinterpret_cast<const uchar *>(wav.constData() + dataStart + 4)));
-                bitsPerSample = qFromLittleEndian<quint16>(
-                    reinterpret_cast<const uchar *>(wav.constData() + dataStart + 14));
-            }
-        } else if (chunkId[0] == 'd' && chunkId[1] == 'a' && chunkId[2] == 't' && chunkId[3] == 'a') {
-            dataBytes = int(chunkSize);
+        if (dataStart + static_cast<int>(chunkSize) > wav.size()) {
             break;
         }
-        // Chunk sizes are word-aligned.
-        offset = dataStart + int(chunkSize) + (int(chunkSize) & 1);
+        if (std::memcmp(id, "fmt ", 4) == 0 && chunkSize >= 16) {
+            audioFormatTag = qFromLittleEndian<quint16>(
+                reinterpret_cast<const uchar *>(wav.constData() + dataStart));
+            channels = qFromLittleEndian<quint16>(
+                reinterpret_cast<const uchar *>(wav.constData() + dataStart + 2));
+            sampleRate = qFromLittleEndian<quint32>(
+                reinterpret_cast<const uchar *>(wav.constData() + dataStart + 4));
+            bitsPerSample = qFromLittleEndian<quint16>(
+                reinterpret_cast<const uchar *>(wav.constData() + dataStart + 14));
+        } else if (std::memcmp(id, "data", 4) == 0) {
+            pcm = QByteArray(wav.constData() + dataStart, int(chunkSize));
+        }
+        offset = dataStart + int(chunkSize);
+        if (offset & 1) {
+            ++offset; // word align
+        }
     }
 
-    if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0 || dataBytes <= 0) {
-        return 0;
+    if (pcm.isEmpty() || sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) {
+        return std::nullopt;
     }
-    const qint64 bytesPerSec = qint64(sampleRate) * channels * (bitsPerSample / 8);
-    if (bytesPerSec <= 0) {
-        return 0;
+    // Piper emits PCM; refuse compressed WAV.
+    if (audioFormatTag != 1 && audioFormatTag != 0xFFFE) {
+        return std::nullopt;
     }
-    return (qint64(dataBytes) * 1000) / bytesPerSec;
+
+    QAudioFormat fmt;
+    fmt.setSampleRate(sampleRate);
+    fmt.setChannelCount(channels);
+    if (bitsPerSample == 16) {
+        fmt.setSampleFormat(QAudioFormat::Int16);
+    } else if (bitsPerSample == 32) {
+        fmt.setSampleFormat(QAudioFormat::Int32);
+    } else if (bitsPerSample == 8) {
+        fmt.setSampleFormat(QAudioFormat::UInt8);
+    } else {
+        return std::nullopt;
+    }
+
+    const int bytesPerSec = sampleRate * channels * (bitsPerSample / 8);
+    ParsedWav out;
+    out.format = fmt;
+    out.pcm = std::move(pcm);
+    out.durationMs = bytesPerSec > 0
+        ? (qint64(out.pcm.size()) * 1000) / bytesPerSec
+        : 0;
+    return out;
+}
+
+// Duration of a PCM WAV from its header/data chunk (legacy helper for cache).
+qint64 wavDurationMs(const QByteArray &wav)
+{
+    if (auto p = parseWavPcm(wav)) {
+        return p->durationMs;
+    }
+    return 0;
 }
 
 } // namespace
 
 PlaybackController::PlaybackController(PiperClient *client, QObject *parent)
-    : QObject(parent), m_client(client)
+    : QObject(parent)
+    , m_client(client)
 {
-    m_audioOutput = new QAudioOutput(&m_player);
-    m_audioOutput->setVolume(1.0f);
-    m_player.setAudioOutput(m_audioOutput);
+    m_positionTimer = new QTimer(this);
+    m_positionTimer->setInterval(50);
+    connect(m_positionTimer, &QTimer::timeout, this, &PlaybackController::onPositionTick);
 
     connect(m_client, &PiperClient::audioReady, this, &PlaybackController::onAudioReady);
     connect(m_client, &PiperClient::synthesisError, this, &PlaybackController::onSynthesisError);
-    connect(&m_player, &QMediaPlayer::mediaStatusChanged, this, &PlaybackController::onMediaStatusChanged);
-    connect(&m_player, &QMediaPlayer::positionChanged, this, &PlaybackController::onPlayerPositionChanged);
-    connect(&m_player, &QMediaPlayer::durationChanged, this, &PlaybackController::onPlayerDurationChanged);
-    connect(&m_player, &QMediaPlayer::errorOccurred, this, &PlaybackController::onPlayerError);
+}
+
+PlaybackController::~PlaybackController()
+{
+    stopSink();
+}
+
+void PlaybackController::stopSink()
+{
+    if (m_positionTimer) {
+        m_positionTimer->stop();
+    }
+    if (m_sink) {
+        QObject::disconnect(m_sink, nullptr, this, nullptr);
+        m_sink->stop();
+        m_sink->deleteLater();
+        m_sink = nullptr;
+    }
+    m_pcmBuffer.reset();
 }
 
 qint64 PlaybackController::currentPositionMs() const
 {
-    return m_player.position();
+    if (!m_playing || m_paused) {
+        return m_seekOffsetMs;
+    }
+    const qint64 dur = durationForCurrentSentence();
+    if (m_playStartMs <= 0) {
+        return m_seekOffsetMs;
+    }
+    const qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - m_playStartMs;
+    return qBound(qint64(0), m_seekOffsetMs + elapsed, dur > 0 ? dur : m_seekOffsetMs + elapsed);
 }
 
 qint64 PlaybackController::currentDurationMs() const
@@ -92,49 +163,41 @@ double PlaybackController::currentFraction() const
     if (duration <= 0) {
         return 0.0;
     }
-    return qBound(0.0, double(m_player.position()) / double(duration), 1.0);
+    return qBound(0.0, double(currentPositionMs()) / double(duration), 1.0);
 }
 
 qint64 PlaybackController::durationForCurrentSentence() const
 {
-    const qint64 playerDuration = m_player.duration();
-    if (playerDuration > 0) {
-        return playerDuration;
-    }
     if (m_currentIndex >= 0 && m_currentIndex < m_sentences.size()) {
         return m_audioDurationMs.value(m_sentences[m_currentIndex].id, 0);
     }
     return 0;
 }
 
-qint64 PlaybackController::cachedDurationMs(int sentenceId) const
-{
-    return m_audioDurationMs.value(sentenceId, 0);
-}
-
 void PlaybackController::setVolume(float volume)
 {
-    if (!m_audioOutput) {
-        return;
+    m_volume = qBound(0.0f, volume, 1.0f);
+    if (m_sink) {
+        m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
     }
-    m_audioOutput->setVolume(qBound(0.0f, volume, 1.0f));
 }
 
 float PlaybackController::volume() const
 {
-    return m_audioOutput ? m_audioOutput->volume() : 1.0f;
+    return m_volume;
 }
 
 void PlaybackController::setMuted(bool muted)
 {
-    if (m_audioOutput) {
-        m_audioOutput->setMuted(muted);
+    m_muted = muted;
+    if (m_sink) {
+        m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
     }
 }
 
 bool PlaybackController::isMuted() const
 {
-    return m_audioOutput && m_audioOutput->isMuted();
+    return m_muted;
 }
 
 void PlaybackController::loadSentences(const QVector<Sentence> &sentences)
@@ -155,7 +218,6 @@ void PlaybackController::setSuspended(bool suspended)
 {
     m_suspended = suspended;
     if (suspended) {
-        // Drop any in-flight playback synthesis; export owns the client now.
         stop();
         m_client->cancelAll();
         m_audioCache.clear();
@@ -172,11 +234,11 @@ void PlaybackController::play()
     m_playing = true;
     requestLookahead();
 
-    // Resume mid-sentence after pause(). Reloading the WAV (playCurrentIfReady)
-    // would restart the segment from the beginning -- that's what stop() is for.
-    if (m_paused) {
+    if (m_paused && m_sink) {
         m_paused = false;
-        m_player.play();
+        m_playStartMs = QDateTime::currentMSecsSinceEpoch();
+        m_sink->resume();
+        m_positionTimer->start();
         return;
     }
 
@@ -185,16 +247,15 @@ void PlaybackController::play()
 
 void PlaybackController::pause()
 {
-    if (!m_playing && m_player.playbackState() != QMediaPlayer::PlayingState) {
+    if (!m_playing) {
         return;
     }
     m_playing = false;
-    // Only mark resumable if audio is actually flowing; pausing while still
-    // waiting for synthesis should just cancel the "playing" intent.
-    if (m_player.playbackState() == QMediaPlayer::PlayingState
-        || m_player.playbackState() == QMediaPlayer::PausedState) {
+    if (m_sink && m_sink->state() == QAudio::ActiveState) {
         m_paused = true;
-        m_player.pause();
+        m_seekOffsetMs = currentPositionMs();
+        m_sink->suspend();
+        m_positionTimer->stop();
     } else {
         m_paused = false;
     }
@@ -206,11 +267,12 @@ void PlaybackController::stop()
     m_paused = false;
     m_waitingForAudio = false;
     m_pendingSeekFraction = -1.0;
-    m_player.stop();
-    // Drop the current media so the next play() reloads from the start.
-    m_player.setSource(QUrl());
-    m_currentAudioBuffer.reset();
-    m_client->cancelAll();
+    m_seekOffsetMs = 0;
+    m_playStartMs = 0;
+    stopSink();
+    if (m_client) {
+        m_client->cancelAll();
+    }
 }
 
 void PlaybackController::next()
@@ -236,71 +298,26 @@ void PlaybackController::seekToSentence(int index, double fractionWithin)
             m_playing = false;
             m_paused = false;
             m_pendingSeekFraction = -1.0;
+            stopSink();
             emit playbackFinished();
         }
         return;
     }
-
-    fractionWithin = qBound(0.0, fractionWithin, 1.0);
-    const bool sameSentence = (index == m_currentIndex);
-    const int sentenceId = m_sentences[index].id;
-    const bool audioCached = m_audioCache.contains(sentenceId);
-
-    // Fast path: same sentence with WAV already on hand — move the playhead
-    // (reloading the buffer if the player was stopped) without resynthesis.
-    if (sameSentence && audioCached) {
-        m_pendingSeekFraction = fractionWithin;
-        m_currentIndex = index;
-        if (!m_currentAudioBuffer) {
-            // Player was stopped/cleared but cache still has the WAV.
-            m_currentAudioBuffer = std::make_unique<QBuffer>();
-            m_currentAudioBuffer->setData(m_audioCache.value(sentenceId));
-            m_currentAudioBuffer->open(QIODevice::ReadOnly);
-            m_player.setSourceDevice(m_currentAudioBuffer.get(), QUrl("wav-audio://sentence"));
-            if (m_playing) {
-                m_player.play();
-            }
-        }
-        applyPendingSeekIfPossible();
-        const qint64 duration = durationForCurrentSentence();
-        const qint64 position = duration > 0
-            ? qint64(fractionWithin * double(duration) + 0.5)
-            : m_player.position();
-        emit audioPositionChanged(position, duration);
-        return;
-    }
-
-    const bool wasPlaying = m_playing;
-    m_paused = false;
-    m_pendingSeekFraction = fractionWithin;
-    m_player.stop();
-    m_player.setSource(QUrl());
-    m_currentAudioBuffer.reset();
+    stopSink();
     m_currentIndex = index;
-
-    if (wasPlaying) {
-        play();
-    } else {
-        // Prefetch so Play can start mid-segment without an extra wait.
+    m_pendingSeekFraction = qBound(0.0, fractionWithin, 1.0);
+    m_seekOffsetMs = 0;
+    m_paused = false;
+    if (m_playing) {
         requestLookahead();
-        const qint64 duration = durationForCurrentSentence();
-        const qint64 position = (duration > 0 && m_pendingSeekFraction >= 0.0)
-            ? qint64(m_pendingSeekFraction * double(duration) + 0.5)
-            : 0;
-        // Report the *intended* position so the UI fraction is not reset to 0
-        // while audio is still loading.
-        emit audioPositionChanged(position, duration);
+        playCurrentIfReady();
     }
 }
 
 void PlaybackController::setSpeed(double speed)
 {
-    // Same cancel/clear/re-request pattern as setVoice: length_scale is
-    // baked into the WAV, so cached lookahead audio would keep the old
-    // speed. The sentence already playing is left alone.
     m_client->cancelAll();
     m_client->setSpeed(speed);
-    m_player.setPlaybackRate(1.0); // never resample; avoid pitch distortion
     m_audioCache.clear();
     m_audioDurationMs.clear();
     if (m_playing) {
@@ -310,12 +327,6 @@ void PlaybackController::setSpeed(double speed)
 
 void PlaybackController::setVoice(const QString &voice)
 {
-    // Order matters: cancel server-side in-flight synthesis for the *old*
-    // voice first (asyncio.CancelledError there means no stale audio
-    // message ever arrives for those requests), then update the session's
-    // voice, then drop anything we already cached under the old voice, and
-    // finally re-request what we still need so it comes back in the new
-    // voice.
     m_client->cancelAll();
     m_client->setVoice(voice);
     m_audioCache.clear();
@@ -347,7 +358,7 @@ void PlaybackController::playCurrentIfReady()
     const Sentence &s = m_sentences[m_currentIndex];
     auto it = m_audioCache.find(s.id);
     if (it == m_audioCache.end()) {
-        m_waitingForAudio = true; // onAudioReady will resume playback when it arrives
+        m_waitingForAudio = true;
         m_paused = false;
         emit preparingAudio(s.id);
         return;
@@ -355,67 +366,112 @@ void PlaybackController::playCurrentIfReady()
     m_waitingForAudio = false;
     m_paused = false;
 
-    m_currentAudioBuffer = std::make_unique<QBuffer>();
-    m_currentAudioBuffer->setData(it.value());
-    m_currentAudioBuffer->open(QIODevice::ReadOnly);
+    auto parsed = parseWavPcm(it.value());
+    if (!parsed) {
+        emit errorOccurred(QStringLiteral("Invalid WAV for sentence %1").arg(s.id));
+        advanceToNext();
+        return;
+    }
 
-    m_player.setSourceDevice(m_currentAudioBuffer.get(), QUrl("wav-audio://sentence"));
-    // Seek before play when we already know the WAV duration so playback
-    // does not audibly start at 0 and then jump.
-    applyPendingSeekIfPossible();
-    m_player.play();
-    // Retry after play — some backends only become seekable once started.
-    applyPendingSeekIfPossible();
+    const QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    if (device.isNull()) {
+        emit errorOccurred(tr("No audio output device"));
+        m_playing = false;
+        return;
+    }
+    if (!device.isFormatSupported(parsed->format)) {
+        // Try nearest — QAudioSink may still accept Int16 mono/stereo at rate.
+        emit errorOccurred(tr("Audio device does not support this WAV format"));
+        // Still try; some devices report false negatives.
+    }
+
+    stopSink();
+
+    m_sink = new QAudioSink(device, parsed->format, this);
+    m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
+    connect(m_sink, &QAudioSink::stateChanged, this, &PlaybackController::onSinkStateChanged);
+
+    // Optional mid-sentence seek via byte offset into PCM.
+    QByteArray pcm = parsed->pcm;
+    m_seekOffsetMs = 0;
+    if (m_pendingSeekFraction > 0.0 && parsed->durationMs > 0) {
+        const qint64 seekMs = qint64(m_pendingSeekFraction * double(parsed->durationMs));
+        const int bps = parsed->format.bytesPerFrame();
+        const int frame = int((seekMs * parsed->format.sampleRate()) / 1000);
+        int byteOffset = frame * bps;
+        byteOffset = qBound(0, byteOffset, qMax(0, pcm.size() - bps));
+        pcm = pcm.mid(byteOffset);
+        m_seekOffsetMs = seekMs;
+        m_pendingSeekFraction = -1.0;
+    } else {
+        m_pendingSeekFraction = -1.0;
+    }
+
+    m_pcmBuffer = std::make_unique<QBuffer>();
+    m_pcmBuffer->setData(pcm);
+    m_pcmBuffer->open(QIODevice::ReadOnly);
+
+    m_playStartMs = QDateTime::currentMSecsSinceEpoch();
+    m_sink->start(m_pcmBuffer.get());
+    m_positionTimer->start();
 
     emit sentenceStarted(s.id, s.start, s.end);
-    emit audioPositionChanged(m_player.position(), durationForCurrentSentence());
+    emit audioPositionChanged(m_seekOffsetMs, parsed->durationMs);
     requestLookahead();
 }
 
-bool PlaybackController::applyPendingSeekIfPossible()
+void PlaybackController::onSinkStateChanged()
 {
-    if (m_pendingSeekFraction < 0.0) {
-        return true; // nothing pending
+    if (!m_sink) {
+        return;
     }
-    const qint64 duration = durationForCurrentSentence();
-    if (duration <= 0) {
-        return false;
+    const QAudio::State st = m_sink->state();
+    if (st == QAudio::IdleState && m_playing && !m_paused) {
+        // Finished draining this sentence's buffer.
+        advanceToNext();
+    } else if (st == QAudio::StoppedState) {
+        if (m_sink->error() != QAudio::NoError && m_playing) {
+            emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
+            advanceToNext();
+        }
     }
-    const qint64 target = static_cast<qint64>(m_pendingSeekFraction * double(duration) + 0.5);
-    m_player.setPosition(qBound(qint64(0), target, qMax(qint64(0), duration - 1)));
-    m_pendingSeekFraction = -1.0;
-    return true;
+}
+
+void PlaybackController::onPositionTick()
+{
+    if (!m_playing || m_paused) {
+        return;
+    }
+    emit audioPositionChanged(currentPositionMs(), durationForCurrentSentence());
 }
 
 void PlaybackController::advanceToNext()
 {
-    const int finishedIndex = m_currentIndex;
-    // Capture duration before dropping the cache entry — needed to report
-    // EOF as the end of the last segment, not position 0.
-    const qint64 finishedDuration = qMax(m_player.duration(),
-        m_audioDurationMs.value(m_sentences[finishedIndex].id, qint64(0)));
+    if (m_currentIndex < 0 || m_currentIndex >= m_sentences.size()) {
+        m_playing = false;
+        stopSink();
+        emit playbackFinished();
+        return;
+    }
 
-    // Drop PCM to free memory; keep duration so progress labels can use real
-    // lengths for sentences already spoken (and for lookahead still cached).
+    const int finishedIndex = m_currentIndex;
+    const qint64 finishedDuration = m_audioDurationMs.value(m_sentences[finishedIndex].id, 0);
     m_audioCache.remove(m_sentences[finishedIndex].id);
     m_pendingSeekFraction = -1.0;
-    ++m_currentIndex;
-    m_paused = false;
-    if (m_currentIndex >= m_sentences.size()) {
+    m_seekOffsetMs = 0;
+    stopSink();
+
+    if (finishedIndex + 1 >= m_sentences.size()) {
         m_playing = false;
-        // Stay parked on the last sentence at the end so the seek bar and
-        // highlight remain at EOF, not the start of the last segment
-        // (player.stop() would otherwise report position 0).
         m_currentIndex = m_sentences.size() - 1;
-        m_player.stop();
-        m_player.setSource(QUrl());
-        m_currentAudioBuffer.reset();
         if (finishedDuration > 0) {
             emit audioPositionChanged(finishedDuration, finishedDuration);
         }
         emit playbackFinished();
         return;
     }
+
+    m_currentIndex = finishedIndex + 1;
     playCurrentIfReady();
 }
 
@@ -441,53 +497,8 @@ void PlaybackController::onSynthesisError(int id, const QString &message)
         return;
     }
     emit errorOccurred(QStringLiteral("Synthesis failed for sentence %1: %2").arg(id).arg(message));
-    // Skip the broken sentence rather than stalling playback entirely.
     if (m_playing && m_currentIndex >= 0 && m_currentIndex < m_sentences.size()
         && m_sentences[m_currentIndex].id == id) {
-        advanceToNext();
-    }
-}
-
-void PlaybackController::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
-{
-    if (status == QMediaPlayer::EndOfMedia && m_playing) {
-        // Only advance when we were not still trying to land a seek near the end.
-        m_pendingSeekFraction = -1.0;
-        advanceToNext();
-        return;
-    }
-    if (status == QMediaPlayer::BufferedMedia || status == QMediaPlayer::LoadedMedia
-        || status == QMediaPlayer::BufferingMedia) {
-        if (applyPendingSeekIfPossible()) {
-            emit audioPositionChanged(m_player.position(), durationForCurrentSentence());
-        }
-    }
-}
-
-void PlaybackController::onPlayerPositionChanged(qint64 position)
-{
-    // If a seek is still pending and we now have duration, land it.
-    applyPendingSeekIfPossible();
-    emit audioPositionChanged(position, durationForCurrentSentence());
-}
-
-void PlaybackController::onPlayerDurationChanged(qint64 /*duration*/)
-{
-    applyPendingSeekIfPossible();
-    emit audioPositionChanged(m_player.position(), durationForCurrentSentence());
-}
-
-void PlaybackController::onPlayerError(QMediaPlayer::Error error, const QString &errorString)
-{
-    if (error == QMediaPlayer::NoError) {
-        return;
-    }
-    const QString msg = errorString.isEmpty()
-        ? QStringLiteral("Media playback error (%1)").arg(int(error))
-        : errorString;
-    emit errorOccurred(msg);
-    // Skip this sentence rather than stalling forever on a bad buffer.
-    if (m_playing) {
         advanceToNext();
     }
 }
