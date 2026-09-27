@@ -2,18 +2,18 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.17-tts-panel-connect` (base `d456ffc`).
+**Tip:** `biltoo-2715.18-ocr-crop` (base `d456ffc`).
 
-### Done (Phase A + controls + highlight)
-- Piper TTS: Speak/Stop, multi-sentence, QAudioSink, duration advance.
-- Text panel: Voice, Tempo, Vol 0–150%; speaking green highlight + progress.
-- Panel TTS controls wired only via `connectTextPanel` (no duplicate slots).
+### OCR + crop
+- Page OCR passes session crop (page space) into thumtoo `OcrOptions`.
+- Needs thumtoo tip with `OcrOptions.has_crop` (bundle `thumtoo-ocr-crop-*.bundle`).
+
+### Prior TTS
+- 2715.17 voice/tempo/volume/highlight.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.17-tts-panel-connect-d456ffc.bundle HEAD
+# thumtoo first (rebuild/install), then biltoo:
+git -C thumtoo pull --ff-only …/thumtoo-ocr-crop-4d49372.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2715.18-ocr-crop-d456ffc.bundle HEAD
 ```
-
-### Optional later
-- Persist voice/tempo/volume in settings.
-- Multi-page speak with highlight following page changes.
