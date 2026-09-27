@@ -221,6 +221,7 @@ void OcrPanel::appendLog(const QString &line)
         QStringLiteral("[%1] %2").arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")),
                                       line);
     m_log->appendPlainText(stamped);
+    emit logLineAppended(line);
 }
 
 void OcrPanel::setSummary(const QString &text)

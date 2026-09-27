@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "shell/messagelogpanel.h"
 #include "text/textsearchpolicy.h"
 #include "shell/dualimageshell.h"
 #include "session/sessionopen.h"
@@ -464,6 +465,31 @@ MainWindow::MainWindow(QWidget *parent)
             connectTextPanel();
         }
     });
+
+    m_messageLogPanel = new MessageLogPanel(this);
+    m_messageLogDock = new QDockWidget(tr("Messages"), this);
+    m_messageLogDock->setObjectName(QStringLiteral("MessageLogDock"));
+    m_messageLogDock->setWidget(m_messageLogPanel);
+    m_messageLogDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::LeftDockWidgetArea
+                                      | Qt::RightDockWidgetArea);
+    m_messageLogDock->setFeatures(QDockWidget::DockWidgetClosable
+                                  | QDockWidget::DockWidgetMovable
+                                  | QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::BottomDockWidgetArea, m_messageLogDock);
+    m_messageLogDock->hide();
+    if (m_ocrPanel) {
+        connect(m_ocrPanel, &OcrPanel::logLineAppended, this, [this](const QString &line) {
+            if (!m_messageLogPanel) {
+                return;
+            }
+            const QString lower = line.toLower();
+            if (lower.contains(QStringLiteral("error")) || lower.contains(QStringLiteral("fail"))) {
+                m_messageLogPanel->appendError(tr("OCR"), line);
+            } else {
+                m_messageLogPanel->appendInfo(tr("OCR"), line);
+            }
+        }, Qt::UniqueConnection);
+    }
 
     m_tts = new TextToSpeechController(this);
     connectTextToSpeech();
@@ -4900,10 +4926,22 @@ void MainWindow::connectTextToSpeech()
     }
     connect(m_tts, &TextToSpeechController::statusChanged, this, [this](const QString &msg) {
         if (m_textPanel) {
-            m_textPanel->setSpeechStatus(msg);
+            m_textPanel->setSpeechStatus(msg, /*isError=*/false);
         }
         if (statusBar()) {
             statusBar()->showMessage(msg, 4000);
+        }
+        // Transient progress stays in the Text panel log only; durable notes
+        // also go to Messages (avoid flooding with Speaking… / Synthesizing…).
+        if (m_messageLogPanel) {
+            const QString m = msg.trimmed();
+            const bool transient =
+                m.startsWith(tr("Speaking")) || m.startsWith(tr("Synthesizing"))
+                || m.startsWith(tr("Connecting")) || m.startsWith(tr("Starting"))
+                || m == tr("Stopped") || m == tr("Finished") || m == tr("TTS idle");
+            if (!transient) {
+                m_messageLogPanel->appendInfo(tr("TTS"), m);
+            }
         }
     });
     connect(m_tts, &TextToSpeechController::speakingChanged, this, [this](bool on) {
@@ -4918,8 +4956,19 @@ void MainWindow::connectTextToSpeech()
         }
     });
     connect(m_tts, &TextToSpeechController::errorOccurred, this, [this](const QString &msg) {
+        if (m_textPanel) {
+            m_textPanel->setSpeechStatus(msg, /*isError=*/true);
+        }
         if (statusBar()) {
-            statusBar()->showMessage(msg, 6000);
+            statusBar()->showMessage(msg, 8000);
+        }
+        if (m_messageLogPanel) {
+            m_messageLogPanel->appendError(tr("TTS"), msg);
+        }
+        // Surface the Messages dock on hard TTS failures so the user notices.
+        if (m_messageLogDock && !m_messageLogDock->isVisible()) {
+            m_messageLogDock->show();
+            m_messageLogDock->raise();
         }
     });
     connect(m_tts, &TextToSpeechController::voicesChanged, this, [this](const QStringList &voices) {

@@ -343,6 +343,10 @@ set(BILTOO_LIB_SOURCES
   src/shell/croppanel.h
   src/shell/ocrpanel.cpp
   src/shell/ocrpanel.h
+  src/shell/messagelogwidget.cpp
+  src/shell/messagelogwidget.h
+  src/shell/messagelogpanel.cpp
+  src/shell/messagelogpanel.h
   src/shell/textpanel.cpp
   src/shell/textpanel.h
   src/text/textpanelmodel.cpp

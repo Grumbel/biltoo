@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/textpanel.h"
+#include "shell/messagelogwidget.h"
 #include "text/textpanelmodel.h"
 
 #include <QCheckBox>
@@ -123,10 +124,12 @@ TextPanel::TextPanel(QWidget *parent)
         emit volumeChosen(pct);
     });
 
-    m_speechStatus = new QLabel(tr("TTS idle"), this);
-    m_speechStatus->setWordWrap(true);
-    m_speechStatus->setStyleSheet(QStringLiteral("color: palette(mid); font-size: small;"));
-    layout->addWidget(m_speechStatus);
+    m_speechLog = new MessageLogWidget(this);
+    m_speechLog->setCompact(true);
+    m_speechLog->setMaximumBlockCount(80);
+    m_speechLog->setPlaceholderText(tr("TTS status and errors appear here (selectable)…"));
+    m_speechLog->appendInfo(tr("TTS idle"));
+    layout->addWidget(m_speechLog);
 
     m_view = new QListView(this);
     m_view->setModel(m_model);
@@ -191,10 +194,17 @@ void TextPanel::setShowOutlinesChecked(bool on)
     }
 }
 
-void TextPanel::setSpeechStatus(const QString &text)
+void TextPanel::setSpeechStatus(const QString &text, bool isError)
 {
-    if (m_speechStatus) {
-        m_speechStatus->setText(text.isEmpty() ? tr("TTS idle") : text);
+    if (!m_speechLog) {
+        return;
+    }
+    const QString msg = text.isEmpty() ? tr("TTS idle") : text;
+    if (isError) {
+        m_speechLog->appendError(msg);
+    } else {
+        // Keep a short running log of state changes (not only the last line).
+        m_speechLog->appendInfo(msg);
     }
 }
 

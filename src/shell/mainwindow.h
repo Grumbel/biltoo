@@ -33,6 +33,7 @@ class MetadataPanel;
 class AdjustmentsPanel;
 class CropPanel;
 class OcrPanel;
+class MessageLogPanel;
 class TextPanel;
 class TextToSpeechController;
 class LayoutPanel;
@@ -567,6 +568,8 @@ private:
     QAction *m_toggleOcrAct = nullptr;
     TextPanel *m_textPanel = nullptr;
     QDockWidget *m_textDock = nullptr;
+    MessageLogPanel *m_messageLogPanel = nullptr;
+    QDockWidget *m_messageLogDock = nullptr;
     TextToSpeechController *m_tts = nullptr;
     QVector<int> m_ttsSpeakRegions;
     QString m_piperSocketPath;

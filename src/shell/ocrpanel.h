@@ -52,6 +52,7 @@ public:
 signals:
     void runRequested();
     void cancelRequested();
+    void logLineAppended(const QString &line);
 
 private:
     void buildUi();

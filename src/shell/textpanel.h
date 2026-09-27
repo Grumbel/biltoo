@@ -11,6 +11,7 @@
 class QEvent;
 class QListView;
 class QLabel;
+class MessageLogWidget;
 class QCheckBox;
 class QPushButton;
 class QComboBox;
@@ -41,7 +42,7 @@ public:
     void setSelectedRegions(const QVector<int> &regionIndices);
     void setHoverRegion(int regionIndex);
 
-    void setSpeechStatus(const QString &text);
+    void setSpeechStatus(const QString &text, bool isError = false);
     void setSpeechBusy(bool speaking);
     void setSpeakEnabled(bool on);
 
@@ -72,7 +73,7 @@ private:
     TextPanelModel *m_model = nullptr;
     QListView *m_view = nullptr;
     QLabel *m_info = nullptr;
-    QLabel *m_speechStatus = nullptr;
+    MessageLogWidget *m_speechLog = nullptr;
     QCheckBox *m_glyphs = nullptr;
     QCheckBox *m_outlines = nullptr;
     QPushButton *m_speakBtn = nullptr;
