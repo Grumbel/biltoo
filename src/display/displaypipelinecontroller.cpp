@@ -1412,11 +1412,26 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
         return false;
     }
     // Soft/HOST on the item is not product underlay under tiles (KILL_SOFT).
-    // Only treat as done when the item already holds an EMB/LQIP-band sample.
+    // Only treat as done when the item already holds an EMB/LQIP-band sample
+    // *and* layout aspect matches the sample (orient applied). Otherwise a
+    // raw EXIF thumb or pre-rotate sample can stay in a transposed cell.
     const int itemEdge = item->displayPixelLongEdge();
     if (item->hasDisplayPixels() && itemEdge > 0
         && itemEdge <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-        return true;
+        const QSize lay = item->imageSize();
+        const QImage sample = item->displayImage();
+        if (!sample.isNull() && lay.width() > 0 && lay.height() > 0) {
+            const bool layPortrait = lay.height() > lay.width();
+            const bool samplePortrait = sample.height() > sample.width();
+            if (layPortrait == samplePortrait
+                || lay.width() == lay.height()
+                || sample.width() == sample.height()) {
+                return true;
+            }
+            // Aspect mismatch → fall through and re-install with orient.
+        } else {
+            return true;
+        }
     }
     const QString path = item->path();
     if (path.isEmpty()) {
@@ -1432,11 +1447,32 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
         ThumtooCache::scheduleStoreUnderlaySeed(path);
         return false;
     }
+    // EXIF embedded JPEG is often stored un-autorotated while Store size is
+    // upright (vips_autorot). Transpose the underlay so it matches layout size.
+    {
+        const QSize native = book.known(path);
+        if (native.width() > 1 && native.height() > 1
+            && under.width() > 1 && under.height() > 1) {
+            const bool nativePortrait = native.height() > native.width();
+            const bool underPortrait = under.height() > under.width();
+            if (nativePortrait != underPortrait
+                && native.width() != native.height()
+                && under.width() != under.height()) {
+                QTransform rot;
+                rot.rotate(90.0);
+                under = under.transformed(rot, Qt::FastTransformation);
+            }
+        }
+    }
     const SessionImageId sid = item->sessionId();
-    const int before = item->displayPixelLongEdge();
+    // Always go through installDisplayPixels so ItemWorld content orient/flip
+    // is materialized. Never hostSetPreviewImage(raw) — that left rotation
+    // unapplied in Gallery cells (layout transposed, sample still identity).
     installDisplayPixels(item, under, SessionAppearance::PixelKind::SoftPreview, sid);
-    if (item->displayPixelLongEdge() <= before) {
-        hostSetPreviewImage(item, under);
+    // Durable content ops may still be missing on a fresh underlay attach when
+    // applied fingerprint lagged; force store rematerialize for Gallery.
+    if (sid != kInvalidSessionImageId) {
+        rematerializeGalleryItemFromStore(item);
     }
     return item->hasDisplayPixels();
 }

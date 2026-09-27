@@ -3,6 +3,7 @@
 
 #include "gallery/gallerycontroller.h"
 #include <QPen>
+#include <QTransform>
 #include "gallery/gallerylayout.h"
 #include <QWidget>
 #include "gallery/gallerydecodesm.h"
@@ -2137,9 +2138,37 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
         }
         QImage under;
         if (!slot.path.isEmpty()) {
-            under = ImageCache::get(slot.path);
+            under = ImageCache::getUnderlay(slot.path);
+            if (under.isNull()) {
+                under = ImageCache::get(slot.path);
+            }
         }
         if (!under.isNull()) {
+            // Match live-cell underlay: upright EXIF thumb + session orient.
+            {
+                const QSize native = m_view->hostSizeBook().known(slot.path);
+                if (native.width() > 1 && native.height() > 1
+                    && under.width() > 1 && under.height() > 1) {
+                    const bool nativePortrait = native.height() > native.width();
+                    const bool underPortrait = under.height() > under.width();
+                    if (nativePortrait != underPortrait
+                        && native.width() != native.height()
+                        && under.width() != under.height()) {
+                        QTransform rot;
+                        rot.rotate(90.0);
+                        under = under.transformed(rot, Qt::FastTransformation);
+                    }
+                }
+            }
+            if (slot.id != kInvalidSessionImageId
+                && m_view->itemWorld().hasDurableAppearance(slot.id)) {
+                const WorkspaceItemState st = m_view->sessionAppearanceValue(slot.id);
+                if (SessionAppearance::hasContentAppearance(st)
+                    || !st.colorAdjust.isIdentity()) {
+                    under = SessionAppearance::materializeDisplay(
+                        under, st, SessionAppearance::PixelKind::SoftPreview);
+                }
+            }
             // Draw scaled underlay into the plan cell (spec: virtualized LQIP).
             const QRectF &r = slot.bounds;
             const QSize target(qMax(1, int(r.width())), qMax(1, int(r.height())));
