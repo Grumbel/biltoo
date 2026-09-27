@@ -6,14 +6,10 @@
 
 ### OCR + crop
 - Page OCR passes session crop (page space) into thumtoo `OcrOptions`.
-- Needs thumtoo tip with `OcrOptions.has_crop` (bundle `thumtoo-ocr-crop-*.bundle`).
-
-### Prior TTS
-- 2715.17 voice/tempo/volume/highlight.
+- Needs thumtoo tip with `OcrOptions.has_crop` (`thumtoo-ocr-crop-4d49372.bundle`).
 
 ### Apply
 ```bash
-# thumtoo first (rebuild/install), then biltoo:
 git -C thumtoo pull --ff-only …/thumtoo-ocr-crop-4d49372.bundle HEAD
 git -C biltoo pull --ff-only …/biltoo-2715.18-ocr-crop-d456ffc.bundle HEAD
 ```
