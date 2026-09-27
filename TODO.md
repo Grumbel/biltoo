@@ -2,12 +2,17 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2716.12-contact-strip-layouts` (base `d456ffc`).
+**Tip:** `biltoo-2717.1-run-gdb-quit-on-exit` (base `0de0646`).
 
-### Gallery layouts (done this tip)
-- **Contact sheet** (was Flow): ordered wrap, **one global scale**, last row left-aligned.
-- **Strip rows** (was Flow Fill): ordered wrap, **uniform row height**, no orphan stretch.
-- Masonry family left as-is. Facing unchanged.
+### 2717.1 — biltoo-run-gdb quits on normal exit
+- After `-ex run`, Python checks `$_exitcode`; `quit` only when status is 0.
+- Crash / signal / non-zero exit → interactive prompt (bt still available).
+- Also: `set debuginfod enabled off` (less banner noise).
+
+### Prior (already on origin/master)
+- Contact sheet + Strip rows (and follow-ups).
+- OCR page-space / Source DPI / ContentXform overlays.
+- TTS SpeakPlan, selection anchor, Pause/Resume, Messages dock.
 
 ### Later — crop-based packs (careful)
 - **Re-enable Grid Crop** in UI: square cells, cover-scale + centre crop for *layout
@@ -24,6 +29,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2716.12-contact-strip-layouts-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2717.1-run-gdb-quit-on-exit-0de0646.bundle HEAD
 ```
-Requires thumtoo **345.2**.

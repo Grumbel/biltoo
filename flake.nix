@@ -368,7 +368,8 @@
 
           # Debug build + gdb. Extra args are biltoo's (via gdb --args).
           # Starts the inferior immediately (-ex run); quiet until stop/crash
-          # (no manual "run" at the gdb prompt).
+          # (no manual "run" at the gdb prompt). Quits gdb on normal exit
+          # (status 0); stays interactive on crash / signal / non-zero exit.
           biltooRunGdb = pkgs.writeShellScriptBin "biltoo-run-gdb" (
             biltooDevPreamble
             + ''
@@ -386,11 +387,23 @@
               export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
               # -q: less banner noise. -ex run: start biltoo without typing "run".
               # Pagination off so long backtraces are not blocked on a pager.
+              # debuginfod off: avoid the "supports auto-downloading" banner.
+              # After run: quit only on normal exit (status 0). Non-zero exit,
+              # signals, and stops leave an interactive prompt for bt / etc.
               # No exec: return to the interactive shell when gdb exits.
               gdb -q \
                 -ex "set pagination off" \
                 -ex "set confirm off" \
+                -ex "set debuginfod enabled off" \
                 -ex run \
+                -ex 'python
+try:
+  ec = gdb.parse_and_eval("$_exitcode")
+  if int(ec) == 0:
+    gdb.execute("quit")
+except Exception:
+  pass
+' \
                 --args "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
@@ -492,7 +505,7 @@
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
             echo "  TTS: piper-server on PATH; voices → $TEXT2SPRECH_PIPER_MODELS"
-            echo "  biltoo-run-gdb [args]  # build + gdb -q -ex run --args biltoo"
+            echo "  biltoo-run-gdb [args]  # build + gdb -q -ex run; quit on normal exit"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"
             echo "  nix build .#biltoo.withCcache  # same + shared-host ccache"

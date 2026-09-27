@@ -117,7 +117,15 @@ at the cache root by default).
 Builds the debug binary, then starts it under gdb without a manual `run`:
 
 ```bash
-gdb -q -ex "set pagination off" -ex "set confirm off" -ex run --args "$BILTOO_BUILD_DIR/biltoo" …
+gdb -q \
+  -ex "set pagination off" \
+  -ex "set confirm off" \
+  -ex "set debuginfod enabled off" \
+  -ex run \
+  -ex 'python … quit if $_exitcode == 0 …' \
+  --args "$BILTOO_BUILD_DIR/biltoo" …
 ```
 
-GDB stays quiet until the inferior stops (crash, signal, or normal exit); then you get an interactive prompt for `bt`, etc.
+GDB stays quiet until the inferior stops. On **normal exit** (status 0) gdb
+quits immediately so a successful run does not leave a dangling prompt. On
+crash, signal, or non-zero exit you get an interactive prompt for `bt`, etc.
