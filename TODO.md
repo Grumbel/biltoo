@@ -2,7 +2,7 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.4-tts-splitter-test` (base `d456ffc`).
+**Tip:** `biltoo-2715.5-tts-stop-docs` (base `d456ffc`).
 
 ### Text-to-speech Phase A (hardened + test)
 - Vendored text2sprech speech stack under `src/speech/`.
@@ -13,8 +13,8 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.4-tts-splitter-test-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.5-tts-stop-docs-d456ffc.bundle HEAD
 ```
 
 ### Prior
-2715.3 server lifecycle; 2715.2 connect retry; 2715.1 Phase A; 2714.20 Prepare UI.
+2715.4 splitter test; 2715.3 lifecycle; 2715.2 connect retry; 2715.1 Phase A.
