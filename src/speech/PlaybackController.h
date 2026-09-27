@@ -107,6 +107,7 @@ private slots:
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
     void onPlayerPositionChanged(qint64 position);
     void onPlayerDurationChanged(qint64 duration);
+    void onPlayerError(QMediaPlayer::Error error, const QString &errorString);
 
 private:
     void requestLookahead();

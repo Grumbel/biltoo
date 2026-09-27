@@ -73,6 +73,7 @@ PlaybackController::PlaybackController(PiperClient *client, QObject *parent)
     connect(&m_player, &QMediaPlayer::mediaStatusChanged, this, &PlaybackController::onMediaStatusChanged);
     connect(&m_player, &QMediaPlayer::positionChanged, this, &PlaybackController::onPlayerPositionChanged);
     connect(&m_player, &QMediaPlayer::durationChanged, this, &PlaybackController::onPlayerDurationChanged);
+    connect(&m_player, &QMediaPlayer::errorOccurred, this, &PlaybackController::onPlayerError);
 }
 
 qint64 PlaybackController::currentPositionMs() const

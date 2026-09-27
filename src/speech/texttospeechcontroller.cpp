@@ -9,6 +9,11 @@
 
 #include <QTimer>
 
+namespace {
+// First WAV should arrive well before this if piper-server and models are OK.
+constexpr int kSynthWatchdogMs = 45000;
+} // namespace
+
 TextToSpeechController::TextToSpeechController(QObject *parent)
     : QObject(parent)
 {
@@ -18,15 +23,28 @@ TextToSpeechController::TextToSpeechController(QObject *parent)
     m_connectTimer->setSingleShot(true);
     connect(m_connectTimer, &QTimer::timeout, this, &TextToSpeechController::tryConnectAttempt);
 
+    m_synthWatchdog = new QTimer(this);
+    m_synthWatchdog->setSingleShot(true);
+    connect(m_synthWatchdog, &QTimer::timeout, this, &TextToSpeechController::onSynthWatchdog);
+
     connect(m_client, &PiperClient::ready, this, &TextToSpeechController::onServerReady);
     connect(m_client, &PiperClient::connectionError, this,
             &TextToSpeechController::onConnectionError);
     connect(m_client, &PiperClient::disconnected, this, &TextToSpeechController::onDisconnected);
+    connect(m_client, &PiperClient::synthesisError, this,
+            [this](int id, const QString &message) {
+                setStatus(tr("Synthesis error (id %1): %2").arg(id).arg(message));
+                emit errorOccurred(m_status);
+            });
 
     connect(m_playback, &PlaybackController::playbackFinished, this,
             &TextToSpeechController::onPlaybackFinished);
     connect(m_playback, &PlaybackController::errorOccurred, this,
             &TextToSpeechController::onPlaybackError);
+    connect(m_playback, &PlaybackController::preparingAudio, this,
+            &TextToSpeechController::onPreparingAudio);
+    connect(m_playback, &PlaybackController::sentenceStarted, this,
+            &TextToSpeechController::onSentenceStarted);
 
     setStatus(tr("TTS idle"));
 }
@@ -34,6 +52,7 @@ TextToSpeechController::TextToSpeechController(QObject *parent)
 TextToSpeechController::~TextToSpeechController()
 {
     clearConnectAttempts();
+    disarmSynthWatchdog();
     if (m_client) {
         m_client->disconnectFromServer();
     }
@@ -71,6 +90,41 @@ void TextToSpeechController::clearConnectAttempts()
     if (m_connectTimer) {
         m_connectTimer->stop();
     }
+}
+
+void TextToSpeechController::armSynthWatchdog()
+{
+    m_awaitingFirstAudio = true;
+    if (m_synthWatchdog) {
+        m_synthWatchdog->start(kSynthWatchdogMs);
+    }
+}
+
+void TextToSpeechController::disarmSynthWatchdog()
+{
+    m_awaitingFirstAudio = false;
+    if (m_synthWatchdog) {
+        m_synthWatchdog->stop();
+    }
+}
+
+void TextToSpeechController::onSynthWatchdog()
+{
+    if (!m_awaitingFirstAudio) {
+        return;
+    }
+    m_awaitingFirstAudio = false;
+    if (m_playback) {
+        m_playback->stop();
+    }
+    setSpeaking(false);
+    const QString msg = tr(
+        "No audio from piper-server within %1 s. Check that a voice model is "
+        "installed (~/.local/share/piper/voices or TEXT2SPRECH_PIPER_MODELS) "
+        "and that piper-server is not stuck.")
+                            .arg(kSynthWatchdogMs / 1000);
+    setStatus(msg);
+    emit errorOccurred(msg);
 }
 
 void TextToSpeechController::beginConnectAttempts(const QString &socketPath)
@@ -119,7 +173,7 @@ void TextToSpeechController::ensureConnected()
                 [](const QString &text) {
                     const QString t = text.trimmed();
                     if (!t.isEmpty()) {
-                        qDebug("piper-server: %s", qPrintable(t));
+                        qWarning("piper-server: %s", qPrintable(t));
                     }
                 });
     } else {
@@ -156,9 +210,10 @@ void TextToSpeechController::speakText(const QString &text)
         }
         m_playback->stop();
         m_playback->loadSentences(sentences);
-        m_playback->play();
         setSpeaking(true);
-        setStatus(tr("Speaking…"));
+        setStatus(tr("Synthesizing…"));
+        armSynthWatchdog();
+        m_playback->play();
         return;
     }
 
@@ -169,8 +224,7 @@ void TextToSpeechController::speakText(const QString &text)
 void TextToSpeechController::stop()
 {
     m_pendingSpeak.clear();
-    // Do not abandon an in-flight server connect entirely — ready may still
-    // arrive for a later Speak — but drop the pending utterance.
+    disarmSynthWatchdog();
     if (m_playback) {
         m_playback->stop();
     }
@@ -178,6 +232,19 @@ void TextToSpeechController::stop()
     if (m_ready || m_connectPending) {
         setStatus(tr("Stopped"));
     }
+}
+
+void TextToSpeechController::onPreparingAudio(int /*sentenceId*/)
+{
+    if (m_speaking) {
+        setStatus(tr("Synthesizing…"));
+    }
+}
+
+void TextToSpeechController::onSentenceStarted(int /*sentenceId*/, int /*start*/, int /*end*/)
+{
+    disarmSynthWatchdog();
+    setStatus(tr("Speaking…"));
 }
 
 void TextToSpeechController::onServerReady(const PiperServerInfo &info)
@@ -222,6 +289,7 @@ void TextToSpeechController::onConnectionError(const QString &message)
     m_connectPending = false;
     m_ready = false;
     m_realAudio = false;
+    disarmSynthWatchdog();
     setSpeaking(false);
     // Owned server is unreachable: tear it down so the next Speak can respawn.
     if (m_ownServer && m_serverManager) {
@@ -243,21 +311,24 @@ void TextToSpeechController::onDisconnected()
     }
     m_connectPending = false;
     m_ready = false;
+    disarmSynthWatchdog();
     setSpeaking(false);
     emit readyChanged(false);
-    if (m_status.isEmpty() || m_status == tr("Speaking…")) {
+    if (m_status.isEmpty() || m_status == tr("Speaking…") || m_status == tr("Synthesizing…")) {
         setStatus(tr("Piper disconnected"));
     }
 }
 
 void TextToSpeechController::onPlaybackFinished()
 {
+    disarmSynthWatchdog();
     setSpeaking(false);
     setStatus(tr("Finished"));
 }
 
 void TextToSpeechController::onPlaybackError(const QString &message)
 {
+    disarmSynthWatchdog();
     setSpeaking(false);
     setStatus(message.isEmpty() ? tr("Playback error") : message);
     emit errorOccurred(m_status);
@@ -266,6 +337,7 @@ void TextToSpeechController::onPlaybackError(const QString &message)
 void TextToSpeechController::onFailedToStart(const QString &reason)
 {
     clearConnectAttempts();
+    disarmSynthWatchdog();
     m_connectPending = false;
     m_ownServer = false;
     setStatus(reason.isEmpty() ? tr("Could not start piper-server") : reason);

@@ -52,8 +52,11 @@ private slots:
     void onDisconnected();
     void onPlaybackFinished();
     void onPlaybackError(const QString &message);
+    void onPreparingAudio(int sentenceId);
+    void onSentenceStarted(int sentenceId, int start, int end);
     void onFailedToStart(const QString &reason);
     void tryConnectAttempt();
+    void onSynthWatchdog();
 
 private:
     void ensureConnected();
@@ -61,11 +64,14 @@ private:
     void setStatus(const QString &msg);
     void setSpeaking(bool on);
     void clearConnectAttempts();
+    void armSynthWatchdog();
+    void disarmSynthWatchdog();
 
     PiperClient *m_client = nullptr;
     PiperServerManager *m_serverManager = nullptr; // null when using external socket
     PlaybackController *m_playback = nullptr;
     QTimer *m_connectTimer = nullptr;
+    QTimer *m_synthWatchdog = nullptr;
 
     QString m_externalSocket;
     QString m_targetSocketPath;
@@ -75,6 +81,7 @@ private:
     bool m_realAudio = false;
     bool m_speaking = false;
     bool m_connectPending = false;
+    bool m_awaitingFirstAudio = false;
     QString m_pendingSpeak;
     QString m_status;
     QStringList m_voices;
