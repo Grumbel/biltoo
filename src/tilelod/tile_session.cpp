@@ -88,6 +88,19 @@ void TileSession::set_content_size(int width, int height, int min_scale)
     return;
   }
 
+  // Dimension change (not first open, not min_scale-only): shared path RAM may
+  // still hold Succeeded cells planned for the old content size. Painting those
+  // with a new tile_content_rect stretches/misplaces every cell (wrong scale
+  // look). Drop the grid so issue_requests rebuilds for the new native size.
+  // First bind (0×0 → real) keeps any retained path tiles from a prior open of
+  // the same file — those were encoded for the same native dimensions.
+  bool const sizeChanged =
+      (m_content_w > 0 && m_content_h > 0)
+      && (m_content_w != width || m_content_h != height);
+  if (sizeChanged && m_cache) {
+    m_cache->clear();
+  }
+
   m_content_w = width;
   m_content_h = height;
   m_min_scale = min_scale;

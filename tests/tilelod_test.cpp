@@ -791,6 +791,26 @@ void test_set_content_size_idempotent()
   CHECK(session.generation() != gen0);
 }
 
+void test_set_content_size_clears_stale_grid()
+{
+  // Dimension change must drop Succeeded cells planned for the old size so
+  // paint cannot stretch them into the new tile_content_rect grid.
+  FakeTileSource src;
+  tilelod::TileMemoryCache shared;
+  tilelod::TileSession session(&src, &shared);
+  session.set_content_size(512, 512);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 512, 512};
+  vp.device_per_content = 1.0;
+  climb_to_scale(session, src, vp, /*want_scale=*/0);
+  CHECK(session.has_any_succeeded_tile());
+  CHECK(shared.succeeded_count() > 0);
+
+  session.set_content_size(1024, 1024);
+  CHECK(!session.has_any_succeeded_tile());
+  CHECK_EQ(static_cast<int>(shared.succeeded_count()), 0);
+}
+
 void test_destroy_while_inflight()
 {
   FakeTileSource src;
@@ -990,6 +1010,7 @@ int main()
   test_shared_no_drop_finer();
   test_failed_no_spam_same_generation();
   test_set_content_size_idempotent();
+  test_set_content_size_clears_stale_grid();
   test_host_prepare_loop_stable();
   test_zoom_out_targets_coarse_scale();
   test_min_scale_clamps_target();

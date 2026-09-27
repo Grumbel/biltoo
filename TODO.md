@@ -2,21 +2,20 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.1-f5-selection-mtime` (base `bcbb97e`).
+**Tip:** `biltoo-2714.2-tile-size-change-clear` (base `bcbb97e`).
 
-### 2714.1 — F5 / Shift-F5: selection-only, no Gallery relayout, mtime-gated soft
-- **F5 (soft):** `ThumtooCache::checkSourceChanged` compares disk mtime/size to
-  Store locator; regenerates process caches + re-decode only when changed.
-- **Shift-F5 (hard):** always purge process + durable Store for targets, then
-  re-decode.
-- **Targets:** Image mode = current image; Gallery/Workspace = selection, else
-  primary/focused. Never all live items.
-- **No Gallery relayout** on either path (`relayoutGallery` forced false from
-  MainWindow; controller args ignored).
-- **No PendingSessionBind / LoadAdd** on reload — existing items stay in the
-  session (fixes random disappearances).
+### 2714.2 — Clear tile RAM when content size changes
+- `TileSession::set_content_size`: if native WxH changes after a prior size,
+  clear the shared path `TileMemoryCache` so old-scale cells are not painted
+  into the new `tile_content_rect` grid (stretch / wrong-scale symptom).
+- First bind (0×0 → real) does **not** clear retained same-file path tiles.
+- Unit test: `test_set_content_size_clears_stale_grid`.
+
+### 2714.1 — F5 / Shift-F5 (included in this tip stack)
+- Soft F5: mtime-gated process regenerate; hard: durable purge.
+- Selection / primary only; no Gallery relayout; no PendingSessionBind/LoadAdd.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.1-f5-selection-mtime-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.2-tile-size-change-clear-bcbb97e.bundle HEAD
 ```
