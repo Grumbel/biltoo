@@ -5,19 +5,18 @@
 #define TEXTTOSPEECHCONTROLLER_H
 
 #include "PiperClient.h"
+#include "PlaybackController.h"
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 class PiperServerManager;
-class PlaybackController;
 class QTimer;
 
 /**
  * Owns piper-server lifecycle (optional), PiperClient, and PlaybackController.
- * UI calls speakText() / stop(); synthesis stays in the external server process.
- *
- * Protocol: text2sprech PROTOCOL.md (do not fork framing).
+ * UI: speakText/stop, voice, tempo (speed), volume (0–150%).
  */
 class TextToSpeechController : public QObject
 {
@@ -26,7 +25,6 @@ public:
     explicit TextToSpeechController(QObject *parent = nullptr);
     ~TextToSpeechController() override;
 
-    /** Use an already-running server; we never stop it on destroy. */
     void setExternalSocketPath(const QString &path);
 
     bool isReady() const { return m_ready && m_realAudio; }
@@ -34,17 +32,29 @@ public:
     QString statusMessage() const { return m_status; }
     QStringList voices() const { return m_voices; }
     QString currentVoice() const { return m_voice; }
+    double speed() const { return m_speed; }
+    /** Linear 0..1.5 */
+    float volume() const { return m_volume; }
 
 public slots:
-    /** Split @p text, ensure server, play. Empty text is a no-op with status. */
     void speakText(const QString &text);
     void stop();
+    void setVoice(const QString &voice);
+    void setSpeed(double speed);
+    void setVolume(float volume);
 
 signals:
     void readyChanged(bool ready);
     void speakingChanged(bool speaking);
     void statusChanged(const QString &message);
     void errorOccurred(const QString &message);
+    void voicesChanged(const QStringList &voices);
+    void voiceChanged(const QString &voice);
+    void speedChanged(double speed);
+    void volumeChanged(float volume);
+    /** Current sentence char range in the last speakText() string + progress. */
+    void sentenceStarted(int sentenceId, int start, int end);
+    void audioPositionChanged(qint64 positionMs, qint64 durationMs);
 
 private slots:
     void onServerReady(const PiperServerInfo &info);
@@ -68,7 +78,7 @@ private:
     void disarmSynthWatchdog();
 
     PiperClient *m_client = nullptr;
-    PiperServerManager *m_serverManager = nullptr; // null when using external socket
+    PiperServerManager *m_serverManager = nullptr;
     PlaybackController *m_playback = nullptr;
     QTimer *m_connectTimer = nullptr;
     QTimer *m_synthWatchdog = nullptr;
@@ -86,6 +96,8 @@ private:
     QString m_status;
     QStringList m_voices;
     QString m_voice;
+    double m_speed = 1.0;
+    float m_volume = 1.0f;
 };
 
 #endif

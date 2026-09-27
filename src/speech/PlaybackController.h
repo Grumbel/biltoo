@@ -47,8 +47,11 @@ public:
     void setVoice(const QString &voice);
     void setLookahead(int count) { m_lookahead = count; }
 
+    /** Linear gain 0..1.5 (values >1 amplify PCM; sink stays ≤1). */
     void setVolume(float volume);
     float volume() const;
+    static constexpr float kMinVolume = 0.0f;
+    static constexpr float kMaxVolume = 1.5f;
     void setMuted(bool muted);
     bool isMuted() const;
 

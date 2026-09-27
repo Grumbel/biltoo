@@ -8,6 +8,7 @@
 #include "SentenceSplitter.h"
 
 #include <QTimer>
+#include <QtGlobal>
 
 namespace {
 // First WAV should arrive well before this if piper-server and models are OK.
@@ -45,6 +46,8 @@ TextToSpeechController::TextToSpeechController(QObject *parent)
             &TextToSpeechController::onPreparingAudio);
     connect(m_playback, &PlaybackController::sentenceStarted, this,
             &TextToSpeechController::onSentenceStarted);
+    connect(m_playback, &PlaybackController::audioPositionChanged, this,
+            &TextToSpeechController::audioPositionChanged);
 
     setStatus(tr("TTS idle"));
 }
@@ -241,10 +244,11 @@ void TextToSpeechController::onPreparingAudio(int /*sentenceId*/)
     }
 }
 
-void TextToSpeechController::onSentenceStarted(int /*sentenceId*/, int /*start*/, int /*end*/)
+void TextToSpeechController::onSentenceStarted(int sentenceId, int start, int end)
 {
     disarmSynthWatchdog();
     setStatus(tr("Speaking…"));
+    emit sentenceStarted(sentenceId, start, end);
 }
 
 void TextToSpeechController::onServerReady(const PiperServerInfo &info)
@@ -255,6 +259,17 @@ void TextToSpeechController::onServerReady(const PiperServerInfo &info)
     m_realAudio = info.realAudio;
     m_voices = info.voices;
     m_voice = info.currentVoice;
+    emit voicesChanged(m_voices);
+    emit voiceChanged(m_voice);
+
+    // Re-apply session tempo/volume after (re)connect.
+    if (m_playback) {
+        m_playback->setSpeed(m_speed);
+        m_playback->setVolume(m_volume);
+        if (!m_voice.isEmpty()) {
+            m_playback->setVoice(m_voice);
+        }
+    }
 
     if (!info.warning.isEmpty()) {
         setStatus(info.warning);
@@ -343,4 +358,43 @@ void TextToSpeechController::onFailedToStart(const QString &reason)
     setStatus(reason.isEmpty() ? tr("Could not start piper-server") : reason);
     emit errorOccurred(m_status);
     m_pendingSpeak.clear();
+}
+
+void TextToSpeechController::setVoice(const QString &voice)
+{
+    const QString v = voice.trimmed();
+    if (v.isEmpty() || v == m_voice) {
+        return;
+    }
+    m_voice = v;
+    if (m_playback) {
+        m_playback->setVoice(m_voice);
+    }
+    emit voiceChanged(m_voice);
+}
+
+void TextToSpeechController::setSpeed(double speed)
+{
+    const double s = qBound(PlaybackController::kMinSpeed, speed, PlaybackController::kMaxSpeed);
+    if (qFuzzyCompare(s, m_speed)) {
+        return;
+    }
+    m_speed = s;
+    if (m_playback) {
+        m_playback->setSpeed(m_speed);
+    }
+    emit speedChanged(m_speed);
+}
+
+void TextToSpeechController::setVolume(float volume)
+{
+    const float v = qBound(PlaybackController::kMinVolume, volume, PlaybackController::kMaxVolume);
+    if (qAbs(v - m_volume) < 0.0001f) {
+        return;
+    }
+    m_volume = v;
+    if (m_playback) {
+        m_playback->setVolume(m_volume);
+    }
+    emit volumeChanged(m_volume);
 }

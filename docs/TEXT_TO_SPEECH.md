@@ -11,6 +11,11 @@ selection stack ([TEXT_OVERLAY.md](TEXT_OVERLAY.md), `TextSelection` in
 [text2sprech](https://github.com/Grumbel/text2sprech).
 
 
+## Implementation notes (Phase A + controls)
+
+- Text panel: **Voice** combo, **Tempo** spin (0.5–5×), **Vol** slider (0–150%; >100% amplifies PCM).
+- Page overlay: green **speaking** highlight on region boxes; progress clips the active box LTR.
+
 ## Implementation notes (Phase A)
 
 Vendored from text2sprech (same license) under `src/speech/`:

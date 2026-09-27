@@ -12,6 +12,7 @@
 #include <QTimer>
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 #include <optional>
 
 namespace {
@@ -106,6 +107,38 @@ qint64 wavDurationMs(const QByteArray &wav)
     return 0;
 }
 
+
+void applyPcmGain(QByteArray *pcm, QAudioFormat::SampleFormat sampleFormat, float gain)
+{
+    if (!pcm || gain == 1.0f || pcm->isEmpty()) {
+        return;
+    }
+    if (sampleFormat == QAudioFormat::Int16) {
+        auto *s = reinterpret_cast<qint16 *>(pcm->data());
+        const int n = pcm->size() / int(sizeof(qint16));
+        for (int i = 0; i < n; ++i) {
+            const int v = int(std::lround(double(s[i]) * double(gain)));
+            s[i] = qint16(qBound(-32768, v, 32767));
+        }
+    } else if (sampleFormat == QAudioFormat::Int32) {
+        auto *s = reinterpret_cast<qint32 *>(pcm->data());
+        const int n = pcm->size() / int(sizeof(qint32));
+        for (int i = 0; i < n; ++i) {
+            const double v = double(s[i]) * double(gain);
+            const qint64 lim = 2147483647LL;
+            s[i] = qint32(qBound(double(-lim - 1), v, double(lim)));
+        }
+    } else if (sampleFormat == QAudioFormat::UInt8) {
+        auto *s = reinterpret_cast<quint8 *>(pcm->data());
+        const int n = pcm->size();
+        for (int i = 0; i < n; ++i) {
+            const int centered = int(s[i]) - 128;
+            const int v = int(std::lround(double(centered) * double(gain))) + 128;
+            s[i] = quint8(qBound(0, v, 255));
+        }
+    }
+}
+
 } // namespace
 
 PlaybackController::PlaybackController(PiperClient *client, QObject *parent)
@@ -186,9 +219,10 @@ qint64 PlaybackController::durationForCurrentSentence() const
 
 void PlaybackController::setVolume(float volume)
 {
-    m_volume = qBound(0.0f, volume, 1.0f);
+    m_volume = qBound(kMinVolume, volume, kMaxVolume);
     if (m_sink) {
-        m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
+        // Hardware volume only up to 1.0; overdrive is applied to PCM at start.
+        m_sink->setVolume(m_muted ? 0.0 : double(qMin(m_volume, 1.0f)));
     }
 }
 
@@ -201,7 +235,7 @@ void PlaybackController::setMuted(bool muted)
 {
     m_muted = muted;
     if (m_sink) {
-        m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
+        m_sink->setVolume(m_muted ? 0.0 : double(qMin(m_volume, 1.0f)));
     }
 }
 
@@ -407,7 +441,7 @@ void PlaybackController::playCurrentIfReady()
     stopSink();
 
     m_sink = new QAudioSink(device, parsed->format, this);
-    m_sink->setVolume(m_muted ? 0.0 : double(m_volume));
+    m_sink->setVolume(m_muted ? 0.0 : double(qMin(m_volume, 1.0f)));
     connect(m_sink, &QAudioSink::stateChanged, this, &PlaybackController::onSinkStateChanged);
 
     // Optional mid-sentence seek via byte offset into PCM.
@@ -424,6 +458,10 @@ void PlaybackController::playCurrentIfReady()
         m_pendingSeekFraction = -1.0;
     } else {
         m_pendingSeekFraction = -1.0;
+    }
+
+    if (m_volume > 1.0f) {
+        applyPcmGain(&pcm, parsed->format.sampleFormat(), m_volume);
     }
 
     m_pcmBuffer = std::make_unique<QBuffer>();

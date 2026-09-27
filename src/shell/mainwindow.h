@@ -568,6 +568,7 @@ private:
     TextPanel *m_textPanel = nullptr;
     QDockWidget *m_textDock = nullptr;
     TextToSpeechController *m_tts = nullptr;
+    QVector<int> m_ttsSpeakRegions;
     QString m_piperSocketPath;
     QAction *m_speakAct = nullptr;
     QAction *m_stopSpeechAct = nullptr;

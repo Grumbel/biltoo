@@ -4874,6 +4874,20 @@ void MainWindow::connectTextPanel()
 
     connect(m_textPanel, &TextPanel::speakRequested, this, &MainWindow::speakSelectionOrPage);
     connect(m_textPanel, &TextPanel::stopSpeechRequested, this, &MainWindow::stopSpeech);
+    if (m_tts) {
+        connect(m_textPanel, &TextPanel::voiceChosen, m_tts, &TextToSpeechController::setVoice);
+        connect(m_textPanel, &TextPanel::speedChosen, m_tts, &TextToSpeechController::setSpeed);
+        connect(m_textPanel, &TextPanel::volumeChosen, this, [this](int percent) {
+            if (m_tts) {
+                m_tts->setVolume(float(percent) / 100.0f);
+            }
+        });
+        m_textPanel->setSpeed(m_tts->speed());
+        m_textPanel->setVolumePercent(int(m_tts->volume() * 100.0f + 0.5f));
+        if (!m_tts->voices().isEmpty()) {
+            m_textPanel->setVoices(m_tts->voices(), m_tts->currentVoice());
+        }
+    }
 }
 
 void MainWindow::connectTextToSpeech()
@@ -4899,12 +4913,55 @@ void MainWindow::connectTextToSpeech()
         if (m_stopSpeechAct) {
             m_stopSpeechAct->setEnabled(on);
         }
+        if (!on && m_imageView) {
+            m_imageView->hostText().clearSpeakingHighlight();
+        }
     });
     connect(m_tts, &TextToSpeechController::errorOccurred, this, [this](const QString &msg) {
         if (statusBar()) {
             statusBar()->showMessage(msg, 6000);
         }
     });
+    connect(m_tts, &TextToSpeechController::voicesChanged, this, [this](const QStringList &voices) {
+        if (m_textPanel) {
+            m_textPanel->setVoices(voices, m_tts ? m_tts->currentVoice() : QString());
+        }
+    });
+    connect(m_tts, &TextToSpeechController::sentenceStarted, this,
+            [this](int /*id*/, int start, int end) {
+                if (!m_imageView) {
+                    return;
+                }
+                TextLayerController &text = m_imageView->hostText();
+                QVector<int> regions;
+                for (const auto &sp : text.speakSpans()) {
+                    if (sp.end > start && sp.start < end) {
+                        regions.append(sp.regionIndex);
+                    }
+                }
+                m_ttsSpeakRegions = regions;
+                text.setSpeakingHighlight(regions, 0.0);
+            });
+    connect(m_tts, &TextToSpeechController::audioPositionChanged, this,
+            [this](qint64 pos, qint64 dur) {
+                if (!m_imageView || dur <= 0 || m_ttsSpeakRegions.isEmpty()) {
+                    return;
+                }
+                m_imageView->hostText().setSpeakingHighlight(
+                    m_ttsSpeakRegions, double(pos) / double(dur));
+            });
+
+    if (m_textPanel) {
+        connect(m_textPanel, &TextPanel::voiceChosen, m_tts, &TextToSpeechController::setVoice);
+        connect(m_textPanel, &TextPanel::speedChosen, m_tts, &TextToSpeechController::setSpeed);
+        connect(m_textPanel, &TextPanel::volumeChosen, this, [this](int percent) {
+            if (m_tts) {
+                m_tts->setVolume(float(percent) / 100.0f);
+            }
+        });
+        m_textPanel->setSpeed(m_tts->speed());
+        m_textPanel->setVolumePercent(int(m_tts->volume() * 100.0f + 0.5f));
+    }
 }
 
 void MainWindow::setPiperSocketPath(const QString &path)
@@ -4938,6 +4995,10 @@ void MainWindow::stopSpeech()
 {
     if (m_tts) {
         m_tts->stop();
+    }
+    m_ttsSpeakRegions.clear();
+    if (m_imageView) {
+        m_imageView->hostText().clearSpeakingHighlight();
     }
 }
 

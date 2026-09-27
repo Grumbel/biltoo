@@ -602,6 +602,79 @@ QString TextLayerController::speakableText() const
     return pageTextInReadingOrder();
 }
 
+QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
+{
+    QVector<SpeakSpan> spans;
+    if (!hasLayer()) {
+        return spans;
+    }
+
+    QVector<int> order;
+    if (!m_session.multiSelection.isEmpty() || !m_session.selectedRegionsRef().isEmpty()) {
+        // Selection path: multi-page uses current page projection only for highlight.
+        order = m_session.selectedRegionsRef();
+        if (order.isEmpty() && !m_session.multiSelection.isEmpty()) {
+            order = m_session.multiSelection.regionIndicesFor(currentSessionId());
+        }
+    } else {
+        const int n = m_session.regionCount();
+        order.reserve(n);
+        QVector<QRectF> rects;
+        QVector<int> blocks;
+        for (int i = 0; i < n; ++i) {
+            order.append(i);
+            const auto &r = m_session.regionAt(i);
+            rects.append(r.bbox);
+            blocks.append(r.blockId);
+        }
+        TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks);
+    }
+
+    int cursor = 0;
+    bool first = true;
+    for (int idx : order) {
+        if (idx < 0 || idx >= m_session.regionCount()) {
+            continue;
+        }
+        const QString &tx = m_session.regionAt(idx).text;
+        if (tx.isEmpty()) {
+            continue;
+        }
+        if (!first) {
+            ++cursor; // newline join separator in selectedText / pageTextInReadingOrder
+        }
+        first = false;
+        SpeakSpan sp;
+        sp.regionIndex = idx;
+        sp.start = cursor;
+        sp.end = cursor + tx.size();
+        spans.append(sp);
+        cursor = sp.end;
+    }
+    return spans;
+}
+
+void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices, double progress)
+{
+    m_speakingRegions = regionIndices;
+    m_speakingProgress = qBound(0.0, progress, 1.0);
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void TextLayerController::clearSpeakingHighlight()
+{
+    if (m_speakingRegions.isEmpty() && m_speakingProgress == 0.0) {
+        return;
+    }
+    m_speakingRegions.clear();
+    m_speakingProgress = 0.0;
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
 void TextLayerController::clearSelection()
 {
     if (!m_session.hasSelection() && !m_session.isRubberbanding()) {
@@ -761,7 +834,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
     if (!m_session.hasRegions()
         || !(m_session.showsRegions() || m_session.showsGlyphs()
              || m_session.hasSearchMatches() || m_session.hasSelection()
-             || m_session.hoverRegionIndex() >= 0)) {
+             || m_session.hoverRegionIndex() >= 0
+             || !m_speakingRegions.isEmpty())) {
         return;
     }
     ImageItem *item = m_view->primaryItem();
@@ -887,6 +961,31 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         if (!img.isEmpty()) {
             painter->setPen(QPen(QColor(180, 100, 0, 220), 0));
             painter->setBrush(QColor(255, 160, 40, 80));
+            const QRectF local = img.translated(item->offset());
+            painter->drawPolygon(item->mapToScene(local));
+        }
+    }
+
+    // TTS: spoken region(s) — green fill; progress clips the active box LTR.
+    if (!m_speakingRegions.isEmpty()) {
+        for (int i = 0; i < m_speakingRegions.size(); ++i) {
+            const int idx = m_speakingRegions.at(i);
+            if (idx < 0 || idx >= m_session.regionCount()) {
+                continue;
+            }
+            const auto &r = m_session.regionAt(idx);
+            QRectF img = regionImageRect(r);
+            if (img.isEmpty()) {
+                continue;
+            }
+            const bool isActive = (i == m_speakingRegions.size() - 1);
+            if (isActive && m_speakingProgress > 0.0 && m_speakingProgress < 1.0) {
+                const qreal x1 = img.left() + img.width() * m_speakingProgress;
+                img = QRectF(QPointF(img.left(), img.top()),
+                             QPointF(x1, img.bottom()));
+            }
+            painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
+            painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
             const QRectF local = img.translated(item->offset());
             painter->drawPolygon(item->mapToScene(local));
         }

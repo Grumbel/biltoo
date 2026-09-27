@@ -9,18 +9,21 @@
 #include <QVector>
 
 class QEvent;
-
 class QListView;
 class QLabel;
 class QCheckBox;
 class QPushButton;
+class QComboBox;
+class QDoubleSpinBox;
+class QSlider;
 class TextPanelModel;
 class QItemSelection;
+class QModelIndex;
 
 /**
  * Side panel listing text/OCR regions for the current page layer.
  * Selection and hover are mirrored to the page overlay (and the reverse).
- * Speak / Stop drive text-to-speech (piper-server via TextToSpeechController).
+ * Speak / Stop and voice / tempo / volume drive local Piper TTS.
  */
 class TextPanel : public QWidget {
     Q_OBJECT
@@ -35,7 +38,6 @@ public:
     void setShowGlyphsChecked(bool on);
     void setShowOutlinesChecked(bool on);
 
-    /** Programmatic selection by region indices (page → panel). */
     void setSelectedRegions(const QVector<int> &regionIndices);
     void setHoverRegion(int regionIndex);
 
@@ -43,8 +45,9 @@ public:
     void setSpeechBusy(bool speaking);
     void setSpeakEnabled(bool on);
 
-protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
+    void setVoices(const QStringList &voices, const QString &current);
+    void setSpeed(double speed);
+    void setVolumePercent(int percent); // 0..150
 
 signals:
     void selectionRegionsChanged(const QVector<int> &regionIndices);
@@ -54,6 +57,12 @@ signals:
     void refreshRequested();
     void speakRequested();
     void stopSpeechRequested();
+    void voiceChosen(const QString &voice);
+    void speedChosen(double speed);
+    void volumeChosen(int percent); // 0..150
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     void onViewSelectionChanged();
@@ -68,10 +77,14 @@ private:
     QCheckBox *m_outlines = nullptr;
     QPushButton *m_speakBtn = nullptr;
     QPushButton *m_stopSpeechBtn = nullptr;
+    QComboBox *m_voiceCombo = nullptr;
+    QDoubleSpinBox *m_speedSpin = nullptr;
+    QSlider *m_volumeSlider = nullptr;
+    QLabel *m_volumeLabel = nullptr;
     bool m_blockSel = false;
-    int m_lastHoverRegion = -2; // -2 = never; -1 = cleared
+    bool m_blockSpeechUi = false;
+    int m_lastHoverRegion = -2;
     QVector<int> m_lastEmittedSelection;
 };
-
 
 #endif

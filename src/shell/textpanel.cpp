@@ -9,6 +9,9 @@
 #include <QLabel>
 #include <QListView>
 #include <QPushButton>
+#include <QSlider>
+#include <QDoubleSpinBox>
+#include <QComboBox>
 #include <QVBoxLayout>
 #include <QItemSelectionModel>
 #include <QEvent>
@@ -66,6 +69,59 @@ TextPanel::TextPanel(QWidget *parent)
     layout->addLayout(speechRow);
     connect(m_speakBtn, &QPushButton::clicked, this, &TextPanel::speakRequested);
     connect(m_stopSpeechBtn, &QPushButton::clicked, this, &TextPanel::stopSpeechRequested);
+
+    auto *voiceRow = new QHBoxLayout;
+    voiceRow->addWidget(new QLabel(tr("Voice"), this));
+    m_voiceCombo = new QComboBox(this);
+    m_voiceCombo->setMinimumWidth(120);
+    m_voiceCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_voiceCombo->setToolTip(tr("Piper voice for this session"));
+    m_voiceCombo->setEnabled(false);
+    voiceRow->addWidget(m_voiceCombo, 1);
+    layout->addLayout(voiceRow);
+    connect(m_voiceCombo, &QComboBox::currentTextChanged, this, [this](const QString &v) {
+        if (m_blockSpeechUi || v.isEmpty()) {
+            return;
+        }
+        emit voiceChosen(v);
+    });
+
+    auto *tempoVol = new QHBoxLayout;
+    tempoVol->addWidget(new QLabel(tr("Tempo"), this));
+    m_speedSpin = new QDoubleSpinBox(this);
+    m_speedSpin->setRange(0.5, 5.0);
+    m_speedSpin->setSingleStep(0.25);
+    m_speedSpin->setDecimals(2);
+    m_speedSpin->setSuffix(tr("×"));
+    m_speedSpin->setValue(1.0);
+    m_speedSpin->setToolTip(tr("Speech rate (Piper length_scale)"));
+    tempoVol->addWidget(m_speedSpin);
+    connect(m_speedSpin, &QDoubleSpinBox::valueChanged, this, [this](double v) {
+        if (m_blockSpeechUi) {
+            return;
+        }
+        emit speedChosen(v);
+    });
+    tempoVol->addWidget(new QLabel(tr("Vol"), this));
+    m_volumeSlider = new QSlider(Qt::Horizontal, this);
+    m_volumeSlider->setRange(0, 150);
+    m_volumeSlider->setValue(100);
+    m_volumeSlider->setMinimumWidth(64);
+    m_volumeSlider->setToolTip(tr("Volume 0–150% (above 100% amplifies quiet voices)"));
+    tempoVol->addWidget(m_volumeSlider, 1);
+    m_volumeLabel = new QLabel(tr("100%"), this);
+    m_volumeLabel->setMinimumWidth(36);
+    tempoVol->addWidget(m_volumeLabel);
+    layout->addLayout(tempoVol);
+    connect(m_volumeSlider, &QSlider::valueChanged, this, [this](int pct) {
+        if (m_volumeLabel) {
+            m_volumeLabel->setText(tr("%1%").arg(pct));
+        }
+        if (m_blockSpeechUi) {
+            return;
+        }
+        emit volumeChosen(pct);
+    });
 
     m_speechStatus = new QLabel(tr("TTS idle"), this);
     m_speechStatus->setWordWrap(true);
@@ -253,4 +309,45 @@ void TextPanel::onViewLeft()
     }
     m_lastHoverRegion = -1;
     emit hoverRegionChanged(-1);
+}
+
+void TextPanel::setVoices(const QStringList &voices, const QString &current)
+{
+    if (!m_voiceCombo) {
+        return;
+    }
+    m_blockSpeechUi = true;
+    m_voiceCombo->clear();
+    m_voiceCombo->addItems(voices);
+    m_voiceCombo->setEnabled(!voices.isEmpty());
+    if (!current.isEmpty()) {
+        const int idx = m_voiceCombo->findText(current);
+        if (idx >= 0) {
+            m_voiceCombo->setCurrentIndex(idx);
+        }
+    }
+    m_blockSpeechUi = false;
+}
+
+void TextPanel::setSpeed(double speed)
+{
+    if (!m_speedSpin) {
+        return;
+    }
+    m_blockSpeechUi = true;
+    m_speedSpin->setValue(speed);
+    m_blockSpeechUi = false;
+}
+
+void TextPanel::setVolumePercent(int percent)
+{
+    if (!m_volumeSlider) {
+        return;
+    }
+    m_blockSpeechUi = true;
+    m_volumeSlider->setValue(qBound(0, percent, 150));
+    if (m_volumeLabel) {
+        m_volumeLabel->setText(tr("%1%").arg(m_volumeSlider->value()));
+    }
+    m_blockSpeechUi = false;
 }

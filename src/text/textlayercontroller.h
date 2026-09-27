@@ -61,6 +61,18 @@ public:
     QString pageTextInReadingOrder() const;
     /** Selection if non-empty, else pageTextInReadingOrder(). */
     QString speakableText() const;
+
+    /** Character spans in speakableText() for mapping TTS offsets → regions. */
+    struct SpeakSpan {
+        int regionIndex = -1;
+        int start = 0;
+        int end = 0;
+    };
+    QVector<SpeakSpan> speakSpans() const;
+
+    /** Highlight region(s) currently being spoken; progress 0..1 within the active span. */
+    void setSpeakingHighlight(const QVector<int> &regionIndices, double progress);
+    void clearSpeakingHighlight();
     void clearSelection();
     bool copySelectedText();
     bool tryMousePressRubber(QMouseEvent *event);
@@ -91,6 +103,8 @@ private:
     void selectRegionAtViewPos(const QPoint &viewPos);
 
     ImageView *m_view = nullptr;
+    QVector<int> m_speakingRegions;
+    double m_speakingProgress = 0.0;
     TextLayerSession m_session;
 };
 
