@@ -2,13 +2,13 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.12-textpanel-hover-selection` (base `d456ffc`).
+**Tip:** `biltoo-2715.13-selection-tts-harden` (base `d456ffc`).
 
-### Fixes
-- TTS: QAudioSink multi-sentence (Idle advance).
-- Text panel: hover no longer clears multi-selection (`setCurrentIndex` removed).
+### Verified / fixed
+- Text panel: no setCurrentIndex on hover; dedupe selection/hover signals.
+- TTS: QAudioSink; advance when near end (processedUSecs / duration), not on early Idle.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.12-textpanel-hover-selection-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.13-selection-tts-harden-d456ffc.bundle HEAD
 ```
