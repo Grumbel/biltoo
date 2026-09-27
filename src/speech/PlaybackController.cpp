@@ -476,3 +476,18 @@ void PlaybackController::onPlayerDurationChanged(qint64 /*duration*/)
     applyPendingSeekIfPossible();
     emit audioPositionChanged(m_player.position(), durationForCurrentSentence());
 }
+
+void PlaybackController::onPlayerError(QMediaPlayer::Error error, const QString &errorString)
+{
+    if (error == QMediaPlayer::NoError) {
+        return;
+    }
+    const QString msg = errorString.isEmpty()
+        ? QStringLiteral("Media playback error (%1)").arg(int(error))
+        : errorString;
+    emit errorOccurred(msg);
+    // Skip this sentence rather than stalling forever on a bad buffer.
+    if (m_playing) {
+        advanceToNext();
+    }
+}
