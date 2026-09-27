@@ -1382,6 +1382,57 @@ void GalleryController::paintSearchHitFrames(QPainter *painter, const QRectF &ex
     painter->restore();
 }
 
+void GalleryController::setSpeechHighlightPath(const QString &path)
+{
+    if (m_speechHighlightPath == path) {
+        return;
+    }
+    m_speechHighlightPath = path;
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void GalleryController::paintSpeechHighlightFrame(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view || m_speechHighlightPath.isEmpty()) {
+        return;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return;
+    }
+    ImageItem *target = m_view->findItemForPath(m_speechHighlightPath);
+    if (!target || target->isInteractive()) {
+        return;
+    }
+    const QRectF local = target->displayContentRect();
+    const QPolygonF scenePoly = target->mapToScene(local);
+    const QRectF bounds = scenePoly.boundingRect();
+    if (!exposed.isNull() && !exposed.intersects(bounds)) {
+        return;
+    }
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    // Match Image-mode TTS green (spoken region wash).
+    const QColor wash(40, 200, 100, 48);
+    QPen outer(QColor(0, 0, 0, 180));
+    outer.setCosmetic(true);
+    outer.setWidthF(6.0);
+    QPen inner(QColor(40, 200, 100, 240));
+    inner.setCosmetic(true);
+    inner.setWidthF(3.0);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(wash);
+    painter->drawPolygon(scenePoly);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(outer);
+    painter->drawPolygon(scenePoly);
+    painter->setPen(inner);
+    painter->drawPolygon(scenePoly);
+    painter->restore();
+}
+
 void GalleryController::paintSelectionFrames(QPainter *painter, const QRectF &exposed) const
 {
     if (!painter || !m_view) {

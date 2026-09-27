@@ -2,14 +2,13 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2725.1-drop-with-thumtoo-flag` (base `037c98f`).
+**Tip:** rebased on `origin/master` (`90c01db`).
 
-### 2725.1 — Remove obsolete BILTOO_WITH_THUMTOO
-- thumtoo is hard-required via `THUMTOO_SOURCE_DIR` only.
-- Dropped unused `-DBILTOO_WITH_THUMTOO=ON` from flake.nix / default.nix
-  (fixes CMake unused-cli warning).
+### On tip
+- `cd32f1d` Cleanup: drop obsolete BILTOO_WITH_THUMTOO
+- `620b981` Feature: Gallery TTS page highlight (+ path identity tweak)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2725.1-drop-with-thumtoo-flag-037c98f.bundle HEAD
+git pull --ff-only …/biltoo-2726.2-rebase-gallery-tts-90c01db.bundle HEAD
 ```

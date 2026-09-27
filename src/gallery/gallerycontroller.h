@@ -159,7 +159,11 @@ public:
      * Provider: optional; null skips. Called from drawForeground.
      */
     void paintSearchHitFrames(QPainter *painter, const QRectF &exposed) const;
+    void paintSpeechHighlightFrame(QPainter *painter, const QRectF &exposed) const;
     void setSearchHitIndex(const SessionSearchIndex *index);
+    /** Gallery ring for the page currently being spoken (session path). */
+    void setSpeechHighlightPath(const QString &path);
+    QString speechHighlightPath() const { return m_speechHighlightPath; }
 
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
@@ -267,6 +271,7 @@ private:
 
     ImageView *m_view = nullptr;
     const SessionSearchIndex *m_searchHitIndex = nullptr;
+    QString m_speechHighlightPath;
     GallerySizeResolve m_sizeResolve;
     GalleryDecodeBook m_decodeBook;
     LayoutPrefs m_layout;

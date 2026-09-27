@@ -4973,6 +4973,7 @@ void MainWindow::connectTextToSpeech()
             m_ttsSentenceEnd = 0;
             if (m_imageView) {
                 m_imageView->hostText().clearSpeakingHighlight();
+                m_imageView->hostGallery().setSpeechHighlightPath(QString());
             }
         }
     });
@@ -5147,11 +5148,9 @@ void MainWindow::speakSelectionOrPage()
             }
         }
     }
-    m_ttsSpeakPath = text.session().layerPathRef();
-    if (m_ttsSpeakPath.isEmpty()) {
-        m_ttsSpeakPath = m_imageView->hostImage().classicPath();
-    }
+    m_ttsSpeakPath = m_imageView->hostImage().classicPath();
     m_ttsSpeakSpans = plan.spans;
+    m_imageView->hostGallery().setSpeechHighlightPath(m_ttsSpeakPath);
     m_tts->speakText(plan.text, startSentence);
 }
 
@@ -5167,6 +5166,7 @@ void MainWindow::stopSpeech()
     m_ttsSentenceEnd = 0;
     if (m_imageView) {
         m_imageView->hostText().clearSpeakingHighlight();
+        m_imageView->hostGallery().setSpeechHighlightPath(QString());
     }
 }
 
