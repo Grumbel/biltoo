@@ -175,17 +175,69 @@ bool ImageController::tryMousePressEdges(QMouseEvent *event)
 }
 
 
+namespace {
+
+/** Process-level caches for one path (no durable Store purge). */
+void clearProcessCachesForPath(ImageView *view, const QString &path)
+{
+    if (!view || path.isEmpty()) {
+        return;
+    }
+    ImageCache::remove(path);
+    {
+        QSize discarded;
+        view->hostSizeBook().take(path, &discarded);
+    }
+    view->hostDisplayPipeline().purgeTilePathRam(path);
+    view->hostDisplayPipeline().galleryDecodeResetPath(path);
+    for (int edge : ThumtooCache::kLadderEdges) {
+        ThumtooCache::forgetPixelsSettled(path, edge);
+    }
+}
+
+void clearDecodedOnPath(ImageView *view, const QString &path)
+{
+    if (!view || path.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : view->liveItems()) {
+        if (item && item->path() == path) {
+            view->hostDisplayPipeline().dropItemTileLodSession(item);
+            view->hostDisplayPipeline().hostClearDecodedPixels(item);
+        }
+    }
+}
+
+} // namespace
+
 void ImageController::reloadFromDisk()
 {
     if (!hasClassicPath()) {
         return;
     }
     const QString path = classicPath();
-    // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
-    m_view->hostDisplayPipeline().purgeTilePathRam(path);
-    // Force a fresh decode of the focused session image only.
-    m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadReplace));
-    m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+    // Soft F5: regenerate only when the source fingerprint changed.
+    ThumtooCache::checkSourceChanged(path, [this, path](bool changed) {
+        if (!m_view) {
+            return;
+        }
+        if (!changed) {
+            m_view->hostHud().showFlash(ImageView::tr("Reload"),
+                ImageView::tr("%1 (unchanged)").arg(QFileInfo(path).fileName()),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+            return;
+        }
+        // Source changed: drop process caches and re-decode the focused image only.
+        // Do not purge durable Store (Shift+F5) and do not touch session binds.
+        clearProcessCachesForPath(m_view, path);
+        clearDecodedOnPath(m_view, path);
+        ThumtooCache::scheduleProbe(path);
+        m_view->hostDisplayPipeline().scheduleImageLoad(
+            path, static_cast<int>(ImageView::LoadReplace));
+        m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(),
+            [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        emit m_view->statusChanged();
+    });
 }
 
 void ImageController::hardReloadFromDisk()
@@ -193,105 +245,49 @@ void ImageController::hardReloadFromDisk()
     if (!hasClassicPath()) {
         return;
     }
+    const QString path = classicPath();
+    // Image mode: current image only — never fan out to other live items.
     QList<ImageItem *> targets;
     if (ImageItem *primary = m_view->primaryItem()) {
-        targets.append(primary);
-    } else {
+        if (primary->path() == path) {
+            targets.append(primary);
+        }
+    }
+    if (targets.isEmpty()) {
         for (ImageItem *item : m_view->liveItems()) {
-            if (item && item->path() == classicPath()) {
+            if (item && item->path() == path) {
                 targets.append(item);
                 break;
             }
         }
     }
-    const QString path = classicPath();
-    if (targets.isEmpty()) {
-        // No item yet — still purge Store + process caches, then LoadReplace.
-        ImageCache::remove(path);
-        {
-            QSize discarded;
-            m_view->hostSizeBook().take(path, &discarded);
-        }
-        m_view->hostDisplayPipeline().purgeTilePathRam(path);
-        for (int edge : ThumtooCache::kLadderEdges) {
-            ThumtooCache::forgetPixelsSettled(path, edge);
-        }
-        m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
-        ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
-            ThumtooCache::scheduleProbe(path);
-            m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadReplace));
-            emit m_view->statusChanged();
-        });
-        return;
-    }
 
-    // Image mode with live item: same multi-item hard path restricted to targets.
-    struct ReloadBind {
-        QString path;
-        SessionImageId id = kInvalidSessionImageId;
-        int index = -1;
-    };
-    QList<ReloadBind> binds;
-    QSet<QString> paths;
+    // Process-level clear on the focused path; durable purge below.
+    clearProcessCachesForPath(m_view, path);
     for (ImageItem *item : targets) {
-        if (!item || item->path().isEmpty()) {
-            continue;
-        }
-        const QString p = item->path();
-        paths.insert(p);
-        ReloadBind b;
-        b.path = p;
-        b.id = item->sessionId();
-        b.index = m_view->sessionListIndex(item);
-        binds.append(b);
-        m_view->hostDisplayPipeline().galleryDecodeResetPath(p);
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);
-        m_view->takePendingWorkspacePath(p);
         m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
-        ImageCache::remove(p);
-        {
-            QSize discarded;
-            m_view->hostSizeBook().take(p, &discarded);
-        }
-        for (int edge : ThumtooCache::kLadderEdges) {
-            ThumtooCache::forgetPixelsSettled(p, edge);
-        }
     }
-    if (paths.isEmpty()) {
-        return;
-    }
-    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 
-    auto remaining = std::make_shared<int>(paths.size());
-    auto tileTotal = std::make_shared<qint64>(0);
-    auto finish = [this, binds, tileTotal]() {
-        QSet<QString> probed;
-        for (const ReloadBind &b : binds) {
-            PendingSessionBind pending;
-            pending.path = b.path;
-            pending.id = b.id;
-            pending.index = b.index;
-            m_view->hostBindBook().append(pending);
-            if (!probed.contains(b.path)) {
-                ThumtooCache::scheduleProbe(b.path);
-                probed.insert(b.path);
-            }
-            m_view->hostDisplayPipeline().scheduleImageLoad(b.path, static_cast<int>(ImageView::LoadReplace));
+    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(),
+        [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+
+    // Keep the existing ImageItem; do not queue PendingSessionBind (LoadAdd
+    // binds create / rebind slots and have been observed to drop session rows).
+    ThumtooCache::purgePathDurable(path, [this, path](qint64 tiles) {
+        if (!m_view) {
+            return;
         }
-        if (*tileTotal > 0) {
-            m_view->hostHud().showFlash(ImageView::tr("Hard reload"), ImageView::tr("%1 Store tiles removed").arg(*tileTotal), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        ThumtooCache::scheduleProbe(path);
+        m_view->hostDisplayPipeline().scheduleImageLoad(
+            path, static_cast<int>(ImageView::LoadReplace));
+        if (tiles > 0) {
+            m_view->hostHud().showFlash(ImageView::tr("Hard reload"),
+                ImageView::tr("%1 Store tiles removed").arg(tiles),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         }
         emit m_view->statusChanged();
-    };
-
-    for (const QString &p : paths) {
-        ThumtooCache::purgePathDurable(p, [remaining, tileTotal, finish](qint64 tiles) {
-            *tileTotal += tiles;
-            if (--(*remaining) == 0) {
-                finish();
-            }
-        });
-    }
+    });
 }
 
 void ImageController::prepareModeCanvas()

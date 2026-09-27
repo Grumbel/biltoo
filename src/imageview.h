@@ -334,18 +334,18 @@ public:
 
 
     /**
-     * Reload from disk: Image mode — current session image only;
-     * Gallery — re-decode all tiles (keeps positions unless @p relayout);
-     * Workspace — re-decode on-canvas items in place.
+     * Soft reload (F5): check source mtime; regenerate only when changed.
+     * Image mode — current image; Gallery/Workspace — selection or primary.
+     * @p relayoutGallery is ignored (never relayouts).
      */
-    void reloadFromDisk(bool relayoutGallery = true);
+    void reloadFromDisk(bool relayoutGallery = false);
     /**
-     * Hard reload (Shift+F5): drop host ImageCache + tile path RAM + thumtoo
-     * settled-pixel markers for the target paths, clear decoded pixels, then
-     * re-decode from disk. Image mode — current image; Gallery/Workspace —
-     * selection if any, otherwise all on-canvas items.
+     * Hard reload (Shift+F5): always drop process + durable Store caches for
+     * targets, clear decoded pixels, re-decode in place. Image mode — current
+     * image; Gallery/Workspace — selection or primary. Never relayouts; never
+     * removes session members.
      */
-    void hardReloadFromDisk(bool relayoutGallery = true);
+    void hardReloadFromDisk(bool relayoutGallery = false);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
     void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
 

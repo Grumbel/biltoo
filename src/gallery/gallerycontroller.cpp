@@ -2390,90 +2390,111 @@ void GalleryController::setLayoutMode(LayoutMode mode)
     applyLayout(GalleryPackReason::EnterGallery);
 }
 
-void GalleryController::reloadFromDisk(bool relayout)
+void GalleryController::reloadFromDisk(bool /*relayout*/)
 {
-    QSet<QString> purgedPaths;
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item) {
-            continue;
+    // Soft F5: selection only (else primary). Never relayout — positions stay.
+    QList<ImageItem *> targets = m_view->transformTargets();
+    if (targets.isEmpty()) {
+        if (ImageItem *primary = m_view->primaryItem()) {
+            targets.append(primary);
         }
-        const QString path = item->path();
-        if (path.isEmpty()) {
-            continue;
+    }
+    if (targets.isEmpty()) {
+        return;
+    }
+
+    QSet<QString> paths;
+    for (ImageItem *item : targets) {
+        if (item && !item->path().isEmpty()) {
+            paths.insert(item->path());
         }
-        m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
-        if (!purgedPaths.contains(path)) {
-            // Soft F5 must drop soft/LQIP cache and settled-ladder marks or
-            // cells stay on 16px Placeholder while need is hundreds of px —
-            // only Shift-F5 (hard) used to clear these.
+    }
+    if (paths.isEmpty()) {
+        return;
+    }
+
+    auto remaining = std::make_shared<int>(paths.size());
+    auto changedPaths = std::make_shared<QStringList>();
+    auto finish = [this, targets, changedPaths]() {
+        if (!m_view) {
+            return;
+        }
+        if (changedPaths->isEmpty()) {
+            m_view->hostHud().showFlash(ImageView::tr("Reload"),
+                ImageView::tr("Unchanged"),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+            return;
+        }
+        QSet<QString> done;
+        for (const QString &path : *changedPaths) {
+            if (done.contains(path)) {
+                continue;
+            }
+            done.insert(path);
             ImageCache::remove(path);
-            // Drop size-book entry too. A locked wrong definitive (larger than
-            // tile-native) leaves contentRect bigger than the tile grid —
-            // only the top-left tile appears to paint; hard reload/reopen
-            // fixed it because they already take() the book.
             {
                 QSize discarded;
                 m_view->hostSizeBook().take(path, &discarded);
             }
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
+            m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);
             }
-            purgedPaths.insert(path);
-        } else {
-            m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+            for (ImageItem *item : targets) {
+                if (!item || item->path() != path) {
+                    continue;
+                }
+                m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+                m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
+            }
+            // No PendingSessionBind — existing tiles keep their session ids.
+            ThumtooCache::scheduleProbe(path);
+            m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
         }
-        m_view->takePendingWorkspacePath(path);
-        m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
-        PendingSessionBind b;
-        b.path = path;
-        b.id = item->sessionId();
-        b.index = m_view->sessionListIndex(item);
-        m_view->hostBindBook().append(b);
-        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
+        const QString detail = (changedPaths->size() == 1)
+            ? QFileInfo(changedPaths->constFirst()).fileName()
+            : ImageView::tr("%1 paths").arg(changedPaths->size());
+        m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
+            [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        emit m_view->statusChanged();
+    };
+
+    for (const QString &path : paths) {
+        ThumtooCache::checkSourceChanged(path, [remaining, changedPaths, finish, path](bool changed) {
+            if (changed) {
+                changedPaths->append(path);
+            }
+            if (--(*remaining) == 0) {
+                finish();
+            }
+        });
     }
-    if (relayout) {
-        applyLayout(GalleryPackReason::Reload);
-    } else {
-        // Even without full pack: re-apply poses so Image-mode scale=1 residue
-        // cannot leave huge cells after a pixel-only refresh.
-        rebuildVirtualPlan();
-        syncVirtualWindow();
-    }
-    m_view->hostHud().showFlash(ImageView::tr("Reload"), ImageView::tr("Gallery"), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
-    emit m_view->statusChanged();
 }
 
-void GalleryController::hardReloadFromDisk(bool relayout)
+void GalleryController::hardReloadFromDisk(bool /*relayout*/)
 {
+    // Shift+F5: selection only (else primary). Evict durable + process caches.
+    // Never relayout — only the targeted cells re-decode in place.
     QList<ImageItem *> targets = m_view->transformTargets();
     if (targets.isEmpty()) {
-        targets = m_view->liveItems();
+        if (ImageItem *primary = m_view->primaryItem()) {
+            targets.append(primary);
+        }
     }
     if (targets.isEmpty()) {
         return;
     }
 
     QSet<QString> pathSet;
-    struct ReloadBind {
-        QString path;
-        SessionImageId id = kInvalidSessionImageId;
-        int index = -1;
-    };
-    QList<ReloadBind> binds;
-    int itemCount = 0;
     for (ImageItem *item : targets) {
-        if (!item) {
+        if (!item || item->path().isEmpty()) {
             continue;
         }
         const QString path = item->path();
-        if (path.isEmpty()) {
-            continue;
-        }
-        ++itemCount;
         m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
-        m_view->takePendingWorkspacePath(path);
         m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
+        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             {
@@ -2485,14 +2506,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
                 ThumtooCache::forgetPixelsSettled(path, edge);
             }
             pathSet.insert(path);
-        } else {
-            m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
-        ReloadBind b;
-        b.path = path;
-        b.id = item->sessionId();
-        b.index = m_view->sessionListIndex(item);
-        binds.append(b);
     }
     if (pathSet.isEmpty()) {
         return;
@@ -2500,32 +2514,29 @@ void GalleryController::hardReloadFromDisk(bool relayout)
     const QStringList paths = pathSet.values();
     const QString detail = (paths.size() == 1)
         ? QFileInfo(paths.constFirst()).fileName()
-        : ImageView::tr("%1 paths · %2 items").arg(paths.size()).arg(itemCount);
-    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), detail, [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        : ImageView::tr("%1 paths · %2 items").arg(paths.size()).arg(targets.size());
+    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), detail,
+        [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 
     auto remaining = std::make_shared<int>(paths.size());
     auto tileTotal = std::make_shared<qint64>(0);
-    const bool doRelayout = relayout;
-
-    auto finish = [this, binds, doRelayout, tileTotal]() {
-        QSet<QString> probed;
-        for (const ReloadBind &b : binds) {
-            PendingSessionBind pending;
-            pending.path = b.path;
-            pending.id = b.id;
-            pending.index = b.index;
-            m_view->hostBindBook().append(pending);
-            if (!probed.contains(b.path)) {
-                ThumtooCache::scheduleProbe(b.path);
-                probed.insert(b.path);
-            }
-            m_view->hostDisplayPipeline().scheduleGalleryDecode(b.path);
+    auto finish = [this, paths, tileTotal]() {
+        if (!m_view) {
+            return;
         }
-        if (doRelayout) {
-            applyLayout(GalleryPackReason::Reload);
+        QSet<QString> probed;
+        for (const QString &path : paths) {
+            if (!probed.contains(path)) {
+                ThumtooCache::scheduleProbe(path);
+                probed.insert(path);
+            }
+            // Existing items only — no PendingSessionBind / LoadAdd.
+            m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
         }
         if (*tileTotal > 0) {
-            m_view->hostHud().showFlash(ImageView::tr("Hard reload"), ImageView::tr("%1 Store tiles removed").arg(*tileTotal), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+            m_view->hostHud().showFlash(ImageView::tr("Hard reload"),
+                ImageView::tr("%1 Store tiles removed").arg(*tileTotal),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         }
         emit m_view->statusChanged();
     };

@@ -928,6 +928,76 @@ bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs)
     return any;
 }
 
+void checkSourceChanged(const QString &path, std::function<void(bool changed)> done)
+{
+    if (!done) {
+        return;
+    }
+    if (path.isEmpty()) {
+        done(true);
+        return;
+    }
+    const QString pathCopy = path;
+    auto doneCopy = std::move(done);
+    QThreadPool::globalInstance()->start([pathCopy, doneCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        bool changed = true;
+        const std::string uri = toThumtooUri(pathCopy);
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        // Outer filesystem path for fingerprint (archive members share outer).
+        std::filesystem::path outer;
+        if (ArchivePath::isArchiveRef(pathCopy)) {
+            outer = std::filesystem::path(ArchivePath::archiveFilePath(pathCopy).toStdString());
+        } else if (PagePath::isPageRef(pathCopy) || PagePath::isPdfImageRef(pathCopy)
+                   || PagePath::isEpubLayoutOnly(pathCopy)) {
+            // Document pages: outer PDF/DjVu/EPUB path.
+            outer = std::filesystem::path(PagePath::documentFilePath(pathCopy).toStdString());
+        } else {
+            outer = std::filesystem::path(pathCopy.toStdString());
+        }
+        std::optional<std::int64_t> cached_mtime;
+        std::optional<std::int64_t> cached_size;
+        if (c && !uri.empty()) {
+            try {
+                if (auto loc = c->store().find_locator(uri)) {
+                    cached_mtime = loc->mtime_ns;
+                    cached_size = loc->size;
+                }
+            } catch (...) {
+            }
+        }
+        if (!cached_mtime && !cached_size) {
+            // No fingerprint yet — treat as changed so soft F5 still probes.
+            changed = true;
+        } else if (outer.empty()) {
+            changed = true;
+        } else {
+            const auto mtime = fileMtimeFingerprint(outer);
+            const auto size = fileSizeBytes(outer);
+            changed = false;
+            if (cached_mtime && mtime && *cached_mtime != *mtime) {
+                changed = true;
+            }
+            if (cached_size && size && *cached_size != *size) {
+                changed = true;
+            }
+            // Source vanished or unreadable.
+            if (!mtime && !size) {
+                changed = true;
+            }
+        }
+        QMetaObject::invokeMethod(
+            QCoreApplication::instance(),
+            [doneCopy, changed]() { doneCopy(changed); },
+            Qt::QueuedConnection);
+    });
+}
+
 
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)

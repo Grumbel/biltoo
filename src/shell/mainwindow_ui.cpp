@@ -65,19 +65,20 @@ void MainWindow::createActions()
     m_reloadAct = new QAction(tr("&Reload"), this);
     m_reloadAct->setShortcut(Qt::Key_F5);
     m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
-    m_reloadAct->setToolTip(tr("Reload current image(s) from disk (F5)"));
+    m_reloadAct->setToolTip(tr("Reload current image(s) from disk when changed (F5)"));
     m_reloadAct->setStatusTip(
-        tr("Reload from disk (F5): current image in Image mode, all tiles in Gallery/Workspace"));
+        tr("Reload from disk (F5): check source mtime; regenerate only if changed — "
+           "current image in Image mode; selection (or focused) in Gallery/Workspace. No relayout."));
     connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
 
     m_hardReloadAct = new QAction(tr("Hard &Reload"), this);
     m_hardReloadAct->setShortcut(Qt::SHIFT | Qt::Key_F5);
     m_hardReloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
     m_hardReloadAct->setToolTip(
-        tr("Clear caches and re-decode from disk (Shift+F5)"));
+        tr("Evict cache and re-decode from disk (Shift+F5)"));
     m_hardReloadAct->setStatusTip(
-        tr("Hard reload (Shift+F5): drop host/tile caches, then re-decode — "
-           "current image in Image mode; selection (or all tiles) in Gallery/Workspace"));
+        tr("Hard reload (Shift+F5): drop host/tile/durable Store caches, then re-decode — "
+           "current image in Image mode; selection (or focused) in Gallery/Workspace. No relayout."));
     connect(m_hardReloadAct, &QAction::triggered, this, &MainWindow::hardReloadFromDisk);
 
     m_printAct = new QAction(tr("&Print…"), this);
@@ -1853,15 +1854,17 @@ void MainWindow::populateActionHelpTexts()
         "<p>Save the project under a new file name, then keep that path as the "
         "current project for subsequent Save.</p>"));
     setHelp(m_reloadAct, tr(
-        "<p>Reload pixels and metadata for the current session from disk (or "
-        "archive members). Appearance and Workspace poses stay; decode caches "
-        "refresh when content changed.</p>"));
+        "<p>Soft reload (F5): compare the source file mtime/size to the Store "
+        "fingerprint. When the file changed, drop process caches for the "
+        "target(s) and re-decode in place. Unchanged files are left alone. "
+        "Image mode: current image. Gallery/Workspace: selection, or the "
+        "focused item if nothing is selected. Never relayouts Gallery.</p>"));
     setHelp(m_hardReloadAct, tr(
-        "<p>Hard reload (Shift+F5): drop the process host sample and path tile "
-        "RAM, forget durable thumtoo Store tiles for the targets, clear "
-        "on-canvas decoded pixels, then re-decode from disk. Image mode uses "
-        "the current image; Gallery/Workspace use the selection when any items "
-        "are selected, otherwise all on-canvas items.</p>"));
+        "<p>Hard reload (Shift+F5): always drop process host samples, path tile "
+        "RAM, and durable thumtoo Store tiles for the targets, clear on-canvas "
+        "decoded pixels, then re-decode from disk. Image mode: current image. "
+        "Gallery/Workspace: selection, or the focused item if nothing is "
+        "selected. Never relayouts Gallery; never removes session members.</p>"));
     setHelp(m_quitAct, tr(
         "<p>Quit this Biltoo window. You may be prompted if the Workspace has "
         "unsaved project state.</p>"));

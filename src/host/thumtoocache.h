@@ -107,6 +107,14 @@ void noteCachedSize(const QString &path, const QSize &size);
 bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs);
 
 /**
+ * Compare source file mtime/size to the Store locator fingerprint (worker).
+ * @p done is invoked on the GUI thread: true if the source changed (or no
+ * locator / unreadable source), false if fingerprints still match.
+ * Used by soft F5 so an unchanged file does not force a full re-decode.
+ */
+void checkSourceChanged(const QString &path, std::function<void(bool changed)> done);
+
+/**
  * Process ImageCache underlay sample when already seeded (LQIP/EMB).
  * GUI: ImageCache only. Worker: if process cache misses, may read Store
  * get_lqip / get_embedded_preview (no generation) and seed ImageCache.

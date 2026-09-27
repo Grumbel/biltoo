@@ -600,10 +600,8 @@ void MainWindow::reloadFromDisk()
     if (!m_imageView) {
         return;
     }
-    // Gallery F5: re-decode + explicit pack (same as pressing a layout action).
-    // Image mode: only the focused file. Workspace: tiles in place, no pack.
-    const bool relayout = m_imageView->isGalleryMode();
-    m_imageView->reloadFromDisk(relayout);
+    // F5: never relayout Gallery. Targets are selection (or primary) only.
+    m_imageView->reloadFromDisk(/*relayoutGallery=*/false);
     updateStatus();
 }
 
@@ -612,8 +610,8 @@ void MainWindow::hardReloadFromDisk()
     if (!m_imageView) {
         return;
     }
-    const bool relayout = m_imageView->isGalleryMode();
-    m_imageView->hardReloadFromDisk(relayout);
+    // Shift+F5: never relayout Gallery. Selection (or primary) only.
+    m_imageView->hardReloadFromDisk(/*relayoutGallery=*/false);
     updateStatus();
 }
 

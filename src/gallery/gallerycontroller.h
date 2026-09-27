@@ -186,8 +186,8 @@ public:
     void setMasonryRows(int rows);
     /** Packaged Gallery layout only (FreeForm is Workspace). */
     void setLayoutMode(LayoutMode mode);
-    void reloadFromDisk(bool relayout = true);
-    void hardReloadFromDisk(bool relayout = true);
+    void reloadFromDisk(bool relayout = false);
+    void hardReloadFromDisk(bool relayout = false);
     void setRelayoutSuppressed(bool on);
     void invalidateDecodes();
 
