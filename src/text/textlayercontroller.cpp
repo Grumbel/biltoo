@@ -120,6 +120,67 @@ bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
     return m_session.hasRegions();
 }
 
+
+QRectF TextLayerController::currentPageCropInPageSpace() const
+{
+    if (!m_view) {
+        return {};
+    }
+    ImageItem *item = m_view->primaryItem();
+    if (!item) {
+        return {};
+    }
+    const QString path = m_view->hostImage().classicPath();
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && m_view->isImageMode()) {
+        sid = m_view->hostSessionId().currentIdValue();
+    }
+    WorkspaceItemState st;
+    if (sid != kInvalidSessionImageId) {
+        st = m_view->sessionAppearanceValue(sid);
+    }
+    if (!st.hasCrop || st.cropRect.isEmpty()) {
+        return {};
+    }
+
+    QSize sourceSize = ThumtooCache::cachedSize(path);
+    if (sourceSize.width() < 1 || sourceSize.height() < 1) {
+        sourceSize = item->imageSize();
+    }
+    if (sourceSize.width() < 1 || sourceSize.height() < 1) {
+        return {};
+    }
+
+    const ContentXform::Value x = ContentXform::Value::fromState(st);
+    const QRect cropOr = ContentXform::orientedCropRect(sourceSize, x);
+    if (cropOr.width() < 1 || cropOr.height() < 1) {
+        return {};
+    }
+    // Full crop window in display/crop-local space → source pixels.
+    const QRectF sourceCrop = ContentXform::mapDisplayRectToSource(
+        QRectF(0, 0, cropOr.width(), cropOr.height()), sourceSize, x);
+    if (sourceCrop.isEmpty()) {
+        return {};
+    }
+
+    QRectF pageBounds;
+    if (m_session.pageBoundsValid()) {
+        pageBounds = m_session.pageBounds();
+    } else {
+        const auto native = ThumtooCache::cachedPageTextLayer(path);
+        if (native.pageBounds.isValid()) {
+            pageBounds = native.pageBounds;
+        } else {
+            // Image OCR uses page box == full source raster (Y-down).
+            pageBounds = QRectF(0, 0, sourceSize.width(), sourceSize.height());
+        }
+    }
+    if (!pageBounds.isValid() || pageBounds.width() < 1 || pageBounds.height() < 1) {
+        return {};
+    }
+    return ThumtooCache::imageRectToPageRect(sourceCrop, pageBounds, sourceSize, pageYUp());
+}
+
 void TextLayerController::setSearchFuzzy(bool on)
 {
     if (!m_session.setSearchFuzzy(on)) {
