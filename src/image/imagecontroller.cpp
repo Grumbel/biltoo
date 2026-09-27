@@ -188,6 +188,7 @@ void clearProcessCachesForPath(ImageView *view, const QString &path)
         QSize discarded;
         view->hostSizeBook().take(path, &discarded);
     }
+    ThumtooCache::forgetCachedSize(path);
     view->hostDisplayPipeline().purgeTilePathRam(path);
     view->hostDisplayPipeline().galleryDecodeResetPath(path);
     for (int edge : ThumtooCache::kLadderEdges) {

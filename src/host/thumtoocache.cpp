@@ -743,6 +743,13 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
+void forgetCachedSize(const QString &path)
+{
+    if (!path.isEmpty()) {
+        ProcessMemos::instance().clearSize(path);
+    }
+}
+
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
 #endif

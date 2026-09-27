@@ -98,6 +98,8 @@ inline int ceilLadderEdge(int displayLongEdge)
 QSize cachedSize(const QString &path, bool scheduleRevalidate = false);
 /** Process memo only — workers/sizeReady call this; GUI must not Store-query. */
 void noteCachedSize(const QString &path, const QSize &size);
+/** Drop process size memo so tileNativeSize cannot keep a pre-reload WxH. */
+void forgetCachedSize(const QString &path);
 
 /**
  * Cache-only file size and mtime from the Store locator (no source I/O).

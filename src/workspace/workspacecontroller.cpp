@@ -800,6 +800,7 @@ void WorkspaceController::reloadFromDisk()
                 QSize discarded;
                 m_view->hostSizeBook().take(path, &discarded);
             }
+            ThumtooCache::forgetCachedSize(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
             for (int edge : ThumtooCache::kLadderEdges) {
@@ -863,6 +864,7 @@ void WorkspaceController::hardReloadFromDisk()
                 QSize discarded;
                 m_view->hostSizeBook().take(path, &discarded);
             }
+            ThumtooCache::forgetCachedSize(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);
