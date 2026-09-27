@@ -2,14 +2,15 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.18-ocr-crop` (base `d456ffc`).
+**Tip:** `biltoo-2715.19-ocr-appearance` (base `d456ffc`).
 
-### OCR + crop
-- Page OCR passes session crop (page space) into thumtoo `OcrOptions`.
-- Needs thumtoo tip with `OcrOptions.has_crop` (`thumtoo-ocr-crop-4d49372.bundle`).
+### OCR matches view
+- Crop (2715.18) + **orient/colour grade** via materializeDisplay → `ocr_rgb_page_text_layer`.
+- thumtoo: `thumtoo-ocr-rgb-4d49372.bundle` (crop + RGB OCR API).
 
 ### Apply
 ```bash
-git -C thumtoo pull --ff-only …/thumtoo-ocr-crop-4d49372.bundle HEAD
-git -C biltoo pull --ff-only …/biltoo-2715.18-ocr-crop-d456ffc.bundle HEAD
+git -C thumtoo pull --ff-only …/thumtoo-ocr-rgb-4d49372.bundle HEAD
+# rebuild thumtoo
+git -C biltoo pull --ff-only …/biltoo-2715.19-ocr-appearance-d456ffc.bundle HEAD
 ```
