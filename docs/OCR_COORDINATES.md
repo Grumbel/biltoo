@@ -124,3 +124,10 @@ physical scrap).
 
 Crop does not change the correct DPI: character height in pixels is set by the
 native raster scale, not by the crop window size.
+
+## Appearance OCR pixel buffer
+
+`runOcrRgbImage` always packs a **dense RGB888** buffer (`width × height × 3`,
+no row padding) by expanding `Format_ARGB32` pixels component-wise. Graded
+frames from `applyColorAdjustments` are ARGB32; feeding padded or ARGB memory
+to thumtoo as if it were contiguous RGB888 produces skewed / garbage OCR.

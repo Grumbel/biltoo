@@ -93,6 +93,7 @@
 #include <string>
 #include <span>
 #include <unordered_map>
+#include <cstdint>
 #include <vector>
 
 
@@ -3726,18 +3727,30 @@ OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang,
         out.status = OcrRunResult::Status::Unavailable;
         return out;
     }
-    QImage rgb = image;
-    if (rgb.format() != QImage::Format_RGB888) {
-        rgb = rgb.convertToFormat(QImage::Format_RGB888);
+    // Pack tight RGB888 by component. materializeDisplay / applyColorAdjustments
+    // often leave Format_ARGB32 (or padded RGB888). convertToFormat + memcpy of
+    // scanlines still mis-feeds Tesseract when stride ≠ width*3: thumtoo copies
+    // width*height*3 as if rows were contiguous → skewed / garbage OCR on
+    // graded (ARGB) frames. Always expand qRed/qGreen/qBlue into a dense buffer.
+    const QImage src = image.convertToFormat(QImage::Format_ARGB32);
+    if (src.isNull() || src.width() < 8 || src.height() < 8) {
+        out.status = OcrRunResult::Status::Failed;
+        out.detail = QCoreApplication::translate(
+            "ThumtooCache", "OCR image convert failed");
+        return out;
     }
-    // Ensure tight scanline for thumtoo (bytesPerLine == width*3).
-    if (rgb.bytesPerLine() != rgb.width() * 3) {
-        QImage tight(rgb.width(), rgb.height(), QImage::Format_RGB888);
-        for (int y = 0; y < rgb.height(); ++y) {
-            memcpy(tight.scanLine(y), rgb.constScanLine(y),
-                   size_t(rgb.width()) * 3);
+    const int w = src.width();
+    const int h = src.height();
+    std::vector<std::uint8_t> rgb(static_cast<size_t>(w) * static_cast<size_t>(h) * 3u);
+    for (int y = 0; y < h; ++y) {
+        const QRgb *line = reinterpret_cast<const QRgb *>(src.constScanLine(y));
+        std::uint8_t *dst = rgb.data() + static_cast<size_t>(y) * static_cast<size_t>(w) * 3u;
+        for (int x = 0; x < w; ++x) {
+            const QRgb px = line[x];
+            *dst++ = static_cast<std::uint8_t>(qRed(px));
+            *dst++ = static_cast<std::uint8_t>(qGreen(px));
+            *dst++ = static_cast<std::uint8_t>(qBlue(px));
         }
-        rgb = tight;
     }
     thumtoo::OcrOptions opts;
     if (!lang.isEmpty()) {
@@ -3748,10 +3761,10 @@ OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang,
     }
     const thumtoo::TextRect bounds{
         0.0, 0.0,
-        static_cast<double>(rgb.width()),
-        static_cast<double>(rgb.height())};
+        static_cast<double>(w),
+        static_cast<double>(h)};
     auto layer = thumtoo::ocr_rgb_page_text_layer(
-        rgb.constBits(), rgb.width(), rgb.height(), bounds, opts);
+        rgb.data(), w, h, bounds, opts);
     if (!layer) {
         out.status = OcrRunResult::Status::Failed;
         const std::string_view err = thumtoo::ocr_last_error();
