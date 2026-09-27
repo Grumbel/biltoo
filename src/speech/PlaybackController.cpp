@@ -137,6 +137,7 @@ void PlaybackController::stopSink()
         m_sink = nullptr;
     }
     m_pcmBuffer.reset();
+    m_sinkReachedActive = false;
 }
 
 qint64 PlaybackController::currentPositionMs() const
@@ -422,16 +423,29 @@ void PlaybackController::playCurrentIfReady()
 
 void PlaybackController::onSinkStateChanged()
 {
-    if (!m_sink) {
+    if (!m_sink || m_advancing) {
         return;
     }
     const QAudio::State st = m_sink->state();
-    if (st == QAudio::IdleState && m_playing && !m_paused) {
-        // Finished draining this sentence's buffer.
+    if (st == QAudio::ActiveState) {
+        // Only treat later Idle as end-of-sentence after we have actually played.
+        m_sinkReachedActive = true;
+        return;
+    }
+    if (!m_playing || m_paused || !m_sinkReachedActive) {
+        return;
+    }
+    // End of sentence: device drained the QBuffer (Idle) or clean Stopped.
+    const bool bufferDone = m_pcmBuffer && m_pcmBuffer->atEnd();
+    if (st == QAudio::IdleState && bufferDone) {
         advanceToNext();
-    } else if (st == QAudio::StoppedState) {
-        if (m_sink->error() != QAudio::NoError && m_playing) {
+        return;
+    }
+    if (st == QAudio::StoppedState) {
+        if (m_sink->error() != QAudio::NoError) {
             emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
+            advanceToNext();
+        } else if (bufferDone) {
             advanceToNext();
         }
     }
@@ -447,9 +461,15 @@ void PlaybackController::onPositionTick()
 
 void PlaybackController::advanceToNext()
 {
+    if (m_advancing) {
+        return;
+    }
+    m_advancing = true;
+
     if (m_currentIndex < 0 || m_currentIndex >= m_sentences.size()) {
         m_playing = false;
         stopSink();
+        m_advancing = false;
         emit playbackFinished();
         return;
     }
@@ -467,12 +487,16 @@ void PlaybackController::advanceToNext()
         if (finishedDuration > 0) {
             emit audioPositionChanged(finishedDuration, finishedDuration);
         }
+        m_advancing = false;
         emit playbackFinished();
         return;
     }
 
     m_currentIndex = finishedIndex + 1;
+    // Prefetch from the new index before starting playback of this sentence.
+    requestLookahead();
     playCurrentIfReady();
+    m_advancing = false;
 }
 
 void PlaybackController::onAudioReady(int id, int /*sampleRate*/, const QByteArray &wav)

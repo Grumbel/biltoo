@@ -97,6 +97,8 @@ private:
     float m_volume = 1.0f;
     bool m_muted = false;
     double m_pendingSeekFraction = -1.0;
+    bool m_sinkReachedActive = false;
+    bool m_advancing = false;
     qint64 m_playStartMs = 0; // elapsedRealtime at sink start (for position)
     qint64 m_seekOffsetMs = 0;
 };
