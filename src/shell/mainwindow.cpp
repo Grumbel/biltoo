@@ -5003,32 +5003,32 @@ void MainWindow::connectTextToSpeech()
                 const double frac = double(pos) / double(dur);
                 const int spanLen = qMax(1, m_ttsSentenceEnd - m_ttsSentenceStart);
                 const int globalOff =
-                    m_ttsSentenceStart + int(frac * double(spanLen) + 0.5);
+                    m_ttsSentenceStart
+                    + int(qBound(0.0, frac, 1.0) * double(spanLen - 1) + 0.5);
                 TextLayerController &text = m_imageView->hostText();
-                QVector<int> active;
+                const auto spans = text.speakSpans();
+                int activeRi = m_ttsSpeakRegions.first();
                 double localProg = frac;
-                for (const auto &sp : text.speakSpans()) {
+                for (const auto &sp : spans) {
                     if (sp.end <= m_ttsSentenceStart || sp.start >= m_ttsSentenceEnd) {
                         continue;
                     }
-                    if (globalOff < sp.end || sp.end >= m_ttsSentenceEnd) {
-                        // Prefer the span that contains globalOff; last matching wins
-                        // if on a join space between spans.
-                        if (globalOff >= sp.start || active.isEmpty()) {
-                            active = {sp.regionIndex};
-                            const int len = qMax(1, sp.end - sp.start);
-                            localProg = qBound(
-                                0.0, double(globalOff - sp.start) / double(len), 1.0);
-                        }
-                        if (globalOff < sp.end) {
-                            break;
-                        }
+                    // Containment, or join-space just before this span (sp.start - 1).
+                    if (globalOff >= sp.start && globalOff < sp.end) {
+                        activeRi = sp.regionIndex;
+                        const int len = qMax(1, sp.end - sp.start);
+                        localProg = double(globalOff - sp.start) / double(len);
+                        break;
                     }
+                    if (globalOff < sp.start) {
+                        // Landed on separator before this span → prefer previous box.
+                        break;
+                    }
+                    // globalOff past this span — keep walking; last in-range is fallback.
+                    activeRi = sp.regionIndex;
+                    localProg = 1.0;
                 }
-                if (active.isEmpty()) {
-                    active = m_ttsSpeakRegions;
-                }
-                text.setSpeakingHighlight(active, localProg);
+                text.setSpeakingHighlight({activeRi}, localProg);
             });
 
     // Panel → TTS (voice/tempo/vol) is wired only in connectTextPanel() so

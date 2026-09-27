@@ -750,6 +750,13 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan() const
                     && !tx.isEmpty() && tx.at(0).isLetter()) {
                     plan.text.chop(1);
                     cursor = plan.text.size();
+                    // Previous span still counted the hyphen — shrink it.
+                    if (!plan.spans.isEmpty()) {
+                        SpeakSpan &prev = plan.spans.last();
+                        if (prev.end > prev.start) {
+                            prev.end = cursor;
+                        }
+                    }
                     sep.clear();
                 } else {
                     sep = QLatin1Char(' ');
