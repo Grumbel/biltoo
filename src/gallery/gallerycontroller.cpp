@@ -29,6 +29,7 @@
 #include "gallery/gallerypackfit.h"
 #include "display/imagecache.h"
 #include "tilelod/tile_lod_registry.hpp"
+#include "tilelod/tile_cover_paint.hpp"
 #include "tilelod/tile_plan_debug_overlay.hpp"
 #include "display/displayquality.h"
 #include "util/debugflags.h"
@@ -2139,17 +2140,61 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Background underlay for plan cells (drawBackground, under live items).
-    // Always paint available EMB/LQIP here — this is the scroll-time floor while
-    // live ImageItems materialize and stream tiles. Do not strip EMB when the
-    // path is "warm": that left fast scroll on blank cells until items caught up.
-    // Tiles remain ImageItem-only (paint_tiles_display); this never draws tiles.
+    // Background floor for plan cells (under live items). Prefer retained
+    // min-scale tiles from TileLodRegistry so fast scroll never goes blank
+    // when the path already has pyramid RAM. Fall back to EMB/LQIP only when
+    // no Succeeded tiles remain for that path.
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
         const QRectF &r = slot.bounds;
+        const QSize native = m_view->hostSizeBook().known(slot.path);
+        bool drewTiles = false;
+
+        if (!slot.path.isEmpty()
+            && native.width() > 1 && native.height() > 1
+            && tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)) {
+            // Keep this path preferred under process LRU while on-screen.
+            tilelod::TileLodRegistry::instance().touch(slot.path);
+            tilelod::TileLodController lod;
+            lod.setPath(slot.path);
+            tilelod::CoverPaintArgs args;
+            args.lod = &lod;
+            args.native = native;
+            args.dest = r;
+            args.tick = false;
+            args.min_scale = ThumtooCache::durableTileMinScale(slot.path);
+            QImage under = ImageCache::getUnderlay(slot.path);
+            if (under.isNull()) {
+                under = ImageCache::get(slot.path);
+            }
+            under = ImageCache::matchNativeAspect(under, native);
+            args.underlay = under;
+            if (tilelod::prepare_and_paint_cover(painter, args)) {
+                drewTiles = true;
+                if (tilePlanDebugOverlayEnabled() && lod.session()) {
+                    painter->save();
+                    painter->translate(r.topLeft());
+                    const double sx = r.width() / double(qMax(1, native.width()));
+                    const double sy = r.height() / double(qMax(1, native.height()));
+                    painter->scale(sx, sy);
+                    const tilelod::DrawPlan plan = lod.session()->draw_plan();
+                    paintTilePlanDebugOverlay(
+                        painter, lod.session(), plan,
+                        QRectF(0, 0, native.width(), native.height()),
+                        QPointF(), native, ContentXform::Value{},
+                        false, slot.path);
+                    painter->restore();
+                }
+            }
+        }
+
+        if (drewTiles) {
+            continue;
+        }
+
         QImage under;
         if (!slot.path.isEmpty()) {
             under = ImageCache::getUnderlay(slot.path);
@@ -2158,7 +2203,6 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             }
         }
         if (!under.isNull()) {
-            const QSize native = m_view->hostSizeBook().known(slot.path);
             under = ImageCache::matchNativeAspect(under, native);
             if (slot.id != kInvalidSessionImageId
                 && m_view->itemWorld().hasDurableAppearance(slot.id)) {
