@@ -2139,50 +2139,22 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Cold underlay only. Tiles + plan overlay are exclusively ImageItem paint.
-    // Skip any slot that already has a live item (background would only fight it).
-    QSet<SessionImageId> liveIds;
-    QSet<QString> livePaths;
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item) {
-            continue;
-        }
-        if (item->sessionId() != kInvalidSessionImageId) {
-            liveIds.insert(item->sessionId());
-        }
-        if (!item->path().isEmpty()) {
-            livePaths.insert(item->path());
-        }
-    }
-
+    // Background underlay for plan cells (drawBackground, under live items).
+    // Always paint available EMB/LQIP here — this is the scroll-time floor while
+    // live ImageItems materialize and stream tiles. Do not strip EMB when the
+    // path is "warm": that left fast scroll on blank cells until items caught up.
+    // Tiles remain ImageItem-only (paint_tiles_display); this never draws tiles.
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
-        if (slot.id != kInvalidSessionImageId && liveIds.contains(slot.id)) {
-            continue;
-        }
-        if (!slot.path.isEmpty() && livePaths.contains(slot.path)) {
-            continue;
-        }
-
         const QRectF &r = slot.bounds;
         QImage under;
         if (!slot.path.isEmpty()) {
             under = ImageCache::getUnderlay(slot.path);
             if (under.isNull()) {
                 under = ImageCache::get(slot.path);
-            }
-        }
-        // Durable tiles known but process RAM empty: LQIP only (never EMB).
-        // Process tiles present without a live item: same — wait for materialize.
-        const bool warm = !slot.path.isEmpty()
-            && (ThumtooCache::hasDurableTilesKnown(slot.path)
-                || tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path));
-        if (!under.isNull() && warm) {
-            if (qMax(under.width(), under.height()) > DisplayQuality::kLqipMaxEdge) {
-                under = QImage();
             }
         }
         if (!under.isNull()) {
@@ -2226,8 +2198,6 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
         } else {
             ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, r);
             if (tilePlanDebugOverlayEnabled() && r.width() >= 4.0 && r.height() >= 4.0) {
-                const QString tag = warm ? QStringLiteral("TILE?")
-                                         : QStringLiteral("EMPTY");
                 QFont hf = painter->font();
                 hf.setBold(true);
                 hf.setWeight(QFont::Black);
@@ -2235,9 +2205,10 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
                 hf.setPixelSize(px);
                 painter->setFont(hf);
                 painter->setPen(QColor(0, 0, 0, 220));
-                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
+                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter,
+                                  QStringLiteral("EMPTY"));
                 painter->setPen(QColor(0, 255, 220));
-                painter->drawText(r, Qt::AlignCenter, tag);
+                painter->drawText(r, Qt::AlignCenter, QStringLiteral("EMPTY"));
             }
         }
     }
