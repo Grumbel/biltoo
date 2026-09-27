@@ -3381,14 +3381,17 @@ DocumentOutline ensureDocumentOutline(const QString &)
 
 bool pageSpaceYUpForPath(const QString &sessionPath)
 {
-    // Document pages use bottom-left Y-up page space (native + OCR after TTL7).
-    // Plain files / archive image members use top-left Y-down.
-    if (PagePath::isPageRef(sessionPath) || PagePath::isEpubLayoutOnly(sessionPath)) {
-        return true;
-    }
+    // Fallback only when no PageTextLayer is loaded — prefer layer.pageYUp.
+    // MuPDF PDF/EPUB page+stext space is top-left Y-down. DjVu text is Y-up.
     const QString doc = PagePath::documentFilePath(sessionPath);
-    if (PagePath::isPdfFile(doc) || PagePath::isDjvuFile(doc)
-        || PagePath::isEpubFile(doc)) {
+    if (doc.isEmpty()) {
+        if (PagePath::isPageRef(sessionPath)) {
+            // Ambiguous page ref without path — do not assume Y-up (PDF is common).
+            return false;
+        }
+        return false;
+    }
+    if (PagePath::isDjvuFile(doc)) {
         return true;
     }
     return false;

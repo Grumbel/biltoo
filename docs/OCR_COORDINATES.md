@@ -30,13 +30,15 @@ Every `PageTextLayer` carries:
 
 | Kind | `pageYUp` |
 |------|-----------|
-| PDF / DjVu / EPUB (native **and** OCR) | `true` |
+| PDF / EPUB via MuPDF (native **and** OCR) | `false` (MuPDF page space is top-left Y-down) |
+| DjVu (native **and** OCR) | `true` (bottom-left Y-up) |
 | Plain-image OCR | `false` (`pageBounds` = source pixel box) |
 
 Always read `layer.pageYUp` when mapping. Fallback without a layer:
-`ThumtooCache::pageSpaceYUpForPath(path)` (document page refs → true).
+`ThumtooCache::pageSpaceYUpForPath` — **only DjVu → true**; PDF/EPUB/plain → false.
 
-Do not use `isDjvuFile`-only or path-string `"epub"` heuristics.
+Cached text layers written with the old PDF=`true` flag need re-extract
+(invalidate thumtoo text-layer blobs or re-open after cache clear).
 
 ## Recognition vs storage
 
