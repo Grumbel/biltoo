@@ -56,6 +56,7 @@ public:
     bool isMuted() const;
 
     bool isPlaying() const;
+    bool isPaused() const { return m_paused; }
 
     void setSuspended(bool suspended);
     bool isSuspended() const { return m_suspended; }

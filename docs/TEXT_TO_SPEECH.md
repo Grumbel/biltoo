@@ -130,6 +130,13 @@ builds an intermediate string for synthesis:
 `SpeakSpan` offsets map characters in that string back to region indices for
 highlight progress. Clipboard/`pageTextInReadingOrder()` still use newline joins.
 
+### Start position and Pause
+
+- **Speak** always uses the **full page** SpeakPlan. If regions are selected, speech
+  starts at the sentence containing the **first selected region** (top of selection
+  in reading order); it does not stop at the end of the selection.
+- While speaking, **Speak** becomes **Pause** / **Resume**; **Stop** ends the session.
+
 ### Speakable source priority
 
 1. Non-empty **selection** — `selectedText()` / multi-page bag joined text.

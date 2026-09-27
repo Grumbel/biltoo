@@ -80,8 +80,12 @@ public:
         QString text;
         QVector<SpeakSpan> spans;
     };
-    /** Selection order if any, else full page reading order. */
-    SpeakPlan buildSpeakPlan() const;
+    /**
+     * @p pageOnly true: always full-page reading order (selection is only an
+     * anchor for start offset, not the spoken range).
+     * false: selection if any, else full page.
+     */
+    SpeakPlan buildSpeakPlan(bool pageOnly = false) const;
     /** SpeakPlan::text (selection or page). Prefer this over newline-joined export. */
     QString speakableText() const;
     /** Same as buildSpeakPlan().spans — offsets into speakableText(). */

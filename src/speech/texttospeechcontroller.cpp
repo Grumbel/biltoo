@@ -195,7 +195,7 @@ void TextToSpeechController::ensureConnected()
     beginConnectAttempts(socketPath);
 }
 
-void TextToSpeechController::speakText(const QString &text)
+void TextToSpeechController::speakText(const QString &text, int startSentence)
 {
     const QString trimmed = text.trimmed();
     if (trimmed.isEmpty()) {
@@ -203,6 +203,8 @@ void TextToSpeechController::speakText(const QString &text)
         emit errorOccurred(m_status);
         return;
     }
+
+    m_pendingStartSentence = qMax(0, startSentence);
 
     if (m_ready && m_realAudio && m_client->isConnected()) {
         m_pendingSpeak.clear();
@@ -213,7 +215,13 @@ void TextToSpeechController::speakText(const QString &text)
         }
         m_playback->stop();
         m_playback->loadSentences(sentences);
+        const int idx = qBound(0, m_pendingStartSentence, sentences.size() - 1);
+        m_pendingStartSentence = 0;
+        if (idx > 0) {
+            m_playback->seekToSentence(idx);
+        }
         setSpeaking(true);
+        emit pausedChanged(false);
         setStatus(tr("Synthesizing…"));
         armSynthWatchdog();
         m_playback->play();
@@ -224,14 +232,44 @@ void TextToSpeechController::speakText(const QString &text)
     ensureConnected();
 }
 
+void TextToSpeechController::pause()
+{
+    if (!m_playback || !m_speaking) {
+        return;
+    }
+    m_playback->pause();
+    if (m_playback->isPaused()) {
+        disarmSynthWatchdog();
+        setStatus(tr("Paused"));
+        emit pausedChanged(true);
+    }
+}
+
+void TextToSpeechController::resume()
+{
+    if (!m_playback || !m_speaking || !m_playback->isPaused()) {
+        return;
+    }
+    setStatus(tr("Speaking…"));
+    emit pausedChanged(false);
+    m_playback->play();
+}
+
+bool TextToSpeechController::isPaused() const
+{
+    return m_playback && m_playback->isPaused();
+}
+
 void TextToSpeechController::stop()
 {
     m_pendingSpeak.clear();
+    m_pendingStartSentence = 0;
     disarmSynthWatchdog();
     if (m_playback) {
         m_playback->stop();
     }
     setSpeaking(false);
+    emit pausedChanged(false);
     if (m_ready || m_connectPending) {
         setStatus(tr("Stopped"));
     }
@@ -285,10 +323,13 @@ void TextToSpeechController::onServerReady(const PiperServerInfo &info)
 
     if (!m_pendingSpeak.isEmpty() && isReady()) {
         const QString text = m_pendingSpeak;
+        const int start = m_pendingStartSentence;
         m_pendingSpeak.clear();
-        speakText(text);
+        m_pendingStartSentence = 0;
+        speakText(text, start);
     } else if (!m_pendingSpeak.isEmpty() && !isReady()) {
         m_pendingSpeak.clear();
+        m_pendingStartSentence = 0;
         emit errorOccurred(m_status);
     }
 }
@@ -338,6 +379,7 @@ void TextToSpeechController::onPlaybackFinished()
 {
     disarmSynthWatchdog();
     setSpeaking(false);
+    emit pausedChanged(false);
     setStatus(tr("Finished"));
 }
 

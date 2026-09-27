@@ -682,7 +682,8 @@ void MainWindow::createActions()
     m_speakAct = new QAction(tr("Spea&k"), this);
     m_speakAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
     m_speakAct->setStatusTip(
-        tr("Read selected text or the current page aloud (local Piper TTS)"));
+        tr("Read the current page from the top, or from the first selected region "
+           "(Pause while speaking)"));
     connect(m_speakAct, &QAction::triggered, this, &MainWindow::speakSelectionOrPage);
 
     m_stopSpeechAct = new QAction(tr("Stop Speec&h"), this);

@@ -37,15 +37,21 @@ public:
     float volume() const { return m_volume; }
 
 public slots:
-    void speakText(const QString &text);
+    /** @p startSentence 0-based index into SentenceSplitter output. */
+    void speakText(const QString &text, int startSentence = 0);
+    void pause();
+    void resume();
     void stop();
     void setVoice(const QString &voice);
     void setSpeed(double speed);
     void setVolume(float volume);
 
+    bool isPaused() const;
+
 signals:
     void readyChanged(bool ready);
     void speakingChanged(bool speaking);
+    void pausedChanged(bool paused);
     void statusChanged(const QString &message);
     void errorOccurred(const QString &message);
     void voicesChanged(const QStringList &voices);
@@ -93,6 +99,7 @@ private:
     bool m_connectPending = false;
     bool m_awaitingFirstAudio = false;
     QString m_pendingSpeak;
+    int m_pendingStartSentence = 0;
     QString m_status;
     QStringList m_voices;
     QString m_voice;

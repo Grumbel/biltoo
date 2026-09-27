@@ -60,8 +60,8 @@ TextPanel::TextPanel(QWidget *parent)
     auto *speechRow = new QHBoxLayout;
     m_speakBtn = new QPushButton(tr("Speak"), this);
     m_speakBtn->setToolTip(
-        tr("Read the selected text aloud, or the whole page if nothing is selected "
-           "(local Piper TTS)"));
+        tr("Read the current page from the top, or from the first selected region "
+           "(local Piper TTS). Becomes Pause while speaking."));
     m_stopSpeechBtn = new QPushButton(tr("Stop"), this);
     m_stopSpeechBtn->setToolTip(tr("Stop text-to-speech"));
     m_stopSpeechBtn->setEnabled(false);
@@ -210,8 +210,27 @@ void TextPanel::setSpeechStatus(const QString &text, bool isError)
 
 void TextPanel::setSpeechBusy(bool speaking)
 {
+    setSpeechPlaybackState(speaking, false);
+}
+
+void TextPanel::setSpeechPlaybackState(bool speaking, bool paused)
+{
     if (m_stopSpeechBtn) {
         m_stopSpeechBtn->setEnabled(speaking);
+    }
+    if (!m_speakBtn) {
+        return;
+    }
+    if (!speaking) {
+        m_speakBtn->setText(tr("Speak"));
+        m_speakBtn->setToolTip(
+            tr("Read the current page from the top, or from the first selected region"));
+    } else if (paused) {
+        m_speakBtn->setText(tr("Resume"));
+        m_speakBtn->setToolTip(tr("Continue text-to-speech"));
+    } else {
+        m_speakBtn->setText(tr("Pause"));
+        m_speakBtn->setToolTip(tr("Pause text-to-speech"));
     }
 }
 

@@ -22,6 +22,7 @@
 #include "shell/ocrpanel.h"
 #include "shell/textpanel.h"
 #include "speech/texttospeechcontroller.h"
+#include "SentenceSplitter.h"
 #include "display/imagecache.h"
 #include "crop/croprecipe.h"
 #include "item/batchtargets.h"

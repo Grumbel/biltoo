@@ -4947,13 +4947,41 @@ void MainWindow::connectTextToSpeech()
     });
     connect(m_tts, &TextToSpeechController::speakingChanged, this, [this](bool on) {
         if (m_textPanel) {
-            m_textPanel->setSpeechBusy(on);
+            m_textPanel->setSpeechPlaybackState(on, m_tts && m_tts->isPaused());
         }
         if (m_stopSpeechAct) {
             m_stopSpeechAct->setEnabled(on);
         }
+        if (m_speakAct) {
+            if (!on) {
+                m_speakAct->setText(tr("Spea&k"));
+                m_speakAct->setStatusTip(
+                    tr("Read the current page from the top, or from the first selected region"));
+            } else if (m_tts && m_tts->isPaused()) {
+                m_speakAct->setText(tr("&Resume"));
+                m_speakAct->setStatusTip(tr("Continue text-to-speech"));
+            } else {
+                m_speakAct->setText(tr("&Pause"));
+                m_speakAct->setStatusTip(tr("Pause text-to-speech"));
+            }
+        }
         if (!on && m_imageView) {
             m_imageView->hostText().clearSpeakingHighlight();
+        }
+    });
+    connect(m_tts, &TextToSpeechController::pausedChanged, this, [this](bool paused) {
+        const bool on = m_tts && m_tts->isSpeaking();
+        if (m_textPanel) {
+            m_textPanel->setSpeechPlaybackState(on, paused);
+        }
+        if (m_speakAct && on) {
+            if (paused) {
+                m_speakAct->setText(tr("&Resume"));
+                m_speakAct->setStatusTip(tr("Continue text-to-speech"));
+            } else {
+                m_speakAct->setText(tr("&Pause"));
+                m_speakAct->setStatusTip(tr("Pause text-to-speech"));
+            }
         }
     });
     connect(m_tts, &TextToSpeechController::errorOccurred, this, [this](const QString &msg) {
@@ -5055,9 +5083,21 @@ void MainWindow::speakSelectionOrPage()
     if (!m_tts || !m_imageView) {
         return;
     }
-    const QString text = m_imageView->hostText().speakableText();
-    if (text.trimmed().isEmpty()) {
-        const QString msg = tr("No text to speak (select regions or load a text/OCR layer)");
+    // Toggle pause / resume while a session is active.
+    if (m_tts->isSpeaking()) {
+        if (m_tts->isPaused()) {
+            m_tts->resume();
+        } else {
+            m_tts->pause();
+        }
+        return;
+    }
+
+    TextLayerController &text = m_imageView->hostText();
+    // Always speak the full page; selection is a start anchor only.
+    const auto plan = text.buildSpeakPlan(/*pageOnly=*/true);
+    if (plan.text.trimmed().isEmpty()) {
+        const QString msg = tr("No text to speak (load a text/OCR layer)");
         if (m_textPanel) {
             m_textPanel->setSpeechStatus(msg);
         }
@@ -5066,7 +5106,32 @@ void MainWindow::speakSelectionOrPage()
         }
         return;
     }
-    m_tts->speakText(text);
+
+    int startSentence = 0;
+    const auto &sel = text.session().selectedRegionsRef();
+    if (!sel.isEmpty() && !plan.spans.isEmpty()) {
+        // Earliest SpeakPlan offset among selected regions (top of selection).
+        int anchor = plan.text.size();
+        for (int ri : sel) {
+            for (const auto &sp : plan.spans) {
+                if (sp.regionIndex == ri) {
+                    anchor = qMin(anchor, sp.start);
+                    break;
+                }
+            }
+        }
+        if (anchor < plan.text.size()) {
+            const QVector<Sentence> sentences =
+                SentenceSplitter::split(plan.text, /*startId=*/0);
+            for (int i = 0; i < sentences.size(); ++i) {
+                if (sentences.at(i).end > anchor) {
+                    startSentence = i;
+                    break;
+                }
+            }
+        }
+    }
+    m_tts->speakText(plan.text, startSentence);
 }
 
 void MainWindow::stopSpeech()

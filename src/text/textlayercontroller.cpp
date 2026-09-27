@@ -694,7 +694,7 @@ QString TextLayerController::pageTextInReadingOrder() const
     return lines.join(QLatin1Char('\n'));
 }
 
-TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan() const
+TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly) const
 {
     SpeakPlan plan;
     if (!hasLayer()) {
@@ -702,13 +702,12 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan() const
     }
 
     QVector<int> order;
-    if (!m_session.multiSelection.isEmpty() || !m_session.selectedRegionsRef().isEmpty()) {
+    if (!pageOnly
+        && (!m_session.multiSelection.isEmpty() || !m_session.selectedRegionsRef().isEmpty())) {
         order = m_session.selectedRegionsRef();
         if (order.isEmpty() && !m_session.multiSelection.isEmpty()) {
             order = m_session.multiSelection.regionIndicesFor(currentSessionId());
         }
-        // Selection list is already in selection order; keep it.
-        // If empty on this page but multi has text from other pages, fall back below.
     }
     if (order.isEmpty()) {
         const int n = m_session.regionCount();

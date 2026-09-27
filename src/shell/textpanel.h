@@ -44,6 +44,8 @@ public:
 
     void setSpeechStatus(const QString &text, bool isError = false);
     void setSpeechBusy(bool speaking);
+    /** Idle / speaking / paused — updates Speak button label (Speak / Pause / Resume). */
+    void setSpeechPlaybackState(bool speaking, bool paused);
     void setSpeakEnabled(bool on);
 
     void setVoices(const QStringList &voices, const QString &current);
