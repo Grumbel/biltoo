@@ -217,6 +217,33 @@ Used in [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md); 
 
 ---
 
+
+## Display samples (pixels you see)
+
+Normative product rules: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md),
+[docs/KILL_SOFT.md](docs/KILL_SOFT.md), [docs/TILE_LOD.md](docs/TILE_LOD.md).
+
+| Term | Meaning |
+|------|---------|
+| **Tiles** | 256² grid cells from thumtoo (scale 0 = full res; +1 halves). **Primary** display for on-screen cells once the cache is warm. Durable in the Store; also held in process RAM (`TileLodRegistry`). |
+| **LQIP** | Low-quality image placeholder (ThumbHash / ≤96 long edge). **Cold** underlay only until the first useful tile arrives. Not a sharpness tier. |
+| **EMB** | Embedded container preview (EXIF JPEG thumb, PDF `/Thumb`, etc., ≤320 long edge). **Cold** underlay only — same role as LQIP. Must not remain the visible product once tiles exist for the path. |
+| **Soft / PreferCache / ladder** | Whole-frame soft rasters (historical). **Removed** as a Gallery display tier (KILL_SOFT). Do not schedule or paint soft as underlay under tiles. |
+| **Underlay** | Whatever sits under tile holes: LQIP or EMB while tiles load. Live paint draws tiles on top when the cell is in the tile LOD band. |
+| **Warm cache** | Process and/or durable Store already holds tiles (or tile coverage) for the path. Virtual Gallery slots must paint **tiles**, not EMB. |
+| **Cold cache** | No durable tiles and no process tile RAM yet. LQIP/EMB/placeholder is acceptable until size gate + first tiles land. |
+| **Virtual slot** | Gallery plan cell without a live `ImageItem` (fast scroll). Still subject to the warm→tiles rule. |
+| **Tile plan overlay** | Debug chrome (`BILTOO_TILE_DEBUG` / Debug menu): shows Exact / Parent / hole cells and sample tags (TILE / LQIP / EMB). |
+
+### Priority (warm product)
+
+1. Exact / parent **tiles** in RAM  
+2. Coarser retained tiles  
+3. **LQIP** underlay (holes only)  
+4. Neutral placeholder  
+5. **EMB** — only when still **cold** (no durable tiles known, no process tiles)
+
+---
 ## Engineering / process
 
 | Term | Meaning |
@@ -242,6 +269,8 @@ Used in [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAINSTORM.md); 
 | **Gallery layout** vs **Workspace layout panel** | Whole-session pack vs selection-only pack; different modes. |
 | **Logical size** vs **sample / LQIP / soft pixels** | Geometry vs texture. |
 | **LQIP** vs **request encode LQIP** | May *display* cache LQIP; must not *force* encode as a product path. |
+| **EMB** vs **tiles** | EMB is cold underlay only; warm display is tiles. |
+| **Virtual slot** vs **live ImageItem** | Fast scroll may lack items — still must not show EMB when tiles are warm. |
 | **Remove from session** vs **remove from Workspace canvas** | Session delete drops the row; canvas-only delete keeps the session image. |
 | **sceneRect** (scene) vs **setSceneRect on the view** | View override was a source of Gallery scroll bugs. |
 | **AsNeeded bars** vs **AlwaysOn (Gallery)** | AsNeeded can cover pack edges; Gallery packs to the post-bar viewport. |
