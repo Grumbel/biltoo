@@ -558,6 +558,50 @@ QString TextLayerController::selectedText() const
     return lines.join(QLatin1Char('\n'));
 }
 
+QString TextLayerController::pageTextInReadingOrder() const
+{
+    if (!hasLayer()) {
+        return QString();
+    }
+    const int n = m_session.regionCount();
+    if (n <= 0) {
+        return QString();
+    }
+    QVector<int> order;
+    order.reserve(n);
+    QVector<QRectF> rects;
+    rects.reserve(n);
+    QVector<int> blocks;
+    blocks.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        order.append(i);
+        const auto &r = m_session.regionAt(i);
+        rects.append(r.bbox);
+        blocks.append(r.blockId);
+    }
+    TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks);
+    QStringList lines;
+    for (int idx : order) {
+        if (idx < 0 || idx >= n) {
+            continue;
+        }
+        const QString &tx = m_session.regionAt(idx).text;
+        if (!tx.isEmpty()) {
+            lines.append(tx);
+        }
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+QString TextLayerController::speakableText() const
+{
+    const QString sel = selectedText();
+    if (!sel.isEmpty()) {
+        return sel;
+    }
+    return pageTextInReadingOrder();
+}
+
 void TextLayerController::clearSelection()
 {
     if (!m_session.hasSelection() && !m_session.isRubberbanding()) {

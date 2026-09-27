@@ -57,6 +57,10 @@ public:
     int regionCount() const;
     bool hitLinkAt(const QPoint &viewPos, int *pageOut, QString *uriOut) const;
     QString selectedText() const;
+    /** All region texts on the current page in reading order (for TTS / export). */
+    QString pageTextInReadingOrder() const;
+    /** Selection if non-empty, else pageTextInReadingOrder(). */
+    QString speakableText() const;
     void clearSelection();
     bool copySelectedText();
     bool tryMousePressRubber(QMouseEvent *event);
