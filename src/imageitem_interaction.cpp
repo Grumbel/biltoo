@@ -1063,8 +1063,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // keep any display sample only when tiles are not the display path.
         const bool drawLqipBase = !tilesFullyCover
             || (m_interactive && hasDisplayPixels() && !tilesWanted);
-        // Live tiles must not sit under a frozen ItemCoordinateCache pixmap.
-        if (tilesLive && cacheMode() != QGraphicsItem::NoCache) {
+        // Live tiles / debug overlay must not sit under frozen ItemCoordinateCache.
+        if ((tilesLive || tilePlanDebugOverlayEnabled())
+            && cacheMode() != QGraphicsItem::NoCache) {
             setCacheMode(QGraphicsItem::NoCache);
         }
 

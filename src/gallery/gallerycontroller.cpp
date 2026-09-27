@@ -28,6 +28,7 @@
 #include "gallery/gallerypackfit.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"
+#include "util/debugflags.h"
 #include "workspace/workspacenavgeometry.h"
 #include "gallery/gallerydecodesm.h"
 #include <functional>
@@ -2150,6 +2151,35 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             painter->drawImage(QPointF(x, y), scaled);
         } else {
             ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, slot.bounds);
+        }
+        // Fast scroll leaves most cells as virtual slots (no ImageItem). Live
+        // tile-plan paint never runs for them — still show sample kind tags when
+        // the debug overlay is on so the grid is not "bare LQIP".
+        if (debugFlag(DebugFlags::Overlay) || debugFlag(DebugFlags::TileDebug)) {
+            const QRectF &r = slot.bounds;
+            if (r.width() >= 4.0 && r.height() >= 4.0) {
+                QString tag = QStringLiteral("EMPTY");
+                if (!under.isNull()) {
+                    const int le = qMax(under.width(), under.height());
+                    if (le <= DisplayQuality::kLqipMaxEdge) {
+                        tag = QStringLiteral("LQIP");
+                    } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                        tag = QStringLiteral("EMB");
+                    } else {
+                        tag = QStringLiteral("RASTER");
+                    }
+                }
+                QFont hf = painter->font();
+                hf.setBold(true);
+                hf.setWeight(QFont::Black);
+                const int px = qBound(14, qRound(qMin(r.width(), r.height()) * 0.28), 256);
+                hf.setPixelSize(px);
+                painter->setFont(hf);
+                painter->setPen(QColor(0, 0, 0, 220));
+                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
+                painter->setPen(QColor(0, 255, 220));
+                painter->drawText(r, Qt::AlignCenter, tag);
+            }
         }
     }
     painter->restore();

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "imageitem.h"
 
 void MainWindow::createActions()
 {
@@ -1226,8 +1227,17 @@ void MainWindow::createMenus()
         connect(act, &QAction::toggled, this, [this, flag](bool on) {
             DebugFlags::instance().setEnabled(flag, on);
             if ((flag == DebugFlags::Overlay || flag == DebugFlags::TileDebug)
-                && m_imageView && m_imageView->viewport()) {
-                m_imageView->viewport()->update();
+                && m_imageView) {
+                // Drop ItemCoordinateCache freezes so the next paint draws tags.
+                for (ImageItem *item : m_imageView->liveItems()) {
+                    if (item) {
+                        item->setCacheMode(QGraphicsItem::NoCache);
+                        item->update();
+                    }
+                }
+                if (m_imageView->viewport()) {
+                    m_imageView->viewport()->update();
+                }
             }
         });
     }

@@ -8,6 +8,7 @@
 #include "tilelod/tile_lod_registry.hpp"
 #include "display/displayquality.h"
 #include "display/imagecache.h"
+#include "util/debugflags.h"
 #include <QFileInfo>
 
 #include "color/coloradjust.h"
@@ -399,6 +400,22 @@ void ImageItem::setGallerySelectable(bool on)
 void ImageItem::syncGalleryScrollCache()
 {
     if (m_interactive) {
+        return;
+    }
+    // Debug tile/pixel overlay must repaint every frame — ItemCoordinateCache
+    // freezes paint() output so cells show bare LQIP during fast Gallery scroll.
+    if (debugFlag(DebugFlags::Overlay) || debugFlag(DebugFlags::TileDebug)) {
+        setCacheMode(QGraphicsItem::NoCache);
+        const QImage &img = displayImage();
+        if (!img.isNull()) {
+            const int imgEdge = ContentXform::longEdge(img.size());
+            const int pixEdge = pixmap().isNull()
+                ? 0
+                : ContentXform::longEdge(pixmap().size());
+            if (imgEdge > pixEdge) {
+                setPixmap(QPixmap::fromImage(img));
+            }
+        }
         return;
     }
     // Tile grid cells change every completion / pan — do not freeze mid-stream.
