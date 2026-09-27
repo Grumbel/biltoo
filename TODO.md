@@ -2,12 +2,13 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.11-tts-idle-advance` (base `d456ffc`).
+**Tip:** `biltoo-2715.12-textpanel-hover-selection` (base `d456ffc`).
 
-### Text-to-speech
-- QAudioSink; advance on Idle after Active (no atEnd requirement); duration fallback.
+### Fixes
+- TTS: QAudioSink multi-sentence (Idle advance).
+- Text panel: hover no longer clears multi-selection (`setCurrentIndex` removed).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.11-tts-idle-advance-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.12-textpanel-hover-selection-d456ffc.bundle HEAD
 ```
