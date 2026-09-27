@@ -59,6 +59,7 @@ stdenv.mkDerivation (finalAttrs: {
     qt6.qtbase
     qt6.qtsvg
     qt6.qttools
+    qt6.qtmultimedia
     vips
     exiv2
     glib

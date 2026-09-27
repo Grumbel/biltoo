@@ -89,7 +89,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport Multimedia Network)
 find_package(PkgConfig)
 
 # Application translation units (everything except main).
@@ -347,6 +347,17 @@ set(BILTOO_LIB_SOURCES
   src/shell/textpanel.h
   src/text/textpanelmodel.cpp
   src/text/textpanelmodel.h
+  src/speech/PiperClient.cpp
+  src/speech/PiperClient.h
+  src/speech/PiperServerManager.cpp
+  src/speech/PiperServerManager.h
+  src/speech/PlaybackController.cpp
+  src/speech/PlaybackController.h
+  src/speech/Sentence.h
+  src/speech/SentenceSplitter.cpp
+  src/speech/SentenceSplitter.h
+  src/speech/texttospeechcontroller.cpp
+  src/speech/texttospeechcontroller.h
   src/text/textoverlaystate.h
   src/text/textregionstyle.h
   src/color/coloradjust.cpp
@@ -380,6 +391,7 @@ set(BILTOO_LIB_SOURCES
 add_library(biltoo_lib STATIC ${BILTOO_LIB_SOURCES})
 target_include_directories(biltoo_lib PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/speech"
   "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
@@ -476,6 +488,8 @@ target_link_libraries(biltoo_lib PUBLIC
   Qt6::Svg
   Qt6::OpenGLWidgets
   Qt6::PrintSupport
+  Qt6::Multimedia
+  Qt6::Network
 )
 
 # ---------------------------------------------------------------------------
