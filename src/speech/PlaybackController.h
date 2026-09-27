@@ -69,6 +69,7 @@ private slots:
     void onSynthesisError(int id, const QString &message);
     void onSinkStateChanged();
     void onPositionTick();
+    void onSentenceEndTimer();
 
 private:
     void requestLookahead();
@@ -82,6 +83,7 @@ private:
     QAudioSink *m_sink = nullptr;
     std::unique_ptr<QBuffer> m_pcmBuffer;
     QTimer *m_positionTimer = nullptr;
+    QTimer *m_sentenceEndTimer = nullptr;
 
     QVector<Sentence> m_sentences;
     int m_currentIndex = -1;

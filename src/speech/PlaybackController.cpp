@@ -116,6 +116,12 @@ PlaybackController::PlaybackController(PiperClient *client, QObject *parent)
     m_positionTimer->setInterval(50);
     connect(m_positionTimer, &QTimer::timeout, this, &PlaybackController::onPositionTick);
 
+    // Primary end-of-sentence signal: schedule from WAV duration (QAudioSink
+    // Idle/processedUSecs is unreliable across backends).
+    m_sentenceEndTimer = new QTimer(this);
+    m_sentenceEndTimer->setSingleShot(true);
+    connect(m_sentenceEndTimer, &QTimer::timeout, this, &PlaybackController::onSentenceEndTimer);
+
     connect(m_client, &PiperClient::audioReady, this, &PlaybackController::onAudioReady);
     connect(m_client, &PiperClient::synthesisError, this, &PlaybackController::onSynthesisError);
 }
@@ -129,6 +135,9 @@ void PlaybackController::stopSink()
 {
     if (m_positionTimer) {
         m_positionTimer->stop();
+    }
+    if (m_sentenceEndTimer) {
+        m_sentenceEndTimer->stop();
     }
     if (m_sink) {
         QObject::disconnect(m_sink, nullptr, this, nullptr);
@@ -415,6 +424,9 @@ void PlaybackController::playCurrentIfReady()
     m_playStartMs = QDateTime::currentMSecsSinceEpoch();
     m_sink->start(m_pcmBuffer.get());
     m_positionTimer->start();
+    // Remaining duration after optional seek into the sentence.
+    const qint64 remainMs = qMax(qint64(1), parsed->durationMs - m_seekOffsetMs);
+    m_sentenceEndTimer->start(int(remainMs) + 40);
 
     emit sentenceStarted(s.id, s.start, s.end);
     emit audioPositionChanged(m_seekOffsetMs, parsed->durationMs);
@@ -431,28 +443,22 @@ void PlaybackController::onSinkStateChanged()
         m_sinkReachedActive = true;
         return;
     }
-    if (!m_playing || m_paused || !m_sinkReachedActive) {
+    if (!m_playing || m_paused) {
         return;
     }
-
-    const qint64 dur = durationForCurrentSentence();
-    const qint64 processedMs = m_sink->processedUSecs() / 1000;
-    // True end-of-sentence: pull device exhausted, or nearly all samples played.
-    // Ignore brief Idle underruns early in the sentence.
-    const bool nearEnd = (dur > 0 && processedMs >= (dur * 85) / 100)
-        || (m_pcmBuffer && m_pcmBuffer->atEnd() && processedMs > 0)
-        || (dur <= 0 && m_pcmBuffer && m_pcmBuffer->atEnd());
-
-    if (st == QAudio::IdleState || st == QAudio::StoppedState) {
-        if (st == QAudio::StoppedState && m_sink->error() != QAudio::NoError) {
-            emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
-            advanceToNext();
-            return;
-        }
-        if (nearEnd) {
-            advanceToNext();
-        }
+    // Errors still force advance; normal end is driven by m_sentenceEndTimer.
+    if (st == QAudio::StoppedState && m_sink->error() != QAudio::NoError) {
+        emit errorOccurred(tr("Audio output error (%1)").arg(int(m_sink->error())));
+        advanceToNext();
     }
+}
+
+void PlaybackController::onSentenceEndTimer()
+{
+    if (!m_playing || m_paused || m_advancing) {
+        return;
+    }
+    advanceToNext();
 }
 
 void PlaybackController::onPositionTick()
@@ -460,20 +466,7 @@ void PlaybackController::onPositionTick()
     if (!m_playing || m_paused || m_advancing) {
         return;
     }
-    const qint64 pos = currentPositionMs();
-    const qint64 dur = durationForCurrentSentence();
-    emit audioPositionChanged(pos, dur);
-    // Fallback when the sink stays Active until teardown: advance past duration.
-    if (m_sinkReachedActive && dur > 0 && pos >= dur + 80) {
-        advanceToNext();
-        return;
-    }
-    if (m_sink && m_sinkReachedActive && dur > 0) {
-        const qint64 processedMs = m_sink->processedUSecs() / 1000;
-        if (processedMs >= dur + 40) {
-            advanceToNext();
-        }
-    }
+    emit audioPositionChanged(currentPositionMs(), durationForCurrentSentence());
 }
 
 void PlaybackController::advanceToNext()
