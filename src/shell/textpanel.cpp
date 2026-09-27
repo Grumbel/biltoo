@@ -190,8 +190,10 @@ void TextPanel::setHoverRegion(int regionIndex)
     if (row < 0) {
         return;
     }
-    // Soft visual: current index without changing selection.
-    m_view->setCurrentIndex(m_model->index(row, 0));
+    // Scroll only. Do NOT setCurrentIndex: on ExtendedSelection that replaces
+    // the item selection and clears multi-select when the pointer moves over
+    // the list (hover sync from the page or entered()).
+    m_view->scrollTo(m_model->index(row, 0), QAbstractItemView::EnsureVisible);
 }
 
 void TextPanel::onViewSelectionChanged()
