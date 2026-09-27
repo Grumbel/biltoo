@@ -574,19 +574,19 @@ void MainWindow::createActions()
         tr("Row masonry scaled to a shared right edge (rectangular)"));
     connect(m_layoutMasonryRowsFillAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRowsFill);
 
-    m_layoutFlowAct = new QAction(tr("Layout &Flow"), this);
-    m_layoutFlowAct->setCheckable(true);
-    m_layoutFlowAct->setIcon(resourceIcon(QStringLiteral("view-list-icons")));
-    m_layoutFlowAct->setStatusTip(
+    m_layoutContactSheetAct = new QAction(tr("Layout &Contact Sheet"), this);
+    m_layoutContactSheetAct->setCheckable(true);
+    m_layoutContactSheetAct->setIcon(resourceIcon(QStringLiteral("view-list-icons")));
+    m_layoutContactSheetAct->setStatusTip(
         tr("Gallery: reading order, wrap rows to fill width (good for books)"));
-    connect(m_layoutFlowAct, &QAction::triggered, this, &MainWindow::setLayoutFlow);
+    connect(m_layoutContactSheetAct, &QAction::triggered, this, &MainWindow::setLayoutContactSheet);
 
-    m_layoutFlowFillAct = new QAction(tr("Layout Flow F&ill"), this);
-    m_layoutFlowFillAct->setCheckable(true);
-    m_layoutFlowFillAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
-    m_layoutFlowFillAct->setStatusTip(
-        tr("Flow with each row scaled to the full layout width"));
-    connect(m_layoutFlowFillAct, &QAction::triggered, this, &MainWindow::setLayoutFlowFill);
+    m_layoutStripRowsAct = new QAction(tr("Layout &Strip Rows"), this);
+    m_layoutStripRowsAct->setCheckable(true);
+    m_layoutStripRowsAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
+    m_layoutStripRowsAct->setStatusTip(
+        tr("Gallery: ordered wrap, uniform row height (landscapes full band height)"));
+    connect(m_layoutStripRowsAct, &QAction::triggered, this, &MainWindow::setLayoutStripRows);
 
     m_layoutFacingAct = new QAction(tr("Layout F&acing"), this);
     m_layoutFacingAct->setCheckable(true);
@@ -612,8 +612,8 @@ void MainWindow::createActions()
     layoutGroup->addAction(m_layoutMasonryRowsAct);
     layoutGroup->addAction(m_layoutMasonryFillAct);
     layoutGroup->addAction(m_layoutMasonryRowsFillAct);
-    layoutGroup->addAction(m_layoutFlowAct);
-    layoutGroup->addAction(m_layoutFlowFillAct);
+    layoutGroup->addAction(m_layoutContactSheetAct);
+    layoutGroup->addAction(m_layoutStripRowsAct);
     layoutGroup->addAction(m_layoutFacingAct);
     layoutGroup->setExclusive(true);
     // No default checked gallery layout until the user chooses one.
@@ -1140,8 +1140,8 @@ void MainWindow::createMenus()
     galleryLayoutMenu->addAction(m_layoutMasonryFillAct);
     galleryLayoutMenu->addAction(m_layoutMasonryRowsFillAct);
     galleryLayoutMenu->addSeparator();
-    galleryLayoutMenu->addAction(m_layoutFlowAct);
-    galleryLayoutMenu->addAction(m_layoutFlowFillAct);
+    galleryLayoutMenu->addAction(m_layoutContactSheetAct);
+    galleryLayoutMenu->addAction(m_layoutStripRowsAct);
     galleryLayoutMenu->addAction(m_layoutFacingAct);
     galleryMenu->addSeparator();
     galleryMenu->addAction(m_reorderSessionAct);
@@ -1412,8 +1412,8 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutMasonryFillAct);
         layoutPopup->addAction(m_layoutMasonryRowsFillAct);
         layoutPopup->addSeparator();
-        layoutPopup->addAction(m_layoutFlowAct);
-        layoutPopup->addAction(m_layoutFlowFillAct);
+        layoutPopup->addAction(m_layoutContactSheetAct);
+        layoutPopup->addAction(m_layoutStripRowsAct);
         layoutPopup->addAction(m_layoutFacingAct);
         layoutBtn->setMenu(layoutPopup);
         layoutBtn->setDefaultAction(m_galleryLayoutToolbarAct);
@@ -1435,7 +1435,7 @@ void MainWindow::createToolBar()
     m_masonryCountSpin->setSingleStep(1);
     m_masonryCountSpin->setValue(3);
     m_masonryCountSpin->setToolTip(
-        tr("Columns (Grid / Flow / Masonry) or rows (Masonry Rows)."));
+        tr("Columns (Grid / Contact sheet / Masonry) or rows (Masonry Rows / Strip)."));
     masonryCountLayout->addWidget(m_masonryCountLabel);
     masonryCountLayout->addWidget(m_masonryCountSpin);
     m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
@@ -1451,8 +1451,8 @@ void MainWindow::createToolBar()
                     m_imageView->hostGallery().setMasonryRows(count);
                 } else if (mode == LayoutMode::Grid
                            || mode == LayoutMode::GridCrop
-                           || mode == LayoutMode::Flow
-                           || mode == LayoutMode::FlowFill) {
+                           || mode == LayoutMode::ContactSheet
+                           || mode == LayoutMode::StripRows) {
                     m_imageView->hostGallery().setGridColumns(count);
                 } else {
                     m_imageView->hostGallery().setMasonryColumns(count);
@@ -1851,7 +1851,7 @@ void MainWindow::populateActionHelpTexts()
         "<b>session</b> (undoable).</li>"
         "<li>Sort reorders the session and re-packs. Opening large sets waits for "
         "image sizes before packing; a centre HUD shows probe progress.</li>"
-        "<li>PDF/EPUB/DjVu page sessions often open Gallery in <b>Flow</b> (reading order).</li>"
+        "<li>PDF/EPUB/DjVu page sessions often open Gallery in <b>Contact sheet</b> (reading order).</li>"
         "</ul>"
         "<p><b>Law:</b> Gallery is not a kind of Workspace. Leaving for Image and "
         "returning restores layout and scroll; it does not open Workspace.</p>"));
@@ -2112,11 +2112,12 @@ void MainWindow::populateActionHelpTexts()
         "clean rectangle.</p>"));
     setHelp(m_layoutMasonryRowsFillAct, tr(
         "<p>Gallery layout: masonry rows with fill so the outer shape is rectangular.</p>"));
-    setHelp(m_layoutFlowAct, tr(
-        "<p>Gallery layout: reading-order flow (left-to-right, top-to-bottom), natural for "
-        "paged documents.</p>"));
-    setHelp(m_layoutFlowFillAct, tr(
-        "<p>Gallery layout: flow with row justification (fill).</p>"));
+    setHelp(m_layoutContactSheetAct, tr(
+        "<p>Gallery layout: ordered contact sheet — one global scale so relative page "
+        "sizes stay true; wraps left-to-right; last row is left-aligned.</p>"));
+    setHelp(m_layoutStripRowsAct, tr(
+        "<p>Gallery layout: ordered strip rows — uniform row height (landscapes fill the "
+        "band and go wider); wraps in session order; last row is not stretched.</p>"));
     setHelp(m_layoutFacingAct, tr(
         "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
     setHelp(m_reorderSessionAct, tr(
@@ -2258,7 +2259,7 @@ void MainWindow::populateActionHelpTexts()
         "Workspace; Free Form is the default free-canvas behaviour.</p>"));
     setHelp(m_galleryLayoutToolbarAct, tr(
         "<p>Enter <b>Gallery</b> mode using the last chosen Gallery layout. The toolbar "
-        "button’s menu (arrow) picks Grid, Masonry, Flow, Facing, and related layouts "
+        "button’s menu (arrow) picks Grid, Masonry, Contact sheet, Strip rows, Facing, "
         "before or while entering Gallery.</p>"));
     setHelp(m_slideshowSettingsAct, tr(
         "<p>Open slideshow settings: interval, transition style, dwell motion "

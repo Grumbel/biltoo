@@ -2116,7 +2116,7 @@ void MainWindow::toggleWorkspaceMode()
         for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                              m_layoutGridAct, m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                              m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct,
-                             m_layoutFlowAct, m_layoutFlowFillAct, m_layoutFacingAct}) {
+                             m_layoutContactSheetAct, m_layoutStripRowsAct, m_layoutFacingAct}) {
             if (act) {
                 act->setChecked(false);
             }

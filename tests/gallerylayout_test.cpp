@@ -26,7 +26,7 @@ private slots:
     void packPoses_sideBySideAndVertical();
     void packPoses_gridAndGridCrop();
     void packPoses_masonryAndMasonryRows();
-    void packPoses_flowAndFlowFill();
+    void packPoses_contactSheetAndStripRows();
     void packPoses_facing();
     void packPoses_masonryFillAndRowsFill();
     void packPosesForMode_dispatches();
@@ -79,7 +79,7 @@ void GalleryLayoutTest::packFit_fittedTargets_heightVsWidthModes()
     QCOMPARE(tw, 800.0);
     QCOMPARE(th, -1.0);
 
-    GalleryPackFit::fittedTargets(GalleryLayout::Mode::Flow, 800.0, 600.0, &tw, &th);
+    GalleryPackFit::fittedTargets(GalleryLayout::Mode::ContactSheet, 800.0, 600.0, &tw, &th);
     QCOMPARE(tw, 800.0);
     QCOMPARE(th, -1.0);
 }
@@ -225,23 +225,31 @@ void GalleryLayoutTest::packPoses_masonryAndMasonryRows()
     QCOMPARE(rows.at(2).center.x(), 65.0);
 }
 
-void GalleryLayoutTest::packPoses_flowAndFlowFill()
+void GalleryLayoutTest::packPoses_contactSheetAndStripRows()
 {
-    // targetW for cols=2, availW=110, gap=10 → cellAxisLength = 50.
-    // Three 50×40 tiles: first row holds two (50+10+50=110), third wraps.
+    // Contact sheet: cols=2, availW=110, gap=10 → targetW=50.
+    // Uniform scale = 50/maxW. Three equal 50×40 → scale 1; two per first row.
     const QVector<QSizeF> three{QSizeF(50, 40), QSizeF(50, 40), QSizeF(50, 40)};
-    const auto flow = GalleryLayout::packPosesFlow(three, 0.0, 10.0, 110.0, 2, false);
-    QCOMPARE(flow.size(), 3);
-    QCOMPARE(flow.at(0).scale, 1.0);
-    QCOMPARE(flow.at(0).center, QPointF(25.0, 20.0));
-    QCOMPARE(flow.at(1).center, QPointF(85.0, 20.0));
-    QCOMPARE(flow.at(2).center, QPointF(25.0, 70.0)); // y = 40 + 10 + 20
+    const auto sheet = GalleryLayout::packPosesContactSheet(three, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(sheet.size(), 3);
+    QCOMPARE(sheet.at(0).scale, 1.0);
+    QCOMPARE(sheet.at(0).center, QPointF(25.0, 20.0));
+    QCOMPARE(sheet.at(1).center, QPointF(85.0, 20.0));
+    QCOMPARE(sheet.at(2).center, QPointF(25.0, 70.0));
 
-    // FlowFill: single-tile row stretched to full width → scale 110/50 = 2.2
-    const auto fill = GalleryLayout::packPosesFlow({QSizeF(50, 40)}, 0.0, 10.0, 110.0, 2, true);
-    QCOMPARE(fill.size(), 1);
-    QVERIFY(qAbs(fill.at(0).scale - 2.2) < 1e-9);
-    QVERIFY(qAbs(fill.at(0).center.x() - 55.0) < 1e-9); // w=110, centre 55
+    // Singleton stays left-aligned (no full-width stretch).
+    const auto one = GalleryLayout::packPosesContactSheet({QSizeF(50, 40)}, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(one.size(), 1);
+    QCOMPARE(one.at(0).scale, 1.0);
+    QCOMPARE(one.at(0).center, QPointF(25.0, 20.0));
+
+    // Strip: 1 band, availH=100 → rowH=100; 50×40 → scale 2.5, w=125.
+    const auto strip = GalleryLayout::packPosesStripRows(
+        {QSizeF(50, 40), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 100.0, 1);
+    QCOMPARE(strip.size(), 2);
+    QVERIFY(qAbs(strip.at(0).scale - 2.5) < 1e-9);
+    QCOMPARE(strip.at(0).center, QPointF(62.5, 50.0));
+    QCOMPARE(strip.at(1).center, QPointF(62.5, 160.0));
 }
 
 void GalleryLayoutTest::packPoses_facing()
@@ -323,11 +331,11 @@ void GalleryLayoutTest::packPosesForMode_dispatches()
     QCOMPARE(via.at(0).center, direct.at(0).center);
     QCOMPARE(via.at(1).center, direct.at(1).center);
 
-    const auto flowVia = GalleryLayout::packPosesForMode(GalleryLayout::Mode::FlowFill, sizes, p);
-    const auto flowDirect =
-        GalleryLayout::packPosesFlow(sizes, 0.0, 10.0, 110.0, 2, true);
-    QCOMPARE(flowVia.size(), flowDirect.size());
-    QCOMPARE(flowVia.at(0).scale, flowDirect.at(0).scale);
+    const auto sheetVia = GalleryLayout::packPosesForMode(GalleryLayout::Mode::ContactSheet, sizes, p);
+    const auto sheetDirect =
+        GalleryLayout::packPosesContactSheet(sizes, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(sheetVia.size(), sheetDirect.size());
+    QCOMPARE(sheetVia.at(0).scale, sheetDirect.at(0).scale);
 }
 
 

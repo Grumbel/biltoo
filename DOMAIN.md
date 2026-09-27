@@ -68,7 +68,7 @@ diverge from it.
   remembering enough to **return** (layout, scroll, which cell was current).
 - Arrow keys move the session cursor among tiles by **scene position** (spatial neighbour); Home/End first/last; Enter opens.
 - Grid / Masonry / Flow column or row count is user-configurable (toolbar spin; 0 = automatic for grid).
-- **Flow / Flow Fill**: session order L→R, T→B; wrap at layout width (book-friendly). Flow Fill justifies each row.
+- **Contact sheet**: ordered wrap, one global scale (relative page sizes). **Strip rows**: ordered wrap, uniform row height.
 - **Facing**: cover page alone, then two-up spreads (verso|recto), stacked — PDF-reader style.
 - User may rotate (±90°) and flip selected tiles; scale/opacity/stack remain Workspace-only.
 - Linear viewer navigation is secondary here: **Space** still starts a slideshow

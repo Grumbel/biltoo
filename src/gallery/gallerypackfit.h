@@ -40,10 +40,10 @@ inline GalleryLayout::Mode modeFromLayoutMode(LayoutMode mode)
         return GalleryLayout::Mode::MasonryFill;
     case LayoutMode::MasonryRowsFill:
         return GalleryLayout::Mode::MasonryRowsFill;
-    case LayoutMode::Flow:
-        return GalleryLayout::Mode::Flow;
-    case LayoutMode::FlowFill:
-        return GalleryLayout::Mode::FlowFill;
+    case LayoutMode::ContactSheet:
+        return GalleryLayout::Mode::ContactSheet;
+    case LayoutMode::StripRows:
+        return GalleryLayout::Mode::StripRows;
     case LayoutMode::Facing:
         return GalleryLayout::Mode::Facing;
     case LayoutMode::FreeForm:
@@ -97,8 +97,8 @@ inline void fittedTargets(GalleryLayout::Mode mode, qreal availW, qreal availH,
     case GalleryLayout::Mode::GridCrop:
     case GalleryLayout::Mode::Masonry:
     case GalleryLayout::Mode::MasonryFill:
-    case GalleryLayout::Mode::Flow:
-    case GalleryLayout::Mode::FlowFill:
+    case GalleryLayout::Mode::ContactSheet:
+    case GalleryLayout::Mode::StripRows:
     case GalleryLayout::Mode::Facing:
         if (targetW) {
             *targetW = availW;

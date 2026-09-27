@@ -404,8 +404,8 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_galleryLayoutCombo->addItem(tr("Masonry rows"), 6);
     m_galleryLayoutCombo->addItem(tr("Masonry fill"), 7);
     m_galleryLayoutCombo->addItem(tr("Masonry rows fill"), 8);
-    m_galleryLayoutCombo->addItem(tr("Flow"), 9);
-    m_galleryLayoutCombo->addItem(tr("Flow fill"), 10);
+    m_galleryLayoutCombo->addItem(tr("Contact sheet"), 9);
+    m_galleryLayoutCombo->addItem(tr("Strip rows"), 10);
     m_galleryLayoutCombo->addItem(tr("Facing"), 11);
     m_galleryLayoutCombo->setToolTip(tr("Default Gallery layout for new sessions"));
 

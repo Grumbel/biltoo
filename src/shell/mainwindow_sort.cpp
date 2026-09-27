@@ -56,7 +56,7 @@ bool MainWindow::sessionLooksLikePagedDocument(const QStringList &paths)
 LayoutMode MainWindow::initialGalleryLayoutForOpen() const
 {
     if (sessionLooksLikePagedDocument(m_session.paths())) {
-        return LayoutMode::Flow;
+        return LayoutMode::ContactSheet;
     }
     return m_galleryReturnLayout;
 }

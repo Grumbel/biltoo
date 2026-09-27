@@ -78,7 +78,8 @@ Related brainstorm: [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAI
 | **Grid Crop** | Square cover-crop cells (UI currently disabled; conflicts with session crop). |
 | **Masonry** | Column- or row-based uneven packing. |
 | **Masonry Fill / Rows Fill** | After pack, scale columns/rows so the outer shape is a clean rectangle. |
-| **Flow / Flow Fill** | Session order L→R, T→B, wrap at width; Fill justifies each row. |
+| **Contact sheet** | Ordered wrap, one global scale; last row left-aligned. |
+| **Strip rows** | Ordered wrap, uniform row height (landscapes full band height). |
 | **Facing** | Book-style: cover alone, then two-up spreads (verso\|recto). |
 | **Virtual plan / virtual slots** | Lightweight per-item bounds for large sessions; live `ImageItem`s only in a window. |
 | **Virtual window / sync** | Which slots are materialised as live items from the plan. |

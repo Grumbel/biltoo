@@ -60,10 +60,10 @@ enum class LayoutMode {
     MasonryFill,
     /** Row masonry scaled per-row to a shared right edge (no dangling). */
     MasonryRowsFill,
-    /** Session order wrap (book/comic contact sheet). */
-    Flow,
-    /** Flow with each row scaled to full layout width. */
-    FlowFill,
+    /** Ordered wrap, one global scale (relative page sizes preserved). */
+    ContactSheet,
+    /** Ordered wrap, uniform row height (landscapes full row height). */
+    StripRows,
     /** Two-up spreads; cover page alone, then pairs. */
     Facing
 };
@@ -81,6 +81,7 @@ inline bool layoutIsHeightFitted(LayoutMode mode)
     case LayoutMode::SideBySide:
     case LayoutMode::MasonryRows:
     case LayoutMode::MasonryRowsFill:
+    case LayoutMode::StripRows:
         return true;
     default:
         return false;
@@ -93,10 +94,10 @@ inline bool layoutIsGridFamily(LayoutMode mode)
     return mode == LayoutMode::Grid || mode == LayoutMode::GridCrop;
 }
 
-/** Flow / FlowFill pack family. */
+/** Ordered book-sheet family (ContactSheet / StripRows). */
 inline bool layoutIsFlowFamily(LayoutMode mode)
 {
-    return mode == LayoutMode::Flow || mode == LayoutMode::FlowFill;
+    return mode == LayoutMode::ContactSheet || mode == LayoutMode::StripRows;
 }
 
 /** Masonry column family (vertical bands, not rows). */
@@ -129,7 +130,8 @@ inline bool layoutNeedsAllSizes(LayoutMode mode)
     switch (mode) {
     case LayoutMode::MasonryFill:
     case LayoutMode::MasonryRowsFill:
-    case LayoutMode::FlowFill:
+    case LayoutMode::ContactSheet:
+    case LayoutMode::StripRows:
         return true;
     default:
         return false;

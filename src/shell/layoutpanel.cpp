@@ -172,9 +172,11 @@ void LayoutPanel::updateControlsEnabled()
     const bool cols = (mode == GalleryLayout::Mode::Grid
                        || mode == GalleryLayout::Mode::GridCrop
                        || mode == GalleryLayout::Mode::Masonry
-                       || mode == GalleryLayout::Mode::MasonryFill);
+                       || mode == GalleryLayout::Mode::MasonryFill
+                       || mode == GalleryLayout::Mode::ContactSheet);
     const bool rows = (mode == GalleryLayout::Mode::MasonryRows
-                       || mode == GalleryLayout::Mode::MasonryRowsFill);
+                       || mode == GalleryLayout::Mode::MasonryRowsFill
+                       || mode == GalleryLayout::Mode::StripRows);
     m_columnsLabel->setEnabled(m_workspaceActive && cols);
     m_columnsSpin->setEnabled(m_workspaceActive && cols);
     m_rowsLabel->setEnabled(m_workspaceActive && rows);

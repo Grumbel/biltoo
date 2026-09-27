@@ -125,7 +125,7 @@ void MainWindow::syncGalleryLayoutUi(LayoutMode layout)
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
                          m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct,
-                         m_layoutFlowAct, m_layoutFlowFillAct, m_layoutFacingAct}) {
+                         m_layoutContactSheetAct, m_layoutStripRowsAct, m_layoutFacingAct}) {
         if (act) {
             act->setChecked(false);
         }
@@ -156,11 +156,11 @@ void MainWindow::syncGalleryLayoutUi(LayoutMode layout)
     case LayoutMode::MasonryRowsFill:
         check = m_layoutMasonryRowsFillAct;
         break;
-    case LayoutMode::Flow:
-        check = m_layoutFlowAct;
+    case LayoutMode::ContactSheet:
+        check = m_layoutContactSheetAct;
         break;
-    case LayoutMode::FlowFill:
-        check = m_layoutFlowFillAct;
+    case LayoutMode::StripRows:
+        check = m_layoutStripRowsAct;
         break;
     case LayoutMode::Facing:
         check = m_layoutFacingAct;
@@ -229,14 +229,14 @@ void MainWindow::setLayoutMasonryRowsFill()
     enterGalleryMode(LayoutMode::MasonryRowsFill);
 }
 
-void MainWindow::setLayoutFlow()
+void MainWindow::setLayoutContactSheet()
 {
-    enterGalleryMode(LayoutMode::Flow);
+    enterGalleryMode(LayoutMode::ContactSheet);
 }
 
-void MainWindow::setLayoutFlowFill()
+void MainWindow::setLayoutStripRows()
 {
-    enterGalleryMode(LayoutMode::FlowFill);
+    enterGalleryMode(LayoutMode::StripRows);
 }
 
 void MainWindow::setLayoutFacing()
@@ -521,12 +521,12 @@ void MainWindow::updateMasonryCountControl()
             || mode == LayoutMode::MasonryFill);
     const bool masonryRows = gallery
         && (mode == LayoutMode::MasonryRows
-            || mode == LayoutMode::MasonryRowsFill);
+            || mode == LayoutMode::MasonryRowsFill
+            || mode == LayoutMode::StripRows);
     const bool gridCols = gallery
                           && (mode == LayoutMode::Grid
                               || mode == LayoutMode::GridCrop
-                              || mode == LayoutMode::Flow
-                              || mode == LayoutMode::FlowFill);
+                              || mode == LayoutMode::ContactSheet);
     const bool show = masonryCols || masonryRows || gridCols;
     m_masonryCountAction->setVisible(show);
     if (!show || !m_masonryCountSpin) {
@@ -706,7 +706,7 @@ void MainWindow::updateWorkspaceActionVisibility()
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct,
                          m_layoutGridAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
                          m_layoutMasonryFillAct, m_layoutMasonryRowsFillAct,
-                         m_layoutFlowAct, m_layoutFlowFillAct, m_layoutFacingAct}) {
+                         m_layoutContactSheetAct, m_layoutStripRowsAct, m_layoutFacingAct}) {
         if (act) {
             act->setVisible(true);
             act->setEnabled(canGallery);

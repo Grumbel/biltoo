@@ -245,8 +245,8 @@ private slots:
     void setLayoutMasonryRows();
     void setLayoutMasonryFill();
     void setLayoutMasonryRowsFill();
-    void setLayoutFlow();
-    void setLayoutFlowFill();
+    void setLayoutContactSheet();
+    void setLayoutStripRows();
     void setLayoutFacing();
     /** Toolbar primary click: enter Gallery with the last/current layout. */
     void goToGalleryCurrentLayout();
@@ -711,8 +711,8 @@ private:
     QAction *m_layoutMasonryRowsAct = nullptr;
     QAction *m_layoutMasonryFillAct = nullptr;
     QAction *m_layoutMasonryRowsFillAct = nullptr;
-    QAction *m_layoutFlowAct = nullptr;
-    QAction *m_layoutFlowFillAct = nullptr;
+    QAction *m_layoutContactSheetAct = nullptr;
+    QAction *m_layoutStripRowsAct = nullptr;
     QAction *m_layoutFacingAct = nullptr;
     /** Toolbar MenuButtonPopup default action: Go to Gallery (icon tracks layout). */
     QAction *m_galleryLayoutToolbarAct = nullptr;

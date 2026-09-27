@@ -64,10 +64,10 @@ enum class Mode {
     MasonryFill,
     /** Row masonry then per-row scale so all rows share one right edge. */
     MasonryRowsFill,
-    /** Session order L→R, T→B; wrap at layout width (columns ≈ pages across). */
-    Flow,
-    /** Flow, then scale each row to exactly fill layout width. */
-    FlowFill,
+    /** Ordered wrap + one global scale (contact sheet / relative sizes). */
+    ContactSheet,
+    /** Ordered wrap + uniform row height (strip; landscapes full band height). */
+    StripRows,
     /** Two-up spreads; page 1 alone as cover, then pairs (2–3), (4–5), … */
     Facing
 };
@@ -104,7 +104,7 @@ inline int resolvedColumns(int n, int gridColumns)
     return cols;
 }
 
-/** Flow/FlowFill columns: explicit or default 3 (not √n). */
+/** ContactSheet / strip column count: explicit or default 3 (not √n). */
 inline int resolvedFlowColumns(int gridColumns, int defaultCols = 3)
 {
     if (gridColumns > 0) {
@@ -324,16 +324,25 @@ inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes
 }
 
 /**
- * Flow / FlowFill: order-preserving wrap L→R then T→B.
- * Initial scale fills target column width; @p fill stretches each row to layoutW.
+ * Contact sheet: order-preserving wrap L→R, T→B with **one global scale**.
+ * Scale is target column width / max page width so relative page sizes stay
+ * true and every page fits a nominal column. Last row is left-aligned (never
+ * stretched to full width).
  */
-inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
-                                       qreal margin, qreal gap, qreal availW,
-                                       int gridColumns, bool fill)
+inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSizes,
+                                               qreal margin, qreal gap, qreal availW,
+                                               int gridColumns)
 {
     const int cols = resolvedFlowColumns(gridColumns);
     const qreal layoutW = availW;
     const qreal targetW = cellAxisLength(layoutW, gap, cols);
+    qreal maxW = 1.0;
+    for (const QSizeF &ns : layoutSizes) {
+        if (ns.width() > maxW) {
+            maxW = ns.width();
+        }
+    }
+    const qreal globalScale = axisFillScale(targetW, maxW);
 
     struct Entry {
         QSizeF ns;
@@ -355,7 +364,7 @@ inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
     };
 
     for (const QSizeF &ns : layoutSizes) {
-        const qreal scale = axisFillScale(targetW, ns.width());
+        const qreal scale = globalScale;
         const qreal w = ns.width() * scale;
         const qreal h = ns.height() * scale;
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
@@ -370,28 +379,93 @@ inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
     out.reserve(layoutSizes.size());
     qreal y = margin;
     for (const QVector<Entry> &row : rows) {
-        qreal contentW = 0.0;
-        for (const Entry &e : row) {
-            contentW += e.w;
-        }
-        contentW += gap * ViewTransform::nonNeg(qint64(row.size()) - 1);
-        const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
         qreal x = margin;
         qreal placedH = 0.0;
         for (const Entry &e : row) {
-            const qreal scale = e.scale * s;
-            const qreal w = e.ns.width() * scale;
-            const qreal h = e.ns.height() * scale;
+            const qreal w = e.w;
+            const qreal h = e.h;
             PackPose p;
-            p.scale = scale;
+            p.scale = e.scale;
             p.center = QPointF(x + w / 2.0, y + h / 2.0);
             out.append(p);
-            x += w + gap * s;
+            x += w + gap;
             placedH = qMax(placedH, h);
         }
         y += placedH + gap;
     }
     return out;
+}
+
+/**
+ * Strip rows: order-preserving wrap with **uniform row height**.
+ * Each page is scaled to the band height (landscapes become full height and
+ * wider). Rows wrap at layout width; last row left-aligned. @p masonryRows
+ * sets how many bands share @p availH (same spin as Masonry Rows).
+ */
+inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
+                                            qreal margin, qreal gap,
+                                            qreal availW, qreal availH,
+                                            int masonryRows)
+{
+    const int n = layoutSizes.size();
+    const int bands = resolvedBandCount(masonryRows, n > 0 ? n : 1);
+    const qreal rowH = cellAxisLength(availH, gap, bands);
+    const qreal layoutW = availW;
+
+    struct Entry {
+        QSizeF ns;
+        qreal scale = 1.0;
+        qreal w = 0.0;
+        qreal h = 0.0;
+    };
+    QVector<QVector<Entry>> rows;
+    QVector<Entry> cur;
+    qreal rowW = 0.0;
+
+    auto flushRow = [&]() {
+        if (cur.isEmpty()) {
+            return;
+        }
+        rows.append(cur);
+        cur.clear();
+        rowW = 0.0;
+    };
+
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(rowH, ns.height());
+        const qreal w = ns.width() * scale;
+        const qreal h = ns.height() * scale;
+        if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
+            flushRow();
+        }
+        cur.append(Entry{ns, scale, w, h});
+        rowW += (cur.size() == 1 ? w : gap + w);
+    }
+    flushRow();
+
+    QVector<PackPose> out;
+    out.reserve(n);
+    qreal y = margin;
+    for (const QVector<Entry> &row : rows) {
+        qreal x = margin;
+        for (const Entry &e : row) {
+            PackPose p;
+            p.scale = e.scale;
+            p.center = QPointF(x + e.w / 2.0, y + e.h / 2.0);
+            out.append(p);
+            x += e.w + gap;
+        }
+        y += rowH + gap;
+    }
+    return out;
+}
+
+/** @deprecated Name kept for call sites; ContactSheet only (no fill). */
+inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
+                                       qreal margin, qreal gap, qreal availW,
+                                       int gridColumns, bool /*fill*/)
+{
+    return packPosesContactSheet(layoutSizes, margin, gap, availW, gridColumns);
 }
 
 /**
@@ -705,10 +779,10 @@ inline QVector<PackPose> packPosesForMode(Mode mode, const QVector<QSizeF> &layo
         return packPosesMasonryFill(layoutSizes, margin, gap, availW, params.masonryColumns);
     case Mode::MasonryRowsFill:
         return packPosesMasonryRowsFill(layoutSizes, margin, gap, availH, params.masonryRows);
-    case Mode::Flow:
-        return packPosesFlow(layoutSizes, margin, gap, availW, params.gridColumns, false);
-    case Mode::FlowFill:
-        return packPosesFlow(layoutSizes, margin, gap, availW, params.gridColumns, true);
+    case Mode::ContactSheet:
+        return packPosesContactSheet(layoutSizes, margin, gap, availW, params.gridColumns);
+    case Mode::StripRows:
+        return packPosesStripRows(layoutSizes, margin, gap, availW, availH, params.masonryRows);
     case Mode::Facing:
         return packPosesFacing(layoutSizes, margin, gap, availW, availH);
     }
