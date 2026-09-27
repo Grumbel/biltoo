@@ -2,23 +2,21 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.10-virtual-cold-only-verified` (base `bcbb97e`).
+**Tip:** `biltoo-2714.11-unified-tile-display` (base `bcbb97e`).
 
-### Architecture (verified)
+### Tile pixels — one path
 
-| Layer | Owner | What |
-|-------|--------|------|
-| Warm tiles | `ImageItem` + `TileLodController` | Only tile paint + `paintTilePlanDebugOverlay` |
-| Cold underlay | `paintVirtualPlaceholders` | LQIP / EMB / placeholder when **no live item** |
-| Upright EXIF | `ImageCache::matchNativeAspect` | Shared |
-| Debug overlay | `tilelod/tile_plan_debug_overlay.*` | Shared |
+| API | Use |
+|-----|-----|
+| `TileLodRegistry` | Process-wide path-keyed Succeeded tiles (shared all modes/widgets) |
+| `paint_tiles_display` | Oriented paint (Image/Gallery/Workspace `ImageItem`) + plan overlay |
+| `prepare_and_paint_cover` | Identity native→dest cover (Slideshow) via same registry |
+| `paint_draw_plan` | Low-level plan iterator (identity controller paint) |
 
-### 2714.10
-- Virtual paint **skips slots that already have a live item** (was redrawing under them).
-- Removed warm-only dark-fill special case; warm lag uses LQIP if any, else chrome.
-- `syncVirtualWindow` still prioritizes creating live items for warm on-screen paths.
+Filmstrip still uses **TileSynth** whole-frame into ImageCache for strip-edge
+icons (same durable Store, not grid paint). Canvas modes share one registry.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.10-virtual-cold-only-verified-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.11-unified-tile-display-bcbb97e.bundle HEAD
 ```

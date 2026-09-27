@@ -4,8 +4,9 @@
 #pragma once
 
 /**
- * Shared “full native content stretched into dest” tile paint for ImageView,
- * Gallery, and Slideshow. Same transform model as drawImage(dest, fullFrame).
+ * Identity cover: full native content stretched into @c dest (Slideshow, etc.).
+ * Oriented content (crop / flip / 90°) uses paint_tiles_display instead.
+ * Both read Succeeded tiles from TileLodRegistry (process-wide, path-keyed).
  */
 
 #include "tilelod/tile_lod_controller.hpp"

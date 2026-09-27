@@ -368,6 +368,7 @@ set(BILTOO_LIB_SOURCES
   src/tilelod/tile_painter.cpp
   src/tilelod/tile_cover_paint.cpp
   src/tilelod/tile_plan_debug_overlay.cpp
+  src/tilelod/tile_display_paint.cpp
   src/tilelod/thumtoo_tile_source.cpp
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp

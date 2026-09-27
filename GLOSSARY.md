@@ -233,6 +233,11 @@ Normative product rules: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md),
 | **Warm cache** | Process and/or durable Store already holds tiles (or tile coverage) for the path. Virtual Gallery slots must paint **tiles**, not EMB. |
 | **Cold cache** | No durable tiles and no process tile RAM yet. LQIP/EMB/placeholder is acceptable until size gate + first tiles land. |
 | **Virtual slot** | Gallery plan cell without a live `ImageItem`. **Cold underlay only** (LQIP/EMB/placeholder). Warm on-screen cells must materialize live items so tiles use the single ImageItem path. |
+
+| **paint_tiles_display** | Single oriented rasterizer: DrawPlan + path tile RAM → screen (Image / Gallery / Workspace items). |
+| **prepare_and_paint_cover** | Identity cover of native into a dest rect (Slideshow, etc.); same registry cache. |
+| **TileLodRegistry** | Process-wide path-keyed tile RAM. Shared across modes and widgets; sessions are per surface. |
+
 | **Tile plan overlay** | Debug chrome (`BILTOO_TILE_DEBUG` / Debug menu): shows Exact / Parent / hole cells and sample tags (TILE / LQIP / EMB). |
 
 ### Priority (warm product)

@@ -14,6 +14,7 @@
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_plan_debug_overlay.hpp"
+#include "tilelod/tile_display_paint.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "util/debugflags.h"
@@ -1013,210 +1014,36 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
         if (tileLodWanted() && !navHot && m_tileLodAttached) {
             prepareTileLodPlan();
-            if (tileLodBag().controller && tileLodBag().controller->path() == m_path && tileLodBag().controller->session()) {
-                const QImage under = hasDecodedPixels() ? m_source
-                    : (!m_preview.isNull() ? m_preview : QImage());
+            if (tileLodBag().controller && tileLodBag().controller->path() == m_path
+                && tileLodBag().controller->session()) {
                 tilelod::DrawPlan plan = tileLodBag().controller->session()->draw_plan();
                 const bool tileSmooth = tilePaintNeedsSmooth(
                     tileDevicePerContent(),
                     tileLodBag().controller->session()->target_scale(), plan);
                 const QSize native = tileNativeSize();
                 const ContentXform::Value x = liveContentXformForPaint();
-                const QPointF off = offset();
                 const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
                     && qAbs(x.cropRotation) > 1e-3;
-                const bool orient =
-                    x.hFlip || x.vFlip
-                    || (ContentXform::normalizeQuarterTurns(x.quarterTurns) != 0);
-
                 ColorAdjustments grade = x.colorAdjust;
                 if (grade.isIdentity()) {
                     grade = liveColorForPaint();
                 }
-                auto resolve = [this, grade](tilelod::TileKey const &key,
-                                             tilelod::TileBitmap const &) -> QImage {
+                tilelod::PaintTilesDisplayArgs targs;
+                targs.painter = painter;
+                targs.session = tileLodBag().controller->session();
+                targs.plan = &plan;
+                targs.native = native;
+                targs.xform = x;
+                targs.contentOffset = offset();
+                targs.contentBounds = contentRect();
+                targs.freeRotPainter = freeRot;
+                targs.smooth = tileSmooth;
+                targs.path = m_path;
+                targs.debugOverlay = tilePlanDebugOverlayEnabled();
+                targs.resolve = [this, grade](tilelod::TileKey const &key) -> QImage {
                     return resolveGradedTile(key, grade);
                 };
-
-                // Source-aligned tile bitmaps: extract src_uv, then orient the
-                // patch (flip/turn). Dest is AABB in display space. Avoid
-                // reflective painter transforms (empty draw on GL after flip).
-                auto orientPatch = [&x](QImage patch) -> QImage {
-                    if (patch.isNull()) {
-                        return patch;
-                    }
-                    if (x.hFlip || x.vFlip) {
-                        Qt::Orientations axes;
-                        if (x.hFlip) {
-                            axes |= Qt::Horizontal;
-                        }
-                        if (x.vFlip) {
-                            axes |= Qt::Vertical;
-                        }
-                        if (axes) {
-                            patch = patch.flipped(axes);
-                        }
-                    }
-                    const int turns =
-                        ContentXform::normalizeQuarterTurns(x.quarterTurns);
-                    if (turns != 0) {
-                        QTransform rot;
-                        rot.rotate(90.0 * turns);
-                        patch = patch.transformed(rot, Qt::FastTransformation);
-                    }
-                    return patch;
-                };
-
-                auto extractUv = [](const QImage &img, const tilelod::RectF &uv) -> QImage {
-                    if (img.isNull()) {
-                        return {};
-                    }
-                    const QRectF srcUv(uv.x, uv.y, uv.w, uv.h);
-                    if (srcUv.width() < 1.0 || srcUv.height() < 1.0) {
-                        return img;
-                    }
-                    // Full-tile UV: skip copy.
-                    if (srcUv.x() <= 0.5 && srcUv.y() <= 0.5
-                        && srcUv.width() + 0.5 >= img.width()
-                        && srcUv.height() + 0.5 >= img.height()) {
-                        return img;
-                    }
-                    const QRect ir = srcUv.toAlignedRect().intersected(img.rect());
-                    if (ir.isEmpty()) {
-                        return {};
-                    }
-                    return img.copy(ir);
-                };
-
-                struct TilePaintCmd {
-                    QRectF dst;
-                    QImage patch;
-                };
-                QVector<TilePaintCmd> paintCmds;
-                paintCmds.reserve(plan.commands.size());
-
-                for (const tilelod::DrawCommand &cmd : plan.commands) {
-                    if (cmd.kind != tilelod::DrawKind::ExactTile
-                        && cmd.kind != tilelod::DrawKind::CoarserTile) {
-                        continue;
-                    }
-                    QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
-                                  cmd.dst_content.w, cmd.dst_content.h);
-                    QImage img = resolve(cmd.src_key, tilelod::TileBitmap{});
-                    if (img.isNull()) {
-                        continue;
-                    }
-                    // Exclusive src_uv from plan (no 257→256 scale, no dest expand).
-                    tilelod::RectF const uv = cmd.src_uv;
-                    QImage patch = extractUv(img, uv);
-                    if (patch.isNull()) {
-                        continue;
-                    }
-                    if (orient) {
-                        patch = orientPatch(patch);
-                    }
-                    if (patch.isNull()) {
-                        continue;
-                    }
-
-                    if (freeRot) {
-                        QRectF ori = ContentXform::mapSourceRectToOriented(
-                            srcBox, native, x);
-                        if (ori.isEmpty()) {
-                            continue;
-                        }
-                        paintCmds.push_back({ori, patch});
-                        continue;
-                    }
-
-                    // Axis-aligned: oriented AABB, then crop-local + edge crop.
-                    QRectF oriented = ContentXform::mapSourceRectToOriented(
-                        srcBox, native, x);
-                    if (oriented.isEmpty()) {
-                        continue;
-                    }
-                    QRectF disp = oriented;
-                    if (x.hasCrop && !x.cropRect.isEmpty()) {
-                        // Scale cropSourceSize → tile-grid oriented native
-                        // (PDF soft crop basis vs page-native tiles).
-                        const QRect contentCrop =
-                            ContentXform::orientedCropRect(native, x);
-                        if (contentCrop.width() < 1 || contentCrop.height() < 1) {
-                            continue;
-                        }
-                        const QRectF local = oriented.translated(
-                            -contentCrop.x(), -contentCrop.y());
-                        const QRectF cropLocal(0.0, 0.0, contentCrop.width(),
-                                               contentCrop.height());
-                        disp = local.intersected(cropLocal);
-                        if (disp.isEmpty() || local.width() < 1e-6
-                            || local.height() < 1e-6) {
-                            continue;
-                        }
-                        // Partial edge: crop the (already oriented) patch with
-                        // the same ratio so we do not stretch into a smaller dest.
-                        if (qAbs(disp.width() - local.width()) > 0.5
-                            || qAbs(disp.height() - local.height()) > 0.5) {
-                            const qreal u0 =
-                                (disp.left() - local.left()) / local.width();
-                            const qreal v0 =
-                                (disp.top() - local.top()) / local.height();
-                            const qreal uw = disp.width() / local.width();
-                            const qreal vh = disp.height() / local.height();
-                            const QRect pr = QRectF(
-                                u0 * patch.width(), v0 * patch.height(),
-                                uw * patch.width(), vh * patch.height())
-                                                 .toAlignedRect()
-                                                 .intersected(patch.rect());
-                            if (pr.isEmpty()) {
-                                continue;
-                            }
-                            patch = patch.copy(pr);
-                        }
-                    }
-                    paintCmds.push_back(
-                        {QRectF(disp.x() + off.x(), disp.y() + off.y(),
-                                disp.width(), disp.height()),
-                         patch});
-                }
-
-                const QRectF cr = contentRect();
-                painter->save();
-                // Clip in item-local display space first (same AABB as soft underlay
-                // and contentRect). Qt stores the clip in device space at set time,
-                // so subsequent free-rot transforms only affect drawing — they must
-                // not re-interpret contentRect as crop-local coords (that left tiles
-                // clipped to an unrotated crop window while soft filled the AABB).
-                // IntersectClip keeps outer Gallery GridCrop.
-                painter->setClipRect(cr, Qt::IntersectClip);
-                if (freeRot) {
-                    // Match SessionAppearance::materializeDisplay free-rot window:
-                    // crop centre → contentRect centre, then -cropRotation.
-                    const QRect contentCrop = ContentXform::orientedCropRect(native, x);
-                    if (contentCrop.width() >= 1 && contentCrop.height() >= 1) {
-                        painter->translate(cr.center());
-                        painter->rotate(-x.cropRotation);
-                        painter->translate(-QPointF(contentCrop.center()));
-                    }
-                }
-
-                painter->setRenderHint(QPainter::SmoothPixmapTransform, tileSmooth);
-                for (TilePaintCmd const &pc : paintCmds) {
-                    if (pc.patch.isNull() || pc.dst.isEmpty()) {
-                        continue;
-                    }
-                    painter->drawImage(pc.dst, pc.patch);
-                }
-                (void)under;
-
-                if (tilePlanDebugOverlayEnabled()) {
-                    // Map plan cells like tile paint (orient/flip/crop). Pixel
-                    // TILE stamps still belong in thumtoo so they follow patches.
-                    paintTilePlanDebugOverlay(painter, tileLodBag().controller->session(), plan,
-                                             contentRect(), off, native, x, freeRot, m_path);
-                }
-                painter->restore();
-
+                (void)tilelod::paint_tiles_display(targs);
             }
         }
         painter->restore();
