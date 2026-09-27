@@ -5,10 +5,27 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Text-to-speech (TTS) plan
 
-Status: **design only** (not implemented). Relates to the text overlay /
+Status: **Phase A implemented** (speak selection/page + Stop; no live region highlight yet). Relates to the text overlay /
 selection stack ([TEXT_OVERLAY.md](TEXT_OVERLAY.md), `TextSelection` in
 `src/text/textselection.h`) and the external project
 [text2sprech](https://github.com/Grumbel/text2sprech).
+
+
+## Implementation notes (Phase A)
+
+Vendored from text2sprech (same license) under `src/speech/`:
+
+- `PiperClient`, `PiperServerManager`, `PlaybackController`
+- `Sentence`, `SentenceSplitter`
+
+Biltoo-specific:
+
+- `TextToSpeechController` — lazy server start, external `--piper-socket`
+- `TextLayerController::pageTextInReadingOrder()` / `speakableText()`
+- Text panel Speak / Stop + Edit menu (`Ctrl+Shift+S`, `Ctrl+.`)
+
+Do **not** change PROTOCOL framing without updating text2sprech in lockstep.
+Qt6 Multimedia + Network linked for WAV playback and `QLocalSocket`.
 
 ## Goals
 
