@@ -2139,25 +2139,35 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Cold-only underlay for plan cells that do not yet have a live ImageItem.
-    // Warm tiles are never painted here — that is ImageItem + TileLodController
-    // only (same orient/crop/debug path). syncVirtualWindow prioritizes creating
-    // live items for on-screen warm paths so this paint is the exception, not
-    // a second product path.
+    // Cold underlay only. Tiles + plan overlay are exclusively ImageItem paint.
+    // Skip any slot that already has a live item (background would only fight it).
+    QSet<SessionImageId> liveIds;
+    QSet<QString> livePaths;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        if (item->sessionId() != kInvalidSessionImageId) {
+            liveIds.insert(item->sessionId());
+        }
+        if (!item->path().isEmpty()) {
+            livePaths.insert(item->path());
+        }
+    }
+
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
-        const QRectF &r = slot.bounds;
-        // Warm process tiles: leave the cell empty/chrome — live item should
-        // materialize next slice. Painting tiles here would duplicate logic.
-        if (!slot.path.isEmpty()
-            && tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)) {
-            painter->fillRect(r, QColor(28, 28, 30));
+        if (slot.id != kInvalidSessionImageId && liveIds.contains(slot.id)) {
+            continue;
+        }
+        if (!slot.path.isEmpty() && livePaths.contains(slot.path)) {
             continue;
         }
 
+        const QRectF &r = slot.bounds;
         QImage under;
         if (!slot.path.isEmpty()) {
             under = ImageCache::getUnderlay(slot.path);
@@ -2165,10 +2175,12 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
                 under = ImageCache::get(slot.path);
             }
         }
-        // Durable tiles known but not in process RAM yet: LQIP only, never EMB.
-        const bool warmDurable = !slot.path.isEmpty()
-            && ThumtooCache::hasDurableTilesKnown(slot.path);
-        if (!under.isNull() && warmDurable) {
+        // Durable tiles known but process RAM empty: LQIP only (never EMB).
+        // Process tiles present without a live item: same — wait for materialize.
+        const bool warm = !slot.path.isEmpty()
+            && (ThumtooCache::hasDurableTilesKnown(slot.path)
+                || tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path));
+        if (!under.isNull() && warm) {
             if (qMax(under.width(), under.height()) > DisplayQuality::kLqipMaxEdge) {
                 under = QImage();
             }
@@ -2214,8 +2226,8 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
         } else {
             ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, r);
             if (tilePlanDebugOverlayEnabled() && r.width() >= 4.0 && r.height() >= 4.0) {
-                const QString tag = warmDurable ? QStringLiteral("TILE?")
-                                                : QStringLiteral("EMPTY");
+                const QString tag = warm ? QStringLiteral("TILE?")
+                                         : QStringLiteral("EMPTY");
                 QFont hf = painter->font();
                 hf.setBold(true);
                 hf.setWeight(QFont::Black);
