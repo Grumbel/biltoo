@@ -2,16 +2,16 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.17-prepare-lqip-repair` (base `bcbb97e`).
+**Tip:** `biltoo-2714.18-tr-string-fix` (base `bcbb97e`).
 
-### Prepare Tile Cache
-- Skipping paths that already have tiles now still runs `ensure_lqip` (kill
-  mid-pyramid left tiles without LQIP).
-- New pyramid completion also ensures LQIP.
-- Dialog stats: tiles / Store LQIP / Store EMB / tiles-without-LQIP / need tiles.
-- Progress line includes **LQIP filled this run**.
+### Coding rule (agent)
+**Never put a raw newline inside a C/C++ `"..."` string.** Use either:
+- adjacent literals: `"line1\n" "line2\n"`, or
+- one string with explicit `\n`.
+
+Raw newlines in quotes break the compile (`missing terminating " character`).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.17-prepare-lqip-repair-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.18-tr-string-fix-bcbb97e.bundle HEAD
 ```

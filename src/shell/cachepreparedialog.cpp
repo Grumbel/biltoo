@@ -169,27 +169,23 @@ void CachePrepareDialog::closeEvent(QCloseEvent *event)
 void CachePrepareDialog::applyStatsLabel(const ThumtooCache::CacheCoverageStats &s)
 {
     const int missingTiles = qMax(0, s.total - s.withTiles - s.unsupported);
-    QString text = tr("%1 images in session
-"
-                      "%2 have durable tiles
-"
-                      "%3 have Store LQIP (ThumbHash)
-"
-                      "%4 have Store EMB (EXIF/container)
-"
-                      "%5 tiles but missing LQIP (will repair on Prepare)
-"
-                      "%6 still need tiles")
-                       .arg(s.total)
-                       .arg(s.withTiles)
-                       .arg(s.withLqip)
-                       .arg(s.withEmbedded)
-                       .arg(s.tilesWithoutLqip)
-                       .arg(missingTiles);
+    QString text =
+        tr("%1 images in session\n"
+           "%2 have durable tiles\n"
+           "%3 have Store LQIP (ThumbHash)\n"
+           "%4 have Store EMB (EXIF/container)\n"
+           "%5 tiles but missing LQIP (will repair on Prepare)\n"
+           "%6 still need tiles")
+            .arg(s.total)
+            .arg(s.withTiles)
+            .arg(s.withLqip)
+            .arg(s.withEmbedded)
+            .arg(s.tilesWithoutLqip)
+            .arg(missingTiles);
     if (s.unsupported > 0) {
-        text += tr("
-%1 unsupported").arg(s.unsupported);
+        text += tr("\n%1 unsupported").arg(s.unsupported);
     }
+
     m_statsLabel->setText(text);
 }
 
