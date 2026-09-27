@@ -8,11 +8,12 @@
 class QComboBox;
 class QLineEdit;
 class QSpinBox;
-class QCheckBox;
+class QToolButton;
 class QPushButton;
 class QProgressBar;
 class QLabel;
 class QPlainTextEdit;
+class QWidget;
 
 /**
  * Dock panel for Tesseract OCR: scope, language, concurrency,
@@ -35,7 +36,7 @@ public:
     void setJobs(int n);
     /**
      * Tesseract source DPI. 0 = Auto (thumtoo estimates from page box / 300).
-     * Manual 70–600 for stubborn crops / mixed type sizes.
+     * Manual 70–600 when Auto is off.
      */
     int sourceDpi() const;
     void setSourceDpi(int dpi);
@@ -60,11 +61,14 @@ signals:
 
 private:
     void buildUi();
+    void syncDpiControls();
 
     QComboBox *m_scope = nullptr;
     QLineEdit *m_lang = nullptr;
     QSpinBox *m_jobs = nullptr;
+    QToolButton *m_dpiAuto = nullptr;
     QSpinBox *m_dpi = nullptr;
+    QWidget *m_dpiRow = nullptr;
     QPushButton *m_runBtn = nullptr;
     QPushButton *m_cancelBtn = nullptr;
     QProgressBar *m_progress = nullptr;
