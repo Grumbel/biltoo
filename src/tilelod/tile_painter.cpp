@@ -54,13 +54,14 @@ QImage tile_bitmap_to_qimage(TileBitmap const& bitmap)
   return QImage::fromData(ba);
 }
 
-void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
+bool paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
 {
   if (!painter || !args.plan) {
-    return;
+    return false;
   }
   painter->setRenderHint(QPainter::SmoothPixmapTransform, args.smooth);
 
+  bool drew_tile = false;
   for (DrawCommand const& cmd : args.plan->commands) {
     if (cmd.dst_content.empty()) {
       continue;
@@ -86,7 +87,9 @@ void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args)
     // Exclusive src_uv from plan.
     QRectF const src(cmd.src_uv.x, cmd.src_uv.y, cmd.src_uv.w, cmd.src_uv.h);
     painter->drawImage(dst, img, src);
+    drew_tile = true;
   }
+  return drew_tile;
 }
 
 }  // namespace tilelod

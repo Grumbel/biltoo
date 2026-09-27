@@ -128,8 +128,9 @@ bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) con
     }
     return tile_bitmap_to_qimage(e->bitmap);
   };
-  paint_draw_plan(painter, args);
-  return plan.any_tile;
+  // Return actual tile pixels drawn — not plan.any_tile (commands may exist
+  // while every resolve fails; callers must not skip EMB on a false success).
+  return paint_draw_plan(painter, args);
 }
 
 bool TileLodController::hasAnyTile() const

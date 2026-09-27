@@ -33,7 +33,8 @@ struct PaintDrawPlanArgs {
  * Paint a DrawPlan in **content coordinates** (same space as cmd.dst_content).
  * Exclusive src→dest per tile (no assemble-to-buffer; that starved the GUI).
  */
-void paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args);
+/** @return true if at least one Exact/Coarser tile image was drawn. */
+[[nodiscard]] bool paint_draw_plan(QPainter* painter, PaintDrawPlanArgs const& args);
 
 /** Decode TileBitmap to QImage (rgba8 copy or QImage::fromData for jpeg). */
 QImage tile_bitmap_to_qimage(TileBitmap const& bitmap);

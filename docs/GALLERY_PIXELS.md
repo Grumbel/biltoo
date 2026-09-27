@@ -30,7 +30,7 @@ ladder is not a product path ([KILL_SOFT.md](KILL_SOFT.md)).
 |-----|------|
 | `TileLodRegistry` | Process-wide **path-keyed** Succeeded tiles. Shared across Image / Gallery / Workspace / Slideshow. |
 | `paint_tiles_display` | Oriented tile paint + plan overlay (`ImageItem`). |
-| `prepare_and_paint_cover` | Identity native→dest cover (Slideshow, virtual warm floor). Retained tiles **bypass** the 32px screen floor so min-scale overview still paints while scrolling. |
+| `prepare_and_paint_cover` | Identity native→dest cover (Slideshow, virtual warm floor). Retained tiles **bypass** the 32px screen floor. Returns true only if tile **pixels** were drawn (not merely plan commands). |
 | `tileLodActive()` | True if this controller has tiles **or** retained path RAM. |
 | `tileLodHasPathRam()` | Registry (or controller retained) has Succeeded tiles for the path. |
 
