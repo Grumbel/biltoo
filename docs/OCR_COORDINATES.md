@@ -87,9 +87,11 @@ after crop.
 `TextLayerController::regionImageRect`:
 
 1. `pageRectToImageRect(..., pageYUp())` → source  
-2. `SessionAppearance::mapSourceRectToContentDisplay` → display  
+2. `ContentXform::mapSourceRectToDisplay` → native layout (crop-local)  
+3. If `item->imageSize()` ≠ `layoutSize`, scale so boxes track the painted contentRect  
 
-`pageYUp()` prefers `layer.pageYUp` when bounds are valid.
+`pageYUp()` prefers `layer.pageYUp` when bounds are valid. Crop apply/reset only
+changes the ContentXform map — region bboxes stay in page space.
 
 ## Free-rotated crop
 

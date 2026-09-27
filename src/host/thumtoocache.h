@@ -559,7 +559,8 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath);
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath,
                                      bool force = false,
                                      const QString &lang = QString(),
-                                     const QRectF &pageCrop = {});
+                                     const QRectF &pageCrop = {},
+                                     int sourceDpi = 0);
 
 /** Result of an OCR attempt with a specific failure reason for UI. */
 struct OcrRunResult {
@@ -589,18 +590,15 @@ bool ocrAvailable();
  * Like ensureOcrPageTextLayer but returns @c OcrRunResult with a concrete status.
  * Prefer this for UI paths that need to explain failure.
  */
-OcrRunResult runOcrPageTextLayer(const QString &sessionPath,
-                                 bool force = false,
-                                 const QString &lang = QString(),
-                                 const QRectF &pageCrop = {});
+OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
+                                 const QString &lang = {},
+                                 const QRectF &pageCrop = {},
+                                 int sourceDpi = 0);
 
 /**
- * OCR a host-prepared RGB image (already cropped / oriented / graded).
+ * OCR a host-prepared RGB image (appearance path).
  * Region bboxes use pageBounds (0,0)–(width,height) in image pixel space
  * (Y-down). Caller remaps into document page space when needed.
- */
-/**
- * OCR a host-prepared RGB image (appearance path).
  * @p sourceDpi Tesseract source resolution; 0 → thumtoo estimates (300 for
  * pixel page boxes). Prefer 72 * native_w / pageBounds_width for document pages.
  */

@@ -3566,9 +3566,10 @@ PageTextLayer ensurePageTextLayer(const QString &sessionPath)
 }
 
 PageTextLayer ensureOcrPageTextLayer(const QString &sessionPath, bool force,
-                                     const QString &lang, const QRectF &pageCrop)
+                                     const QString &lang, const QRectF &pageCrop,
+                                     int sourceDpi)
 {
-    return runOcrPageTextLayer(sessionPath, force, lang, pageCrop).layer;
+    return runOcrPageTextLayer(sessionPath, force, lang, pageCrop, sourceDpi).layer;
 }
 
 bool ocrAvailable()
@@ -3630,7 +3631,8 @@ QString OcrRunResult::message() const
 }
 
 OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
-                                 const QString &lang, const QRectF &pageCrop)
+                                 const QString &lang, const QRectF &pageCrop,
+                                 int sourceDpi)
 {
     OcrRunResult out;
 #if !defined(BILTOO_HAVE_THUMTOO_TEXT)
@@ -3638,6 +3640,7 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     Q_UNUSED(force);
     Q_UNUSED(lang);
     Q_UNUSED(pageCrop);
+    Q_UNUSED(sourceDpi);
     out.status = OcrRunResult::Status::Unavailable;
     return out;
 #else
@@ -3664,6 +3667,9 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
     thumtoo::OcrOptions opts;
     if (!lang.isEmpty()) {
         opts.lang = lang.toStdString();
+    }
+    if (sourceDpi > 0) {
+        opts.dpi = sourceDpi;
     }
     if (pageCrop.isValid() && pageCrop.width() > 1.0 && pageCrop.height() > 1.0) {
         opts.has_crop = true;
@@ -3810,7 +3816,8 @@ QString OcrRunResult::message() const
         "ThumtooCache",
         "OCR unavailable — text/OCR support not compiled into this biltoo build");
 }
-OcrRunResult runOcrPageTextLayer(const QString &, bool, const QString &, const QRectF &)
+OcrRunResult runOcrPageTextLayer(const QString &, bool, const QString &, const QRectF &,
+                                 int)
 {
     OcrRunResult out;
     out.status = OcrRunResult::Status::Unavailable;

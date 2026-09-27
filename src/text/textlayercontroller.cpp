@@ -399,7 +399,32 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
         return {};
     }
 
-    return SessionAppearance::mapSourceRectToContentDisplay(inSource, sourceSize, st);
+    // Same pipeline as materializeDisplay / OCR inverse: ContentXform only.
+    // SessionAppearance::mapSourceRectToContentDisplay was a parallel path that
+    // could disagree on crop scale (cropSourceSize / orientation) and left
+    // boxes translated wrong after crop apply/reset.
+    const ContentXform::Value x = ContentXform::Value::fromState(st);
+    QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
+    if (disp.isEmpty()) {
+        return {};
+    }
+
+    // mapSourceRectToDisplay is in native layout pixels (layoutSize). The item
+    // box may lag or differ (provisional / soft); stretch so boxes track the
+    // painted contentRect after crop apply/reset.
+    const QSize logical = ContentXform::layoutSize(sourceSize, x);
+    const QSize itemSz = item->imageSize();
+    if (logical.width() > 0 && logical.height() > 0
+        && itemSz.width() > 0 && itemSz.height() > 0
+        && (logical.width() != itemSz.width()
+            || logical.height() != itemSz.height())) {
+        disp = QRectF(
+            disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
+            disp.y() * qreal(itemSz.height()) / qreal(logical.height()),
+            disp.width() * qreal(itemSz.width()) / qreal(logical.width()),
+            disp.height() * qreal(itemSz.height()) / qreal(logical.height()));
+    }
+    return disp;
 }
 
 QRectF TextLayerController::rubberBandImageRect() const

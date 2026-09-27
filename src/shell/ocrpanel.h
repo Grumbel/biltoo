@@ -36,6 +36,13 @@ public:
     bool force() const;
     void setForce(bool on);
 
+    /**
+     * Tesseract source DPI. 0 = Auto (thumtoo estimates from page box / 300).
+     * Manual 70–600 for stubborn crops / mixed type sizes.
+     */
+    int sourceDpi() const;
+    void setSourceDpi(int dpi);
+
     /** Enable/disable Run (and related controls) while a job is active. */
     void setBusy(bool busy);
     bool isBusy() const { return m_busy; }
@@ -60,6 +67,7 @@ private:
     QComboBox *m_scope = nullptr;
     QLineEdit *m_lang = nullptr;
     QSpinBox *m_jobs = nullptr;
+    QSpinBox *m_dpi = nullptr;
     QCheckBox *m_force = nullptr;
     QPushButton *m_runBtn = nullptr;
     QPushButton *m_cancelBtn = nullptr;

@@ -55,6 +55,18 @@ void OcrPanel::buildUi()
                           "Tesseract itself is serialized; extra jobs overlap rasterize."));
     form->addRow(tr("Jobs"), m_jobs);
 
+    m_dpi = new QSpinBox(opts);
+    m_dpi->setRange(0, 600);
+    m_dpi->setValue(0);
+    m_dpi->setSpecialValueText(tr("Auto"));
+    m_dpi->setSingleStep(10);
+    m_dpi->setToolTip(
+        tr("Tesseract source resolution (DPI).\n"
+           "Auto: document pages use 72×raster/page-box; plain images use 300.\n"
+           "Set manually (e.g. 200–400) if cropped or mixed-size text segments poorly.\n"
+           "0 = Auto. Force re-OCR after changing this."));
+    form->addRow(tr("Source DPI"), m_dpi);
+
     m_force = new QCheckBox(tr("Force re-OCR (ignore cache)"), opts);
     m_force->setToolTip(tr("Re-run Tesseract even when an OCR layer is already stored."));
     form->addRow(QString(), m_force);
@@ -159,6 +171,18 @@ void OcrPanel::setForce(bool on)
     }
 }
 
+int OcrPanel::sourceDpi() const
+{
+    return m_dpi ? m_dpi->value() : 0;
+}
+
+void OcrPanel::setSourceDpi(int dpi)
+{
+    if (m_dpi) {
+        m_dpi->setValue(qBound(0, dpi, 600));
+    }
+}
+
 void OcrPanel::setBusy(bool busy)
 {
     m_busy = busy;
@@ -176,6 +200,9 @@ void OcrPanel::setBusy(bool busy)
     }
     if (m_jobs) {
         m_jobs->setEnabled(!busy);
+    }
+    if (m_dpi) {
+        m_dpi->setEnabled(!busy);
     }
     if (m_force) {
         m_force->setEnabled(!busy);

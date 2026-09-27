@@ -2,15 +2,15 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2716.2-ocr-source-dpi` (base `d456ffc`).
+**Tip:** `biltoo-2716.3-text-crop-map-dpi-ui` (base `d456ffc`).
 
-### OCR
-1. Regions in page space only; crop is paint-time (`pageYUp` from layer).
-2. Appearance OCR passes **source DPI** (`72×native/pageBounds` or 300) so
-   Tesseract does not treat a crop as a 72-DPI scrap.
-3. Requires thumtoo **345.2-ocr-source-dpi**.
+### Fixes
+1. Text overlays: paint via `ContentXform::mapSourceRectToDisplay` only; scale
+   into item layout size so crop apply/reset does not leave a translation error.
+2. OCR panel **Source DPI** (0 = Auto, 70–600); persisted as `ocr/dpi`.
+3. Requires thumtoo **345.2** (`OcrOptions::dpi` / `SetSourceResolution`).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2716.2-ocr-source-dpi-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2716.3-text-crop-map-dpi-ui-d456ffc.bundle HEAD
 ```

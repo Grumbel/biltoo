@@ -445,6 +445,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_ocrPanel->setLanguage(
             settings.value(QStringLiteral("ocr/lang"), QStringLiteral("eng")).toString());
         m_ocrPanel->setJobs(settings.value(QStringLiteral("ocr/jobs"), 2).toInt());
+        m_ocrPanel->setSourceDpi(settings.value(QStringLiteral("ocr/dpi"), 0).toInt());
     }
     connect(m_ocrPanel, &OcrPanel::runRequested, this, &MainWindow::runOcrFromPanel);
     connect(m_ocrPanel, &OcrPanel::cancelRequested, this, &MainWindow::cancelOcrBatch);
@@ -5140,6 +5141,7 @@ void MainWindow::runOcrFromPanel()
     QSettings settings;
     settings.setValue(QStringLiteral("ocr/lang"), m_ocrPanel->language());
     settings.setValue(QStringLiteral("ocr/jobs"), m_ocrPanel->jobs());
+    settings.setValue(QStringLiteral("ocr/dpi"), m_ocrPanel->sourceDpi());
     if (m_ocrPanel->scope() == OcrPanel::Scope::Document) {
         ocrDocument();
     } else {
@@ -5258,6 +5260,10 @@ void MainWindow::startOcrCurrentPage(bool force)
     QString lang = m_ocrPanel ? m_ocrPanel->language()
                               : settings.value(QStringLiteral("ocr/lang"), QStringLiteral("eng")).toString();
     settings.setValue(QStringLiteral("ocr/lang"), lang);
+    const int panelDpi = m_ocrPanel
+        ? m_ocrPanel->sourceDpi()
+        : settings.value(QStringLiteral("ocr/dpi"), 0).toInt();
+    settings.setValue(QStringLiteral("ocr/dpi"), panelDpi);
 
     const int gen = m_ocrGeneration.fetch_add(1) + 1;
     m_ocrRunning = true;
@@ -5278,9 +5284,10 @@ void MainWindow::startOcrCurrentPage(bool force)
         m_ocrPanel->setProgress(-1, force ? tr("Re-OCR this page…") : tr("OCR this page…"));
         m_ocrPanel->setSummary(tr("Working…"));
         m_ocrPanel->appendLog(
-            tr("Start page OCR (force=%1, lang=%2, page=%3): %4")
+            tr("Start page OCR (force=%1, lang=%2, dpi=%3, page=%4): %5")
                 .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
                 .arg(lang.isEmpty() ? QStringLiteral("eng") : lang)
+                .arg(panelDpi > 0 ? QString::number(panelDpi) : QStringLiteral("auto"))
                 .arg(PagePath::pageNumber(path))
                 .arg(path));
     }
@@ -5290,6 +5297,7 @@ void MainWindow::startOcrCurrentPage(bool force)
     QPointer<MainWindow> self(this);
     const QString pathCopy = path;
     const QString langCopy = lang;
+    const int dpiCopy = panelDpi;
     WorkspaceItemState ocrState;
     {
         ImageItem *item = m_imageView->primaryItem();
@@ -5311,14 +5319,14 @@ void MainWindow::startOcrCurrentPage(bool force)
     }
     const bool useDisplay = appearanceAffectsOcr(ocrState);
     QThreadPool::globalInstance()->start(
-        [self, pathCopy, langCopy, gen, force, ocrState, useDisplay]() {
+        [self, pathCopy, langCopy, dpiCopy, gen, force, ocrState, useDisplay]() {
         ThumtooCache::OcrRunResult result;
         if (!useDisplay) {
             // Full-page URI OCR. Do **not** pass session crop into thumtoo:
             // crop is a view transform; regions stay in page space and
             // regionImageRect applies the live crop at paint time.
             result = ThumtooCache::runOcrPageTextLayer(
-                pathCopy, force, langCopy, /*pageCrop=*/{});
+                pathCopy, force, langCopy, /*pageCrop=*/{}, dpiCopy);
         } else {
             // Decode full page → materializeDisplay (orient/crop/grade) → OCR.
             // Then invert display pixel boxes into **page space** once.
@@ -5346,22 +5354,23 @@ void MainWindow::startOcrCurrentPage(bool force)
                 if (view.isNull()) {
                     view = raw;
                 }
-                // Tell Tesseract the true page density so a crop does not look
-                // like a 1" scrap at 72 DPI (mixed type sizes segment badly).
-                int sourceDpi = 0;
+                // Panel DPI overrides auto estimate. Auto uses page density so a
+                // crop is not treated as a 72-DPI scrap.
+                int sourceDpi = dpiCopy;
                 const auto nativeLayer =
                     ThumtooCache::cachedPageTextLayer(pathCopy);
-                if (nativeLayer.pageBounds.isValid()
-                    && nativeLayer.pageBounds.width() > 1.0
-                    && native.width() > 0) {
-                    sourceDpi = qBound(
-                        70,
-                        qRound(72.0 * double(native.width())
-                               / nativeLayer.pageBounds.width()),
-                        600);
-                } else if (native.width() > 0) {
-                    // Plain image: ~300 DPI is a stable default for mixed sizes.
-                    sourceDpi = 300;
+                if (sourceDpi <= 0) {
+                    if (nativeLayer.pageBounds.isValid()
+                        && nativeLayer.pageBounds.width() > 1.0
+                        && native.width() > 0) {
+                        sourceDpi = qBound(
+                            70,
+                            qRound(72.0 * double(native.width())
+                                   / nativeLayer.pageBounds.width()),
+                            600);
+                    } else if (native.width() > 0) {
+                        sourceDpi = 300;
+                    }
                 }
                 result = ThumtooCache::runOcrRgbImage(view, langCopy, sourceDpi);
                 if (result.status == ThumtooCache::OcrRunResult::Status::Ok
@@ -5497,6 +5506,10 @@ void MainWindow::ocrDocument()
     }
     settings.setValue(QStringLiteral("ocr/lang"), lang);
     settings.setValue(QStringLiteral("ocr/jobs"), jobs);
+    const int panelDpi = m_ocrPanel
+        ? m_ocrPanel->sourceDpi()
+        : settings.value(QStringLiteral("ocr/dpi"), 0).toInt();
+    settings.setValue(QStringLiteral("ocr/dpi"), panelDpi);
 
     const int gen = m_ocrGeneration.fetch_add(1) + 1;
     m_ocrRunning = true;
@@ -5517,17 +5530,19 @@ void MainWindow::ocrDocument()
         m_ocrPanel->setProgress(0, tr("Starting document OCR…"));
         m_ocrPanel->setSummary(tr("0 / %1 pages").arg(pages.size()));
         m_ocrPanel->appendLog(
-            tr("Start document OCR (%1 pages, jobs=%2, force=%3, lang=%4)")
+            tr("Start document OCR (%1 pages, jobs=%2, force=%3, lang=%4, dpi=%5)")
                 .arg(pages.size())
                 .arg(jobs)
                 .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
-                .arg(lang));
+                .arg(lang)
+                .arg(panelDpi > 0 ? QString::number(panelDpi) : QStringLiteral("auto")));
     }
 
     QPointer<MainWindow> self(this);
     const QStringList pagesCopy = pages;
     const QString langCopy = lang;
-    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, gen, force, jobs]() {
+    const int dpiCopy = panelDpi;
+    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, dpiCopy, gen, force, jobs]() {
         const int total = pagesCopy.size();
         std::atomic<int> nextIndex{0};
         std::atomic<int> doneCount{0};
@@ -5588,7 +5603,8 @@ void MainWindow::ocrDocument()
                 const QString &pagePath = pagesCopy.at(i);
                 const int pageNo = PagePath::pageNumber(pagePath);
                 const ThumtooCache::OcrRunResult result =
-                    ThumtooCache::runOcrPageTextLayer(pagePath, force, langCopy);
+                    ThumtooCache::runOcrPageTextLayer(
+                        pagePath, force, langCopy, /*pageCrop=*/{}, dpiCopy);
                 const bool pageOk =
                     result.status == ThumtooCache::OcrRunResult::Status::Ok
                     || result.status == ThumtooCache::OcrRunResult::Status::EmptyText;
