@@ -1447,23 +1447,8 @@ bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
         ThumtooCache::scheduleStoreUnderlaySeed(path);
         return false;
     }
-    // EXIF embedded JPEG is often stored un-autorotated while Store size is
-    // upright (vips_autorot). Transpose the underlay so it matches layout size.
-    {
-        const QSize native = book.known(path);
-        if (native.width() > 1 && native.height() > 1
-            && under.width() > 1 && under.height() > 1) {
-            const bool nativePortrait = native.height() > native.width();
-            const bool underPortrait = under.height() > under.width();
-            if (nativePortrait != underPortrait
-                && native.width() != native.height()
-                && under.width() != under.height()) {
-                QTransform rot;
-                rot.rotate(90.0);
-                under = under.transformed(rot, Qt::FastTransformation);
-            }
-        }
-    }
+    // EXIF embedded JPEG is often un-autorotated while Store size is upright.
+    under = ImageCache::matchNativeAspect(under, book.known(path));
     const SessionImageId sid = item->sessionId();
     // Always go through installDisplayPixels so ItemWorld content orient/flip
     // is materialized. Never hostSetPreviewImage(raw) — that left rotation

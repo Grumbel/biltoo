@@ -15,6 +15,7 @@
 #include <QPainter>
 #include <QPen>
 #include <QSet>
+#include <QTransform>
 #include <QStringList>
 #include <QThreadPool>
 
@@ -324,6 +325,26 @@ QImage getUnderlay(const QString &path)
 bool hasUnderlay(const QString &path)
 {
     return !getUnderlay(path).isNull();
+}
+
+
+QImage matchNativeAspect(const QImage &sample, const QSize &native)
+{
+    if (sample.isNull() || native.width() <= 1 || native.height() <= 1
+        || sample.width() <= 1 || sample.height() <= 1) {
+        return sample;
+    }
+    if (native.width() == native.height() || sample.width() == sample.height()) {
+        return sample;
+    }
+    const bool nativePortrait = native.height() > native.width();
+    const bool samplePortrait = sample.height() > sample.width();
+    if (nativePortrait == samplePortrait) {
+        return sample;
+    }
+    QTransform rot;
+    rot.rotate(90.0);
+    return sample.transformed(rot, Qt::FastTransformation);
 }
 
 QImage ensure(const QString &path, int maxEdge)

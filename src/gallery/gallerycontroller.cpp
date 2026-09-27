@@ -29,7 +29,6 @@
 #include "gallery/gallerypackfit.h"
 #include "display/imagecache.h"
 #include "tilelod/tile_lod_registry.hpp"
-#include "tilelod/tile_cover_paint.hpp"
 #include "tilelod/tile_plan_debug_overlay.hpp"
 #include "display/displayquality.h"
 #include "util/debugflags.h"
@@ -2044,9 +2043,17 @@ void GalleryController::syncVirtualWindow()
             }
         }
         if (!item) {
-            if (sliceTimer.elapsed() >= kVirtualWindowSliceMs) {
+            // Warm paths must get a live ImageItem this frame (tile paint +
+            // real plan overlay live only on items). Budget only throttles cold creates.
+            const bool warmPath = !slot.path.isEmpty()
+                && (tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)
+                    || ThumtooCache::hasDurableTilesKnown(slot.path));
+            if (!warmPath && sliceTimer.elapsed() >= kVirtualWindowSliceMs) {
                 needAnotherSlice = true;
                 continue;
+            }
+            if (warmPath && sliceTimer.elapsed() >= kVirtualWindowSliceMs) {
+                needAnotherSlice = true; // more warm work next tick
             }
             // Lazy size probe for on-screen rows not covered by the open prefix.
             if (!slot.path.isEmpty()
@@ -2132,128 +2139,67 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Virtual slots cover cells without a live ImageItem (fast scroll). Product:
-    // warm path = tiles (process RAM or durable Store); EMB/LQIP only for cold
-    // holes under tiles — never as the final warm display (KILL_SOFT / GALLERY_PIXELS).
+    // Cold-only underlay for plan cells that do not yet have a live ImageItem.
+    // Warm tiles are never painted here — that is ImageItem + TileLodController
+    // only (same orient/crop/debug path). syncVirtualWindow prioritizes creating
+    // live items for on-screen warm paths so this paint is the exception, not
+    // a second product path.
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
         const QRectF &r = slot.bounds;
-        const QSize native = m_view->hostSizeBook().known(slot.path);
-        QString debugTag = QStringLiteral("EMPTY");
-        bool drewTiles = false;
-
-        // 1) Warm process tile RAM — paint retained grid, not EMB.
-        // Same tile plan + debug overlay as live ImageItem (no special-case "TILE" tag).
+        // Warm process tiles: leave the cell empty/chrome — live item should
+        // materialize next slice. Painting tiles here would duplicate logic.
         if (!slot.path.isEmpty()
-            && native.width() > 1 && native.height() > 1
             && tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)) {
-            tilelod::TileLodController lod;
-            lod.setPath(slot.path);
-            tilelod::CoverPaintArgs args;
-            args.lod = &lod;
-            args.native = native;
-            args.dest = r;
-            args.tick = false; // paint only; issue stays on live items / coordinator
-            args.min_scale = ThumtooCache::durableTileMinScale(slot.path);
-            // LQIP only under tile holes — never EMB as cover underlay on warm path.
-            QImage lqip = ImageCache::getUnderlay(slot.path);
-            if (!lqip.isNull()
-                && qMax(lqip.width(), lqip.height()) > DisplayQuality::kLqipMaxEdge) {
-                lqip = QImage();
-            }
-            args.underlay = lqip;
-            if (tilelod::prepare_and_paint_cover(painter, args)) {
-                drewTiles = true;
-                if (tilePlanDebugOverlayEnabled() && lod.session()) {
-                    // Cover paint maps native → dest via translate+scale; overlay
-                    // expects content-space bounds (0..native) in the same space.
-                    painter->save();
-                    painter->translate(r.topLeft());
-                    const double sx = r.width() / double(qMax(1, native.width()));
-                    const double sy = r.height() / double(qMax(1, native.height()));
-                    painter->scale(sx, sy);
-                    const tilelod::DrawPlan plan = lod.session()->draw_plan();
-                    paintTilePlanDebugOverlay(
-                        painter, lod.session(), plan,
-                        QRectF(0, 0, native.width(), native.height()),
-                        QPointF(), native, ContentXform::Value{},
-                        /*freeRotPainter=*/false, slot.path);
-                    painter->restore();
-                }
-            }
+            painter->fillRect(r, QColor(28, 28, 30));
+            continue;
         }
 
-        if (!drewTiles) {
-            QImage under;
-            if (!slot.path.isEmpty()) {
-                under = ImageCache::getUnderlay(slot.path);
-                if (under.isNull()) {
-                    under = ImageCache::get(slot.path);
+        QImage under;
+        if (!slot.path.isEmpty()) {
+            under = ImageCache::getUnderlay(slot.path);
+            if (under.isNull()) {
+                under = ImageCache::get(slot.path);
+            }
+        }
+        // Durable tiles known but not in process RAM yet: LQIP only, never EMB.
+        const bool warmDurable = !slot.path.isEmpty()
+            && ThumtooCache::hasDurableTilesKnown(slot.path);
+        if (!under.isNull() && warmDurable) {
+            if (qMax(under.width(), under.height()) > DisplayQuality::kLqipMaxEdge) {
+                under = QImage();
+            }
+        }
+        if (!under.isNull()) {
+            const QSize native = m_view->hostSizeBook().known(slot.path);
+            under = ImageCache::matchNativeAspect(under, native);
+            if (slot.id != kInvalidSessionImageId
+                && m_view->itemWorld().hasDurableAppearance(slot.id)) {
+                const WorkspaceItemState st = m_view->sessionAppearanceValue(slot.id);
+                if (SessionAppearance::hasContentAppearance(st)
+                    || !st.colorAdjust.isIdentity()) {
+                    under = SessionAppearance::materializeDisplay(
+                        under, st, SessionAppearance::PixelKind::SoftPreview);
                 }
             }
-            // Warm durable tiles known: do not present EMB as the cell. Prefer
-            // LQIP (≤96) or neutral chrome until live item + tiles catch up.
-            const bool warmDurable = !slot.path.isEmpty()
-                && ThumtooCache::hasDurableTilesKnown(slot.path);
-            if (!under.isNull() && warmDurable) {
+            const QSize target(qMax(1, int(r.width())), qMax(1, int(r.height())));
+            const QImage scaled = under.scaled(target, Qt::KeepAspectRatio,
+                                              Qt::SmoothTransformation);
+            const qreal x = r.x() + (r.width() - scaled.width()) * 0.5;
+            const qreal y = r.y() + (r.height() - scaled.height()) * 0.5;
+            painter->fillRect(r, QColor(28, 28, 30));
+            painter->drawImage(QPointF(x, y), scaled);
+            if (tilePlanDebugOverlayEnabled()) {
                 const int le = qMax(under.width(), under.height());
-                if (le > DisplayQuality::kLqipMaxEdge) {
-                    under = QImage(); // drop EMB / larger samples on warm path
-                }
-            }
-            if (!under.isNull()) {
-                // Upright EXIF thumb + session orient (same as live underlay).
-                if (native.width() > 1 && native.height() > 1
-                    && under.width() > 1 && under.height() > 1) {
-                    const bool nativePortrait = native.height() > native.width();
-                    const bool underPortrait = under.height() > under.width();
-                    if (nativePortrait != underPortrait
-                        && native.width() != native.height()
-                        && under.width() != under.height()) {
-                        QTransform rot;
-                        rot.rotate(90.0);
-                        under = under.transformed(rot, Qt::FastTransformation);
-                    }
-                }
-                if (slot.id != kInvalidSessionImageId
-                    && m_view->itemWorld().hasDurableAppearance(slot.id)) {
-                    const WorkspaceItemState st = m_view->sessionAppearanceValue(slot.id);
-                    if (SessionAppearance::hasContentAppearance(st)
-                        || !st.colorAdjust.isIdentity()) {
-                        under = SessionAppearance::materializeDisplay(
-                            under, st, SessionAppearance::PixelKind::SoftPreview);
-                    }
-                }
-                const QSize target(qMax(1, int(r.width())), qMax(1, int(r.height())));
-                const QImage scaled = under.scaled(target, Qt::KeepAspectRatio,
-                                                  Qt::SmoothTransformation);
-                const qreal x = r.x() + (r.width() - scaled.width()) * 0.5;
-                const qreal y = r.y() + (r.height() - scaled.height()) * 0.5;
-                painter->fillRect(r, QColor(28, 28, 30));
-                painter->drawImage(QPointF(x, y), scaled);
-                const int le = qMax(under.width(), under.height());
+                QString tag = QStringLiteral("RASTER");
                 if (le <= DisplayQuality::kLqipMaxEdge) {
-                    debugTag = QStringLiteral("LQIP");
+                    tag = QStringLiteral("LQIP");
                 } else if (le <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                    debugTag = QStringLiteral("EMB");
-                } else {
-                    debugTag = QStringLiteral("RASTER");
+                    tag = QStringLiteral("EMB");
                 }
-            } else {
-                ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, r);
-                if (warmDurable) {
-                    debugTag = QStringLiteral("TILE?");
-                }
-            }
-        }
-
-        // Sample-kind tags only when tiles were not drawn (same labels as live
-        // soft path). Tile cells use paintTilePlanDebugOverlay above (s=N COMPLETE).
-        if (!drewTiles && tilePlanDebugOverlayEnabled()) {
-            if (r.width() >= 4.0 && r.height() >= 4.0) {
                 QFont hf = painter->font();
                 hf.setBold(true);
                 hf.setWeight(QFont::Black);
@@ -2261,15 +2207,30 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
                 hf.setPixelSize(px);
                 painter->setFont(hf);
                 painter->setPen(QColor(0, 0, 0, 220));
-                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter, debugTag);
+                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
                 painter->setPen(QColor(0, 255, 220));
-                painter->drawText(r, Qt::AlignCenter, debugTag);
+                painter->drawText(r, Qt::AlignCenter, tag);
+            }
+        } else {
+            ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, r);
+            if (tilePlanDebugOverlayEnabled() && r.width() >= 4.0 && r.height() >= 4.0) {
+                const QString tag = warmDurable ? QStringLiteral("TILE?")
+                                                : QStringLiteral("EMPTY");
+                QFont hf = painter->font();
+                hf.setBold(true);
+                hf.setWeight(QFont::Black);
+                const int px = qBound(14, qRound(qMin(r.width(), r.height()) * 0.28), 256);
+                hf.setPixelSize(px);
+                painter->setFont(hf);
+                painter->setPen(QColor(0, 0, 0, 220));
+                painter->drawText(r.adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
+                painter->setPen(QColor(0, 255, 220));
+                painter->drawText(r, Qt::AlignCenter, tag);
             }
         }
     }
     painter->restore();
 }
-
 
 void GalleryController::scheduleSizeGatePlanRefresh()
 {

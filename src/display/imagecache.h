@@ -97,6 +97,13 @@ QImage getUnderlay(const QString &path);
 bool hasUnderlay(const QString &path);
 
 /**
+ * EXIF embedded thumbs are often un-autorotated while Store size is upright.
+ * If sample aspect disagrees with @p native, transpose 90° once (cheap).
+ * No-op when either is square or sizes invalid.
+ */
+QImage matchNativeAspect(const QImage &sample, const QSize &native);
+
+/**
  * Return a cached image with long edge ≥ maxEdge when possible.
  * On miss, schedule an async loadThumbnail(path, maxEdge) into the cache.
  * Returns whatever is already cached (possibly smaller or null).

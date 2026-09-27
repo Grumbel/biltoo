@@ -232,7 +232,7 @@ Normative product rules: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md),
 | **Underlay** | Whatever sits under tile holes: LQIP or EMB while tiles load. Live paint draws tiles on top when the cell is in the tile LOD band. |
 | **Warm cache** | Process and/or durable Store already holds tiles (or tile coverage) for the path. Virtual Gallery slots must paint **tiles**, not EMB. |
 | **Cold cache** | No durable tiles and no process tile RAM yet. LQIP/EMB/placeholder is acceptable until size gate + first tiles land. |
-| **Virtual slot** | Gallery plan cell without a live `ImageItem` (fast scroll). Still subject to the warm→tiles rule. |
+| **Virtual slot** | Gallery plan cell without a live `ImageItem`. **Cold underlay only** (LQIP/EMB/placeholder). Warm on-screen cells must materialize live items so tiles use the single ImageItem path. |
 | **Tile plan overlay** | Debug chrome (`BILTOO_TILE_DEBUG` / Debug menu): shows Exact / Parent / hole cells and sample tags (TILE / LQIP / EMB). |
 
 ### Priority (warm product)
@@ -270,7 +270,7 @@ Normative product rules: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md),
 | **Logical size** vs **sample / LQIP / soft pixels** | Geometry vs texture. |
 | **LQIP** vs **request encode LQIP** | May *display* cache LQIP; must not *force* encode as a product path. |
 | **EMB** vs **tiles** | EMB is cold underlay only; warm display is tiles. |
-| **Virtual slot** vs **live ImageItem** | Fast scroll may lack items — still must not show EMB when tiles are warm. |
+| **Virtual slot** vs **live ImageItem** | Virtual = cold underlay only; tiles and plan overlay only on live items. |
 | **Remove from session** vs **remove from Workspace canvas** | Session delete drops the row; canvas-only delete keeps the session image. |
 | **sceneRect** (scene) vs **setSceneRect on the view** | View override was a source of Gallery scroll bugs. |
 | **AsNeeded bars** vs **AlwaysOn (Gallery)** | AsNeeded can cover pack edges; Gallery packs to the post-bar viewport. |
