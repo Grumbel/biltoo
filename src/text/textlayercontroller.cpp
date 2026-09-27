@@ -27,6 +27,17 @@ TextLayerController::TextLayerController(ImageView *view)
     : QObject(view)
     , m_view(view)
 {
+    if (m_view) {
+        // Crop draft shows orient-only full frame; Applied ContentXform changes
+        // without a text-layer install — repaint so regionImageRect re-maps.
+        connect(m_view, &ImageView::cropModeChanged, this, [this](bool) {
+            if (m_view && m_view->viewport()
+                && (m_session.showsRegions() || m_session.hasSearchQuery()
+                    || m_session.showsGlyphs())) {
+                m_view->viewport()->update();
+            }
+        });
+    }
 }
 
 void TextLayerController::paintRubberBandOverlay(QPainter &painter)
@@ -401,11 +412,16 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
         return {};
     }
 
-    // Same pipeline as materializeDisplay / OCR inverse: ContentXform only.
-    // SessionAppearance::mapSourceRectToContentDisplay was a parallel path that
-    // could disagree on crop scale (cropSourceSize / orientation) and left
-    // boxes translated wrong after crop apply/reset.
-    const ContentXform::Value x = ContentXform::Value::fromState(st);
+    // Map through the *applied* content transform that produced the live
+    // display sample — not durable session appearance alone.
+    // Crop draft installs orient-only full frame while the store may still
+    // hold a prior crop; using fromState(st) would crop the boxes into the
+    // full-page contentRect (wrong origin). Applied xform has hasCrop=false
+    // during draft, and the real crop after Apply.
+    ContentXform::Value x = ContentXform::Value::fromState(st);
+    if (m_view->itemHasAppliedContentXform(item)) {
+        x = m_view->itemAppliedContentXform(item);
+    }
     QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
     if (disp.isEmpty()) {
         return {};

@@ -87,11 +87,13 @@ after crop.
 `TextLayerController::regionImageRect`:
 
 1. `pageRectToImageRect(..., pageYUp())` → source  
-2. `ContentXform::mapSourceRectToDisplay` → native layout (crop-local)  
+2. `ContentXform::mapSourceRectToDisplay` via **`itemAppliedContentXform`**
+   (falls back to session appearance). This matches the live display sample:
+   crop draft is orient-only full frame even when the store still has a crop.
 3. If `item->imageSize()` ≠ `layoutSize`, scale so boxes track the painted contentRect  
 
-`pageYUp()` prefers `layer.pageYUp` when bounds are valid. Crop apply/reset only
-changes the ContentXform map — region bboxes stay in page space.
+`pageYUp()` prefers `layer.pageYUp` when bounds are valid. Region bboxes stay
+in page space; paint always follows the applied content transform.
 
 ## Free-rotated crop
 
