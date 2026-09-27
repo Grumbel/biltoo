@@ -8,6 +8,8 @@
 #include <QStringList>
 #include <atomic>
 
+#include "host/thumtoocache.h"
+
 class QCloseEvent;
 class QComboBox;
 class QLabel;
@@ -38,8 +40,9 @@ private slots:
 
 private:
     void setBusy(bool busy);
-    void applyStatsLabel(int total, int withTiles, int missing, int unsupported);
-    void onProgress(int done, int total, int ok, int skipped, int failed);
+    void applyStatsLabel(const ThumtooCache::CacheCoverageStats &s);
+    void onProgress(int done, int total, int ok, int skipped, int failed,
+                    int lqipFilled);
     void onFinished();
 
     QStringList m_paths;

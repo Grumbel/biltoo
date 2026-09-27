@@ -2,17 +2,16 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.16-lqip-consistency` (base `bcbb97e`).
+**Tip:** `biltoo-2714.17-prepare-lqip-repair` (base `bcbb97e`).
 
-### LQIP recovery + consistency debug
-- `ThumtooCache::checkUnderlayConsistency(path, includeStore, cb)` — process vs
-  Store LQIP/EMB/tiles; issue lines for false-positive memos and missing rows.
-- `scheduleEnsureLqipFromTiles` — Store LQIP from free tile data when missing
-  (kill mid-pyramid). Never opens source.
-- Debug menu: **Check underlay consistency (selection / session)…**
-- durableTilesReady always schedules ensure; seed still runs when process empty.
+### Prepare Tile Cache
+- Skipping paths that already have tiles now still runs `ensure_lqip` (kill
+  mid-pyramid left tiles without LQIP).
+- New pyramid completion also ensures LQIP.
+- Dialog stats: tiles / Store LQIP / Store EMB / tiles-without-LQIP / need tiles.
+- Progress line includes **LQIP filled this run**.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.16-lqip-consistency-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.17-prepare-lqip-repair-bcbb97e.bundle HEAD
 ```

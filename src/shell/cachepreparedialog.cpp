@@ -166,66 +166,58 @@ void CachePrepareDialog::closeEvent(QCloseEvent *event)
     QDialog::closeEvent(event);
 }
 
-void CachePrepareDialog::applyStatsLabel(int total, int withTiles, int missing, int unsupported)
+void CachePrepareDialog::applyStatsLabel(const ThumtooCache::CacheCoverageStats &s)
 {
-    m_statsLabel->setText(
-        tr("%1 images in session\n"
-           "%2 already have tiles\n"
-           "%3 still need tiles%4")
-            .arg(total)
-            .arg(withTiles)
-            .arg(missing)
-            .arg(unsupported > 0 ? tr("\n%1 unsupported").arg(unsupported) : QString()));
-    if (missing == 0 && total > 0 && !m_running) {
-        m_statusLabel->setText(
-            tr("All session images already have tiles. "
-               "Start again to fill a finer detail level if needed."));
+    const int missingTiles = qMax(0, s.total - s.withTiles - s.unsupported);
+    QString text = tr("%1 images in session
+"
+                      "%2 have durable tiles
+"
+                      "%3 have Store LQIP (ThumbHash)
+"
+                      "%4 have Store EMB (EXIF/container)
+"
+                      "%5 tiles but missing LQIP (will repair on Prepare)
+"
+                      "%6 still need tiles")
+                       .arg(s.total)
+                       .arg(s.withTiles)
+                       .arg(s.withLqip)
+                       .arg(s.withEmbedded)
+                       .arg(s.tilesWithoutLqip)
+                       .arg(missingTiles);
+    if (s.unsupported > 0) {
+        text += tr("
+%1 unsupported").arg(s.unsupported);
     }
-    // Multi-line stats can raise the content height after the initial resize.
-    if (QLayout *lay = layout()) {
-        lay->activate();
-    }
-    const QSize want = sizeHint();
-    if (width() < want.width() || height() < want.height()) {
-        resize(qMax(width(), want.width()), qMax(height(), want.height()));
-    }
+    m_statsLabel->setText(text);
 }
+
 
 void CachePrepareDialog::refreshStats()
 {
     if (!ThumtooCache::isAvailable() || m_paths.isEmpty()) {
         return;
     }
-    m_statsLabel->setText(tr("Scanning…"));
+    m_statsLabel->setText(tr("Scanning Store (tiles / LQIP / EMB)…"));
     const QStringList paths = m_paths;
     QPointer<CachePrepareDialog> self(this);
     QThreadPool::globalInstance()->start([self, paths]() {
         ASSERT_NOT_GUI_THREAD();
-        const ThumtooCache::TilePrepareStats st =
-            ThumtooCache::queryTilePrepareStats(paths);
+        const ThumtooCache::CacheCoverageStats s =
+            ThumtooCache::scanCacheCoverage(paths);
         if (!self) {
             return;
         }
         QMetaObject::invokeMethod(
             self,
-            [self, st]() {
-                if (!self) {
-                    return;
+            [self, s]() {
+                if (self) {
+                    self->applyStatsLabel(s);
                 }
-                self->applyStatsLabel(st.total, st.withTiles, st.missingTiles,
-                                      st.unsupported);
             },
             Qt::QueuedConnection);
     });
-}
-
-void CachePrepareDialog::setBusy(bool busy)
-{
-    m_running = busy;
-    m_startBtn->setEnabled(!busy);
-    m_cancelBtn->setEnabled(busy);
-    m_closeBtn->setEnabled(!busy);
-    m_detailCombo->setEnabled(!busy);
 }
 
 void CachePrepareDialog::startPrepare()
@@ -247,17 +239,19 @@ void CachePrepareDialog::startPrepare()
         ASSERT_NOT_GUI_THREAD();
         ThumtooCache::prepareTiles(
             paths, minScale,
-            [self](int done, int total, int ok, int skipped, int failed) {
+            [self](int done, int total, int ok, int skipped, int failed,
+                   int lqipFilled) {
                 if (!self) {
                     return;
                 }
                 QMetaObject::invokeMethod(
                     self,
-                    [self, done, total, ok, skipped, failed]() {
+                    [self, done, total, ok, skipped, failed, lqipFilled]() {
                         if (!self) {
                             return;
                         }
-                        self->onProgress(done, total, ok, skipped, failed);
+                        self->onProgress(done, total, ok, skipped, failed,
+                                         lqipFilled);
                     },
                     Qt::QueuedConnection);
             },
@@ -286,20 +280,24 @@ void CachePrepareDialog::cancelPrepare()
     m_cancelBtn->setEnabled(false);
 }
 
-void CachePrepareDialog::onProgress(int done, int total, int ok, int skipped, int failed)
+void CachePrepareDialog::onProgress(int done, int total, int ok, int skipped,
+                                      int failed, int lqipFilled)
 {
     if (total > 0) {
-        m_progress->setRange(0, total);
-        m_progress->setValue(qBound(0, done, total));
+        m_progress->setMaximum(total);
+        m_progress->setValue(done);
     }
     m_statusLabel->setText(
-        tr("Progress: %1 / %2  —  built %3, already cached %4, failed %5")
+        tr("Prepared %1 / %2 — pyramids ok %3, skipped (had tiles) %4, "
+           "failed %5, LQIP filled this run %6")
             .arg(done)
             .arg(total)
             .arg(ok)
             .arg(skipped)
-            .arg(failed));
+            .arg(failed)
+            .arg(lqipFilled));
 }
+
 
 void CachePrepareDialog::onFinished()
 {

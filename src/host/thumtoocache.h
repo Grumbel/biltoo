@@ -396,10 +396,22 @@ TilePrepareStats queryTilePrepareStats(const QStringList &paths);
  * @p cancel when non-null and true stops enqueueing further pyramids.
  */
 using TilePrepareProgress =
-    std::function<void(int done, int total, int ok, int skipped, int failed)>;
+    std::function<void(int done, int total, int ok, int skipped, int failed,
+                       int lqipFilled)>;
 void prepareTiles(const QStringList &paths, int minScale,
                   TilePrepareProgress onProgress = {},
                   std::atomic<bool> *cancel = nullptr);
+
+/** Store coverage counts for Prepare Tile Cache UI (worker-safe). */
+struct CacheCoverageStats {
+    int total = 0;
+    int withTiles = 0;
+    int withLqip = 0;       ///< Store ThumbHash/Handsum
+    int withEmbedded = 0;   ///< Store EMB kind
+    int tilesWithoutLqip = 0;
+    int unsupported = 0;
+};
+CacheCoverageStats scanCacheCoverage(const QStringList &paths);
 
 /**
  * Pre-resolve session paths to thumtoo URIs on a worker thread so the first

@@ -2392,13 +2392,68 @@ TilePrepareStats queryTilePrepareStats(const QStringList &paths)
     return st;
 }
 
+
+CacheCoverageStats scanCacheCoverage(const QStringList &paths)
+{
+    ASSERT_NOT_GUI_THREAD();
+    CacheCoverageStats s;
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        ++s.total;
+        if (isUnsupported(path)) {
+            ++s.unsupported;
+            continue;
+        }
+        const bool tiles = hasDurableTiles(path);
+        if (tiles) {
+            ++s.withTiles;
+        }
+        bool lqip = false;
+        bool emb = false;
+        if (c) {
+            const std::string uri = toThumtooUri(path);
+            if (!uri.empty()) {
+                try {
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+                    if (c->get_lqip(uri)) {
+                        lqip = true;
+                    }
+#endif
+                    if (auto e = c->get_embedded_preview(uri); e && !e->bytes.empty()) {
+                        emb = true;
+                    }
+                } catch (...) {
+                }
+            }
+        }
+        if (lqip) {
+            ++s.withLqip;
+        }
+        if (emb) {
+            ++s.withEmbedded;
+        }
+        if (tiles && !lqip) {
+            ++s.tilesWithoutLqip;
+        }
+    }
+    return s;
+}
+
 void prepareTiles(const QStringList &paths, int minScale,
                   TilePrepareProgress onProgress, std::atomic<bool> *cancel)
 {
     ASSERT_NOT_GUI_THREAD();
     if (paths.isEmpty()) {
         if (onProgress) {
-            onProgress(0, 0, 0, 0, 0);
+            onProgress(0, 0, 0, 0, 0, 0);
         }
         return;
     }
@@ -2410,7 +2465,7 @@ void prepareTiles(const QStringList &paths, int minScale,
     }
     if (!c) {
         if (onProgress) {
-            onProgress(0, paths.size(), 0, 0, paths.size());
+            onProgress(0, paths.size(), 0, 0, paths.size(), 0);
         }
         return;
     }
@@ -2426,7 +2481,7 @@ void prepareTiles(const QStringList &paths, int minScale,
     const int total = work.size();
     if (total == 0) {
         if (onProgress) {
-            onProgress(0, 0, 0, 0, 0);
+            onProgress(0, 0, 0, 0, 0, 0);
         }
         return;
     }
@@ -2435,16 +2490,47 @@ void prepareTiles(const QStringList &paths, int minScale,
     std::atomic<int> ok{0};
     std::atomic<int> skipped{0};
     std::atomic<int> failed{0};
+    std::atomic<int> lqipFilled{0};
     std::mutex doneMu;
     std::condition_variable doneCv;
     int remaining = total;
 
     auto report = [&]() {
         if (onProgress) {
-            onProgress(done.load(), total, ok.load(), skipped.load(), failed.load());
+            onProgress(done.load(), total, ok.load(), skipped.load(), failed.load(),
+                       lqipFilled.load());
         }
     };
     report();
+
+    // Ensure Store LQIP from free tile data; seed process underlay if empty.
+    auto fillLqip = [&](const QString &path, const std::string &uri) -> bool {
+        if (uri.empty() || !c) {
+            return false;
+        }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+        try {
+            if (c->get_lqip(uri)) {
+                if (!ImageCache::hasUnderlay(path)) {
+                    (void)cachedLqipImage(path);
+                }
+                return true;
+            }
+            if (auto blob = c->ensure_lqip(uri); blob && !blob->empty()) {
+                lqipFilled.fetch_add(1);
+                if (!ImageCache::hasUnderlay(path)) {
+                    const QImage lqip = qimageFromLqipBlob(*blob);
+                    if (!lqip.isNull()) {
+                        ImageCache::put(path, lqip, QStringLiteral("LQIP"));
+                    }
+                }
+                return true;
+            }
+        } catch (...) {
+        }
+#endif
+        return false;
+    };
 
     const int minS = qMax(0, minScale);
     for (const QString &path : work) {
@@ -2473,11 +2559,14 @@ void prepareTiles(const QStringList &paths, int minScale,
             continue;
         }
         // Already has a durable pyramid that covers at least minS (or finer).
+        const std::string uri = toThumtooUri(path);
         if (hasDurableTiles(path)) {
             const int have = durableTileMinScale(path);
             // durableTileMinScale is finest stored scale; lower is finer.
-            // Skip when we already have tiles at or finer than requested minS.
+            // Skip pyramid when we already have tiles at or finer than minS —
+            // still fill missing Store LQIP (kill mid-prepare left tiles only).
             if (have >= 0 && have <= minS) {
+                (void)fillLqip(path, uri);
                 skipped.fetch_add(1);
                 done.fetch_add(1);
                 {
@@ -2489,7 +2578,6 @@ void prepareTiles(const QStringList &paths, int minScale,
                 continue;
             }
         }
-        const std::string uri = toThumtooUri(path);
         if (uri.empty()) {
             failed.fetch_add(1);
             done.fetch_add(1);
@@ -2514,8 +2602,8 @@ void prepareTiles(const QStringList &paths, int minScale,
         const QString pathCopy = path;
         c->request_tile_pyramid(
             uri, minS, /*max_scale=*/-1,
-            [pathCopy, minS, &done, &ok, &failed, &doneMu, &doneCv, &remaining,
-             &report](std::string, int, int, int,
+            [pathCopy, minS, &done, &ok, &failed, &lqipFilled, &doneMu, &doneCv,
+             &remaining, &report](std::string, int, int, int,
                       std::optional<thumtoo::TileBlob> tile) {
                 // Completion marker uses codec "pyramid-ok"; nullopt = fail.
                 const bool pyramidOk = tile && tile->codec == "pyramid-ok";
@@ -2524,6 +2612,37 @@ void prepareTiles(const QStringList &paths, int minScale,
                     // Finest scale we asked for (0 = full res). Coarser-only
                     // runs still mark durable yes at that min_scale.
                     ProcessMemos::instance().noteDurableYes(pathCopy, minS);
+                    // Pyramid encode should have written LQIP; recover if not.
+                    {
+                        const std::string u = toThumtooUri(pathCopy);
+                        thumtoo::Client *cl = nullptr;
+                        {
+                            std::lock_guard lock(g_mu);
+                            cl = clientUnlocked();
+                        }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+                        if (cl && !u.empty()) {
+                            try {
+                                if (!cl->get_lqip(u)) {
+                                    if (auto blob = cl->ensure_lqip(u);
+                                        blob && !blob->empty()) {
+                                        lqipFilled.fetch_add(1);
+                                        if (!ImageCache::hasUnderlay(pathCopy)) {
+                                            const QImage lqip =
+                                                qimageFromLqipBlob(*blob);
+                                            if (!lqip.isNull()) {
+                                                ImageCache::put(
+                                                    pathCopy, lqip,
+                                                    QStringLiteral("LQIP"));
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (...) {
+                            }
+                        }
+#endif
+                    }
                     const QString p = pathCopy;
                     QMetaObject::invokeMethod(
                         bridge(),
