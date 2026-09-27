@@ -478,6 +478,7 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::BottomDockWidgetArea, m_messageLogDock);
     m_messageLogDock->hide();
     if (m_ocrPanel) {
+        // UniqueConnection is not valid with functors/lambdas (Qt asserts).
         connect(m_ocrPanel, &OcrPanel::logLineAppended, this, [this](const QString &line) {
             if (!m_messageLogPanel) {
                 return;
@@ -488,7 +489,7 @@ MainWindow::MainWindow(QWidget *parent)
             } else {
                 m_messageLogPanel->appendInfo(tr("OCR"), line);
             }
-        }, Qt::UniqueConnection);
+        });
     }
 
     m_tts = new TextToSpeechController(this);
