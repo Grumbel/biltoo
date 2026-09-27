@@ -465,6 +465,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
+    m_tts = new TextToSpeechController(this);
+    connectTextToSpeech();
+
     connect(m_cropDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
         if (visible) {
             updateCropPanel();
@@ -4274,6 +4277,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
         event->ignore();
         return;
     }
+    if (m_tts) {
+        m_tts->stop();
+    }
     writeSettings();
     QMainWindow::closeEvent(event);
 }
@@ -4865,6 +4871,74 @@ void MainWindow::connectTextPanel()
                     m_textPanel->setHoverRegion(regionIndex);
                 }
             });
+
+    connect(m_textPanel, &TextPanel::speakRequested, this, &MainWindow::speakSelectionOrPage);
+    connect(m_textPanel, &TextPanel::stopSpeechRequested, this, &MainWindow::stopSpeech);
+}
+
+void MainWindow::connectTextToSpeech()
+{
+    if (!m_tts) {
+        return;
+    }
+    if (!m_piperSocketPath.isEmpty()) {
+        m_tts->setExternalSocketPath(m_piperSocketPath);
+    }
+    connect(m_tts, &TextToSpeechController::statusChanged, this, [this](const QString &msg) {
+        if (m_textPanel) {
+            m_textPanel->setSpeechStatus(msg);
+        }
+        if (statusBar()) {
+            statusBar()->showMessage(msg, 4000);
+        }
+    });
+    connect(m_tts, &TextToSpeechController::speakingChanged, this, [this](bool on) {
+        if (m_textPanel) {
+            m_textPanel->setSpeechBusy(on);
+        }
+        if (m_stopSpeechAct) {
+            m_stopSpeechAct->setEnabled(on);
+        }
+    });
+    connect(m_tts, &TextToSpeechController::errorOccurred, this, [this](const QString &msg) {
+        if (statusBar()) {
+            statusBar()->showMessage(msg, 6000);
+        }
+    });
+}
+
+void MainWindow::setPiperSocketPath(const QString &path)
+{
+    m_piperSocketPath = path.trimmed();
+    if (m_tts && !m_piperSocketPath.isEmpty()) {
+        m_tts->setExternalSocketPath(m_piperSocketPath);
+    }
+}
+
+void MainWindow::speakSelectionOrPage()
+{
+    if (!m_tts || !m_imageView) {
+        return;
+    }
+    const QString text = m_imageView->hostText().speakableText();
+    if (text.trimmed().isEmpty()) {
+        const QString msg = tr("No text to speak (select regions or load a text/OCR layer)");
+        if (m_textPanel) {
+            m_textPanel->setSpeechStatus(msg);
+        }
+        if (statusBar()) {
+            statusBar()->showMessage(msg, 4000);
+        }
+        return;
+    }
+    m_tts->speakText(text);
+}
+
+void MainWindow::stopSpeech()
+{
+    if (m_tts) {
+        m_tts->stop();
+    }
 }
 
 void MainWindow::updateTextPanel()

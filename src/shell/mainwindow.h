@@ -34,6 +34,7 @@ class AdjustmentsPanel;
 class CropPanel;
 class OcrPanel;
 class TextPanel;
+class TextToSpeechController;
 class LayoutPanel;
 class TocPanel;
 class HelpPanel;
@@ -62,6 +63,9 @@ public:
 
     /** Replace the current session with the expanded paths. */
     void loadFiles(const QStringList &paths, int startAt = 0);
+
+    /** External piper-server socket (CLI --piper-socket); not stopped on quit. */
+    void setPiperSocketPath(const QString &path);
 
     /** Append expanded paths to the current session (deduplicated). */
     void appendFiles(const QStringList &paths);
@@ -375,6 +379,9 @@ private slots:
     void runOcrFromPanel();
     void updateTextPanel();
     void connectTextPanel();
+    void connectTextToSpeech();
+    void speakSelectionOrPage();
+    void stopSpeech();
     void updateLayoutPanel();
     void applyWorkspaceLayoutFromPanel();
     void updateWindowTitle();
@@ -560,6 +567,10 @@ private:
     QAction *m_toggleOcrAct = nullptr;
     TextPanel *m_textPanel = nullptr;
     QDockWidget *m_textDock = nullptr;
+    TextToSpeechController *m_tts = nullptr;
+    QString m_piperSocketPath;
+    QAction *m_speakAct = nullptr;
+    QAction *m_stopSpeechAct = nullptr;
     QAction *m_toggleTextAct = nullptr;
     QTimer *m_cropPreviewTimer = nullptr;
     /** Debounce histogram/vectorscope rebuild while colour sliders move. */

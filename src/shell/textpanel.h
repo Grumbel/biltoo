@@ -19,6 +19,7 @@ class QItemSelection;
 /**
  * Side panel listing text/OCR regions for the current page layer.
  * Selection and hover are mirrored to the page overlay (and the reverse).
+ * Speak / Stop drive text-to-speech (piper-server via TextToSpeechController).
  */
 class TextPanel : public QWidget {
     Q_OBJECT
@@ -37,6 +38,10 @@ public:
     void setSelectedRegions(const QVector<int> &regionIndices);
     void setHoverRegion(int regionIndex);
 
+    void setSpeechStatus(const QString &text);
+    void setSpeechBusy(bool speaking);
+    void setSpeakEnabled(bool on);
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
@@ -46,6 +51,8 @@ signals:
     void showGlyphsToggled(bool on);
     void showOutlinesToggled(bool on);
     void refreshRequested();
+    void speakRequested();
+    void stopSpeechRequested();
 
 private:
     void onViewSelectionChanged();
@@ -55,8 +62,11 @@ private:
     TextPanelModel *m_model = nullptr;
     QListView *m_view = nullptr;
     QLabel *m_info = nullptr;
+    QLabel *m_speechStatus = nullptr;
     QCheckBox *m_glyphs = nullptr;
     QCheckBox *m_outlines = nullptr;
+    QPushButton *m_speakBtn = nullptr;
+    QPushButton *m_stopSpeechBtn = nullptr;
     bool m_blockSel = false;
 };
 

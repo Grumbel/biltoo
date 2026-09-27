@@ -13,6 +13,7 @@
 #include <QItemSelectionModel>
 #include <QEvent>
 #include <QAbstractItemView>
+#include <QSignalBlocker>
 
 TextPanel::TextPanel(QWidget *parent)
     : QWidget(parent)
@@ -51,6 +52,25 @@ TextPanel::TextPanel(QWidget *parent)
     refresh->setToolTip(tr("Re-fetch the text layer for the current image"));
     connect(refresh, &QPushButton::clicked, this, &TextPanel::refreshRequested);
     layout->addWidget(refresh);
+
+    auto *speechRow = new QHBoxLayout;
+    m_speakBtn = new QPushButton(tr("Speak"), this);
+    m_speakBtn->setToolTip(
+        tr("Read the selected text aloud, or the whole page if nothing is selected "
+           "(local Piper TTS)"));
+    m_stopSpeechBtn = new QPushButton(tr("Stop"), this);
+    m_stopSpeechBtn->setToolTip(tr("Stop text-to-speech"));
+    m_stopSpeechBtn->setEnabled(false);
+    speechRow->addWidget(m_speakBtn);
+    speechRow->addWidget(m_stopSpeechBtn);
+    layout->addLayout(speechRow);
+    connect(m_speakBtn, &QPushButton::clicked, this, &TextPanel::speakRequested);
+    connect(m_stopSpeechBtn, &QPushButton::clicked, this, &TextPanel::stopSpeechRequested);
+
+    m_speechStatus = new QLabel(tr("TTS idle"), this);
+    m_speechStatus->setWordWrap(true);
+    m_speechStatus->setStyleSheet(QStringLiteral("color: palette(mid); font-size: small;"));
+    layout->addWidget(m_speechStatus);
 
     m_view = new QListView(this);
     m_view->setModel(m_model);
@@ -112,6 +132,27 @@ void TextPanel::setShowOutlinesChecked(bool on)
     if (m_outlines) {
         QSignalBlocker b(m_outlines);
         m_outlines->setChecked(on);
+    }
+}
+
+void TextPanel::setSpeechStatus(const QString &text)
+{
+    if (m_speechStatus) {
+        m_speechStatus->setText(text.isEmpty() ? tr("TTS idle") : text);
+    }
+}
+
+void TextPanel::setSpeechBusy(bool speaking)
+{
+    if (m_stopSpeechBtn) {
+        m_stopSpeechBtn->setEnabled(speaking);
+    }
+}
+
+void TextPanel::setSpeakEnabled(bool on)
+{
+    if (m_speakBtn) {
+        m_speakBtn->setEnabled(on);
     }
 }
 

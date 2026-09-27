@@ -238,6 +238,13 @@ int main(int argc, char *argv[])
             "~/.cache/biltoo/thumtoo-debug.log"));
     parser.addOption(thumtooDebugOption);
 
+    QCommandLineOption piperSocketOption(
+        QStringList() << QStringLiteral("piper-socket"),
+        QCoreApplication::translate("main",
+            "Connect to an existing piper-server Unix socket (do not spawn or stop it)"),
+        QStringLiteral("path"));
+    parser.addOption(piperSocketOption);
+
     // --help-all is already registered by addHelpOption() (Qt shows generic
     // Qt options). We intercept it before process() to print env vars instead.
     // Do not addOption("help-all") again — that warns "option already added".
@@ -345,6 +352,9 @@ int main(int argc, char *argv[])
     }
 
     MainWindow window;
+    if (parser.isSet(piperSocketOption)) {
+        window.setPiperSocketPath(parser.value(piperSocketOption));
+    }
     window.setRecursive(parser.isSet(recursiveOption));
 
     if (parser.isSet(sortOption)) {

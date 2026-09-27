@@ -688,6 +688,18 @@ void MainWindow::createActions()
     m_copyWorkspaceAct->setStatusTip(tr("Copy selected Workspace tiles, or selected page text (Shift+drag regions)"));
     connect(m_copyWorkspaceAct, &QAction::triggered, this, &MainWindow::copyWorkspaceItems);
 
+    m_speakAct = new QAction(tr("Spea&k"), this);
+    m_speakAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
+    m_speakAct->setStatusTip(
+        tr("Read selected text or the current page aloud (local Piper TTS)"));
+    connect(m_speakAct, &QAction::triggered, this, &MainWindow::speakSelectionOrPage);
+
+    m_stopSpeechAct = new QAction(tr("Stop Speec&h"), this);
+    m_stopSpeechAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+.")));
+    m_stopSpeechAct->setStatusTip(tr("Stop text-to-speech"));
+    m_stopSpeechAct->setEnabled(false);
+    connect(m_stopSpeechAct, &QAction::triggered, this, &MainWindow::stopSpeech);
+
     m_cutWorkspaceAct = new QAction(tr("Cu&t"), this);
     m_cutWorkspaceAct->setShortcuts(QKeySequence::Cut);
     m_cutWorkspaceAct->setStatusTip(
@@ -1037,6 +1049,8 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_findOnPageAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_copyWorkspaceAct);
+    m_editMenu->addAction(m_speakAct);
+    m_editMenu->addAction(m_stopSpeechAct);
     m_editMenu->addAction(m_cutWorkspaceAct);
     m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addAction(m_duplicateAct);
