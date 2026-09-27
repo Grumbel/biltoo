@@ -1,5 +1,9 @@
 # Plan: hierarchical work status (CPU-visible)
 
+Activity is **world** state: it continues regardless of canvas mode.
+Surfaces may highlight or summarize it; they do not own it.
+See [DOMAIN.md — World vs viewpoint](../DOMAIN.md#world-vs-viewpoint).
+
 **Status:** design only — no implementation required to read this doc.  
 **Goal:** Whenever the machine is busy, the UI can answer *what* is working
 (archive / image / operation), *how far*, and *why* CPU is high.

@@ -283,6 +283,11 @@ No full text2sprech player bar in v1.
 3. **GUI thread** — synthesis stays on the server; biltoo only queues and plays.
 4. **Selection vs speech highlight** — separate visuals when possible.
 5. **Honest failures** — respect `audio: false` / `warning`; surface them in UI.
+6. **World vs viewpoint** — speech is **session/world** state, not Image-mode
+   furniture. Mode switches and Image prev/next must not cancel speech by
+   side effect; a speak plan may advance across session images; Gallery (and
+   other modes) should be able to highlight where the speech cursor is.
+   See [DOMAIN.md — World vs viewpoint](../DOMAIN.md#world-vs-viewpoint).
 
 ---
 

@@ -267,6 +267,12 @@ Canonical, implementation-independent description of modes and operations:
 targets, or session ↔ canvas sync. If code and DOMAIN.md disagree, fix the code
 (or update DOMAIN.md only after explicit discussion).
 
+**World vs viewpoint** ([DOMAIN.md](DOMAIN.md#world-vs-viewpoint)): session,
+speech, and async activity are world state — they must not die when the user
+leaves Image for Gallery, flips pages, or changes mode. Modes observe and
+highlight the world; they do not own long-running work. Flag code that ties
+TTS/activity lifetime to mode enter/leave without an explicit user Stop.
+
 ## Architecture & modes
 
 ### Layers

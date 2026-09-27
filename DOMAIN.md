@@ -113,6 +113,55 @@ diverge from it.
 
 Image is not a multi-object canvas.
 
+## World vs viewpoint
+
+Modes are **viewpoints** on a shared **world**. The world does not disappear
+when the user is not looking at a particular slice of it, and background work
+must not be owned by the current mode.
+
+**World (mode-independent)** includes at least:
+
+- The **session** — ordered session images, stable ids, content appearance.
+- **Speech** — an active speak plan / cursor over text (and, later, which
+  session image the cursor is on). Starting TTS is not “Image-mode-only
+  state”; switching to Gallery or flipping the Image cursor must not cancel
+  speech by policy.
+- **Async activity** — tile builds, soft/ladder fills, OCR jobs, archive
+  scans (see [docs/ACTIVITY.md](docs/ACTIVITY.md)). Progress exists whether
+  or not a surface is currently painting those pixels.
+- Future: **multiple documents / sessions** in one process. The same rule
+  applies: documents outlive the single canvas mode that happens to show one
+  of them.
+
+**Viewpoint (mode)** is what the canvas is allowed to show and edit *right
+now* (Image / Gallery / Workspace rules above). Modes may **observe and
+highlight** world activity; they must not be the sole owner of it.
+
+Examples of the intended direction (partly already true in the code):
+
+| Concern | Expectation |
+|---------|-------------|
+| TTS while changing mode | Speech keeps running when entering Gallery or stepping Image pages; it is not torn down by `setViewMode` as a side effect of “left Image”. |
+| TTS across pages | A speak plan may advance onto further session images (text layers), not only the page that was current when Speak started. |
+| Gallery + speech cursor | Gallery can highlight the session image (and region) where the speech cursor currently is — the pack observes the world cursor; it does not own it. |
+| Tile / soft progress | Status or per-tile cues can report background generation even when the user is in another mode or on another page. |
+| Session membership | Gallery packs the whole session; Workspace places a subset; neither deletes the other mode’s durable world state (see [docs/MODE_OWNERSHIP.md](docs/MODE_OWNERSHIP.md)). |
+
+**Anti-patterns** (flag in review when code does this):
+
+- Tying speech session lifetime to Image-mode enter/leave or to “current
+  path changed” without an explicit Stop.
+- Clearing global activity or progress UI solely because the canvas mode
+  changed.
+- Treating “what is on the `QGraphicsScene` right now” as the only model of
+  what exists in the session or what is being spoken.
+- Mode controllers that own long-running work that should outlive a leave.
+
+This is **design philosophy**, not a feature checklist. Prefer small steps that
+move ownership toward session/world objects and keep modes as presentations
+and editors of that world. When an implementation choice forces world state
+to die with a viewpoint, call it out explicitly.
+
 ## Shared operations (mode-filtered)
 
 ### Session

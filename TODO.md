@@ -2,17 +2,23 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2717.1-run-gdb-quit-on-exit` (base `0de0646`).
+**Tip:** `biltoo-2718.2-world-vs-viewpoint` (base `0de0646`).
 
-### 2717.1 — biltoo-run-gdb quits on normal exit
-- After `-ex run`, Python checks `$_exitcode`; `quit` only when status is 0.
-- Crash / signal / non-zero exit → interactive prompt (bt still available).
-- Also: `set debuginfod enabled off` (less banner noise).
+Stack (single line from origin/master):
 
-### Prior (already on origin/master)
-- Contact sheet + Strip rows (and follow-ups).
-- OCR page-space / Source DPI / ContentXform overlays.
-- TTS SpeakPlan, selection anchor, Pause/Resume, Messages dock.
+1. **2717.1** — biltoo-run-gdb quits on normal exit (`$_exitcode == 0`); debuginfod off.
+2. **2718.2** — World vs viewpoint (docs): session/speech/activity outlive canvas mode.
+
+### World vs viewpoint (docs)
+- Normative section in [DOMAIN.md](DOMAIN.md#world-vs-viewpoint).
+- Cross-links: TEXT_TO_SPEECH, MODE_OWNERSHIP, ACTIVITY, AGENTS.
+- Philosophy, not a feature checklist — call out violations in review.
+
+### Open product direction (not scheduled)
+- TTS continues across mode switches / page flips; speak plan may advance
+  across session images; Gallery highlights speech-cursor page.
+- Surfaces report background tile/soft/OCR activity without owning it.
+- Longer term: multiple documents in one process under the same rule.
 
 ### Later — crop-based packs (careful)
 - **Re-enable Grid Crop** in UI: square cells, cover-scale + centre crop for *layout
@@ -29,5 +35,6 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2717.1-run-gdb-quit-on-exit-0de0646.bundle HEAD
+git pull --ff-only …/biltoo-2718.2-world-vs-viewpoint-0de0646.bundle HEAD
 ```
+Requires both commits from base `0de0646` (full stack in this one bundle).

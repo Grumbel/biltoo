@@ -7,6 +7,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 Item / pipeline / pixel ownership (Phase 5 extraction): [IMAGEVIEW_ITEM_OWNERSHIP.md](IMAGEVIEW_ITEM_OWNERSHIP.md).
 
+Broader rule: modes are viewpoints; session, speech, and async work are
+**world** state that must outlive a mode leave — [DOMAIN.md — World vs
+viewpoint](../DOMAIN.md#world-vs-viewpoint).
+
 ## Source of truth for *which images exist*
 
 | Structure | Owner | Role |
