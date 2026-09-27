@@ -1,12 +1,30 @@
 {
   "nodes": {
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1790323409,
-        "narHash": "sha256-VVTPf+Hyd5ebpjBMHmrLMSBIeW6ls48Bqtosj7CNKLA=",
+        "lastModified": 1790463110,
+        "narHash": "sha256-hKlVl12B1dF0Q5vd9dY3lIJM5mFGWYSlXwSLAqHZ1+s=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e94cb152ed51bd6e24eb4a41f1460252beb52cd2",
+        "rev": "e158d9ed9b51c98974c5e66e1ba1c9e0255fecaa",
         "type": "github"
       },
       "original": {
@@ -32,10 +50,73 @@
         "type": "github"
       }
     },
+    "piper-voice-json": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-FJ6pRYkf/DFtUqdYQIrM0/sVUX0BSkwCdibQHeTt8lY=",
+        "type": "file",
+        "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+      }
+    },
+    "piper-voice-onnx": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-gKmo0uNbsUDjKgS2+RoXqEAn65OUYjxEW8QUFAxvOu4=",
+        "type": "file",
+        "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+      }
+    },
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
+        "text2sprech": "text2sprech",
         "thumtoo": "thumtoo"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "text2sprech": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "piper-voice-json": "piper-voice-json",
+        "piper-voice-onnx": "piper-voice-onnx"
+      },
+      "locked": {
+        "lastModified": 1785415605,
+        "narHash": "sha256-+j+yJcrECYkkrq1AuUzASxVse1coC1JBiq2wb2is+Ks=",
+        "owner": "Grumbel",
+        "repo": "text2sprech",
+        "rev": "d3ea831a20b55be806b52d55e08861d1d9280d82",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Grumbel",
+        "repo": "text2sprech",
+        "type": "github"
       }
     },
     "thumtoo": {
@@ -43,11 +124,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1790451675,
-        "narHash": "sha256-00JGRI6G0XssQnEyd+Un0JnOC52BgJBf6lDumPARcno=",
+        "lastModified": 1790530286,
+        "narHash": "sha256-Pv9bXjk2Ffwp4NYaYkxljm/wQvmGk4t4KQAo9IyRLp8=",
         "owner": "Grumbel",
         "repo": "thumtoo",
-        "rev": "4d493729a6c7aab5bbfe246a26eca38113a5cbfc",
+        "rev": "e87420a9745494cbc89105c78f468f678af801c7",
         "type": "github"
       },
       "original": {
