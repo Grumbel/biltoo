@@ -5588,7 +5588,7 @@ void MainWindow::ocrDocument()
             }, Qt::QueuedConnection);
         };
 
-        auto worker = [self, &pagesCopy, &langCopy, gen, force, total,
+        auto worker = [self, &pagesCopy, &langCopy, dpiCopy, gen, force, total,
                        &nextIndex, &doneCount, &okCount, &failCount,
                        reportProgress]() {
             while (true) {
