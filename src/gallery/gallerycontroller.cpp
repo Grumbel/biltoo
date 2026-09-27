@@ -30,6 +30,7 @@
 #include "display/imagecache.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_cover_paint.hpp"
+#include "tilelod/tile_plan_debug_overlay.hpp"
 #include "display/displayquality.h"
 #include "util/debugflags.h"
 #include "workspace/workspacenavgeometry.h"
@@ -2145,6 +2146,7 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
         bool drewTiles = false;
 
         // 1) Warm process tile RAM — paint retained grid, not EMB.
+        // Same tile plan + debug overlay as live ImageItem (no special-case "TILE" tag).
         if (!slot.path.isEmpty()
             && native.width() > 1 && native.height() > 1
             && tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)) {
@@ -2165,7 +2167,22 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             args.underlay = lqip;
             if (tilelod::prepare_and_paint_cover(painter, args)) {
                 drewTiles = true;
-                debugTag = QStringLiteral("TILE");
+                if (tilePlanDebugOverlayEnabled() && lod.session()) {
+                    // Cover paint maps native → dest via translate+scale; overlay
+                    // expects content-space bounds (0..native) in the same space.
+                    painter->save();
+                    painter->translate(r.topLeft());
+                    const double sx = r.width() / double(qMax(1, native.width()));
+                    const double sy = r.height() / double(qMax(1, native.height()));
+                    painter->scale(sx, sy);
+                    const tilelod::DrawPlan plan = lod.session()->draw_plan();
+                    paintTilePlanDebugOverlay(
+                        painter, lod.session(), plan,
+                        QRectF(0, 0, native.width(), native.height()),
+                        QPointF(), native, ContentXform::Value{},
+                        /*freeRotPainter=*/false, slot.path);
+                    painter->restore();
+                }
             }
         }
 
@@ -2233,7 +2250,9 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             }
         }
 
-        if (debugFlag(DebugFlags::Overlay) || debugFlag(DebugFlags::TileDebug)) {
+        // Sample-kind tags only when tiles were not drawn (same labels as live
+        // soft path). Tile cells use paintTilePlanDebugOverlay above (s=N COMPLETE).
+        if (!drewTiles && tilePlanDebugOverlayEnabled()) {
             if (r.width() >= 4.0 && r.height() >= 4.0) {
                 QFont hf = painter->font();
                 hf.setBold(true);
