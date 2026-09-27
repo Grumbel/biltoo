@@ -15,7 +15,7 @@ class QLabel;
 class QPlainTextEdit;
 
 /**
- * Dock panel for Tesseract OCR: scope, language, force, concurrency,
+ * Dock panel for Tesseract OCR: scope, language, concurrency,
  * run/cancel, and a live status log (replaces the three View → OCR menu items).
  */
 class OcrPanel : public QWidget {
@@ -33,9 +33,6 @@ public:
     void setLanguage(const QString &lang);
     int jobs() const;
     void setJobs(int n);
-    bool force() const;
-    void setForce(bool on);
-
     /**
      * Tesseract source DPI. 0 = Auto (thumtoo estimates from page box / 300).
      * Manual 70–600 for stubborn crops / mixed type sizes.
@@ -68,7 +65,6 @@ private:
     QLineEdit *m_lang = nullptr;
     QSpinBox *m_jobs = nullptr;
     QSpinBox *m_dpi = nullptr;
-    QCheckBox *m_force = nullptr;
     QPushButton *m_runBtn = nullptr;
     QPushButton *m_cancelBtn = nullptr;
     QProgressBar *m_progress = nullptr;

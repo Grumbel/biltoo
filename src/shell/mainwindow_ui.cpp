@@ -357,23 +357,14 @@ void MainWindow::createActions()
         "layer for search and selection on this page.</p>"));
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
-    m_ocrForcePageAct = new QAction(tr("Re-OCR This &Page"), this);
-    m_ocrForcePageAct->setStatusTip(
-        tr("Force a new OCR pass on the current page (ignore cached OCR layer)"));
-    connect(m_ocrForcePageAct, &QAction::triggered, this, [this]() {
-        // Reuse ocrCurrentPage path with force via property on the action sender.
-        ocrCurrentPageForced();
-    });
-
     m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
     m_ocrDocumentAct->setStatusTip(
         tr("Run OCR on all pages of the current document (language prompt)"));
     m_ocrDocumentAct->setWhatsThis(tr(
         "<p>OCR every page of the current multipage document. Language uses "
         "Tesseract codes (e.g. <code>eng</code>, <code>eng+deu</code>). "
-        "Pages with a cached OCR layer are skipped unless you re-run with force "
-        "from a future option. Progress shows in the status bar; cancel with "
-        "View → Cancel OCR.</p>"));
+        "Each run always re-OCRs (overwrites the stored OCR layer). "
+        "Progress shows in the status bar; cancel with View → Cancel OCR.</p>"));
     connect(m_ocrDocumentAct, &QAction::triggered, this, &MainWindow::ocrDocument);
 
     m_ocrCancelAct = new QAction(tr("Cancel O&CR"), this);

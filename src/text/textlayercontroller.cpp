@@ -104,8 +104,10 @@ bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return false;
     }
+    Q_UNUSED(force);
+    // Always re-run: a user-requested OCR replaces the stored layer.
     ThumtooCache::PageTextLayer layer =
-        ThumtooCache::ensureOcrPageTextLayer(path, force, lang);
+        ThumtooCache::ensureOcrPageTextLayer(path, /*force=*/true, lang);
     if (layer.regions.isEmpty() && !layer.pageBounds.isValid()) {
         return false;
     }

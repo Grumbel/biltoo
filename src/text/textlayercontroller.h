@@ -45,7 +45,8 @@ public:
     void setSelectedRegions(const QVector<int> &ids);
     void refresh();
     /** Run OCR for the current page and install the OCR text layer. */
-    bool applyOcrLayer(bool force = false, const QString &lang = QString());
+    /** @p force is ignored; OCR always re-runs. Kept for call-site compatibility. */
+    bool applyOcrLayer(bool force = true, const QString &lang = QString());
     /** Session crop mapped into page space for OCR (empty if no crop). */
     QRectF currentPageCropInPageSpace() const;
     /** True when page Y increases upward (PDF/DjVu); false for EPUB Y-down. */

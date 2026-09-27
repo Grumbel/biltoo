@@ -5090,9 +5090,6 @@ void MainWindow::cancelOcrBatch()
     if (m_ocrPageAct) {
         m_ocrPageAct->setEnabled(true);
     }
-    if (m_ocrForcePageAct) {
-        m_ocrForcePageAct->setEnabled(true);
-    }
     if (m_ocrDocumentAct) {
         m_ocrDocumentAct->setEnabled(true);
     }
@@ -5110,27 +5107,11 @@ void MainWindow::cancelOcrBatch()
 
 void MainWindow::ocrCurrentPage()
 {
-    if (m_ocrPanel) {
-        if (m_ocrDock && !m_ocrDock->isVisible()) {
-            m_ocrDock->show();
-            m_ocrDock->raise();
-        }
-        startOcrCurrentPage(m_ocrPanel->force());
-        return;
+    if (m_ocrPanel && m_ocrDock && !m_ocrDock->isVisible()) {
+        m_ocrDock->show();
+        m_ocrDock->raise();
     }
-    startOcrCurrentPage(/*force=*/false);
-}
-
-void MainWindow::ocrCurrentPageForced()
-{
-    if (m_ocrPanel) {
-        m_ocrPanel->setForce(true);
-        if (m_ocrDock && !m_ocrDock->isVisible()) {
-            m_ocrDock->show();
-            m_ocrDock->raise();
-        }
-    }
-    startOcrCurrentPage(/*force=*/true);
+    startOcrCurrentPage();
 }
 
 void MainWindow::runOcrFromPanel()
@@ -5145,7 +5126,7 @@ void MainWindow::runOcrFromPanel()
     if (m_ocrPanel->scope() == OcrPanel::Scope::Document) {
         ocrDocument();
     } else {
-        startOcrCurrentPage(m_ocrPanel->force());
+        startOcrCurrentPage();
     }
 }
 
@@ -5235,7 +5216,7 @@ bool appearanceAffectsOcr(const WorkspaceItemState &st)
 
 } // namespace
 
-void MainWindow::startOcrCurrentPage(bool force)
+void MainWindow::startOcrCurrentPage()
 {
     if (!m_imageView) {
         return;
@@ -5273,25 +5254,21 @@ void MainWindow::startOcrCurrentPage(bool force)
     if (m_ocrPageAct) {
         m_ocrPageAct->setEnabled(false);
     }
-    if (m_ocrForcePageAct) {
-        m_ocrForcePageAct->setEnabled(false);
-    }
     if (m_ocrDocumentAct) {
         m_ocrDocumentAct->setEnabled(false);
     }
     if (m_ocrPanel) {
         m_ocrPanel->setBusy(true);
-        m_ocrPanel->setProgress(-1, force ? tr("Re-OCR this page…") : tr("OCR this page…"));
+        m_ocrPanel->setProgress(-1, tr("OCR this page…"));
         m_ocrPanel->setSummary(tr("Working…"));
         m_ocrPanel->appendLog(
-            tr("Start page OCR (force=%1, lang=%2, dpi=%3, page=%4): %5")
-                .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
+            tr("Start page OCR (lang=%1, dpi=%2, page=%3): %4")
                 .arg(lang.isEmpty() ? QStringLiteral("eng") : lang)
                 .arg(panelDpi > 0 ? QString::number(panelDpi) : QStringLiteral("auto"))
                 .arg(PagePath::pageNumber(path))
                 .arg(path));
     }
-    statusBar()->showMessage(force ? tr("Re-OCR in progress…") : tr("OCR in progress…"));
+    statusBar()->showMessage(tr("OCR in progress…"));
     m_imageView->hostShell().setCentreProgress(tr("OCR"), tr("This page…"));
 
     QPointer<MainWindow> self(this);
@@ -5319,14 +5296,14 @@ void MainWindow::startOcrCurrentPage(bool force)
     }
     const bool useDisplay = appearanceAffectsOcr(ocrState);
     QThreadPool::globalInstance()->start(
-        [self, pathCopy, langCopy, dpiCopy, gen, force, ocrState, useDisplay]() {
+        [self, pathCopy, langCopy, dpiCopy, gen, ocrState, useDisplay]() {
         ThumtooCache::OcrRunResult result;
         if (!useDisplay) {
-            // Full-page URI OCR. Do **not** pass session crop into thumtoo:
-            // crop is a view transform; regions stay in page space and
-            // regionImageRect applies the live crop at paint time.
+            // Full-page URI OCR. Always re-run (Run means run). Do **not** pass
+            // session crop into thumtoo: crop is a view transform; regions stay
+            // in page space and regionImageRect applies the live crop at paint.
             result = ThumtooCache::runOcrPageTextLayer(
-                pathCopy, force, langCopy, /*pageCrop=*/{}, dpiCopy);
+                pathCopy, /*force=*/true, langCopy, /*pageCrop=*/{}, dpiCopy);
         } else {
             // Decode full page → materializeDisplay (orient/crop/grade) → OCR.
             // Then invert display pixel boxes into **page space** once.
@@ -5394,7 +5371,7 @@ void MainWindow::startOcrCurrentPage(bool force)
         if (!self) {
             return;
         }
-        QMetaObject::invokeMethod(self, [self, pathCopy, result, gen, force]() {
+        QMetaObject::invokeMethod(self, [self, pathCopy, result, gen]() {
             MainWindow *host = self.data();
             if (!host || gen != host->m_ocrGeneration.load()) {
                 return;
@@ -5405,9 +5382,6 @@ void MainWindow::startOcrCurrentPage(bool force)
             }
             if (host->m_ocrPageAct) {
                 host->m_ocrPageAct->setEnabled(true);
-            }
-            if (host->m_ocrForcePageAct) {
-                host->m_ocrForcePageAct->setEnabled(true);
             }
             if (host->m_ocrDocumentAct) {
                 host->m_ocrDocumentAct->setEnabled(true);
@@ -5434,14 +5408,8 @@ void MainWindow::startOcrCurrentPage(bool force)
             if (host->m_ocrPanel) {
                 host->m_ocrPanel->setSummary(msg);
                 host->m_ocrPanel->appendLog(
-                    ok ? host->tr("Page done (force=%1): %2 — %3")
-                             .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
-                             .arg(msg)
-                             .arg(pathCopy)
-                       : host->tr("Page failed (force=%1): %2 — %3")
-                             .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
-                             .arg(msg)
-                             .arg(pathCopy));
+                    ok ? host->tr("Page done: %1 — %2").arg(msg, pathCopy)
+                       : host->tr("Page failed: %1 — %2").arg(msg, pathCopy));
             }
             host->updateOcrPanel();
         }, Qt::QueuedConnection);
@@ -5472,11 +5440,9 @@ void MainWindow::ocrDocument()
 
     QSettings settings;
     QString lang;
-    bool force = false;
     int jobs = 2;
     if (m_ocrPanel) {
         lang = m_ocrPanel->language();
-        force = m_ocrPanel->force();
         jobs = m_ocrPanel->jobs();
         if (m_ocrDock && !m_ocrDock->isVisible()) {
             m_ocrDock->show();
@@ -5496,12 +5462,6 @@ void MainWindow::ocrDocument()
         if (lang.isEmpty()) {
             lang = QStringLiteral("eng");
         }
-        force = QMessageBox::question(
-                    this, tr("OCR Document"),
-                    tr("Force re-OCR of pages that already have an OCR layer?"),
-                    QMessageBox::Yes | QMessageBox::No,
-                    QMessageBox::No)
-            == QMessageBox::Yes;
         jobs = qBound(1, settings.value(QStringLiteral("ocr/jobs"), 2).toInt(), 4);
     }
     settings.setValue(QStringLiteral("ocr/lang"), lang);
@@ -5519,9 +5479,6 @@ void MainWindow::ocrDocument()
     if (m_ocrPageAct) {
         m_ocrPageAct->setEnabled(false);
     }
-    if (m_ocrForcePageAct) {
-        m_ocrForcePageAct->setEnabled(false);
-    }
     if (m_ocrDocumentAct) {
         m_ocrDocumentAct->setEnabled(false);
     }
@@ -5530,10 +5487,9 @@ void MainWindow::ocrDocument()
         m_ocrPanel->setProgress(0, tr("Starting document OCR…"));
         m_ocrPanel->setSummary(tr("0 / %1 pages").arg(pages.size()));
         m_ocrPanel->appendLog(
-            tr("Start document OCR (%1 pages, jobs=%2, force=%3, lang=%4, dpi=%5)")
+            tr("Start document OCR (%1 pages, jobs=%2, lang=%3, dpi=%4)")
                 .arg(pages.size())
                 .arg(jobs)
-                .arg(force ? QStringLiteral("yes") : QStringLiteral("no"))
                 .arg(lang)
                 .arg(panelDpi > 0 ? QString::number(panelDpi) : QStringLiteral("auto")));
     }
@@ -5542,7 +5498,7 @@ void MainWindow::ocrDocument()
     const QStringList pagesCopy = pages;
     const QString langCopy = lang;
     const int dpiCopy = panelDpi;
-    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, dpiCopy, gen, force, jobs]() {
+    QThreadPool::globalInstance()->start([self, pagesCopy, langCopy, dpiCopy, gen, jobs]() {
         const int total = pagesCopy.size();
         std::atomic<int> nextIndex{0};
         std::atomic<int> doneCount{0};
@@ -5588,7 +5544,7 @@ void MainWindow::ocrDocument()
             }, Qt::QueuedConnection);
         };
 
-        auto worker = [self, &pagesCopy, &langCopy, dpiCopy, gen, force, total,
+        auto worker = [self, &pagesCopy, &langCopy, dpiCopy, gen, total,
                        &nextIndex, &doneCount, &okCount, &failCount,
                        reportProgress]() {
             while (true) {
@@ -5604,7 +5560,7 @@ void MainWindow::ocrDocument()
                 const int pageNo = PagePath::pageNumber(pagePath);
                 const ThumtooCache::OcrRunResult result =
                     ThumtooCache::runOcrPageTextLayer(
-                        pagePath, force, langCopy, /*pageCrop=*/{}, dpiCopy);
+                        pagePath, /*force=*/true, langCopy, /*pageCrop=*/{}, dpiCopy);
                 const bool pageOk =
                     result.status == ThumtooCache::OcrRunResult::Status::Ok
                     || result.status == ThumtooCache::OcrRunResult::Status::EmptyText;
@@ -5659,9 +5615,6 @@ void MainWindow::ocrDocument()
             }
             if (h->m_ocrPageAct) {
                 h->m_ocrPageAct->setEnabled(true);
-            }
-            if (h->m_ocrForcePageAct) {
-                h->m_ocrForcePageAct->setEnabled(true);
             }
             if (h->m_ocrDocumentAct) {
                 h->m_ocrDocumentAct->setEnabled(true);
