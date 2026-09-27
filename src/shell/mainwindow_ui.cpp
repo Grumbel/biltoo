@@ -3,6 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "imageitem.h"
+#include <memory>
 
 void MainWindow::createActions()
 {
@@ -1241,6 +1242,84 @@ void MainWindow::createMenus()
             }
         });
     }
+    m_debugMenu->addSeparator();
+    auto *underlayCheckAct = m_debugMenu->addAction(
+        tr("Check &underlay consistency (selection / session)…"));
+    underlayCheckAct->setStatusTip(
+        tr("Compare process ImageCache underlay vs Store LQIP/EMB/tiles; log issues"));
+    underlayCheckAct->setWhatsThis(
+        tr("<p>For the current selection (or whole session if none), reports whether "
+           "LQIP exists in the Store, whether process underlay is seeded, and whether "
+           "durable tiles exist without LQIP (quit mid-prepare). Results go to the "
+           "status bar and stderr.</p>"));
+    connect(underlayCheckAct, &QAction::triggered, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        QStringList paths;
+        for (ImageItem *it : m_imageView->transformTargets()) {
+            if (it && !it->path().isEmpty() && !paths.contains(it->path())) {
+                paths.append(it->path());
+            }
+        }
+        if (paths.isEmpty()) {
+            for (ImageItem *it : m_imageView->liveItems()) {
+                if (it && !it->path().isEmpty() && !paths.contains(it->path())) {
+                    paths.append(it->path());
+                }
+            }
+        }
+        if (paths.isEmpty()) {
+            for (const QString &p : m_session.paths()) {
+                if (!p.isEmpty() && !paths.contains(p)) {
+                    paths.append(p);
+                }
+            }
+        }
+        if (paths.isEmpty()) {
+            statusBar()->showMessage(tr("No paths to check"), 3000);
+            return;
+        }
+        statusBar()->showMessage(
+            tr("Checking underlay consistency for %1 path(s)…").arg(paths.size()), 0);
+        // Bound concurrency — each path does Store I/O on the pool.
+        const int n = paths.size();
+        auto remaining = std::make_shared<int>(n);
+        auto issues = std::make_shared<int>(0);
+        for (const QString &path : paths) {
+            ThumtooCache::checkUnderlayConsistency(
+                path, /*includeStore=*/true,
+                [this, remaining, issues, n, path](ThumtooCache::UnderlayConsistency r) {
+                    for (const QString &line : r.issues) {
+                        qWarning("underlay-check %s: %s", qPrintable(r.path),
+                                 qPrintable(line));
+                        ++(*issues);
+                    }
+                    if (r.issues.isEmpty()) {
+                        qInfo("underlay-check %s: OK process=%s edge=%d storeLqip=%d "
+                              "storeEmb=%d tiles=%d",
+                              qPrintable(r.path),
+                              qPrintable(r.processKind.isEmpty() ? QStringLiteral("-")
+                                                                 : r.processKind),
+                              r.processUnderlayEdge, int(r.storeHasLqip),
+                              int(r.storeHasEmbedded), int(r.durableTilesInStore));
+                    } else {
+                        // Recover: seed + ensure from tiles when flagged.
+                        ThumtooCache::scheduleStoreUnderlaySeed(r.path);
+                        ThumtooCache::scheduleEnsureLqipFromTiles(r.path);
+                    }
+                    --(*remaining);
+                    if (*remaining <= 0) {
+                        statusBar()->showMessage(
+                            tr("Underlay check done: %1 path(s), %2 issue line(s) "
+                               "(see stderr)")
+                                .arg(n)
+                                .arg(*issues),
+                            8000);
+                    }
+                });
+        }
+    });
     installMenuHelpTracking(m_debugMenu);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));

@@ -260,6 +260,11 @@ ImageView::ImageView(QWidget *parent)
                 if (!path.isEmpty() && !ImageCache::hasUnderlay(path)) {
                     ThumtooCache::scheduleStoreUnderlaySeed(path);
                 }
+                // Always try Store LQIP from free tile data when the row is missing
+                // (kill mid-pyramid left tiles without LQIP).
+                if (!path.isEmpty()) {
+                    ThumtooCache::scheduleEnsureLqipFromTiles(path);
+                }
                 // Warm durable discovery can fire during the Gallery size gate —
                 // do not start tile I/O while probes own the Store/CPU.
                 if (hostGallerySizeResolve().active()) {

@@ -137,6 +137,41 @@ QImage cachedEmbeddedPreviewImage(const QString &path);
 void scheduleStoreUnderlaySeed(const QString &path);
 
 /**
+ * Store vs process underlay consistency for one path (debug / recovery).
+ * Built off the GUI thread when Store fields are needed.
+ */
+struct UnderlayConsistency {
+    QString path;
+    bool processHasUnderlay = false;
+    int processUnderlayEdge = 0;
+    QString processKind; ///< LQIP / EMB / RASTER / empty
+    bool storeHasLqip = false;       ///< ThumbHash/Handsum row (not EmbeddedJpeg)
+    bool storeHasEmbedded = false;   ///< EXIF/PDF thumb kind
+    bool durableTilesKnown = false;
+    bool durableTilesInStore = false; ///< hasDurableTiles() worker truth when probed
+    bool sizeMemo = false;
+    QSize sizeMemoValue;
+    QStringList issues; ///< human-readable inconsistency notes
+};
+
+/**
+ * Inspect process ImageCache + Store for underlay/LQIP/tiles agreement.
+ * Safe from GUI for process-only fields; Store reads run on a worker when
+ * @p includeStore is true (callback always on GUI thread).
+ */
+void checkUnderlayConsistency(const QString &path, bool includeStore,
+                              std::function<void(UnderlayConsistency)> done);
+
+/**
+ * When durable tiles exist but Store has no LQIP: encode LQIP from free tile
+ * data (ensure_lqip) and seed ImageCache if underlay still empty. Deduped.
+ * Never opens the source file.
+ */
+void scheduleEnsureLqipFromTiles(const QString &path);
+
+
+
+/**
  * Cache-only: thumtoo reported ContentStatus::Unsupported for this locator.
  * Callers should stop scheduling probes/pixels (Failed remains retryable).
  */

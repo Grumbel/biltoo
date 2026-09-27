@@ -63,3 +63,21 @@ Background under live items. Order:
 
 Filmstrip uses TileSynth whole-frame into `ImageCache` for strip icons (same
 Store, not grid paint on the strip widget).
+
+## LQIP missing / recovery
+
+LQIP is **never** encoded by opening the source ([thumtoo PIXEL_AND_ARCHIVE_POLICY](../../thumtoo/docs/PIXEL_AND_ARCHIVE_POLICY.md)).
+It is written opportunistically during tile prepare, or via `ensure_lqip` from
+**free** tile/overview data already in Store.
+
+| Symptom | Cause | Recovery |
+|---------|--------|----------|
+| Process underlay empty, Store has LQIP/EMB | Seed never ran | `scheduleStoreUnderlaySeed` |
+| Store missing LQIP, durable tiles exist | Kill mid-pyramid | `scheduleEnsureLqipFromTiles` / Debug → Check underlay consistency |
+| Process has EMB only | Normal | Display uses EMB; Store LQIP still filled from tiles when possible |
+
+**Debug → Check underlay consistency** compares process ImageCache vs Store and
+logs issue lines to stderr; schedules seed/ensure on problems.
+
+Store writes (`put_blob_lqip`) are single SQLite statements under WAL — a process
+kill cannot leave a half-row; at worst the LQIP row is absent and ensure retries.

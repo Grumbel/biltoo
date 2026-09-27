@@ -1101,9 +1101,193 @@ QImage cachedLqipImage(const QString &path)
     return {};
 }
 
+
+void scheduleEnsureLqipFromTiles(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    static std::mutex ensureMu;
+    static QSet<QString> ensureQueued;
+    {
+        std::lock_guard lock(ensureMu);
+        if (ensureQueued.contains(path)) {
+            return;
+        }
+        ensureQueued.insert(path);
+    }
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        const std::string uri = toThumtooUri(pathCopy);
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        auto finish = [&]() {
+            std::lock_guard lock(ensureMu);
+            ensureQueued.remove(pathCopy);
+        };
+        if (uri.empty() || !c) {
+            finish();
+            return;
+        }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+        try {
+            if (c->get_lqip(uri)) {
+                finish();
+                return; // Store already has ThumbHash/Handsum
+            }
+            if (!hasDurableTiles(pathCopy)) {
+                finish();
+                return;
+            }
+            if (auto blob = c->ensure_lqip(uri); blob && !blob->empty()) {
+                const QImage lqip = qimageFromLqipBlob(*blob);
+                // Seed process underlay only when empty — do not clobber EMB.
+                if (!lqip.isNull() && !ImageCache::hasUnderlay(pathCopy)) {
+                    ImageCache::put(pathCopy, lqip, QStringLiteral("LQIP"));
+                    const QSize sz = cachedSize(pathCopy, /*scheduleRevalidate=*/false);
+                    if (sz.isValid()) {
+                        QMetaObject::invokeMethod(
+                            bridge(),
+                            [pathCopy, sz]() { emit bridge()->sizeReady(pathCopy, sz); },
+                            Qt::QueuedConnection);
+                    }
+                }
+            }
+        } catch (...) {
+        }
+#endif
+        finish();
+    });
+}
+
+void checkUnderlayConsistency(const QString &path, bool includeStore,
+                              std::function<void(UnderlayConsistency)> done)
+{
+    if (!done) {
+        return;
+    }
+    UnderlayConsistency r;
+    r.path = path;
+    if (path.isEmpty()) {
+        r.issues.append(QStringLiteral("empty path"));
+        done(r);
+        return;
+    }
+    // Process-side (safe on any thread with ImageCache lock).
+    {
+        const QImage u = ImageCache::getUnderlay(path);
+        r.processHasUnderlay = !u.isNull();
+        if (!u.isNull()) {
+            r.processUnderlayEdge = qMax(u.width(), u.height());
+            if (r.processUnderlayEdge <= DisplayQuality::kLqipMaxEdge) {
+                r.processKind = QStringLiteral("LQIP");
+            } else if (r.processUnderlayEdge
+                       <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                r.processKind = QStringLiteral("EMB");
+            } else {
+                r.processKind = QStringLiteral("RASTER");
+            }
+        }
+    }
+    r.durableTilesKnown = hasDurableTilesKnown(path);
+    if (const QSize memo = ProcessMemos::instance().size(path); memo.isValid()) {
+        r.sizeMemo = true;
+        r.sizeMemoValue = memo;
+    }
+
+    auto finishGui = [done](UnderlayConsistency report) {
+        if (QThread::isMainThread()) {
+            done(report);
+        } else {
+            QMetaObject::invokeMethod(
+                bridge(),
+                [done, report]() { done(report); },
+                Qt::QueuedConnection);
+        }
+    };
+
+    if (!includeStore) {
+        if (!r.processHasUnderlay && r.durableTilesKnown) {
+            r.issues.append(
+                QStringLiteral("process underlay empty but durable tiles known — "
+                               "LQIP may be missing in Store or not seeded"));
+        }
+        finishGui(r);
+        return;
+    }
+
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([pathCopy, r, finishGui]() mutable {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        const std::string uri = toThumtooUri(pathCopy);
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (uri.empty() || !c) {
+            r.issues.append(QStringLiteral("no Store client / bad URI"));
+            finishGui(r);
+            return;
+        }
+        try {
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+            if (c->get_lqip(uri)) {
+                r.storeHasLqip = true;
+            }
+#endif
+            if (auto emb = c->get_embedded_preview(uri); emb && !emb->bytes.empty()) {
+                r.storeHasEmbedded = true;
+            }
+            r.durableTilesInStore = hasDurableTiles(pathCopy);
+            r.durableTilesKnown = r.durableTilesKnown || r.durableTilesInStore;
+        } catch (...) {
+            r.issues.append(QStringLiteral("Store read threw"));
+        }
+
+        if (!r.storeHasLqip && r.durableTilesInStore) {
+            r.issues.append(
+                QStringLiteral("Store missing LQIP while durable tiles exist "
+                               "(quit mid-pyramid? ensure_lqip from tiles)"));
+        }
+        if (!r.storeHasLqip && !r.storeHasEmbedded && r.processHasUnderlay) {
+            r.issues.append(
+                QStringLiteral("process underlay present but Store has neither "
+                               "LQIP nor EMB (process-only seed)"));
+        }
+        if (!r.processHasUnderlay && (r.storeHasLqip || r.storeHasEmbedded)) {
+            r.issues.append(
+                QStringLiteral("Store has underlay bytes but process ImageCache "
+                               "underlay empty — scheduleStoreUnderlaySeed"));
+        }
+        if (!r.storeHasLqip && !r.storeHasEmbedded && !r.processHasUnderlay) {
+            r.issues.append(
+                QStringLiteral("no underlay anywhere (cold — wait for SizeReply "
+                               "EMB or tiles+ensure_lqip)"));
+        }
+        if (r.durableTilesKnown && !r.durableTilesInStore) {
+            r.issues.append(
+                QStringLiteral("process durable memo YES but Store has_tile miss "
+                               "(stale memo)"));
+        }
+        finishGui(r);
+    });
+}
+
 void scheduleStoreUnderlaySeed(const QString &path)
 {
-    if (path.isEmpty() || hasUsableUnderlaySample(path)) {
+    if (path.isEmpty()) {
+        return;
+    }
+    // Process already has EMB/LQIP: still ensure Store LQIP from tiles when missing.
+    if (hasUsableUnderlaySample(path)) {
+        scheduleEnsureLqipFromTiles(path);
         return;
     }
     static std::mutex seedMu;
@@ -1126,10 +1310,13 @@ void scheduleStoreUnderlaySeed(const QString &path)
             seedQueued.remove(pathCopy);
         }
         if (under.isNull()) {
+            // Still try LQIP-from-tiles when pyramid exists but no EMB/LQIP row.
+            scheduleEnsureLqipFromTiles(pathCopy);
             return;
         }
         const QSize sz = cachedSize(pathCopy, /*scheduleRevalidate=*/false);
         if (!sz.isValid() || sz.width() < 1 || sz.height() < 1) {
+            scheduleEnsureLqipFromTiles(pathCopy);
             return;
         }
         // sizeReady → tryInstallGalleryUnderlay when definitive size is known.
@@ -1137,6 +1324,8 @@ void scheduleStoreUnderlaySeed(const QString &path)
             bridge(),
             [pathCopy, sz]() { emit bridge()->sizeReady(pathCopy, sz); },
             Qt::QueuedConnection);
+        // EMB present does not imply Store LQIP — fill LQIP from tiles when possible.
+        scheduleEnsureLqipFromTiles(pathCopy);
     });
 }
 

@@ -2,14 +2,17 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.15-paint-drew-tiles` (base `bcbb97e`).
+**Tip:** `biltoo-2714.16-lqip-consistency` (base `bcbb97e`).
 
-### Verified (2714.14) + paint truth (2714.15)
-`TileLodController::paint` / `paint_draw_plan` now return **true only if tile
-pixels were actually drawn**. Previously `plan.any_tile` could be true while
-every resolve failed — virtual cover then skipped EMB and showed blank/wrong.
+### LQIP recovery + consistency debug
+- `ThumtooCache::checkUnderlayConsistency(path, includeStore, cb)` — process vs
+  Store LQIP/EMB/tiles; issue lines for false-positive memos and missing rows.
+- `scheduleEnsureLqipFromTiles` — Store LQIP from free tile data when missing
+  (kill mid-pyramid). Never opens source.
+- Debug menu: **Check underlay consistency (selection / session)…**
+- durableTilesReady always schedules ensure; seed still runs when process empty.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.15-paint-drew-tiles-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.16-lqip-consistency-bcbb97e.bundle HEAD
 ```
