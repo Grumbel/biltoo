@@ -216,6 +216,15 @@ void CachePrepareDialog::refreshStats()
     });
 }
 
+void CachePrepareDialog::setBusy(bool busy)
+{
+    m_running = busy;
+    m_startBtn->setEnabled(!busy);
+    m_cancelBtn->setEnabled(busy);
+    m_closeBtn->setEnabled(!busy);
+    m_detailCombo->setEnabled(!busy);
+}
+
 void CachePrepareDialog::startPrepare()
 {
     if (m_running || m_paths.isEmpty() || !ThumtooCache::isAvailable()) {
