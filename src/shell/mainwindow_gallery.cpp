@@ -410,11 +410,15 @@ void MainWindow::returnToGallery()
         m_imageView->hostDisplayPipeline().tickPrimaryTileLod(16);
     }
     if (m_imageView) {
+        // refreshScrollBarGeometry shifts the camera (range/pageStep change).
+        // applyPendingRestore is often a no-op here: enter() already cleared
+        // m_pendingRestore after the first centre — so reassertViewport must
+        // run *synchronously* or the next paint shows origin / wrong scroll
+        // for one frame before the deferred singleShot (user-visible snap).
         m_imageView->refreshScrollBarGeometry();
+        m_imageView->hostGallery().reassertViewport();
         m_imageView->hostGallery().applyPendingRestore();
-        // After bar geometry settles, re-apply the leave camera once. Snapshot
-        // flags stay armed through this pass (not cleared in applyPendingRestore)
-        // so refreshScrollBarGeometry cannot strand the view at origin.
+        // Layout may still settle after this returns (policy / size hints).
         QTimer::singleShot(0, this, [this]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;

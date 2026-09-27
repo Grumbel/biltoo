@@ -2351,8 +2351,9 @@ void GalleryController::prepareCanvas()
     m_view->setSceneRect(QRectF());
     m_view->canvasScene()->setSceneRect(QRectF());
     m_view->hostFraming().setFitOnly();
-    // Force a blank pass before items are re-packed.
-    m_view->viewport()->update();
+    // Do not viewport()->update() here. Enter already holds paints while
+    // restashing + reasserting; a forced update painted scroll=0 / empty
+    // sceneRect for one frame before the leave camera was restored.
 }
 
 void GalleryController::invalidateDecodes()
