@@ -105,6 +105,12 @@ void TextToSpeechController::ensureConnected()
         return;
     }
 
+    // Prefer reconnect to the socket we already own (server may still be up).
+    if (m_ownServer && !m_targetSocketPath.isEmpty()) {
+        beginConnectAttempts(m_targetSocketPath);
+        return;
+    }
+
     if (!m_serverManager) {
         m_serverManager = new PiperServerManager(this);
         connect(m_serverManager, &PiperServerManager::failedToStart, this,
@@ -116,6 +122,10 @@ void TextToSpeechController::ensureConnected()
                         qDebug("piper-server: %s", qPrintable(t));
                     }
                 });
+    } else {
+        // Previous owned process is gone or unusable; stop before respawn.
+        m_serverManager->stop();
+        m_ownServer = false;
     }
 
     setStatus(tr("Starting Piper…"));
@@ -211,6 +221,12 @@ void TextToSpeechController::onConnectionError(const QString &message)
     m_ready = false;
     m_realAudio = false;
     setSpeaking(false);
+    // Owned server is unreachable: tear it down so the next Speak can respawn.
+    if (m_ownServer && m_serverManager) {
+        m_serverManager->stop();
+        m_ownServer = false;
+        m_targetSocketPath.clear();
+    }
     setStatus(message.isEmpty() ? tr("Piper connection failed") : message);
     emit readyChanged(false);
     emit errorOccurred(m_status);
