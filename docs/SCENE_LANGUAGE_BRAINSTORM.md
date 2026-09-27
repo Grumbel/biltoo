@@ -350,7 +350,8 @@ from a scene document alone (plus host pixel services).
 | Script power vs safety | Closed verbs only for a long time |
 | Product focus | Session media workbench first; HyperCard nostalgia second |
 
-**Non-goals for this brainstorm:** shipping a scripting language, replacing
+**Non-goals for this brainstorm:** shipping a general-purpose scripting
+language (see [SCRIPTING.md](SCRIPTING.md) for that separate track), replacing
 Qt widgets with a HyperCard clone, or blocking current Gallery/Image fixes on
 SDL design.
 

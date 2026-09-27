@@ -162,6 +162,9 @@ move ownership toward session/world objects and keep modes as presentations
 and editors of that world. When an implementation choice forces world state
 to die with a viewpoint, call it out explicitly.
 
+Hypothetical external automation against the same world (handles, hooks,
+command table — not a second core): [docs/SCRIPTING.md](docs/SCRIPTING.md).
+
 ## Shared operations (mode-filtered)
 
 ### Session

@@ -273,6 +273,9 @@ leaves Image for Gallery, flips pages, or changes mode. Modes observe and
 highlight the world; they do not own long-running work. Flag code that ties
 TTS/activity lifetime to mode enter/leave without an explicit user Stop.
 
+**Scripting (hypothetical):** [docs/SCRIPTING.md](docs/SCRIPTING.md) — external
+automation should target the same world handles, not the active mode’s widgets.
+
 ## Architecture & modes
 
 ### Layers
