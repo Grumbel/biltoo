@@ -2,13 +2,13 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.13-selection-tts-harden` (base `d456ffc`).
+**Tip:** `biltoo-2715.14-tts-duration-timer` (base `d456ffc`).
 
-### Verified / fixed
-- Text panel: no setCurrentIndex on hover; dedupe selection/hover signals.
-- TTS: QAudioSink; advance when near end (processedUSecs / duration), not on early Idle.
+### TTS
+- Multi-sentence advance via **sentence-end timer** from WAV duration (not sink Idle).
+- Text panel hover/selection dedupe (2715.12–13).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.13-selection-tts-harden-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.14-tts-duration-timer-d456ffc.bundle HEAD
 ```
