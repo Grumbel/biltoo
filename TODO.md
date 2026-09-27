@@ -2,12 +2,14 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.21-currentPageCrop-def` (base `d456ffc`).
+**Tip:** `biltoo-2715.22-message-log` (base `d456ffc`).
 
-### Fix
-- Define `TextLayerController::currentPageCropInPageSpace()` (link error).
+### Message log
+- `MessageLogWidget`: selectable monospace log, Copy/Clear, amber/red flash + badge.
+- Text panel TTS status uses compact MessageLogWidget (not grey QLabel).
+- **Messages** dock (bottom): TTS errors (auto-show) + OCR log lines.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.21-currentPageCrop-def-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.22-message-log-d456ffc.bundle HEAD
 ```
