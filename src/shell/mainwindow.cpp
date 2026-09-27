@@ -4951,16 +4951,14 @@ void MainWindow::connectTextToSpeech()
                     m_ttsSpeakRegions, double(pos) / double(dur));
             });
 
+    // Panel → TTS (voice/tempo/vol) is wired only in connectTextPanel() so
+    // disconnect(m_textPanel) there does not leave duplicate connections.
     if (m_textPanel) {
-        connect(m_textPanel, &TextPanel::voiceChosen, m_tts, &TextToSpeechController::setVoice);
-        connect(m_textPanel, &TextPanel::speedChosen, m_tts, &TextToSpeechController::setSpeed);
-        connect(m_textPanel, &TextPanel::volumeChosen, this, [this](int percent) {
-            if (m_tts) {
-                m_tts->setVolume(float(percent) / 100.0f);
-            }
-        });
         m_textPanel->setSpeed(m_tts->speed());
         m_textPanel->setVolumePercent(int(m_tts->volume() * 100.0f + 0.5f));
+        if (!m_tts->voices().isEmpty()) {
+            m_textPanel->setVoices(m_tts->voices(), m_tts->currentVoice());
+        }
     }
 }
 
