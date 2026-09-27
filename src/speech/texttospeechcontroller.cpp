@@ -7,13 +7,16 @@
 #include "PlaybackController.h"
 #include "SentenceSplitter.h"
 
-#include <QCoreApplication>
+#include <QTimer>
 
 TextToSpeechController::TextToSpeechController(QObject *parent)
     : QObject(parent)
 {
     m_client = new PiperClient(this);
     m_playback = new PlaybackController(m_client, this);
+    m_connectTimer = new QTimer(this);
+    m_connectTimer->setSingleShot(true);
+    connect(m_connectTimer, &QTimer::timeout, this, &TextToSpeechController::tryConnectAttempt);
 
     connect(m_client, &PiperClient::ready, this, &TextToSpeechController::onServerReady);
     connect(m_client, &PiperClient::connectionError, this,
@@ -30,6 +33,7 @@ TextToSpeechController::TextToSpeechController(QObject *parent)
 
 TextToSpeechController::~TextToSpeechController()
 {
+    clearConnectAttempts();
     if (m_client) {
         m_client->disconnectFromServer();
     }
@@ -61,16 +65,43 @@ void TextToSpeechController::setSpeaking(bool on)
     emit speakingChanged(m_speaking);
 }
 
+void TextToSpeechController::clearConnectAttempts()
+{
+    m_connectAttemptsLeft = 0;
+    if (m_connectTimer) {
+        m_connectTimer->stop();
+    }
+}
+
+void TextToSpeechController::beginConnectAttempts(const QString &socketPath)
+{
+    m_targetSocketPath = socketPath;
+    // Match text2sprech: ~6s of retries at 200ms (Python startup + model load).
+    m_connectAttemptsLeft = 30;
+    m_connectPending = true;
+    setStatus(tr("Connecting to Piper…"));
+    tryConnectAttempt();
+}
+
+void TextToSpeechController::tryConnectAttempt()
+{
+    if (m_ready || m_targetSocketPath.isEmpty()) {
+        return;
+    }
+    m_client->connectToServer(m_targetSocketPath);
+}
+
 void TextToSpeechController::ensureConnected()
 {
-    if (m_client->isConnected() || m_connectPending) {
+    if (m_client->isConnected() && m_ready) {
+        return;
+    }
+    if (m_connectPending && m_connectAttemptsLeft > 0) {
         return;
     }
 
     if (!m_externalSocket.isEmpty()) {
-        m_connectPending = true;
-        setStatus(tr("Connecting to Piper…"));
-        m_client->connectToServer(m_externalSocket);
+        beginConnectAttempts(m_externalSocket);
         return;
     }
 
@@ -87,7 +118,6 @@ void TextToSpeechController::ensureConnected()
                 });
     }
 
-    m_connectPending = true;
     setStatus(tr("Starting Piper…"));
     const QString socketPath = m_serverManager->startWithUniqueSocket();
     if (socketPath.isEmpty()) {
@@ -95,7 +125,7 @@ void TextToSpeechController::ensureConnected()
         return;
     }
     m_ownServer = true;
-    m_client->connectToServer(socketPath);
+    beginConnectAttempts(socketPath);
 }
 
 void TextToSpeechController::speakText(const QString &text)
@@ -140,6 +170,7 @@ void TextToSpeechController::stop()
 
 void TextToSpeechController::onServerReady(const PiperServerInfo &info)
 {
+    clearConnectAttempts();
     m_connectPending = false;
     m_ready = true;
     m_realAudio = info.realAudio;
@@ -170,6 +201,12 @@ void TextToSpeechController::onServerReady(const PiperServerInfo &info)
 
 void TextToSpeechController::onConnectionError(const QString &message)
 {
+    // Fresh piper-server needs a moment before the socket exists; retry quietly.
+    if (m_connectAttemptsLeft > 0) {
+        --m_connectAttemptsLeft;
+        m_connectTimer->start(200);
+        return;
+    }
     m_connectPending = false;
     m_ready = false;
     m_realAudio = false;
@@ -182,6 +219,10 @@ void TextToSpeechController::onConnectionError(const QString &message)
 
 void TextToSpeechController::onDisconnected()
 {
+    // Disconnect during intentional retry is expected.
+    if (m_connectAttemptsLeft > 0) {
+        return;
+    }
     m_connectPending = false;
     m_ready = false;
     setSpeaking(false);
@@ -206,8 +247,10 @@ void TextToSpeechController::onPlaybackError(const QString &message)
 
 void TextToSpeechController::onFailedToStart(const QString &reason)
 {
+    clearConnectAttempts();
     m_connectPending = false;
     m_ownServer = false;
     setStatus(reason.isEmpty() ? tr("Could not start piper-server") : reason);
     emit errorOccurred(m_status);
+    m_pendingSpeak.clear();
 }

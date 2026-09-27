@@ -11,6 +11,7 @@
 
 class PiperServerManager;
 class PlaybackController;
+class QTimer;
 
 /**
  * Owns piper-server lifecycle (optional), PiperClient, and PlaybackController.
@@ -52,17 +53,23 @@ private slots:
     void onPlaybackFinished();
     void onPlaybackError(const QString &message);
     void onFailedToStart(const QString &reason);
+    void tryConnectAttempt();
 
 private:
     void ensureConnected();
+    void beginConnectAttempts(const QString &socketPath);
     void setStatus(const QString &msg);
     void setSpeaking(bool on);
+    void clearConnectAttempts();
 
     PiperClient *m_client = nullptr;
     PiperServerManager *m_serverManager = nullptr; // null when using external socket
     PlaybackController *m_playback = nullptr;
+    QTimer *m_connectTimer = nullptr;
 
     QString m_externalSocket;
+    QString m_targetSocketPath;
+    int m_connectAttemptsLeft = 0;
     bool m_ownServer = false;
     bool m_ready = false;
     bool m_realAudio = false;
