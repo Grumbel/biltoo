@@ -911,6 +911,14 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-textsearchpolicy-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME textsearchpolicy COMMAND biltoo-textsearchpolicy-test)
 
+  add_executable(biltoo-sentence-splitter-test
+    tests/sentence_splitter_test.cpp
+    src/speech/SentenceSplitter.cpp
+  )
+  target_include_directories(biltoo-sentence-splitter-test PRIVATE src src/speech)
+  target_link_libraries(biltoo-sentence-splitter-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME sentence-splitter COMMAND biltoo-sentence-splitter-test)
+
 
 
 
