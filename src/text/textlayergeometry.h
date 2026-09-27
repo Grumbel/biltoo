@@ -8,8 +8,8 @@
 #include <QVector>
 
 /**
- * Pure text-region selection geometry (image-space rects).
- * Callers map page regions → image rects; this bag only intersects and orders.
+ * Pure text-region selection geometry.
+ * Callers map page regions → image rects when needed; this bag intersects and orders.
  */
 namespace TextLayerGeometry {
 
@@ -20,16 +20,22 @@ namespace TextLayerGeometry {
 QVector<int> indicesIntersecting(const QVector<QRectF> &regionRects, const QRectF &rubber);
 
 /**
- * Stable reading order for search / selection.
- * When @p blockIds is the same size as @p regionRects and both sides have
- * blockId >= 0, sort primarily by block (MuPDF paragraph/column island), then
- * top-to-bottom / LTR within the block. Otherwise fall back to page-wide
- * top-then-left (legacy).
- * @p indices are rearranged in place; each index must be valid for @p regionRects.
+ * Stable reading order for search / selection / TTS.
+ *
+ * When @p preferSourceOrder is true (OCR layers): keep ascending region index
+ * — Tesseract ResultIterator order is already reading order; geometric re-sort
+ * fights multi-column and Y-up page space.
+ *
+ * Otherwise: optional @p blockIds primary key, then visual top-to-bottom / LTR.
+ * @p pageYUp true (PDF/DjVu/EPUB page space): visual top is the larger Y
+ * (QRectF::bottom after normalize); sorting by top() ascending would read the
+ * page bottom-first.
  */
 void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
                       qreal topTolerance = 4.0,
-                      const QVector<int> *blockIds = nullptr);
+                      const QVector<int> *blockIds = nullptr,
+                      bool pageYUp = false,
+                      bool preferSourceOrder = false);
 
 } // namespace TextLayerGeometry
 

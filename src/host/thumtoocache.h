@@ -516,6 +516,11 @@ struct TextRegion {
     int blockId = -1;
 };
 
+enum class TextLayerSource : quint8 {
+    Native = 0,
+    Ocr = 1,
+};
+
 struct PageTextLayer {
     int page = 0;
     QString layoutKey;
@@ -525,6 +530,7 @@ struct PageTextLayer {
      * When false, top-left (Y down). Set by thumtoo (TTL7+); see docs/OCR_COORDINATES.md.
      */
     bool pageYUp = true;
+    TextLayerSource source = TextLayerSource::Native;
     QVector<TextRegion> regions;
 };
 

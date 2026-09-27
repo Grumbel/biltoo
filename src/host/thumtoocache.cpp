@@ -3493,6 +3493,9 @@ PageTextLayer convertLayer(const thumtoo::PageTextLayer &layer)
     out.pageBounds = QRectF(layer.page_bounds.x0, layer.page_bounds.y0,
                             layer.page_bounds.width(), layer.page_bounds.height());
     out.pageYUp = layer.page_y_up;
+    out.source = (layer.source == thumtoo::TextLayerSource::Ocr)
+                     ? TextLayerSource::Ocr
+                     : TextLayerSource::Native;
     out.regions.reserve(static_cast<int>(layer.regions.size()));
     for (const auto &r : layer.regions) {
         out.regions.push_back(convertRegion(r));

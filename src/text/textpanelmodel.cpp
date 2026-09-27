@@ -88,7 +88,9 @@ void TextPanelModel::setLayer(const ThumtooCache::PageTextLayer &layer)
         rects[i] = layer.regions.at(i).bbox;
         blocks[i] = layer.regions.at(i).blockId;
     }
-    TextLayerGeometry::sortReadingOrder(&m_order, rects, 4.0, &blocks);
+    const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
+    TextLayerGeometry::sortReadingOrder(&m_order, rects, 4.0, &blocks,
+                                        layer.pageYUp, ocrOrder);
     endResetModel();
 }
 

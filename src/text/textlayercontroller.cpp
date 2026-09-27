@@ -248,9 +248,10 @@ void TextLayerController::recomputeSearchMatches()
         bboxes.append(r.bbox);
         blockIds.append(r.blockId);
     }
+    const bool ocrOrder = m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
     const QVector<TextSearchPolicy::SearchHit> hits = TextSearchPolicy::findHits(
         texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
-        blockIds);
+        blockIds, pageYUp(), ocrOrder);
     m_session.setSearchMatches(hits);
 }
 
@@ -544,7 +545,11 @@ void TextLayerController::finishRubberBand()
     for (int i = 0; i < m_session.regionCount(); ++i) {
         selBlocks[i] = m_session.regionAt(i).blockId;
     }
-    TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks);
+    const bool ocrOrder = m_session.hasLayer()
+        && m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
+    // regionRects are image/display space (Y-down); OCR prefers iterator index order.
+    TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks,
+                                        /*pageYUp=*/false, ocrOrder);
     setSelectedRegions(selected);
 }
 
@@ -674,7 +679,8 @@ QString TextLayerController::pageTextInReadingOrder() const
         rects.append(r.bbox);
         blocks.append(r.blockId);
     }
-    TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks);
+    const bool ocrOrder = m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
+    TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks, pageYUp(), ocrOrder);
     QStringList lines;
     for (int idx : order) {
         if (idx < 0 || idx >= n) {
@@ -722,7 +728,8 @@ QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
             rects.append(r.bbox);
             blocks.append(r.blockId);
         }
-        TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks);
+        const bool ocrOrder = m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
+        TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks, pageYUp(), ocrOrder);
     }
 
     int cursor = 0;

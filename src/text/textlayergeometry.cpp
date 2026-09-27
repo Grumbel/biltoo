@@ -28,12 +28,23 @@ QVector<int> indicesIntersecting(const QVector<QRectF> &regionRects, const QRect
 }
 
 void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
-                      qreal topTolerance, const QVector<int> *blockIds)
+                      qreal topTolerance, const QVector<int> *blockIds,
+                      bool pageYUp, bool preferSourceOrder)
 {
     if (!indices || indices->isEmpty()) {
         return;
     }
+    // OCR / engine order: region index is ResultIterator sequence.
+    if (preferSourceOrder) {
+        std::sort(indices->begin(), indices->end());
+        return;
+    }
     const bool useBlocks = blockIds && blockIds->size() == regionRects.size();
+    auto visualTop = [pageYUp](const QRectF &r) -> qreal {
+        // Qt top() is always the lesser Y. In Y-up page space that is the
+        // bottom of the page; the visual top edge is bottom().
+        return pageYUp ? r.bottom() : r.top();
+    };
     std::sort(indices->begin(), indices->end(), [&](int a, int b) {
         if (a < 0 || a >= regionRects.size() || b < 0 || b >= regionRects.size()) {
             return a < b;
@@ -47,8 +58,11 @@ void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
         }
         const QRectF &ra = regionRects.at(a);
         const QRectF &rb = regionRects.at(b);
-        if (qAbs(ra.top() - rb.top()) > topTolerance) {
-            return ra.top() < rb.top();
+        const qreal ta = visualTop(ra);
+        const qreal tb = visualTop(rb);
+        if (qAbs(ta - tb) > topTolerance) {
+            // Y-up: larger visualTop is higher on the page → read first.
+            return pageYUp ? (ta > tb) : (ta < tb);
         }
         return ra.left() < rb.left();
     });

@@ -131,3 +131,11 @@ native raster scale, not by the crop window size.
 no row padding) by expanding `Format_ARGB32` pixels component-wise. Graded
 frames from `applyColorAdjustments` are ARGB32; feeding padded or ARGB memory
 to thumtoo as if it were contiguous RGB888 produces skewed / garbage OCR.
+
+## Reading order
+
+Tesseract `ResultIterator` at `RIL_TEXTLINE` already yields reading order.
+Biltoo keeps that sequence for OCR layers (`preferSourceOrder`). Geometric
+re-sort is only for native extract; when used, **Y-up page space** compares
+visual top via `QRectF::bottom()` (not `top()`), otherwise multi-line text
+reads bottom-to-top.

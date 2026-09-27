@@ -115,7 +115,9 @@ bool matches(const QString &regionText, const QString &query, bool fuzzy)
 QVector<int> readingOrderIndices(const QVector<QString> &texts,
                                  const QVector<QRectF> &bboxes,
                                  const QVector<int> &blockIds,
-                                 qreal topTolerance)
+                                 qreal topTolerance,
+                                 bool pageYUp,
+                                 bool preferSourceOrder)
 {
     QVector<int> order;
     order.reserve(texts.size());
@@ -128,7 +130,8 @@ QVector<int> readingOrderIndices(const QVector<QString> &texts,
     if (bboxes.size() == texts.size() && !order.isEmpty()) {
         const QVector<int> *blocks =
             (blockIds.size() == texts.size()) ? &blockIds : nullptr;
-        TextLayerGeometry::sortReadingOrder(&order, bboxes, topTolerance, blocks);
+        TextLayerGeometry::sortReadingOrder(&order, bboxes, topTolerance, blocks,
+                                            pageYUp, preferSourceOrder);
     }
     return order;
 }
@@ -178,7 +181,9 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
                             const QVector<QRectF> &bboxes,
                             const QString &query,
                             bool fuzzy,
-                            const QVector<int> &blockIds)
+                            const QVector<int> &blockIds,
+                            bool pageYUp,
+                            bool preferSourceOrder)
 {
     QVector<SearchHit> out;
     const QString qn = normalizeForSearch(query);
@@ -186,7 +191,8 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
         return out;
     }
     const QString qa = alnumOnly(query);
-    const QVector<int> order = readingOrderIndices(texts, bboxes, blockIds);
+    const QVector<int> order =
+        readingOrderIndices(texts, bboxes, blockIds, 4.0, pageYUp, preferSourceOrder);
 
     // Exact matches: search each MuPDF block as its own stream so columns
     // (different block_id) never form a single phrase. Unknown block ids

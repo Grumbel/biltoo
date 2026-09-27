@@ -40,7 +40,9 @@ bool matches(const QString &regionText, const QString &query, bool fuzzy);
 QVector<int> readingOrderIndices(const QVector<QString> &texts,
                                  const QVector<QRectF> &bboxes,
                                  const QVector<int> &blockIds = {},
-                                 qreal topTolerance = 4.0);
+                                 qreal topTolerance = 4.0,
+                                 bool pageYUp = false,
+                                 bool preferSourceOrder = false);
 
 /**
  * Find search hits on a page of text regions.
@@ -52,7 +54,9 @@ QVector<SearchHit> findHits(const QVector<QString> &texts,
                             const QVector<QRectF> &bboxes,
                             const QString &query,
                             bool fuzzy,
-                            const QVector<int> &blockIds = {});
+                            const QVector<int> &blockIds = {},
+                            bool pageYUp = false,
+                            bool preferSourceOrder = false);
 
 } // namespace TextSearchPolicy
 
