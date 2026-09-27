@@ -29,6 +29,17 @@ Biltoo-specific:
 Do **not** change PROTOCOL framing without updating text2sprech in lockstep.
 Qt6 Multimedia + Network linked for WAV playback and `QLocalSocket`.
 
+
+## Verification notes (agent)
+
+Checked without a full biltoo GUI build (sandbox lacks Qt6 Multimedia):
+
+- **SentenceSplitter** C++ abbreviation set matches Python `piper_server/sentence_splitter.py` (28 shared entries).
+- Python splitter passes the same cases as `tests/sentence_splitter_test.cpp` (basic, abbrev, initials, newlines, blank lines, junk segments, max_len chunking, hard cut).
+- **Framing:** `PiperClient` uses BE uint32 length + UTF-8 JSON, same as `protocol.py` / PROTOCOL.md.
+- **Lifecycle:** connect retry on `connectionError` (~6s); owned-server reconnect; stop/respawn after exhausted retries.
+- Run after pull: `ctest -R sentence-splitter`; Speak with `piper-server` on PATH or `--piper-socket`.
+
 ## Goals
 
 - Read **selected text** or the **current page** aloud inside biltoo.
