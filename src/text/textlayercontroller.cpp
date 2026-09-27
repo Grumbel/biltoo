@@ -545,8 +545,8 @@ void TextLayerController::finishRubberBand()
     for (int i = 0; i < m_session.regionCount(); ++i) {
         selBlocks[i] = m_session.regionAt(i).blockId;
     }
-    const bool ocrOrder = m_session.hasLayer()
-        && m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
+    const bool ocrOrder =
+        m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
     // regionRects are image/display space (Y-down); OCR prefers iterator index order.
     TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks,
                                         /*pageYUp=*/false, ocrOrder);
