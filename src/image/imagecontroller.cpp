@@ -279,6 +279,9 @@ void ImageController::hardReloadFromDisk()
         if (!m_view) {
             return;
         }
+        // Text layers were dropped with the Store purge; reinstall if the overlay
+        // is active so boxes track a fresh extract (not the old page_y_up blob).
+        m_view->hostText().refresh();
         ThumtooCache::scheduleProbe(path);
         m_view->hostDisplayPipeline().scheduleImageLoad(
             path, static_cast<int>(ImageView::LoadReplace));

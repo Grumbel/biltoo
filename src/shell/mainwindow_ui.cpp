@@ -77,10 +77,11 @@ void MainWindow::createActions()
     m_hardReloadAct->setShortcut(Qt::SHIFT | Qt::Key_F5);
     m_hardReloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
     m_hardReloadAct->setToolTip(
-        tr("Evict cache and re-decode from disk (Shift+F5)"));
+        tr("Evict cache (tiles + text layers) and re-decode (Shift+F5)"));
     m_hardReloadAct->setStatusTip(
-        tr("Hard reload (Shift+F5): drop host/tile/durable Store caches, then re-decode — "
-           "current image in Image mode; selection (or focused) in Gallery/Workspace. No relayout."));
+        tr("Hard reload (Shift+F5): drop host/tile/durable Store caches and "
+           "page text layers, then re-decode — current image in Image mode; "
+           "selection (or focused) in Gallery/Workspace. No relayout."));
     connect(m_hardReloadAct, &QAction::triggered, this, &MainWindow::hardReloadFromDisk);
 
     m_printAct = new QAction(tr("&Print…"), this);
