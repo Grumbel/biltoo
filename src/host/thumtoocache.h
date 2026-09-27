@@ -402,14 +402,26 @@ void prepareTiles(const QStringList &paths, int minScale,
                   TilePrepareProgress onProgress = {},
                   std::atomic<bool> *cancel = nullptr);
 
-/** Store coverage counts for Prepare Tile Cache UI (worker-safe). */
+/** Per-path Store coverage for Prepare Tile Cache UI (worker-safe). */
+struct PathCacheCoverage {
+    QString path;
+    bool unsupported = false;
+    bool hasTiles = false;
+    bool hasLqip = false;      ///< Store ThumbHash/Handsum (not EMB)
+    bool hasEmbedded = false;  ///< Store EXIF/PDF thumb kind
+    /** Finest stored tile scale (0 = full res); -1 if no tiles. */
+    int tileMinScale = -1;
+};
+
+/** Aggregate + per-path Store coverage for Prepare Tile Cache UI. */
 struct CacheCoverageStats {
     int total = 0;
     int withTiles = 0;
-    int withLqip = 0;       ///< Store ThumbHash/Handsum
-    int withEmbedded = 0;   ///< Store EMB kind
+    int withLqip = 0;
+    int withEmbedded = 0;
     int tilesWithoutLqip = 0;
     int unsupported = 0;
+    QVector<PathCacheCoverage> rows;
 };
 CacheCoverageStats scanCacheCoverage(const QStringList &paths);
 

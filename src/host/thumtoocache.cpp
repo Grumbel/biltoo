@@ -2403,46 +2403,52 @@ CacheCoverageStats scanCacheCoverage(const QStringList &paths)
         std::lock_guard lock(g_mu);
         c = clientUnlocked();
     }
+    s.rows.reserve(paths.size());
     for (const QString &path : paths) {
         if (path.isEmpty()) {
             continue;
         }
         ++s.total;
+        PathCacheCoverage row;
+        row.path = path;
         if (isUnsupported(path)) {
+            row.unsupported = true;
             ++s.unsupported;
+            s.rows.push_back(row);
             continue;
         }
         const bool tiles = hasDurableTiles(path);
+        row.hasTiles = tiles;
         if (tiles) {
             ++s.withTiles;
+            row.tileMinScale = durableTileMinScale(path);
         }
-        bool lqip = false;
-        bool emb = false;
         if (c) {
             const std::string uri = toThumtooUri(path);
             if (!uri.empty()) {
                 try {
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
                     if (c->get_lqip(uri)) {
-                        lqip = true;
+                        row.hasLqip = true;
                     }
 #endif
                     if (auto e = c->get_embedded_preview(uri); e && !e->bytes.empty()) {
-                        emb = true;
+                        row.hasEmbedded = true;
                     }
                 } catch (...) {
                 }
             }
         }
-        if (lqip) {
+        if (row.hasLqip) {
             ++s.withLqip;
         }
-        if (emb) {
+        if (row.hasEmbedded) {
             ++s.withEmbedded;
         }
-        if (tiles && !lqip) {
+        if (row.hasTiles && !row.hasLqip) {
             ++s.tilesWithoutLqip;
         }
+        s.rows.push_back(row);
     }
     return s;
 }

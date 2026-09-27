@@ -2,11 +2,14 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2714.19-setbusy-restore` (base `bcbb97e`).
+**Tip:** `biltoo-2714.20-prepare-ui-explain` (base `bcbb97e`).
 
-Restore `CachePrepareDialog::setBusy` (accidentally dropped during stats edit).
+### Prepare Tile Cache UI
+- Detail levels explained (scale 0/1/2/3 = 1:1 / 2× / 4× / 8×).
+- Per-image table: Tiles / Finest scale / LQIP / EMB.
+- Overview-only: skips re-encode if finer tiles exist, still fills LQIP.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2714.19-setbusy-restore-bcbb97e.bundle HEAD
+git pull --ff-only …/biltoo-2714.20-prepare-ui-explain-bcbb97e.bundle HEAD
 ```

@@ -15,10 +15,11 @@ class QComboBox;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class QTableWidget;
 
 /**
- * Build durable zoom tiles for the current session (thumtoo-prepare --tiles).
- * LQIP is filled automatically during tile encode; size/ladder are not exposed.
+ * Build durable zoom tiles for the current session.
+ * Shows per-image Store coverage (tiles / LQIP / EMB) and detail-level help.
  */
 class CachePrepareDialog : public QDialog
 {
@@ -37,16 +38,19 @@ private slots:
     void refreshStats();
     void startPrepare();
     void cancelPrepare();
+    void onDetailIndexChanged(int index);
 
 private:
     void setBusy(bool busy);
-    void applyStatsLabel(const ThumtooCache::CacheCoverageStats &s);
+    void applyStats(const ThumtooCache::CacheCoverageStats &s);
     void onProgress(int done, int total, int ok, int skipped, int failed,
                     int lqipFilled);
     void onFinished();
+    void updateDetailHint(int index);
 
     QStringList m_paths;
     QLabel *m_statsLabel = nullptr;
+    QTableWidget *m_table = nullptr;
     QLabel *m_detailHint = nullptr;
     QComboBox *m_detailCombo = nullptr;
     QProgressBar *m_progress = nullptr;
