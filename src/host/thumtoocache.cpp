@@ -3699,12 +3699,14 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath, bool force,
 
 
 
-OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang)
+OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang,
+                            int sourceDpi)
 {
     OcrRunResult out;
 #if !defined(BILTOO_HAVE_THUMTOO_TEXT)
     Q_UNUSED(image);
     Q_UNUSED(lang);
+    Q_UNUSED(sourceDpi);
     out.status = OcrRunResult::Status::Unavailable;
     return out;
 #else
@@ -3734,6 +3736,9 @@ OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang)
     thumtoo::OcrOptions opts;
     if (!lang.isEmpty()) {
         opts.lang = lang.toStdString();
+    }
+    if (sourceDpi > 0) {
+        opts.dpi = sourceDpi;
     }
     const thumtoo::TextRect bounds{
         0.0, 0.0,

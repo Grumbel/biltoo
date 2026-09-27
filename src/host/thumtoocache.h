@@ -599,7 +599,13 @@ OcrRunResult runOcrPageTextLayer(const QString &sessionPath,
  * Region bboxes use pageBounds (0,0)–(width,height) in image pixel space
  * (Y-down). Caller remaps into document page space when needed.
  */
-OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang = {});
+/**
+ * OCR a host-prepared RGB image (appearance path).
+ * @p sourceDpi Tesseract source resolution; 0 → thumtoo estimates (300 for
+ * pixel page boxes). Prefer 72 * native_w / pageBounds_width for document pages.
+ */
+OcrRunResult runOcrRgbImage(const QImage &image, const QString &lang = {},
+                            int sourceDpi = 0);
 
 /** Cache-only OCR layer (empty if never OCR'd). */
 PageTextLayer cachedOcrPageTextLayer(const QString &sessionPath);

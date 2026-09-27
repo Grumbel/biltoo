@@ -103,3 +103,20 @@ window can fatten boxes. Axis-aligned crops and 90° content turns are exact.
 2. No layer yet? `pageSpaceYUpForPath`.
 3. Store OCR boxes in page space only — never bake session crop into the store.
 4. Appearance OCR: remap before install; share `cachedSize` with paint.
+
+## Source DPI (Tesseract)
+
+Tesseract needs a realistic source resolution. Without it (default ~70 DPI),
+pages with mixed body/caption/header sizes segment poorly — especially when
+OCR runs on a **cropped** appearance bitmap (the buffer looks like a tiny
+physical scrap).
+
+| Path | DPI used |
+|------|----------|
+| Full-page URI OCR | `72 × raster_w / page_bounds_w` (points), clamped 70–600 |
+| Appearance OCR (document) | same, from `cachedSize` × native `pageBounds` |
+| Appearance OCR (plain image) | **300** |
+| Host override | `OcrOptions::dpi` / `runOcrRgbImage(..., sourceDpi)` |
+
+Crop does not change the correct DPI: character height in pixels is set by the
+native raster scale, not by the crop window size.

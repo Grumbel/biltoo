@@ -5346,13 +5346,28 @@ void MainWindow::startOcrCurrentPage(bool force)
                 if (view.isNull()) {
                     view = raw;
                 }
-                result = ThumtooCache::runOcrRgbImage(view, langCopy);
+                // Tell Tesseract the true page density so a crop does not look
+                // like a 1" scrap at 72 DPI (mixed type sizes segment badly).
+                int sourceDpi = 0;
+                const auto nativeLayer =
+                    ThumtooCache::cachedPageTextLayer(pathCopy);
+                if (nativeLayer.pageBounds.isValid()
+                    && nativeLayer.pageBounds.width() > 1.0
+                    && native.width() > 0) {
+                    sourceDpi = qBound(
+                        70,
+                        qRound(72.0 * double(native.width())
+                               / nativeLayer.pageBounds.width()),
+                        600);
+                } else if (native.width() > 0) {
+                    // Plain image: ~300 DPI is a stable default for mixed sizes.
+                    sourceDpi = 300;
+                }
+                result = ThumtooCache::runOcrRgbImage(view, langCopy, sourceDpi);
                 if (result.status == ThumtooCache::OcrRunResult::Status::Ok
                     || result.status
                            == ThumtooCache::OcrRunResult::Status::EmptyText) {
                     QRectF pageBounds;
-                    const auto nativeLayer =
-                        ThumtooCache::cachedPageTextLayer(pathCopy);
                     if (nativeLayer.pageBounds.isValid()) {
                         pageBounds = nativeLayer.pageBounds;
                     } else {
