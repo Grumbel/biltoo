@@ -249,6 +249,12 @@ void PlaybackController::play()
         m_playStartMs = QDateTime::currentMSecsSinceEpoch();
         m_sink->resume();
         m_positionTimer->start();
+        // Remaining time for this sentence after pause.
+        const qint64 dur = durationForCurrentSentence();
+        const qint64 remain = (dur > m_seekOffsetMs) ? (dur - m_seekOffsetMs) : 1;
+        if (m_sentenceEndTimer) {
+            m_sentenceEndTimer->start(int(remain) + 40);
+        }
         return;
     }
 
@@ -266,6 +272,9 @@ void PlaybackController::pause()
         m_seekOffsetMs = currentPositionMs();
         m_sink->suspend();
         m_positionTimer->stop();
+        if (m_sentenceEndTimer) {
+            m_sentenceEndTimer->stop();
+        }
     } else {
         m_paused = false;
     }
