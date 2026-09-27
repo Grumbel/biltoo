@@ -569,6 +569,7 @@ private:
     QDockWidget *m_textDock = nullptr;
     MessageLogPanel *m_messageLogPanel = nullptr;
     QDockWidget *m_messageLogDock = nullptr;
+    QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
     QVector<int> m_ttsSpeakRegions;
     QString m_piperSocketPath;

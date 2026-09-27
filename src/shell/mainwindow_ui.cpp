@@ -855,6 +855,12 @@ void MainWindow::createActions()
         m_toggleTextAct->setStatusTip(
             tr("Page text / OCR regions with selection mirrored on the page"));
     }
+    if (m_messageLogDock) {
+        m_toggleMessageLogAct = m_messageLogDock->toggleViewAction();
+        m_toggleMessageLogAct->setText(tr("Show &Messages"));
+        m_toggleMessageLogAct->setStatusTip(
+            tr("Application messages (OCR, TTS, and other status/errors)"));
+    }
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
@@ -1110,6 +1116,9 @@ void MainWindow::createMenus()
     }
     if (m_toggleTextAct) {
         m_panelsMenu->addAction(m_toggleTextAct);
+    }
+    if (m_toggleMessageLogAct) {
+        m_panelsMenu->addAction(m_toggleMessageLogAct);
     }
     m_panelsMenu->addAction(m_toggleLayoutPanelAct);
     m_panelsMenu->addSeparator();

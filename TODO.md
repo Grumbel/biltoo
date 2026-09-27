@@ -2,13 +2,13 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2716.7-dpi-auto-toggle` (base `d456ffc`).
+**Tip:** `biltoo-2716.8-messages-panel-menu` (base `d456ffc`).
 
-### UI
-- Source DPI: **Auto** toggle; manual spin (70–600) only when Auto is off.
+- Messages dock in **Panels** menu (`Show Messages`).
+- Source DPI Auto toggle; text overlays via applied ContentXform.
+- Requires thumtoo **345.2**.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2716.7-dpi-auto-toggle-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2716.8-messages-panel-menu-d456ffc.bundle HEAD
 ```
-Requires thumtoo **345.2**.
