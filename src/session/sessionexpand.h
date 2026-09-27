@@ -18,7 +18,11 @@ namespace SessionExpand {
 using ReportFn = std::function<void(const QString &message, int current, int total)>;
 using CancelFn = std::function<bool()>; // true → abort
 
-/** Absolute path for session identity without exists()/canonicalFilePath() stats. */
+/**
+ * Session identity string for a user input.
+ * Local/file paths → absolute path (no existence required).
+ * http(s) → URL text unchanged (never QFileInfo on URL strings).
+ */
 QString canonicalImagePath(const QString &path);
 
 /**

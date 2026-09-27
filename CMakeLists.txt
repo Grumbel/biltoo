@@ -291,6 +291,8 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionsort.h
   src/session/sessionexpand.cpp
   src/session/sessionexpand.h
+  src/session/sessioninputpath.cpp
+  src/session/sessioninputpath.h
   src/session/projectfile.cpp
   src/session/projectfile.h
   src/item/placementlinear.cpp
@@ -762,6 +764,14 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-sessionpathorder-test PRIVATE src)
   target_link_libraries(biltoo-sessionpathorder-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessionpathorder COMMAND biltoo-sessionpathorder-test)
+
+  add_executable(biltoo-sessioninputpath-test
+    tests/sessioninputpath_test.cpp
+    src/session/sessioninputpath.cpp
+  )
+  target_include_directories(biltoo-sessioninputpath-test PRIVATE src)
+  target_link_libraries(biltoo-sessioninputpath-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME sessioninputpath COMMAND biltoo-sessioninputpath-test)
 
   # Phase 7 Stage 0–2: ItemWorld facade + Placement characterization.
   # Links SessionAppearanceStore (ItemWorld dual-writes DTO + sparse tables).
