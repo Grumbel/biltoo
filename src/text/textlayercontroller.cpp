@@ -14,6 +14,7 @@
 #include "host/thumtoocache.h"
 #include "host/pagepath.h"
 #include "session/sessionappearance.h"
+#include "display/displaypipelinecontroller.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -30,13 +31,17 @@ TextLayerController::TextLayerController(ImageView *view)
     if (m_view) {
         // Crop draft shows orient-only full frame; Applied ContentXform changes
         // without a text-layer install — repaint so regionImageRect re-maps.
-        connect(m_view, &ImageView::cropModeChanged, this, [this](bool) {
+        auto repaintText = [this]() {
             if (m_view && m_view->viewport()
                 && (m_session.showsRegions() || m_session.hasSearchQuery()
                     || m_session.showsGlyphs())) {
                 m_view->viewport()->update();
             }
-        });
+        };
+        connect(m_view, &ImageView::cropModeChanged, this, [repaintText](bool) { repaintText(); });
+        // Content rotate/flip changes applied ContentXform without reinstalling the text layer.
+        connect(m_view, &ImageView::sessionAppearanceChanged, this,
+                [repaintText](SessionImageId, const QString &, const QImage &) { repaintText(); });
     }
 }
 
@@ -361,6 +366,20 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
     }
 
     const QString path = m_view->hostImage().classicPath();
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && m_view->isImageMode()) {
+        sid = m_view->hostSessionId().currentIdValue();
+    }
+
+    // Same orient/crop authority as display install (contentBake + applied + session).
+    // Session-only missed ItemWorld contentBake turns when the item had no
+    // applied fingerprint — boxes stayed unrotated on a rotated page.
+    const WorkspaceItemState want =
+        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
+    const ContentXform::Value x = ContentXform::Value::fromState(want);
+
+    // Unoriented full-page raster size (page → source). Never use oriented
+    // intrinsic as-if-native without un-swapping odd quarter turns.
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         const QSize known = m_view->hostSizeBook().known(path);
@@ -370,39 +389,12 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
     }
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         sourceSize = item->imageSize();
-        WorkspaceItemState stGuess;
-        SessionImageId sidGuess = item->sessionId();
-        if (sidGuess == kInvalidSessionImageId && m_view->isImageMode()) {
-            sidGuess = m_view->hostSessionId().currentIdValue();
-        }
-        if (sidGuess != kInvalidSessionImageId) {
-            stGuess = m_view->sessionAppearanceValue(sidGuess);
-        }
-        int turns = stGuess.contentQuarterTurns % 4;
-        if (turns < 0) {
-            turns += 4;
-        }
-        if (!stGuess.hasCrop && (turns % 2) != 0) {
+        if (ContentXform::swapsAspect(x) && !x.hasCrop) {
             sourceSize.transpose();
         }
     }
     if (sourceSize.width() < 1 || sourceSize.height() < 1) {
         return {};
-    }
-
-    WorkspaceItemState st;
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && m_view->isImageMode()) {
-        sid = m_view->hostSessionId().currentIdValue();
-    }
-    if (sid != kInvalidSessionImageId) {
-        st = m_view->sessionAppearanceValue(sid);
-    } else if (!path.isEmpty()) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored)
-            && stored.hasOrientContent()) {
-            SessionAppearance::applyStoredContentAppearance(&st, stored, false);
-        }
     }
 
     const bool pageYUpFlag = pageYUp();
@@ -412,16 +404,6 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
         return {};
     }
 
-    // Map through the *applied* content transform that produced the live
-    // display sample — not durable session appearance alone.
-    // Crop draft installs orient-only full frame while the store may still
-    // hold a prior crop; using fromState(st) would crop the boxes into the
-    // full-page contentRect (wrong origin). Applied xform has hasCrop=false
-    // during draft, and the real crop after Apply.
-    ContentXform::Value x = ContentXform::Value::fromState(st);
-    if (m_view->itemHasAppliedContentXform(item)) {
-        x = m_view->itemAppliedContentXform(item);
-    }
     QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
     if (disp.isEmpty()) {
         return {};
