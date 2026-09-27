@@ -105,7 +105,7 @@ bool TextLayerController::applyOcrLayer(bool force, const QString &lang)
         return false;
     }
     ThumtooCache::PageTextLayer layer =
-        ThumtooCache::ensureOcrPageTextLayer(path, force, lang, currentPageCropInPageSpace());
+        ThumtooCache::ensureOcrPageTextLayer(path, force, lang);
     if (layer.regions.isEmpty() && !layer.pageBounds.isValid()) {
         return false;
     }

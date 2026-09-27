@@ -48,6 +48,8 @@ public:
     bool applyOcrLayer(bool force = false, const QString &lang = QString());
     /** Session crop mapped into page space for OCR (empty if no crop). */
     QRectF currentPageCropInPageSpace() const;
+    /** True when page Y increases upward (PDF/DjVu); false for EPUB Y-down. */
+    bool pageYUp() const;
     /** Install a pre-fetched layer (e.g. after worker OCR). */
     void installLayer(const ThumtooCache::PageTextLayer &layer, const QString &path);
     void setSearchFuzzy(bool on);
@@ -97,7 +99,6 @@ private:
     void syncMultiSelectionFromCurrentPage(const QVector<int> &ids);
     void restoreCurrentPageSelectionFromMulti();
 
-    bool pageYUp() const;
     QRectF rubberBandImageRect() const;
     void finishRubberBand();
     /** Tightest text region under @p viewPos, or -1. */

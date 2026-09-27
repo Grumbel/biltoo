@@ -5182,7 +5182,22 @@ void MainWindow::updateOcrPanel()
 
 namespace {
 
-/** Map OCR regions from display-pixel page box back to document page space. */
+/**
+ * OCR coordinate contract
+ * -----------------------
+ * TextRegion::bbox and PageTextLayer::pageBounds are always in **document page
+ * space** (same as native PDF/DjVu/EPUB text). Crop, orient, and grade never
+ * change stored bboxes — only the paint path (regionImageRect) maps
+ * page → source → display for the *current* content appearance.
+ *
+ * Recognition may run on a materializeDisplay() bitmap (what the user sees).
+ * Those pixel boxes are inverted through ContentXform back into page space
+ * once at OCR install time. Changing crop later does not require recomputing
+ * regions; overlays follow the new crop via regionImageRect.
+ *
+ * Free-rotated crops: inverse map uses AABB of the four corners (same as
+ * forward map). Per-glyph rotated quads are not stored yet.
+ */
 void remapOcrLayerFromDisplayToPage(ThumtooCache::PageTextLayer *layer,
                                     const QSize &nativeSource,
                                     const WorkspaceItemState &st,
@@ -5190,15 +5205,16 @@ void remapOcrLayerFromDisplayToPage(ThumtooCache::PageTextLayer *layer,
                                     bool pageYUp)
 {
     if (!layer || nativeSource.width() < 1 || nativeSource.height() < 1
-        || !pageBounds.isValid()) {
+        || !pageBounds.isValid() || pageBounds.width() < 1 || pageBounds.height() < 1) {
         return;
     }
     const ContentXform::Value x = ContentXform::Value::fromState(st);
     for (ThumtooCache::TextRegion &reg : layer->regions) {
-        const QRectF disp = reg.bbox;
-        if (disp.isEmpty()) {
+        const QRectF disp = reg.bbox.normalized();
+        if (disp.width() < 0.5 || disp.height() < 0.5) {
             continue;
         }
+        // display (crop-local pixels) → source (full unoriented raster) → page
         const QRectF src =
             ContentXform::mapDisplayRectToSource(disp, nativeSource, x);
         if (src.isEmpty()) {
@@ -5212,8 +5228,8 @@ void remapOcrLayerFromDisplayToPage(ThumtooCache::PageTextLayer *layer,
 
 bool appearanceAffectsOcr(const WorkspaceItemState &st)
 {
-    return SessionAppearance::hasContentAppearance(st)
-           || !st.colorAdjust.isIdentity();
+    // Geometry *or* grade: recognition should match on-screen pixels.
+    return SessionAppearance::hasContentAppearance(st);
 }
 
 } // namespace
@@ -5286,25 +5302,27 @@ void MainWindow::startOcrCurrentPage(bool force)
             ocrState = m_imageView->sessionAppearanceValue(sid);
         }
     }
-    const QRectF pageCrop = m_imageView->hostText().currentPageCropInPageSpace();
     if (appearanceAffectsOcr(ocrState) && m_ocrPanel) {
         m_ocrPanel->appendLog(
-            tr("OCR uses on-screen appearance (orient/crop/colour grade)"));
-    } else if (pageCrop.isValid() && m_ocrPanel) {
+            tr("OCR on displayed pixels (orient/crop/grade); "
+               "regions stored in page space"));
+    } else if (m_ocrPanel) {
         m_ocrPanel->appendLog(
-            tr("Using session crop for OCR (%1×%2 in page space)")
-                .arg(pageCrop.width(), 0, 'f', 1)
-                .arg(pageCrop.height(), 0, 'f', 1));
+            tr("OCR full page (page space); live crop applies only when painting"));
     }
     const bool useDisplay = appearanceAffectsOcr(ocrState);
     QThreadPool::globalInstance()->start(
-        [self, pathCopy, langCopy, gen, force, pageCrop, ocrState, useDisplay]() {
+        [self, pathCopy, langCopy, gen, force, ocrState, useDisplay]() {
         ThumtooCache::OcrRunResult result;
         if (!useDisplay) {
+            // Full-page URI OCR. Do **not** pass session crop into thumtoo:
+            // crop is a view transform; regions stay in page space and
+            // regionImageRect applies the live crop at paint time.
             result = ThumtooCache::runOcrPageTextLayer(
-                pathCopy, force, langCopy, pageCrop);
+                pathCopy, force, langCopy, /*pageCrop=*/{});
         } else {
-            // Decode → materialize (crop/orient/grade) → OCR pixels as seen.
+            // Decode full page → materializeDisplay (orient/crop/grade) → OCR.
+            // Then invert display pixel boxes into **page space** once.
             QImage raw = ImageLoader::load(pathCopy);
             if (raw.isNull()) {
                 raw = ImageLoader::loadThumbnail(pathCopy, 4000);
@@ -5313,6 +5331,8 @@ void MainWindow::startOcrCurrentPage(bool force)
                 result.status = ThumtooCache::OcrRunResult::Status::Failed;
                 result.detail = QStringLiteral("decode failed for appearance OCR");
             } else {
+                // Native size for ContentXform must match the bitmap we map
+                // through (same basis as materializeDisplay / regionImageRect).
                 const QSize native = raw.size();
                 QImage view = SessionAppearance::materializeDisplay(
                     raw, ocrState, SessionAppearance::PixelKind::FullSource);
@@ -5328,12 +5348,21 @@ void MainWindow::startOcrCurrentPage(bool force)
                         ThumtooCache::cachedPageTextLayer(pathCopy);
                     if (nativeLayer.pageBounds.isValid()) {
                         pageBounds = nativeLayer.pageBounds;
+                    } else if (result.layer.pageBounds.isValid()
+                               && result.layer.pageBounds.width() > 1
+                               && !ocrState.hasCrop
+                               && ocrState.contentQuarterTurns == 0
+                               && !ocrState.contentHFlip
+                               && !ocrState.contentVFlip) {
+                        // Grade-only: OCR used pixel page box; prefer document
+                        // bounds when we have them, else keep layer bounds
+                        // only after mapping (identity geometry).
+                        pageBounds = QRectF(0, 0, native.width(), native.height());
                     } else {
                         pageBounds = QRectF(0, 0, native.width(), native.height());
                     }
-                    // PDF/DjVu page Y-up when path is a document page.
                     const bool yUp = PagePath::isPageRef(pathCopy)
-                                     && !pathCopy.contains(QStringLiteral("epub"));
+                        && !PagePath::isEpubFile(PagePath::documentFilePath(pathCopy));
                     remapOcrLayerFromDisplayToPage(
                         &result.layer, native, ocrState, pageBounds, yUp);
                 }
