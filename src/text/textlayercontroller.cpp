@@ -334,6 +334,8 @@ bool TextLayerController::pageYUp() const
 
 QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &region) const
 {
+    // region.bbox is document page space (see docs/OCR_COORDINATES.md).
+    // Live crop/orient/grade are applied here only — never baked into bbox.
     ImageItem *item = m_view->primaryItem();
     if (!item || !m_session.pageBoundsValid()) {
         return {};

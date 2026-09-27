@@ -33,3 +33,10 @@ window can fatten boxes. Axis-aligned crops and 90° content turns are exact.
 
 thumtoo’s OCR store is keyed by document page (and optional engine/model), not
 by session crop. Prefer full-page OCR in the store; session crop is paint-only.
+
+## Source size basis
+
+Appearance OCR scales the decode to `ThumtooCache::cachedSize(path)` when it
+differs from the decoder’s pixel size so ContentXform and `regionImageRect`
+share one native size. Mismatched sizes were a common source of box drift
+after crop.

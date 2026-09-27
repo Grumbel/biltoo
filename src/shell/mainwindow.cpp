@@ -5331,8 +5331,16 @@ void MainWindow::startOcrCurrentPage(bool force)
                 result.status = ThumtooCache::OcrRunResult::Status::Failed;
                 result.detail = QStringLiteral("decode failed for appearance OCR");
             } else {
-                // Native size for ContentXform must match the bitmap we map
-                // through (same basis as materializeDisplay / regionImageRect).
+                // Match regionImageRect's source basis so paint and OCR agree.
+                QSize mapSize = ThumtooCache::cachedSize(pathCopy);
+                if (mapSize.width() < 1 || mapSize.height() < 1) {
+                    mapSize = raw.size();
+                }
+                if (mapSize.width() > 0 && mapSize.height() > 0
+                    && raw.size() != mapSize) {
+                    raw = raw.scaled(mapSize, Qt::IgnoreAspectRatio,
+                                     Qt::SmoothTransformation);
+                }
                 const QSize native = raw.size();
                 QImage view = SessionAppearance::materializeDisplay(
                     raw, ocrState, SessionAppearance::PixelKind::FullSource);
@@ -5348,17 +5356,8 @@ void MainWindow::startOcrCurrentPage(bool force)
                         ThumtooCache::cachedPageTextLayer(pathCopy);
                     if (nativeLayer.pageBounds.isValid()) {
                         pageBounds = nativeLayer.pageBounds;
-                    } else if (result.layer.pageBounds.isValid()
-                               && result.layer.pageBounds.width() > 1
-                               && !ocrState.hasCrop
-                               && ocrState.contentQuarterTurns == 0
-                               && !ocrState.contentHFlip
-                               && !ocrState.contentVFlip) {
-                        // Grade-only: OCR used pixel page box; prefer document
-                        // bounds when we have them, else keep layer bounds
-                        // only after mapping (identity geometry).
-                        pageBounds = QRectF(0, 0, native.width(), native.height());
                     } else {
+                        // Image files: page box == full source raster (Y-down).
                         pageBounds = QRectF(0, 0, native.width(), native.height());
                     }
                     const bool yUp = PagePath::isPageRef(pathCopy)
