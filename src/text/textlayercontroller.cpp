@@ -328,8 +328,14 @@ bool TextLayerController::hitLinkAt(const QPoint &viewPos, int *pageOut, QString
 
 bool TextLayerController::pageYUp() const
 {
-    const QString docPath = PagePath::documentFilePath(m_view->hostImage().classicPath());
-    return PagePath::isDjvuFile(docPath);
+    // Prefer the flag on the loaded layer (native + OCR after thumtoo TTL7).
+    if (m_session.pageBoundsValid()) {
+        return m_session.layerRef().pageYUp;
+    }
+    if (!m_view) {
+        return true;
+    }
+    return ThumtooCache::pageSpaceYUpForPath(m_view->hostImage().classicPath());
 }
 
 QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &region) const

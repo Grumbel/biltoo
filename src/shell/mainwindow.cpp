@@ -602,8 +602,7 @@ MainWindow::MainWindow(QWidget *parent)
             m_cropPanel->setStatusText(tr("No text layer with regions"));
             return;
         }
-        const QString docPath = PagePath::documentFilePath(path);
-        const bool pageYUp = PagePath::isDjvuFile(docPath);
+        const bool pageYUp = layer.pageYUp;
         QVector<QRectF> bands;
         bands.reserve(layer.regions.size());
         for (const ThumtooCache::TextRegion &r : layer.regions) {
@@ -5360,10 +5359,11 @@ void MainWindow::startOcrCurrentPage(bool force)
                         // Image files: page box == full source raster (Y-down).
                         pageBounds = QRectF(0, 0, native.width(), native.height());
                     }
-                    const bool yUp = PagePath::isPageRef(pathCopy)
-                        && !PagePath::isEpubFile(PagePath::documentFilePath(pathCopy));
+                    // Target document page space (Y-up for PDF/DjVu/EPUB).
+                    const bool yUp = ThumtooCache::pageSpaceYUpForPath(pathCopy);
                     remapOcrLayerFromDisplayToPage(
                         &result.layer, native, ocrState, pageBounds, yUp);
+                    result.layer.pageYUp = yUp;
                 }
             }
         }

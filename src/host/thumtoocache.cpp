@@ -3378,6 +3378,21 @@ DocumentOutline ensureDocumentOutline(const QString &)
 
 #endif
 
+bool pageSpaceYUpForPath(const QString &sessionPath)
+{
+    // Document pages use bottom-left Y-up page space (native + OCR after TTL7).
+    // Plain files / archive image members use top-left Y-down.
+    if (PagePath::isPageRef(sessionPath) || PagePath::isEpubLayoutOnly(sessionPath)) {
+        return true;
+    }
+    const QString doc = PagePath::documentFilePath(sessionPath);
+    if (PagePath::isPdfFile(doc) || PagePath::isDjvuFile(doc)
+        || PagePath::isEpubFile(doc)) {
+        return true;
+    }
+    return false;
+}
+
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp)
 {
@@ -3391,11 +3406,11 @@ QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
     qreal ny0;
     qreal ny1;
     if (pageYUp) {
-        // PDF/DjVu: page Y increases upward; image Y increases downward.
+        // Document page space: Y increases upward; source image Y downward.
         ny0 = (pageBounds.bottom() - pageRect.bottom()) / ph;
         ny1 = (pageBounds.bottom() - pageRect.top()) / ph;
     } else {
-        // EPUB (MuPDF reflow): page Y already increases downward (top-left).
+        // Plain-image / legacy OCR space: both top-left Y-down.
         ny0 = (pageRect.top() - pageBounds.top()) / ph;
         ny1 = (pageRect.bottom() - pageBounds.top()) / ph;
     }
@@ -3476,6 +3491,7 @@ PageTextLayer convertLayer(const thumtoo::PageTextLayer &layer)
     out.layoutKey = QString::fromStdString(layer.layout_key);
     out.pageBounds = QRectF(layer.page_bounds.x0, layer.page_bounds.y0,
                             layer.page_bounds.width(), layer.page_bounds.height());
+    out.pageYUp = layer.page_y_up;
     out.regions.reserve(static_cast<int>(layer.regions.size()));
     for (const auto &r : layer.regions) {
         out.regions.push_back(convertRegion(r));

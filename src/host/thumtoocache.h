@@ -501,7 +501,7 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath);
 struct TextRegion {
     enum class Role { Text, Link };
     enum class Kind { Body, PageNumber, Header, Footer };
-    QRectF bbox;  ///< page space (PDF/EPUB: points Y-up; DjVu: pixels Y-up)
+    QRectF bbox;  ///< page space; interpret with PageTextLayer::pageYUp
     Role role = Role::Text;
     Kind kind = Kind::Body;
     QString text;
@@ -520,6 +520,11 @@ struct PageTextLayer {
     int page = 0;
     QString layoutKey;
     QRectF pageBounds;
+    /**
+     * When true, region bboxes use bottom-left origin (Y up) inside pageBounds.
+     * When false, top-left (Y down). Set by thumtoo (TTL7+); see docs/OCR_COORDINATES.md.
+     */
+    bool pageYUp = true;
     QVector<TextRegion> regions;
 };
 
@@ -606,15 +611,22 @@ DocumentOutline cachedDocumentOutline(const QString &sessionOrFilePath);
 DocumentOutline ensureDocumentOutline(const QString &sessionOrFilePath);
 
 /**
- * Map a page-space rect into image-pixel space (top-left origin) using pageBounds.
- * @p pageYUp true for DjVu (origin bottom-left, Y up). False for PDF and EPUB
- * where MuPDF text already matches the top-left Y-down raster.
+ * Map a page-space rect into source image pixels (top-left, Y-down).
+ * @p pageYUp must match PageTextLayer::pageYUp (or pageSpaceYUp fallback).
+ * True: page origin lower-left (PDF/DjVu/EPUB document space).
+ * False: page origin top-left (plain-image OCR space).
  */
 QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp = true);
 /** Inverse of pageRectToImageRect. */
 QRectF imageRectToPageRect(const QRectF &imageRect, const QRectF &pageBounds,
                            const QSize &imageSize, bool pageYUp = true);
+
+/**
+ * Default page-space Y orientation when no layer is loaded yet.
+ * Document page refs (PDF/DjVu/EPUB) → true; plain paths → false.
+ */
+bool pageSpaceYUpForPath(const QString &sessionPath);
 
 /**
  * Local content-appearance state (XDG_STATE_HOME/thumtoo) — not the pixel cache.

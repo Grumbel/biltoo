@@ -8,7 +8,7 @@ API.
 
 | Name | Origin | Axes | Who produces it |
 |------|--------|------|-----------------|
-| **page** | page box from the document | may be Y-up (PDF/DjVu) or Y-down (EPUB) | thumtoo text layer |
+| **page** | page box from the document | Y-up for PDF/DjVu/EPUB (`pageYUp`); Y-down for plain-image OCR | thumtoo text layer (`pageYUp` flag) |
 | **source** | top-left of the full unoriented page raster | X right, Y down | decode / `cachedSize` |
 | **oriented** | top-left after content flip + quarter-turns | X right, Y down | `bakeFlip` / `bakeRotate90` |
 | **display** | top-left of what `ImageItem` paints | X right, Y down | oriented, then crop-local if `hasCrop` |
@@ -66,4 +66,10 @@ Then map, then **scale** the result into the actual `sourceImage()` /
 1. Which space is the input rect in (page / source / oriented / display)?  
 2. Is `sourceSize` the unoriented full page, or already swapped by turns?  
 3. Is `cropRect` post-bake (after `mapCropThrough*`) or raw?  
-4. Does the live item show full or soft pixels (scale magnitude)?  
+4. Does the live item show full or soft pixels (scale magnitude)?
+
+## OCR / text layers
+
+Region bboxes and OCR use the **page** space above. See
+[OCR_COORDINATES.md](OCR_COORDINATES.md) for `pageYUp`, engine OCR vs appearance
+OCR, and host↔thumtoo mapping rules.
