@@ -2,14 +2,18 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.16-tts-controls-highlight` (base `d456ffc`).
+**Tip:** `biltoo-2715.17-tts-panel-connect` (base `d456ffc`).
 
-### TTS UI
-- Voice combo, Tempo spin, Vol 0–150% (PCM gain >100%).
-- Green speaking-region highlight with LTR progress clip.
-- Prior: QAudioSink, multi-sentence duration timer, panel selection hover fix.
+### Done (Phase A + controls + highlight)
+- Piper TTS: Speak/Stop, multi-sentence, QAudioSink, duration advance.
+- Text panel: Voice, Tempo, Vol 0–150%; speaking green highlight + progress.
+- Panel TTS controls wired only via `connectTextPanel` (no duplicate slots).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.16-tts-controls-highlight-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.17-tts-panel-connect-d456ffc.bundle HEAD
 ```
+
+### Optional later
+- Persist voice/tempo/volume in settings.
+- Multi-page speak with highlight following page changes.
