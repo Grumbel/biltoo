@@ -2,14 +2,14 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2724.1-tts-highlight-page-bound` (base `795a278`).
+**Tip:** `biltoo-2725.1-drop-with-thumtoo-flag` (base `037c98f`).
 
-### 2724.1 — TTS highlight only on the spoken page
-- Capture SpeakPlan path + spans at Speak; map highlights only when
-  `classicPath() == m_ttsSpeakPath`.
-- Switching pages clears green boxes on the foreign page (speech continues).
+### 2725.1 — Remove obsolete BILTOO_WITH_THUMTOO
+- thumtoo is hard-required via `THUMTOO_SOURCE_DIR` only.
+- Dropped unused `-DBILTOO_WITH_THUMTOO=ON` from flake.nix / default.nix
+  (fixes CMake unused-cli warning).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2724.1-tts-highlight-page-bound-795a278.bundle HEAD
+git pull --ff-only …/biltoo-2725.1-drop-with-thumtoo-flag-037c98f.bundle HEAD
 ```

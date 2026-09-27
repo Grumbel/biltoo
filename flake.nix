@@ -310,7 +310,6 @@
               fi
               cmake -S "$BILTOO_SOURCE" -B "$BILTOO_BUILD_DIR" -G Ninja \
                 -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}" \
-                -DBILTOO_WITH_THUMTOO=ON \
                 -DTHUMTOO_SOURCE_DIR="$THUMTOO_SOURCE_DIR" \
                 "''${_ccache_args[@]}"
             ''

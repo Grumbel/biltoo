@@ -12,7 +12,7 @@
 , cfitsio
 , libimagequant
 , libarchive
-, poppler  # thumtoo PDF pages (poppler-cpp.pc when BILTOO_WITH_THUMTOO)
+, poppler  # thumtoo PDF pages (poppler-cpp.pc)
 , mupdf
 , djvulibre
 , kimageformats
@@ -176,7 +176,6 @@ stdenv.mkDerivation (finalAttrs: {
     "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
   ] ++ lib.optionals (thumtooSrc != null) [
     "-DTHUMTOO_SOURCE_DIR=${thumtooSrc}"
-    "-DBILTOO_WITH_THUMTOO=ON"
   ];
 
   # `nix flake check` / `nix build` with checks: run CMake tests
