@@ -2,7 +2,10 @@
 
 ## Status (2026-09-27)
 
-**Tip:** `biltoo-2715.1-tts-phase-a` (base `d456ffc`).
+**Tip:** `biltoo-2715.2-tts-connect-retry` (base `d456ffc`).
+
+### Text-to-speech Phase A (+ connect retry)
+- Retry piper-server connect on connectionError (~6s), matching text2sprech.
 
 ### Text-to-speech Phase A
 - Vendored text2sprech speech client/server manager/playback/splitter under `src/speech/`.
@@ -12,7 +15,7 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2715.1-tts-phase-a-d456ffc.bundle HEAD
+git pull --ff-only …/biltoo-2715.2-tts-connect-retry-d456ffc.bundle HEAD
 ```
 
 ### Prior
