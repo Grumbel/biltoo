@@ -572,6 +572,8 @@ private:
     QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
     QVector<int> m_ttsSpeakRegions;
+    int m_ttsSentenceStart = 0;
+    int m_ttsSentenceEnd = 0;
     QString m_piperSocketPath;
     QAction *m_speakAct = nullptr;
     QAction *m_stopSpeechAct = nullptr;

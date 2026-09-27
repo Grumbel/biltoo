@@ -117,6 +117,19 @@ Normative detail: text2sprech `PROTOCOL.md` and `AGENTS.md` (speech section).
 | Text panel | Region list; natural place for Speak / Stop chrome |
 | Qt Multimedia | **Not** linked yet (text2sprech uses Widgets + Multimedia) |
 
+### SpeakPlan (TTS stream)
+
+Regions are **not** merged on the page. `TextLayerController::buildSpeakPlan()`
+builds an intermediate string for synthesis:
+
+- **Same `blockId`**: join with a space (continuous sentence across line boxes).
+- **Different `blockId`**: join with `\n\n` (paragraph break for `SentenceSplitter`).
+- **Unknown blockIds**: space-join (OCR-friendly; avoids newline-per-box choppiness).
+- Soft-join hyphenated line ends (`word-` + `next` → `wordnext`).
+
+`SpeakSpan` offsets map characters in that string back to region indices for
+highlight progress. Clipboard/`pageTextInReadingOrder()` still use newline joins.
+
 ### Speakable source priority
 
 1. Non-empty **selection** — `selectedText()` / multi-page bag joined text.

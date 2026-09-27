@@ -4990,6 +4990,8 @@ void MainWindow::connectTextToSpeech()
                     }
                 }
                 m_ttsSpeakRegions = regions;
+                m_ttsSentenceStart = start;
+                m_ttsSentenceEnd = end;
                 text.setSpeakingHighlight(regions, 0.0);
             });
     connect(m_tts, &TextToSpeechController::audioPositionChanged, this,
@@ -4997,8 +4999,36 @@ void MainWindow::connectTextToSpeech()
                 if (!m_imageView || dur <= 0 || m_ttsSpeakRegions.isEmpty()) {
                     return;
                 }
-                m_imageView->hostText().setSpeakingHighlight(
-                    m_ttsSpeakRegions, double(pos) / double(dur));
+                // Map audio fraction → char offset in SpeakPlan, then active region.
+                const double frac = double(pos) / double(dur);
+                const int spanLen = qMax(1, m_ttsSentenceEnd - m_ttsSentenceStart);
+                const int globalOff =
+                    m_ttsSentenceStart + int(frac * double(spanLen) + 0.5);
+                TextLayerController &text = m_imageView->hostText();
+                QVector<int> active;
+                double localProg = frac;
+                for (const auto &sp : text.speakSpans()) {
+                    if (sp.end <= m_ttsSentenceStart || sp.start >= m_ttsSentenceEnd) {
+                        continue;
+                    }
+                    if (globalOff < sp.end || sp.end >= m_ttsSentenceEnd) {
+                        // Prefer the span that contains globalOff; last matching wins
+                        // if on a join space between spans.
+                        if (globalOff >= sp.start || active.isEmpty()) {
+                            active = {sp.regionIndex};
+                            const int len = qMax(1, sp.end - sp.start);
+                            localProg = qBound(
+                                0.0, double(globalOff - sp.start) / double(len), 1.0);
+                        }
+                        if (globalOff < sp.end) {
+                            break;
+                        }
+                    }
+                }
+                if (active.isEmpty()) {
+                    active = m_ttsSpeakRegions;
+                }
+                text.setSpeakingHighlight(active, localProg);
             });
 
     // Panel → TTS (voice/tempo/vol) is wired only in connectTextPanel() so
@@ -5045,6 +5075,8 @@ void MainWindow::stopSpeech()
         m_tts->stop();
     }
     m_ttsSpeakRegions.clear();
+    m_ttsSentenceStart = 0;
+    m_ttsSentenceEnd = 0;
     if (m_imageView) {
         m_imageView->hostText().clearSpeakingHighlight();
     }

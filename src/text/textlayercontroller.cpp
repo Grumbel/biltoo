@@ -694,30 +694,23 @@ QString TextLayerController::pageTextInReadingOrder() const
     return lines.join(QLatin1Char('\n'));
 }
 
-QString TextLayerController::speakableText() const
+TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan() const
 {
-    const QString sel = selectedText();
-    if (!sel.isEmpty()) {
-        return sel;
-    }
-    return pageTextInReadingOrder();
-}
-
-QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
-{
-    QVector<SpeakSpan> spans;
+    SpeakPlan plan;
     if (!hasLayer()) {
-        return spans;
+        return plan;
     }
 
     QVector<int> order;
     if (!m_session.multiSelection.isEmpty() || !m_session.selectedRegionsRef().isEmpty()) {
-        // Selection path: multi-page uses current page projection only for highlight.
         order = m_session.selectedRegionsRef();
         if (order.isEmpty() && !m_session.multiSelection.isEmpty()) {
             order = m_session.multiSelection.regionIndicesFor(currentSessionId());
         }
-    } else {
+        // Selection list is already in selection order; keep it.
+        // If empty on this page but multi has text from other pages, fall back below.
+    }
+    if (order.isEmpty()) {
         const int n = m_session.regionCount();
         order.reserve(n);
         QVector<QRectF> rects;
@@ -733,27 +726,62 @@ QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
     }
 
     int cursor = 0;
-    bool first = true;
+    int prevBlock = -999;
+    bool havePrev = false;
     for (int idx : order) {
         if (idx < 0 || idx >= m_session.regionCount()) {
             continue;
         }
-        const QString &tx = m_session.regionAt(idx).text;
+        QString tx = m_session.regionAt(idx).text.trimmed();
         if (tx.isEmpty()) {
             continue;
         }
-        if (!first) {
-            ++cursor; // newline join separator in selectedText / pageTextInReadingOrder
+        const int block = m_session.regionAt(idx).blockId;
+
+        if (havePrev) {
+            QString sep;
+            if (prevBlock >= 0 && block >= 0 && prevBlock != block) {
+                // Paragraph / column island boundary — hard break for the splitter.
+                sep = QStringLiteral("\n\n");
+            } else {
+                // Same block, or unknown blockIds: continuous prose for Piper.
+                // Soft-join hyphenated line ends: "word-" + "next" → "wordnext".
+                if (plan.text.endsWith(QLatin1Char('-'))
+                    && !tx.isEmpty() && tx.at(0).isLetter()) {
+                    plan.text.chop(1);
+                    cursor = plan.text.size();
+                    sep.clear();
+                } else {
+                    sep = QLatin1Char(' ');
+                }
+            }
+            if (!sep.isEmpty()) {
+                plan.text += sep;
+                cursor += sep.size();
+            }
         }
-        first = false;
+
         SpeakSpan sp;
         sp.regionIndex = idx;
         sp.start = cursor;
         sp.end = cursor + tx.size();
-        spans.append(sp);
+        plan.spans.append(sp);
+        plan.text += tx;
         cursor = sp.end;
+        prevBlock = block;
+        havePrev = true;
     }
-    return spans;
+    return plan;
+}
+
+QString TextLayerController::speakableText() const
+{
+    return buildSpeakPlan().text;
+}
+
+QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
+{
+    return buildSpeakPlan().spans;
 }
 
 void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices, double progress)

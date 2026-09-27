@@ -62,17 +62,29 @@ public:
     int regionCount() const;
     bool hitLinkAt(const QPoint &viewPos, int *pageOut, QString *uriOut) const;
     QString selectedText() const;
-    /** All region texts on the current page in reading order (for TTS / export). */
+    /** All region texts on the current page in reading order (for export/copy). */
     QString pageTextInReadingOrder() const;
-    /** Selection if non-empty, else pageTextInReadingOrder(). */
-    QString speakableText() const;
 
-    /** Character spans in speakableText() for mapping TTS offsets → regions. */
+    /**
+     * TTS intermediate stream: regions joined into continuous prose with a
+     * span map back to boxes. Does not mutate regions (no layout merge).
+     * Join: space within the same blockId; paragraph break (\n\n) between
+     * blocks; space when blockId is unknown (OCR-friendly continuous speech).
+     */
     struct SpeakSpan {
         int regionIndex = -1;
-        int start = 0;
-        int end = 0;
+        int start = 0; ///< inclusive offset into SpeakPlan::text
+        int end = 0;   ///< exclusive
     };
+    struct SpeakPlan {
+        QString text;
+        QVector<SpeakSpan> spans;
+    };
+    /** Selection order if any, else full page reading order. */
+    SpeakPlan buildSpeakPlan() const;
+    /** SpeakPlan::text (selection or page). Prefer this over newline-joined export. */
+    QString speakableText() const;
+    /** Same as buildSpeakPlan().spans — offsets into speakableText(). */
     QVector<SpeakSpan> speakSpans() const;
 
     /** Highlight region(s) currently being spoken; progress 0..1 within the active span. */
