@@ -493,14 +493,9 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         m_view->resetTransform();
         m_view->fitInView(contentUnion, Qt::KeepAspectRatio);
         // Center the spread in the viewport after fit.
-        if (QGraphicsScene *scene = m_view->canvasScene()) {
-            m_view->centerOn(contentUnion.center());
-        }
+        m_view->centerOn(contentUnion.center());
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
-}
-
-
 }
