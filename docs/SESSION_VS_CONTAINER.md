@@ -172,7 +172,8 @@ Recoverable origin; serialization is more than a flat path list.
 ## 6. Suggested non-goals (until a direction is picked)
 
 - Silently treating session order as PDF page-tree order.  
-- Path-keyed durable state that pretends to record “page removed.”  
+- Path-keyed durable state that pretends to **delete** PDF page-tree entries
+  (hide/filter flags are a different, reversible layer — see §9).  
 - Write-back that flattens a multi-origin session into one PDF without an
   explicit merge/export wizard.
 
@@ -203,3 +204,125 @@ session-backed project state pull in opposite directions. A later design can
 pick explicit playlist semantics (A/C/F), introduce a container spine (B/D),
 or only group in the UI (E) — but should avoid implying page-tree edits until
 write-back and keying rules are chosen.
+
+---
+
+## 9. Emerging direction: container view-state + explicit mix sessions
+
+User sketch (2026-09-28) — refine, do not implement yet.
+
+### 9.1 Proposal
+
+| Operation | Binding | Persistence sketch |
+|-----------|---------|----------------------|
+| **Hide** (“remove from view”) | Per page, by **location** (locator + page ref) | Durable flag on container page; reversible |
+| **Reorder** within one PDF/ZIP | Per **container** (not per session slot) | Ordered list of page refs under that locator |
+| **Mix** pages from different documents | Explicit **session / project** | Only place multi-origin order lives |
+| **Show original** | Per container (or global) | One-click toggle: apply vs ignore local view-state; **keep** stored modifications |
+
+Mental model:
+
+- Opening a single PDF/ZIP loads **container + its view-state** (hide + order +
+  orient/marks as today).
+- Hiding a page is not a page-tree delete and not “gone forever.”
+- Interleaving two books requires an explicit session (playlist over containers).
+- Modified document should be **obvious**; user can flip to virgin layout/content
+  presentation without wiping the stored edits.
+
+This sits between options **A** (honest dual model) and **B/D** (container
+spine): container gets durable **view-state**, session stays the mix layer.
+
+### 9.2 What this gets right
+
+- Aligns “I don’t want to see page 3 of *this* PDF next time” with path/locator
+  durability (same family as orient/annotations).
+- Avoids forcing every PDF open through a saved project.
+- Makes multi-document order an explicit product object (session), which matches
+  IDENTITY’s “ordered list of images.”
+- “Show original” preserves work (overlay off / filter off), unlike clear/reset.
+
+### 9.3 Things easy to overlook
+
+1. **Page identity stability**  
+   Order and hide lists must key on stable page refs (`page:N`, archive member
+   path), not session list index. PDF incremental save, linearize, or “save as”
+   can renumber or rewrite objects; ZIP rename of members breaks member paths.
+   Need a defined failure mode (drop orphan hides, or match by content hash).
+
+2. **Hide vs session remove**  
+   Two verbs:
+   - *Hide in container* → durable, applies whenever that container is opened
+     alone.
+   - *Remove from session* → playlist only; page still exists when the PDF is
+     opened fresh (unless also hidden).  
+   UI must not use one word for both.
+
+3. **Show original — what does it cover?**  
+   Stack of layers, each toggleable or one master switch:
+   - container order (custom vs file order)
+   - hide flags (show hidden pages again)
+   - orient / flip / grade
+   - crop
+   - annotations  
+   “Original” might mean *layout only* (order+hide) or *everything visual*.
+   Prefer a master switch that **ignores** view-state without deleting it, plus
+   optional per-layer controls later.
+
+4. **Dirty / modified indicator**  
+   Needs a precise definition: any non-default order, any hide, any appearance,
+   any annotation? Indicator per container in Gallery vs per session? Opening a
+   mixed session: which document is “modified”?
+
+5. **Default open path**  
+   Single PDF open → apply container view-state automatically?  
+   Then “show original” is essential.  
+   If default is virgin and view-state is opt-in, discoverability suffers.
+
+6. **Duplicates in one container**  
+   Rare for PDF page trees; possible if session appends the same page twice.
+   Container order is a permutation of unique page refs; session can still
+   duplicate slots with independent crop (IDENTITY). Hide-by-location would
+   hide *all* slots of that page in a container-native view — maybe correct.
+
+7. **Mixed session + container order**  
+   When session interleaves book A and B, whose order wins inside A’s runs?
+   Rule of thumb: **session order is absolute** for mixed sessions; container
+   order applies only when the open set is a single container (or when
+   expanding a container into a session for the first time).
+
+8. **Empty visible set**  
+   User hides all pages → open shows nothing. Need “show original” or “unhide
+   all” recovery, not a blank brick.
+
+9. **Export / write-back**  
+   Hide is still not a PDF page-tree delete. Export “visible pages only” vs
+   “full file” must be explicit. Write-back remains deferred.
+
+10. **Annotations on hidden pages**  
+    Still stored; still path-keyed. Hidden pages should not paint in Gallery but
+    marks remain when unhidden. Eraser/clear while hidden is a corner case.
+
+11. **Filmstrip / slideshow / search**  
+    Do they respect hide flags? Probably yes for container-native views; session
+    mode follows session membership only.
+
+12. **Concurrency / two windows**  
+    Same locator view-state is global (XDG). Two sessions on one PDF share hide
+    and order — surprising if one user expected session-local hides.
+
+### 9.4 Suggested invariant (if this direction is taken)
+
+```
+container view-state  →  single-origin open (hide, order, file-level marks)
+session / project     →  multi-origin membership and interleaving
+show-original         →  presentation filter over stored view-state (non-destructive)
+page-tree / ZIP rewrite → only via explicit write-back (still deferred)
+```
+
+### 9.5 Open product choices (still required)
+
+- Exact scope of “show original” (layout vs all layers).  
+- Whether container view-state applies on every bare PDF open.  
+- Whether hide is allowed inside a mixed session or only in single-container UI.  
+- Badge/copy for “modified document” vs “modified session.”
+
