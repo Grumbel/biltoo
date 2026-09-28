@@ -29,6 +29,8 @@
 #include <QScrollBar>
 #include <QTimer>
 #include <QPointer>
+#include <QCoreApplication>
+#include <QWidget>
 #include <QThreadPool>
 #include <QTransform>
 #include <QtMath>
@@ -1911,25 +1913,40 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (!painter || path.isEmpty() || dest.isEmpty()) {
         return false;
     }
-    // Prefer the live ImageItem session (same path registry + climbed scale)
-    // so slideshow tracks ImageView up-res instead of a cold phase session.
-    tilelod::TileLodController *lod = nullptr;
-    for (ImageItem *it : m_view->liveItems()) {
-        if (it && it->path() == path) {
-            lod = it->tileLodController();
-            if (lod) {
-                break;
+    // Prefer phase-owned tile sessions while the pure-phase composite owns the
+    // viewport. The live ImageItem is hidden during slideshow; its LOD plan
+    // often skips (not tileLodWanted / off-plan) and never installs session
+    // wake — completions then never repaint and the strip stays on coarse tiles.
+    // Fall back to a wanted ImageItem session when it is actively climbing.
+    tilelod::TileLodController *lod = slideshowTilesForPath(path);
+    if (!lod) {
+        for (ImageItem *it : m_view->liveItems()) {
+            if (it && it->path() == path && it->tileLodWanted()) {
+                lod = it->tileLodController();
+                if (lod) {
+                    break;
+                }
             }
         }
-    }
-    if (!lod) {
-        lod = slideshowTilesForPath(path);
     }
     if (!lod) {
         return false;
     }
     if (lod->path() != path) {
         lod->setPath(path);
+    }
+    // Completions arrive off the GUI. ImageItem installs wake in prepareTileLodPlan;
+    // phase sessions never did — without it, new tiles only appear on the next
+    // progress tick (or never if the timer is idle). Always rebind wake here.
+    if (lod->session() && m_view->viewport()) {
+        QPointer<QWidget> vp(m_view->viewport());
+        lod->session()->set_wake([vp]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
+                if (vp) {
+                    vp->update();
+                }
+            });
+        });
     }
     QSize native = m_view->logicalSizeForPath(path);
     if (!isPositiveSize(native)) {

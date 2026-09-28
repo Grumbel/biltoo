@@ -2,18 +2,18 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2755.1-systemd-pkg-config` (base `9395b3e`).
+**Tip:** `biltoo-2756.1-slideshow-tile-wake` (base `9395b3e`).
 
 ### Done this tip
-- `default.nix`: `systemd` so dbus-1 Requires.private: libsystemd is on
-  PKG_CONFIG_PATH (nested thumtoo dbus probe)
-- Pair with thumtoo-349.1
+- Slideshow stuck on coarse tiles: pure-phase paint preferred hidden
+  ImageItem LOD (no plan / no session wake). Prefer phase-owned tile
+  sessions; always `set_wake` → viewport update when tiles complete.
 
 ### Prior
-- 2754.1: leptonica for tesseract
+- 2755.1 / 2754.1: pkg-config systemd + leptonica
 - 2753.1: filmstrip chrome dtor disconnect
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2755.1-systemd-pkg-config-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2756.1-slideshow-tile-wake-9395b3e.bundle HEAD
 ```
