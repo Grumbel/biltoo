@@ -790,16 +790,29 @@ void MainWindow::setDoubleViewEnabled(bool on)
 {
     if (!on) {
         m_spreadBook.clear();
+        // Action may already be unchecked (user toggle); keep UI in sync.
         if (m_doubleViewAct && m_doubleViewAct->isChecked()) {
             QSignalBlocker b(m_doubleViewAct);
             m_doubleViewAct->setChecked(false);
         }
         if (m_imageView && m_imageView->isImageMode()) {
-            // Reload single underlay at current index.
-            if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-                setCurrentIndex(m_currentIndex);
+            // Drop secondary underlays so the canvas is single-page again.
+            // loadImage alone keeps multi items when liveItems().size() > 1.
+            const QString path = (m_currentIndex >= 0
+                                  && m_currentIndex < m_session.paths().size())
+                ? m_session.paths().at(m_currentIndex)
+                : m_imageView->hostImage().classicPath();
+            m_imageView->clearLiveCanvas();
+            if (!path.isEmpty()) {
+                m_imageView->hostImage().setClassicPath(path);
+                m_imageView->hostDisplayPipeline().loadImage(path);
+            }
+            if (m_imageView->hostText().session().showsRegions()
+                || m_imageView->hostText().session().showsGlyphs()) {
+                m_imageView->hostText().refresh();
             }
         }
+        updateUpToGalleryAction();
         updateStatus();
         return;
     }

@@ -2,15 +2,14 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2740.1-doubleview-prev-center-toolbar` (base `636e70e`).
+**Tip:** `biltoo-2740.2-text-layer-leave-doubleview` (base `636e70e`).
 
-### 2740.1
-- Prune non-member underlays on spread layout (fixes Prev leaving old pages)
-- fitInView + AlignCenter (centering)
-- Double View toggle does not force Image mode (preference when in Gallery)
-- Back/Up action on main toolbar; updateUp after enabling in Image
+### 2740.2
+- Text: `layerForItem` no longer falls back to primary layer for every underlay
+  (spread pages painted their own OCR boxes only)
+- Leaving Double View clears multi underlays + reloads single page
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2740.1-doubleview-prev-center-toolbar-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2740.2-text-layer-leave-doubleview-636e70e.bundle HEAD
 ```

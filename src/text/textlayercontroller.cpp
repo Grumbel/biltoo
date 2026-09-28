@@ -413,22 +413,38 @@ const ThumtooCache::PageTextLayer *TextLayerController::layerForItem(ImageItem *
     if (!item || !m_view) {
         return nullptr;
     }
+    const QString path = pathForItem(item);
     SessionImageId sid = item->sessionId();
+    // Only fall back to the session cursor id for the classic/primary underlay.
+    // Secondary spread pages must keep their own sid or we paint every page's
+    // regions onto one item (and vice versa).
     if (sid == kInvalidSessionImageId && m_view->isImageMode()) {
-        sid = m_view->hostSessionId().currentIdValue();
+        const bool isPrimary =
+            item == m_view->primaryItem()
+            || (!path.isEmpty() && path == m_view->hostImage().classicPath());
+        if (isPrimary) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
     }
     if (sid != kInvalidSessionImageId) {
         auto it = m_memberLayers.constFind(sid);
         if (it != m_memberLayers.constEnd() && it->pageBounds.isValid()) {
-            return &(*it);
+            // Path must still match — sid reuse after membership change is rare
+            // but wrong-path layers must not paint on the wrong underlay.
+            if (m_memberPaths.value(sid).isEmpty()
+                || m_memberPaths.value(sid) == path
+                || path.isEmpty()) {
+                return &(*it);
+            }
         }
     }
+    // Primary session layer only for the page that owns layerPath.
     if (m_session.pageBoundsValid()
-        && (item == m_view->primaryItem()
-            || pathForItem(item) == m_session.layerPathRef())) {
+        && !m_session.layerPathRef().isEmpty()
+        && path == m_session.layerPathRef()) {
         return &m_session.layerRef();
     }
-    return m_session.pageBoundsValid() ? &m_session.layerRef() : nullptr;
+    return nullptr;
 }
 
 void TextLayerController::ensureMemberLayers()
@@ -441,14 +457,19 @@ void TextLayerController::ensureMemberLayers()
             continue;
         }
         SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId) {
-            sid = m_view->hostSessionId().currentIdValue();
-        }
-        if (sid == kInvalidSessionImageId) {
-            continue;
-        }
         const QString path = pathForItem(item);
         if (path.isEmpty()) {
+            continue;
+        }
+        if (sid == kInvalidSessionImageId) {
+            const bool isPrimary =
+                item == m_view->primaryItem()
+                || path == m_view->hostImage().classicPath();
+            if (isPrimary) {
+                sid = m_view->hostSessionId().currentIdValue();
+            }
+        }
+        if (sid == kInvalidSessionImageId) {
             continue;
         }
         if (path == m_session.layerPathRef() && m_session.pageBoundsValid()) {
