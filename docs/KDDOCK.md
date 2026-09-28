@@ -48,6 +48,12 @@ dock centre relative to the main window and sets `ThumbnailBar` horizontal
 - Content of panels (metadata, OCR, …) unchanged
 
 
+## Filmstrip size
+
+KD ignores `preferredSize` when the layout has no other items. Filmstrip is
+added only after side docks exist, with `InitialOption` preferred cross-axis
+extent from `ThumbnailBar::extentForThumbSize`.
+
 ## Default layout
 
 - **Central:** `DualImageShell` via `setPersistentCentralWidget`

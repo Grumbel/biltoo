@@ -165,6 +165,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void ocrCurrentPage();
@@ -463,6 +464,8 @@ private:
     void setThumbnailBarPosition(ThumbnailEdge edge);
     void onThumbnailDockLocationChanged();
     void scheduleFilmstripOrientationSync();
+    void applyFilmstripExtentConstraints();
+    void placeFilmstripDock(KDDockWidgets::Location loc);
     void updateThumbnailEdgeActions();
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();

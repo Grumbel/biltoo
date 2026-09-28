@@ -31,6 +31,7 @@
 #include "util/biltoo_logging.h"
 #include <cmath>
 #include <algorithm>
+#include <QShowEvent>
 #include <QtMath>
 
 namespace {
@@ -71,6 +72,14 @@ static void tabDockOnto(DockWidget *host, DockWidget *guest)
             hc->addDockWidgetAsTab(gc);
         }
     }
+}
+
+static int filmstripExtentForBar(const ThumbnailBar *bar)
+{
+    if (!bar) {
+        return ThumbnailBar::extentForThumbSize(ThumbnailBar::kDefaultThumbSize);
+    }
+    return ThumbnailBar::extentForThumbSize(bar->thumbSize());
 }
 
 
@@ -360,7 +369,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailDock = new DockWidget(QStringLiteral("ThumbnailDock"));
     m_thumbnailDock->setTitle(tr("Filmstrip"));
     m_thumbnailDock->setWidget(m_thumbnailBar);
-    addDockWidget(m_thumbnailDock, KDDockWidgets::Location_OnBottom);
+    // addDockWidget deferred until placeFilmstripDock() — preferredSize is ignored
+    // when the layout has no other items yet (KD DefaultSizeMode fills 100%).
     connect(m_thumbnailDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (m_toggleThumbnailBarAct && m_toggleThumbnailBarAct->isChecked() != visible) {
             m_toggleThumbnailBarAct->setChecked(visible);
@@ -745,6 +755,9 @@ connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocume
     tabDockOnto(m_metadataDock, m_textDock);
     tabDockOnto(m_metadataDock, m_helpDock);
     tabDockOnto(m_layoutDock, m_tocDock);
+
+    // Now that other docks exist in the layout, preferred filmstrip extent is honoured.
+    placeFilmstripDock(KDDockWidgets::Location_OnBottom);
 connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
             this, &MainWindow::showKeyboardShortcuts);
 
@@ -2558,6 +2571,52 @@ void MainWindow::toggleThumbnailBar()
     }
 }
 
+void MainWindow::applyFilmstripExtentConstraints()
+{
+    if (!m_thumbnailBar) {
+        return;
+    }
+    const int minE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize);
+    const int maxE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize);
+    const int extent = filmstripExtentForBar(m_thumbnailBar);
+    const bool horizontalBar =
+        (m_thumbnailEdge == ThumbnailEdge::Bottom || m_thumbnailEdge == ThumbnailEdge::Top);
+    if (horizontalBar) {
+        m_thumbnailBar->setMinimumHeight(minE);
+        m_thumbnailBar->setMaximumHeight(maxE);
+        m_thumbnailBar->setMinimumWidth(0);
+        m_thumbnailBar->setMaximumWidth(QWIDGETSIZE_MAX);
+        m_thumbnailBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        // Hint the layout engine toward thumbSize extent (not half the window).
+        m_thumbnailBar->resize(qMax(m_thumbnailBar->width(), 200), extent);
+    } else {
+        m_thumbnailBar->setMinimumWidth(minE);
+        m_thumbnailBar->setMaximumWidth(maxE);
+        m_thumbnailBar->setMinimumHeight(0);
+        m_thumbnailBar->setMaximumHeight(QWIDGETSIZE_MAX);
+        m_thumbnailBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        m_thumbnailBar->resize(extent, qMax(m_thumbnailBar->height(), 200));
+    }
+    m_thumbnailBar->updateGeometry();
+}
+
+void MainWindow::placeFilmstripDock(KDDockWidgets::Location loc)
+{
+    if (!m_thumbnailDock || !m_thumbnailBar) {
+        return;
+    }
+    applyFilmstripExtentConstraints();
+    const int extent = filmstripExtentForBar(m_thumbnailBar);
+    // Cross-axis preferred length; long axis is a soft width/height for the group.
+    KDDockWidgets::Size preferred;
+    if (loc == KDDockWidgets::Location_OnLeft || loc == KDDockWidgets::Location_OnRight) {
+        preferred = KDDockWidgets::Size(extent, 600);
+    } else {
+        preferred = KDDockWidgets::Size(800, extent);
+    }
+    addDockWidget(m_thumbnailDock, loc, nullptr, KDDockWidgets::InitialOption(preferred));
+}
+
 void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
 {
     if (!m_thumbnailBar || !m_thumbnailDock) {
@@ -2589,21 +2648,10 @@ void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
         loc = KDDockWidgets::Location_OnBottom;
         break;
     }
-    addDockWidget(m_thumbnailDock, loc);
+    placeFilmstripDock(loc);
 
     const int thumbSize = m_thumbnailBar->thumbSize();
-    // Prefer size hints on the bar; KD handles splitter extent.
-    if (horizontalBar) {
-        m_thumbnailBar->setMinimumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
-        m_thumbnailBar->setMaximumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
-        m_thumbnailBar->setMinimumWidth(0);
-        m_thumbnailBar->setMaximumWidth(QWIDGETSIZE_MAX);
-    } else {
-        m_thumbnailBar->setMinimumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
-        m_thumbnailBar->setMaximumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
-        m_thumbnailBar->setMinimumHeight(0);
-        m_thumbnailBar->setMaximumHeight(QWIDGETSIZE_MAX);
-    }
+    applyFilmstripExtentConstraints();
     m_thumbnailBar->setThumbSize(thumbSize);
     m_dockLocationGuard = false;
     updateThumbnailEdgeActions();
@@ -2611,8 +2659,8 @@ void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
 
 void MainWindow::onThumbnailDockLocationChanged()
 {
-    // KD has no Qt::DockWidgetArea signal. Infer edge from the filmstrip dock's
-    // centre relative to this window so drag-redock updates H/V orientation.
+    // Infer edge from dock vs central widget in global coordinates (more stable
+    // than mapTo(this) while KD is still reparenting the dock view).
     if (m_dockLocationGuard || !m_thumbnailBar || !m_thumbnailDock) {
         return;
     }
@@ -2620,43 +2668,78 @@ void MainWindow::onThumbnailDockLocationChanged()
         return;
     }
 
-    const QPoint center = m_thumbnailDock->mapTo(this, m_thumbnailDock->rect().center());
-    const QRect area = rect();
-    if (area.width() < 16 || area.height() < 16) {
+    QWidget *central = persistentCentralWidget();
+    if (!central) {
+        central = this;
+    }
+    const QRect centralGlobal(central->mapToGlobal(QPoint(0, 0)), central->size());
+    const QRect dockGlobal(m_thumbnailDock->mapToGlobal(QPoint(0, 0)), m_thumbnailDock->size());
+    if (!centralGlobal.isValid() || !dockGlobal.isValid()
+        || dockGlobal.width() < 4 || dockGlobal.height() < 4) {
         return;
     }
-    const int distLeft = center.x();
-    const int distRight = area.width() - center.x();
-    const int distTop = center.y();
-    const int distBottom = area.height() - center.y();
-    const int nearest = std::min(std::min(distLeft, distRight), std::min(distTop, distBottom));
+
+    const QPoint dockC = dockGlobal.center();
+    const int distLeft = qAbs(dockC.x() - centralGlobal.left());
+    const int distRight = qAbs(dockC.x() - centralGlobal.right());
+    const int distTop = qAbs(dockC.y() - centralGlobal.top());
+    const int distBottom = qAbs(dockC.y() - centralGlobal.bottom());
+    // Prefer the side where the dock lies mostly outside the central rect.
+    int scoreBottom = distBottom;
+    int scoreTop = distTop;
+    int scoreLeft = distLeft;
+    int scoreRight = distRight;
+    if (dockGlobal.center().y() > centralGlobal.bottom()) {
+        scoreBottom -= 10000;
+    }
+    if (dockGlobal.center().y() < centralGlobal.top()) {
+        scoreTop -= 10000;
+    }
+    if (dockGlobal.center().x() < centralGlobal.left()) {
+        scoreLeft -= 10000;
+    }
+    if (dockGlobal.center().x() > centralGlobal.right()) {
+        scoreRight -= 10000;
+    }
+    const int nearest = std::min(std::min(scoreLeft, scoreRight), std::min(scoreTop, scoreBottom));
 
     ThumbnailEdge edge = m_thumbnailEdge;
-    if (nearest == distBottom) {
+    if (nearest == scoreBottom) {
         edge = ThumbnailEdge::Bottom;
-    } else if (nearest == distTop) {
+    } else if (nearest == scoreTop) {
         edge = ThumbnailEdge::Top;
-    } else if (nearest == distLeft) {
+    } else if (nearest == scoreLeft) {
         edge = ThumbnailEdge::Left;
-    } else if (nearest == distRight) {
+    } else if (nearest == scoreRight) {
         edge = ThumbnailEdge::Right;
     }
 
-    if (edge != m_thumbnailEdge) {
+    const bool edgeChanged = (edge != m_thumbnailEdge);
+    if (edgeChanged) {
         m_thumbnailEdge = edge;
         updateThumbnailEdgeActions();
     }
     const bool horizontalBar =
         (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
-    m_thumbnailBar->setBarOrientation(horizontalBar ? Qt::Horizontal : Qt::Vertical);
+    const Qt::Orientation want = horizontalBar ? Qt::Horizontal : Qt::Vertical;
+    if (m_thumbnailBar->barOrientation() != want || edgeChanged) {
+        m_thumbnailBar->setBarOrientation(want);
+        applyFilmstripExtentConstraints();
+    }
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    KDMainWindow::showEvent(event);
+    scheduleFilmstripOrientationSync();
 }
 
 void MainWindow::scheduleFilmstripOrientationSync()
 {
-    // KD finishes reparent/geometry after the signal; run twice — immediate +
-    // after the next event-loop turn when group geometry is stable.
+    // KD finishes reparent/geometry asynchronously; several passes.
     QTimer::singleShot(0, this, [this]() { onThumbnailDockLocationChanged(); });
     QTimer::singleShot(50, this, [this]() { onThumbnailDockLocationChanged(); });
+    QTimer::singleShot(200, this, [this]() { onThumbnailDockLocationChanged(); });
 }
 
 void MainWindow::updateThumbnailEdgeActions()
@@ -4101,6 +4184,7 @@ void MainWindow::readSettings()
             edge = ThumbnailEdge::Top;
         }
         setThumbnailBarPosition(edge);
+        scheduleFilmstripOrientationSync();
     }
     // Filmstrip lives in ThumbnailDock; geometry is part of windowState.
     updateWorkspaceActionVisibility();
@@ -4511,7 +4595,8 @@ void MainWindow::resetDockLayout()
         addDockWidget(dock, loc);
         setDockOpen(dock, open);
     };
-    redock(m_thumbnailDock, KDDockWidgets::Location_OnBottom, true);
+    placeFilmstripDock(KDDockWidgets::Location_OnBottom);
+    setDockOpen(m_thumbnailDock, true);
     redock(m_metadataDock, KDDockWidgets::Location_OnRight, true);
     if (m_toggleMetadataAct) {
         m_toggleMetadataAct->setChecked(true);
