@@ -60,5 +60,7 @@
     <file alias="actions/annot-highlighter-text.svg">../../data/icons/actions/annot-highlighter-text.svg</file>
     <file alias="actions/annot-clear.svg">../../data/icons/actions/annot-clear.svg</file>
     <file alias="actions/annot-highlight-colour.svg">../../data/icons/actions/annot-highlight-colour.svg</file>
+    <file alias="actions/annot-pen.svg">../../data/icons/actions/annot-pen.svg</file>
+    <file alias="actions/annot-eraser.svg">../../data/icons/actions/annot-eraser.svg</file>
   </qresource>
 </RCC>

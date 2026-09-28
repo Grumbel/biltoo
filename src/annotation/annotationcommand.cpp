@@ -43,3 +43,46 @@ void AnnotationAddCommand::redo()
         m_view->viewport()->update();
     }
 }
+
+AnnotationRemoveCommand::AnnotationRemoveCommand(ImageView *view, SessionImageId sid,
+                                                 const QVector<Annotation::Object> &removed,
+                                                 const QRectF &pageBounds, bool pageYUp,
+                                                 const QString &text)
+    : QUndoCommand(text)
+    , m_view(view)
+    , m_sid(sid)
+    , m_removed(removed)
+    , m_pageBounds(pageBounds)
+    , m_pageYUp(pageYUp)
+{
+}
+
+void AnnotationRemoveCommand::undo()
+{
+    if (!m_view || !m_applied) {
+        return;
+    }
+    for (const Annotation::Object &o : m_removed) {
+        if (!m_view->hostAnnot().session().findObject(m_sid, o.id, nullptr)) {
+            m_view->hostAnnot().session().addObject(m_sid, o, m_pageBounds, m_pageYUp);
+        }
+    }
+    m_applied = false;
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationRemoveCommand::redo()
+{
+    if (!m_view) {
+        return;
+    }
+    for (const Annotation::Object &o : m_removed) {
+        m_view->hostAnnot().session().removeObject(m_sid, o.id);
+    }
+    m_applied = true;
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}

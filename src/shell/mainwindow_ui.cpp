@@ -3,6 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "annotation/annotationtypes.h"
+#include <QActionGroup>
 #include "imageitem.h"
 #include <memory>
 
@@ -377,48 +378,12 @@ void MainWindow::createActions()
     m_annotHighlightAct->setStatusTip(
         tr("Draw translucent highlighter strokes (Multiply blend; mouse)"));
     m_annotHighlightAct->setToolTip(tr("Freehand highlighter"));
-    connect(m_annotHighlightAct, &QAction::toggled, this, [this](bool on) {
-        if (!m_imageView) {
-            return;
-        }
-        if (on) {
-            if (m_cropAct && m_cropAct->isChecked()) {
-                m_cropAct->setChecked(false);
-            }
-            if (m_annotTextHighlightAct && m_annotTextHighlightAct->isChecked()) {
-                m_annotTextHighlightAct->blockSignals(true);
-                m_annotTextHighlightAct->setChecked(false);
-                m_annotTextHighlightAct->blockSignals(false);
-            }
-            m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
-        } else if (!m_annotTextHighlightAct || !m_annotTextHighlightAct->isChecked()) {
-            m_imageView->hostAnnot().setTool(Annotation::Tool::None);
-        }
-    });
     m_annotTextHighlightAct = new QAction(tr("&Text Highlighter"), this);
     m_annotTextHighlightAct->setIcon(resourceIcon(QStringLiteral("annot-highlighter-text")));
     m_annotTextHighlightAct->setCheckable(true);
     m_annotTextHighlightAct->setStatusTip(
         tr("Drag over text regions to highlight (Multiply; needs text/OCR layer)"));
     m_annotTextHighlightAct->setToolTip(tr("Text highlighter"));
-    connect(m_annotTextHighlightAct, &QAction::toggled, this, [this](bool on) {
-        if (!m_imageView) {
-            return;
-        }
-        if (on) {
-            if (m_cropAct && m_cropAct->isChecked()) {
-                m_cropAct->setChecked(false);
-            }
-            if (m_annotHighlightAct && m_annotHighlightAct->isChecked()) {
-                m_annotHighlightAct->blockSignals(true);
-                m_annotHighlightAct->setChecked(false);
-                m_annotHighlightAct->blockSignals(false);
-            }
-            m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
-        } else if (!m_annotHighlightAct || !m_annotHighlightAct->isChecked()) {
-            m_imageView->hostAnnot().setTool(Annotation::Tool::None);
-        }
-    });
     m_annotClearAct = new QAction(tr("Clear Page &Annotations"), this);
     m_annotClearAct->setIcon(resourceIcon(QStringLiteral("annot-clear")));
     m_annotClearAct->setStatusTip(tr("Remove all annotation strokes on the current page"));
@@ -427,6 +392,55 @@ void MainWindow::createActions()
             m_imageView->hostAnnot().clearCurrentPage();
         }
     });
+
+    m_annotPenAct = new QAction(tr("&Pen"), this);
+    m_annotPenAct->setIcon(resourceIcon(QStringLiteral("annot-pen")));
+    m_annotPenAct->setCheckable(true);
+    m_annotPenAct->setStatusTip(tr("Draw ink strokes (SourceOver)"));
+    m_annotPenAct->setToolTip(tr("Pen"));
+    m_annotEraserAct = new QAction(tr("&Eraser"), this);
+    m_annotEraserAct->setIcon(resourceIcon(QStringLiteral("annot-eraser")));
+    m_annotEraserAct->setCheckable(true);
+    m_annotEraserAct->setStatusTip(tr("Erase annotation strokes and text highlights under the cursor"));
+    m_annotEraserAct->setToolTip(tr("Eraser"));
+
+    {
+        auto *annotGroup = new QActionGroup(this);
+        annotGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
+        for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct, m_annotEraserAct}) {
+            if (a) {
+                annotGroup->addAction(a);
+            }
+        }
+        connect(annotGroup, &QActionGroup::triggered, this, [this](QAction *act) {
+            if (!m_imageView || !act) {
+                return;
+            }
+            if (m_cropAct && m_cropAct->isChecked() && act->isChecked()) {
+                m_cropAct->setChecked(false);
+            }
+            if (!act->isChecked()) {
+                m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+                return;
+            }
+            if (act == m_annotHighlightAct) {
+                m_imageView->hostAnnot().setColor(QColor(246, 211, 45));
+                m_imageView->hostAnnot().setWidth(18.0);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
+            } else if (act == m_annotTextHighlightAct) {
+                m_imageView->hostAnnot().setColor(QColor(246, 211, 45));
+                m_imageView->hostAnnot().setWidth(18.0);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
+            } else if (act == m_annotPenAct) {
+                m_imageView->hostAnnot().setColor(QColor(28, 28, 28));
+                m_imageView->hostAnnot().setWidth(2.5);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Pen);
+            } else if (act == m_annotEraserAct) {
+                m_imageView->hostAnnot().setWidth(18.0);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Eraser);
+            }
+        });
+    }
 
     m_attentionAct = new QAction(tr("&Attention Point"), this);
     m_attentionAct->setCheckable(true);
@@ -1224,6 +1238,12 @@ void MainWindow::createMenus()
     if (m_annotTextHighlightAct) {
         m_imageMenu->addAction(m_annotTextHighlightAct);
     }
+    if (m_annotPenAct) {
+        m_imageMenu->addAction(m_annotPenAct);
+    }
+    if (m_annotEraserAct) {
+        m_imageMenu->addAction(m_annotEraserAct);
+    }
     if (m_annotClearAct) {
         m_imageMenu->addAction(m_annotClearAct);
     }
@@ -1246,6 +1266,15 @@ void MainWindow::createMenus()
             connect(ca, &QAction::triggered, this, [this, col]() {
                 if (m_imageView) {
                     m_imageView->hostAnnot().setColor(col);
+                }
+            });
+        }
+        auto *widthMenu = m_imageMenu->addMenu(tr("Stroke &Width"));
+        for (qreal w : {1.5, 2.5, 4.0, 8.0, 12.0, 18.0, 28.0, 40.0}) {
+            QAction *wa = widthMenu->addAction(tr("%1 px").arg(w));
+            connect(wa, &QAction::triggered, this, [this, w]() {
+                if (m_imageView) {
+                    m_imageView->hostAnnot().setWidth(w);
                 }
             });
         }
@@ -1759,6 +1788,12 @@ void MainWindow::createToolBar()
     }
     if (m_annotTextHighlightAct) {
         m_workspaceToolBar->addAction(m_annotTextHighlightAct);
+    }
+    if (m_annotPenAct) {
+        m_workspaceToolBar->addAction(m_annotPenAct);
+    }
+    if (m_annotEraserAct) {
+        m_workspaceToolBar->addAction(m_annotEraserAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

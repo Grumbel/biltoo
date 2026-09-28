@@ -1,0 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <path d="M5.5 14.5l6-6 5 5-4.5 4.5H7.2z" fill="#e5a50a"/>
+  <path d="M11.5 8.5l5 5 2.2-2.2c0.7-0.7 0.7-1.8 0-2.5l-2.5-2.5c-0.7-0.7-1.8-0.7-2.5 0z" fill="#f6d32d"/>
+  <path d="M4 20h12" fill="none" stroke="#5e5c64" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M6 17.5h5.5" fill="none" stroke="#f6f5f4" stroke-width="2" stroke-linecap="round"/>
+</svg>

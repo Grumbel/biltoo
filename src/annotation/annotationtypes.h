@@ -25,6 +25,7 @@ namespace Annotation {
 enum class Kind : std::uint8_t {
     HighlighterStroke = 1,
     HighlightQuad = 2,
+    InkStroke = 3,
 };
 
 enum class Blend : std::uint8_t {
@@ -36,6 +37,8 @@ enum class Tool : std::uint8_t {
     None = 0,
     FreehandHighlighter = 1,
     TextHighlighter = 2,
+    Pen = 3,
+    Eraser = 4,
 };
 
 struct Object {

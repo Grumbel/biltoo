@@ -352,10 +352,17 @@ void AnnotationController::paintOverlay(QPainter &painter)
     }
 
     if (m_drawing && m_draftSid == sid) {
-        if (m_tool == Annotation::Tool::FreehandHighlighter && !m_draftPoints.isEmpty()) {
+        if ((m_tool == Annotation::Tool::FreehandHighlighter
+             || m_tool == Annotation::Tool::Pen)
+            && !m_draftPoints.isEmpty()) {
             Annotation::Object draft;
-            draft.kind = Annotation::Kind::HighlighterStroke;
-            draft.blend = Annotation::Blend::Multiply;
+            if (m_tool == Annotation::Tool::Pen) {
+                draft.kind = Annotation::Kind::InkStroke;
+                draft.blend = Annotation::Blend::SourceOver;
+            } else {
+                draft.kind = Annotation::Kind::HighlighterStroke;
+                draft.blend = Annotation::Blend::Multiply;
+            }
             draft.color = m_color;
             draft.width = m_width;
             draft.points = m_draftPoints;
@@ -404,11 +411,15 @@ void AnnotationController::finishFreehand()
     }
     Annotation::Object obj;
     obj.id = m_session.nextId();
-    obj.kind = Annotation::Kind::HighlighterStroke;
-    obj.blend = Annotation::Blend::Multiply;
+    if (m_tool == Annotation::Tool::Pen) {
+        obj.kind = Annotation::Kind::InkStroke;
+        obj.blend = Annotation::Blend::SourceOver;
+    } else {
+        obj.kind = Annotation::Kind::HighlighterStroke;
+        obj.blend = Annotation::Blend::Multiply;
+    }
     obj.color = m_color;
     obj.width = m_width;
-    // Drop non-finite samples before simplify (avoids NaN path in RDP).
     QVector<QPointF> clean;
     clean.reserve(m_draftPoints.size());
     for (const QPointF &p : m_draftPoints) {
@@ -425,7 +436,8 @@ void AnnotationController::finishFreehand()
         obj.points = clean;
     }
     commitObject(m_draftSid, obj, m_draftBounds, m_draftYUp,
-                 QObject::tr("Highlight stroke"));
+                 m_tool == Annotation::Tool::Pen ? QObject::tr("Ink stroke")
+                                                 : QObject::tr("Highlight stroke"));
 }
 
 void AnnotationController::finishTextHighlight()
@@ -535,11 +547,15 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
     m_draftPoints.clear();
     m_rubberView = {};
 
-    if (m_tool == Annotation::Tool::FreehandHighlighter) {
+    if (m_tool == Annotation::Tool::FreehandHighlighter
+        || m_tool == Annotation::Tool::Pen) {
         m_draftPoints.append(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
     } else if (m_tool == Annotation::Tool::TextHighlighter) {
         m_rubberOriginView = event->pos();
         m_rubberView = QRect(m_rubberOriginView, QSize(1, 1));
+    } else if (m_tool == Annotation::Tool::Eraser) {
+        eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
+                         bounds, yUp);
     }
     event->accept();
     if (m_view->viewport()) {
@@ -557,7 +573,8 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
     if (!item) {
         return false;
     }
-    if (m_tool == Annotation::Tool::FreehandHighlighter) {
+    if (m_tool == Annotation::Tool::FreehandHighlighter
+        || m_tool == Annotation::Tool::Pen) {
         const QPointF pagePt =
             viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize);
         if (!m_draftPoints.isEmpty()) {
@@ -571,6 +588,10 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
         m_draftPoints.append(pagePt);
     } else if (m_tool == Annotation::Tool::TextHighlighter) {
         m_rubberView = QRect(m_rubberOriginView, event->pos()).normalized();
+    } else if (m_tool == Annotation::Tool::Eraser) {
+        eraseAtPagePoint(
+            viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize),
+            m_draftBounds, m_draftYUp);
     }
     event->accept();
     if (m_view->viewport()) {
@@ -588,7 +609,8 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
         return false;
     }
     m_drawing = false;
-    if (m_tool == Annotation::Tool::FreehandHighlighter) {
+    if (m_tool == Annotation::Tool::FreehandHighlighter
+        || m_tool == Annotation::Tool::Pen) {
         finishFreehand();
     } else if (m_tool == Annotation::Tool::TextHighlighter) {
         finishTextHighlight();
@@ -604,13 +626,112 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
     return true;
 }
 
+static qreal dist2PointSeg(const QPointF &p, const QPointF &a, const QPointF &b)
+{
+    const QPointF ab = b - a;
+    const qreal ab2 = ab.x() * ab.x() + ab.y() * ab.y();
+    if (!(ab2 > 1e-12)) {
+        const QPointF d = p - a;
+        return d.x() * d.x() + d.y() * d.y();
+    }
+    qreal t = ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2;
+    if (t < 0.0) {
+        t = 0.0;
+    } else if (t > 1.0) {
+        t = 1.0;
+    }
+    const QPointF proj(a.x() + t * ab.x(), a.y() + t * ab.y());
+    const QPointF d = p - proj;
+    return d.x() * d.x() + d.y() * d.y();
+}
+
+static bool objectHitsPagePoint(const Annotation::Object &o, const QPointF &pagePt,
+                                qreal radius)
+{
+    if (o.kind == Annotation::Kind::HighlightQuad) {
+        for (const QRectF &q : o.quads) {
+            if (q.adjusted(-radius, -radius, radius, radius).contains(pagePt)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    if (o.points.isEmpty()) {
+        return false;
+    }
+    const qreal strokeR = qMax(radius, o.width * 0.5 + 2.0);
+    const qreal s2 = strokeR * strokeR;
+    if (o.points.size() == 1) {
+        const QPointF d = pagePt - o.points.first();
+        return d.x() * d.x() + d.y() * d.y() <= s2;
+    }
+    for (int i = 1; i < o.points.size(); ++i) {
+        if (dist2PointSeg(pagePt, o.points.at(i - 1), o.points.at(i)) <= s2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void AnnotationController::eraseAtPagePoint(const QPointF &pagePt, const QRectF &pageBounds,
+                                            bool pageYUp)
+{
+    if (m_draftSid == kInvalidSessionImageId || !m_view) {
+        return;
+    }
+    Annotation::Page *pg = m_session.page(m_draftSid);
+    if (!pg || pg->objects.isEmpty()) {
+        return;
+    }
+    const qreal radius = qMax(8.0, m_width * 0.6);
+    QVector<Annotation::Object> hit;
+    for (const Annotation::Object &o : pg->objects) {
+        if (objectHitsPagePoint(o, pagePt, radius)) {
+            hit.append(o);
+        }
+    }
+    if (hit.isEmpty()) {
+        return;
+    }
+    const QRectF bounds = pageBounds.isValid() ? pageBounds : pg->pageBounds;
+    const bool yUp = pageBounds.isValid() ? pageYUp : pg->pageYUp;
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        auto *cmd = new AnnotationRemoveCommand(
+            m_view, m_draftSid, hit, bounds, yUp,
+            hit.size() == 1 ? QObject::tr("Erase annotation")
+                            : QObject::tr("Erase annotations"));
+        stack->push(cmd);
+    } else {
+        for (const Annotation::Object &o : hit) {
+            m_session.removeObject(m_draftSid, o.id);
+        }
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
+        }
+    }
+}
+
 void AnnotationController::clearCurrentPage()
 {
     ImageItem *item = targetItem();
     const SessionImageId sid = targetSid(item);
-    if (sid != kInvalidSessionImageId) {
+    if (sid == kInvalidSessionImageId || !m_view) {
+        return;
+    }
+    Annotation::Page *pg = m_session.page(sid);
+    if (!pg || pg->objects.isEmpty()) {
+        return;
+    }
+    const QVector<Annotation::Object> all = pg->objects;
+    const QRectF bounds = pg->pageBounds;
+    const bool yUp = pg->pageYUp;
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        auto *cmd = new AnnotationRemoveCommand(
+            m_view, sid, all, bounds, yUp, QObject::tr("Clear page annotations"));
+        stack->push(cmd);
+    } else {
         m_session.clearPage(sid);
-        if (m_view && m_view->viewport()) {
+        if (m_view->viewport()) {
             m_view->viewport()->update();
         }
     }

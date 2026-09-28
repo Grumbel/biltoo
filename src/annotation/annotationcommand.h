@@ -7,10 +7,11 @@
 #include "annotation/annotationtypes.h"
 
 #include <QUndoCommand>
+#include <QVector>
 
 class ImageView;
 
-/** Add or remove one annotation object (undo/redo). */
+/** Add one annotation object (undo/redo). */
 class AnnotationAddCommand : public QUndoCommand
 {
 public:
@@ -24,6 +25,26 @@ private:
     ImageView *m_view = nullptr;
     SessionImageId m_sid = kInvalidSessionImageId;
     Annotation::Object m_obj;
+    QRectF m_pageBounds;
+    bool m_pageYUp = false;
+    bool m_applied = false;
+};
+
+/** Remove one or more annotation objects (eraser / clear). */
+class AnnotationRemoveCommand : public QUndoCommand
+{
+public:
+    AnnotationRemoveCommand(ImageView *view, SessionImageId sid,
+                            const QVector<Annotation::Object> &removed,
+                            const QRectF &pageBounds, bool pageYUp, const QString &text);
+
+    void undo() override;
+    void redo() override;
+
+private:
+    ImageView *m_view = nullptr;
+    SessionImageId m_sid = kInvalidSessionImageId;
+    QVector<Annotation::Object> m_removed;
     QRectF m_pageBounds;
     bool m_pageYUp = false;
     bool m_applied = false;

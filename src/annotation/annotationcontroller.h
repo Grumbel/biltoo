@@ -84,6 +84,8 @@ private:
                      const QRectF &pageBounds, bool pageYUp, const QSize &sourceSize) const;
     void finishFreehand();
     void finishTextHighlight();
+    void eraseAtPagePoint(const QPointF &pagePt, const QRectF &pageBounds,
+                          bool pageYUp);
 
     ImageView *m_view = nullptr;
     AnnotationSession m_session;
