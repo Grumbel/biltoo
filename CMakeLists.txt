@@ -92,6 +92,48 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport Multimedia Network)
 find_package(PkgConfig)
 
+# Treat third-party include dirs as SYSTEM (-isystem) so GCC/Clang do not
+# report warnings from dependency headers (e.g. Qt qarraydataops.h
+# -Wstringop-overflow false positives). thumtoo is *not* marked: it is our
+# library and we want diagnostics from its headers when included.
+function(biltoo_mark_system_includes)
+  foreach(_tgt IN LISTS ARGN)
+    if(NOT TARGET "${_tgt}")
+      continue()
+    endif()
+    get_target_property(_aliased "${_tgt}" ALIASED_TARGET)
+    if(_aliased)
+      set(_tgt "${_aliased}")
+    endif()
+    get_target_property(_imported "${_tgt}" IMPORTED)
+    if(NOT _imported)
+      continue()
+    endif()
+    get_target_property(_incs "${_tgt}" INTERFACE_INCLUDE_DIRECTORIES)
+    if(NOT _incs OR _incs STREQUAL "_incs-NOTFOUND")
+      continue()
+    endif()
+    get_target_property(_sys "${_tgt}" INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+    if(NOT _sys OR _sys STREQUAL "_sys-NOTFOUND")
+      set_property(TARGET "${_tgt}" PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_incs}")
+    else()
+      set_property(TARGET "${_tgt}" APPEND PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_incs}")
+    endif()
+  endforeach()
+endfunction()
+
+
+biltoo_mark_system_includes(
+  Qt6::Core
+  Qt6::Gui
+  Qt6::Widgets
+  Qt6::Svg
+  Qt6::OpenGLWidgets
+  Qt6::PrintSupport
+  Qt6::Multimedia
+  Qt6::Network
+)
+
 # Application translation units (everything except main).
 # Shared so an optional ImageView characterization harness can link the
 # same objects without duplicating the list (docs/IMAGEVIEW_CHARACTERIZATION.md).
@@ -548,6 +590,9 @@ else()
   message(STATUS "PkgConfig not found — all optional native libraries disabled")
 endif()
 
+# Optional native libs: system includes (same policy as Qt).
+biltoo_mark_system_includes(PkgConfig::VIPS PkgConfig::EXIV2 PkgConfig::GIOUNIX)
+
 # thumtoo — required Store index + tiles / soft / archive-page URIs
 if(NOT THUMTOO_SOURCE_DIR OR NOT EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
   message(FATAL_ERROR
@@ -672,6 +717,7 @@ set_tests_properties(biltoo-help PROPERTIES
 # Project file load/save round-trip (no GUI)
 find_package(Qt6 COMPONENTS Test QUIET)
 if(Qt6Test_FOUND)
+  biltoo_mark_system_includes(Qt6::Test)
   add_executable(biltoo-projectfile-test
     tests/projectfile_roundtrip.cpp
     src/session/projectfile.cpp
