@@ -696,6 +696,13 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-gallerylayout-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME gallerylayout-pure COMMAND biltoo-gallerylayout-test)
 
+  add_executable(biltoo-spreadstate-test
+    tests/spreadstate_test.cpp
+  )
+  target_include_directories(biltoo-spreadstate-test PRIVATE src)
+  target_link_libraries(biltoo-spreadstate-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME spreadstate-pure COMMAND biltoo-spreadstate-test)
+
   add_executable(biltoo-imagesizebook-test
     tests/imagesizebook_test.cpp
   )

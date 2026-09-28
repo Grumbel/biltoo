@@ -484,7 +484,7 @@ void DisplayPipelineController::upgradeImageModeFromLadder(const QString &path, 
                                            const QImage &image)
 {
     // ladderReady Image-mode path: same install policy as completeLoadReplace.
-    if (path.isEmpty() || image.isNull() || path != m_host->hostImage().classicPath()) {
+    if (path.isEmpty() || image.isNull() || !isImageModeInstallPath(path)) {
         return;
     }
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
@@ -1202,12 +1202,14 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     const SessionImageId layoutSid = m_host->hostSessionId().currentIdValue();
     const QSize sz = m_host->contentLayoutSize(path, layoutSid);
 
-    // Fast path: reuse the single Image-mode item.
+    // Fast path: reuse the single Image-mode item, or the path-matched spread member.
     // Do NOT m_host->setUpdatesEnabled(false) — that defers soft paint until after the
     // whole key handler (chrome + climb schedule); user never sees the soft.
     ImageItem *item = nullptr;
     if (m_host->liveItems().size() == 1) {
         item = m_host->liveItems().first();
+    } else if (m_host->liveItems().size() > 1) {
+        item = imageModeItemForPath(path);
     }
     if (item) {
         const QSize sizeBefore = item->imageSize();
@@ -1304,11 +1306,13 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         return;
     }
 
-    // No reusable item — still try to capture from whatever was on the canvas.
-    if (!m_host->liveItems().isEmpty()) {
-        m_host->captureStickyPanAnchor(m_host->liveItems().first());
+    // No path-matched item. Single-page: wipe and create. Spread: add sibling.
+    if (m_host->liveItems().size() <= 1) {
+        if (!m_host->liveItems().isEmpty()) {
+            m_host->captureStickyPanAnchor(m_host->liveItems().first());
+        }
+        m_host->clearLiveCanvas();
     }
-    m_host->clearLiveCanvas();
     item = (isPositiveSize(sz) && sz.width() > 1 && sz.height() > 1)
         ? createPlaceholderItem(path, sz) : nullptr;
     if (!item) {
@@ -1321,16 +1325,18 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     resetImageModeItemPlacement(item);
     // Do not prepareImageModeCanvas() here — it zeros sceneRect after the item
     // exists (same class of empty ImageView as the cold-placeholder path).
-    m_host->syncImageModeSceneRect(item);
-    m_host->applyImageModeFraming(item);
+    if (m_host->liveItems().size() <= 1) {
+        m_host->syncImageModeSceneRect(item);
+        m_host->applyImageModeFraming(item);
+    }
     m_host->setUpdatesEnabled(true);
     if (m_host->viewportWidget()) {
         m_host->viewportWidget()->update();
     }
     m_host->notifyStatusChanged();
-    biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d",
+    biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d live=%d",
                   qPrintable(QFileInfo(path).fileName()),
-                  pixels.width(), pixels.height());
+                  pixels.width(), pixels.height(), m_host->itemCount());
 }
 
 void DisplayPipelineController::installImageModeReplaceItem(const QString &path, const QImage &image)
@@ -1338,6 +1344,42 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     // Suppress paints between removing the old item and fitting the new one
     // so we never present a native-scale (or empty) intermediate frame.
     m_host->setUpdatesEnabled(false);
+
+    // Spread / multi-underlay Image: upgrade the matching item in place; do not
+    // clear siblings (docs/SPREAD.md — N items + one camera).
+    if (m_host->liveItems().size() > 1) {
+        ImageItem *existing = imageModeItemForPath(path);
+        if (existing) {
+            installDisplayPixels(existing, image, pixelKindForImageModeSample(path, image),
+                                 resolveItemSessionId(existing));
+            m_host->hostSessionId().clearLastLoadError();
+            m_host->rememberSizeFromDecode(path, image);
+            m_host->setUpdatesEnabled(true);
+            if (m_host->viewportWidget()) {
+                m_host->viewportWidget()->update();
+            }
+            m_host->notifyStatusChanged();
+            return;
+        }
+        // Path not among members yet — add without wiping the spread.
+        ImageItem *item = createItemFromImage(path, image);
+        if (!item) {
+            m_host->setUpdatesEnabled(true);
+            m_host->hostSessionId().setLastLoadError(path);
+            m_host->notifyStatusChanged();
+            return;
+        }
+        bindImageModeSessionCursor(item);
+        // Leave placement to applySpreadLayout; identity pose until then.
+        resetImageModeItemPlacement(item);
+        m_host->setUpdatesEnabled(true);
+        if (m_host->viewportWidget()) {
+            m_host->viewportWidget()->update();
+        }
+        m_host->notifyStatusChanged();
+        return;
+    }
+
     // Preserve sticky pan across the wipe (soft→full or cold replace).
     if (!m_host->liveItems().isEmpty()) {
         if (m_host->liveItems().first()->path() != path) {
@@ -1379,9 +1421,9 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     if (generation != loadGate().generation()) {
         return; // superseded by a newer navigation / open
     }
-    // Stale navigation: only the current classic path may install.
+    // Stale navigation: classic path or a live spread underlay may install.
     // Empty multi-item canvas can still seed from m_view->classicPath.
-    if (path != m_host->hostImage().classicPath()) {
+    if (!isImageModeInstallPath(path)) {
         return;
     }
     if (image.isNull()) {

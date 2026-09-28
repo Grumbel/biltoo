@@ -409,7 +409,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
                 const QString pathCopy = path;
                 // One frame for soft paint, then PreferCache for the settled path.
                 QTimer::singleShot(16, m_host->hostObject(), [this, pathCopy, soft]() {
-                    if (!m_host->isImageMode() || m_host->hostImage().classicPath() != pathCopy) {
+                    if (!m_host->isImageMode() || !isImageModeInstallPath(pathCopy)) {
                         return;
                     }
                     if (m_host->hostSlideshow().hud().isNavHot()) {
@@ -737,7 +737,7 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
 
     // Replace navigations: drop superseded previews.
     if (role == ImageView::LoadReplace) {
-        if (generation != loadGate().generation() || path != m_host->hostImage().classicPath()) {
+        if (generation != loadGate().generation() || !isImageModeInstallPath(path)) {
             return;
         }
         if (m_host->isImageMode()) {

@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Spread — multi-page reading surface (design)
 
-**Status:** design only. Not implemented.  
+**Status:** P0/P1 partial in tree (membership, Double view, View Selection, multi-underlay install). Text cross-page is P2.  
 **Related:** [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [DOMAIN.md](../DOMAIN.md) (world vs viewpoint),
 `DualImageShell` (compare — **not** spread).

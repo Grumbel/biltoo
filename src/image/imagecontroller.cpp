@@ -419,12 +419,15 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         if (sid != kInvalidSessionImageId) {
             item->setSessionId(sid);
         }
-        // Prefer cached pixels when present; otherwise kick a size/soft probe.
+        // Prefer cached pixels when present; otherwise probe + PreferCache climb.
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull() && !item->hasDisplayPixels()) {
             m_view->hostDisplayPipeline().hostSetPreviewImage(item, cached);
         } else if (!item->hasDisplayPixels()) {
             ThumtooCache::scheduleProbe(path);
+            ThumtooCache::scheduleStoreUnderlaySeed(path);
+            m_view->hostDisplayPipeline().requestEscalateClimb(
+                path, ThumtooCache::kBatchOverviewEdge);
         }
         QSizeF sz = item->displayContentRect().size();
         if (sz.width() < 1 || sz.height() < 1) {

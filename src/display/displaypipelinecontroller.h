@@ -333,6 +333,8 @@ private:
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
     void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
     ImageItem *imageModeItemForPath(const QString &path) const;
+    /** classicPath or any live Image-mode underlay path (spread members). */
+    bool isImageModeInstallPath(const QString &path) const;
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
 

@@ -645,7 +645,25 @@ ImageItem *DisplayPipelineController::imageModeItemForPath(const QString &path) 
     if (cur && cur->path() == path) {
         return cur;
     }
+    // Spread (and any multi-underlay Image surface): match by path among live items.
+    // Prefer target/primary above so single-page nav still binds the cursor item first.
+    for (ImageItem *it : m_host->liveItems()) {
+        if (it && it->path() == path) {
+            return it;
+        }
+    }
     return nullptr;
+}
+
+bool DisplayPipelineController::isImageModeInstallPath(const QString &path) const
+{
+    if (path.isEmpty() || !m_host->isImageMode()) {
+        return false;
+    }
+    if (path == m_host->hostImage().classicPath()) {
+        return true;
+    }
+    return imageModeItemForPath(path) != nullptr;
 }
 
 
