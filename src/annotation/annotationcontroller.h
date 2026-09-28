@@ -77,38 +77,14 @@ private:
     SessionImageId targetSid(ImageItem *item) const;
     bool pageSpaceForItem(ImageItem *item, QRectF *boundsOut, bool *yUpOut,
                           QSize *sourceSizeOut) const;
-    QRectF pageRectToDisplay(ImageItem *item, const QRectF &pageRect,
-                             const QRectF &pageBounds, bool pageYUp,
-                             const QSize &sourceSize) const;
     QPointF viewToPage(ImageItem *item, const QPoint &viewPos,
                        const QRectF &pageBounds, bool pageYUp,
                        const QSize &sourceSize) const;
-    QPointF pageToScene(ImageItem *item, const QPointF &pagePt,
-                        const QRectF &pageBounds, bool pageYUp,
-                        const QSize &sourceSize) const;
-    QRectF pageRectToScene(ImageItem *item, const QRectF &pageRect,
-                           const QRectF &pageBounds, bool pageYUp,
-                           const QSize &sourceSize) const;
-    void applyHighlightBlend(QPainter &painter, const QColor &color) const;
-    void paintStroke(QPainter &painter, ImageItem *item,
-                     const Annotation::Object &obj, const QRectF &pageBounds,
-                     bool pageYUp, const QSize &sourceSize) const;
-    void paintQuads(QPainter &painter, ImageItem *item,
-                    const Annotation::Object &obj, const QRectF &pageBounds,
-                    bool pageYUp, const QSize &sourceSize) const;
-    void paintObject(QPainter &painter, ImageItem *item, const Annotation::Object &obj,
-                     const QRectF &pageBounds, bool pageYUp, const QSize &sourceSize) const;
     void finishFreehand();
     void finishTextHighlight();
     void finishShape();
     void finishLine();
     void placeStickyAt(const QPointF &pagePt, const QRectF &pageBounds, bool pageYUp);
-    void paintSticky(QPainter &painter, ImageItem *item,
-                     const Annotation::Object &obj, const QRectF &pageBounds,
-                     bool pageYUp, const QSize &sourceSize) const;
-    void paintShape(QPainter &painter, ImageItem *item,
-                    const Annotation::Object &obj, const QRectF &pageBounds,
-                    bool pageYUp, const QSize &sourceSize) const;
     void eraseAtPagePoint(const QPointF &pagePt, const QRectF &pageBounds,
                           bool pageYUp);
     quint64 hitTestTopObject(SessionImageId sid, const QPointF &pagePt,
@@ -116,9 +92,6 @@ private:
     void selectAtPagePoint(const QPointF &pagePt,
                           Qt::KeyboardModifiers mods = Qt::NoModifier);
     void deleteSelected();
-    void paintSelectionChrome(QPainter &painter, ImageItem *item,
-                              const QRectF &pageBounds, bool pageYUp,
-                              const QSize &sourceSize) const;
 
     ImageView *m_view = nullptr;
     AnnotationSession m_session;

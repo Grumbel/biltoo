@@ -4,6 +4,7 @@
 #include "annotation/annotationcontroller.h"
 
 #include "annotation/annotationcommand.h"
+#include "annotation/annotationpainter.h"
 #include "content/contentxform.h"
 #include "host/thumtoocache.h"
 #include "imageitem.h"
@@ -35,6 +36,36 @@
  * while the QPainter still has the view transform. Do not mix mapFromScene
  * view-pixel results into that painter without resetTransform.
  */
+
+
+namespace {
+
+QRectF unionOfQuads(const QVector<QRectF> &quads)
+{
+    QRectF u;
+    for (const QRectF &q : quads) {
+        if (!q.isValid()) {
+            continue;
+        }
+        u = u.isValid() ? u.united(q) : q;
+    }
+    return u;
+}
+
+QRectF mapRectThroughUnions(const QRectF &r, const QRectF &fromU, const QRectF &toU)
+{
+    if (!fromU.isValid() || fromU.width() < 1e-6 || fromU.height() < 1e-6 || !toU.isValid()) {
+        return r;
+    }
+    const qreal nx = (r.x() - fromU.x()) / fromU.width();
+    const qreal ny = (r.y() - fromU.y()) / fromU.height();
+    const qreal nw = r.width() / fromU.width();
+    const qreal nh = r.height() / fromU.height();
+    return QRectF(toU.x() + nx * toU.width(), toU.y() + ny * toU.height(),
+                  qMax(1.0, nw * toU.width()), qMax(1.0, nh * toU.height()));
+}
+
+} // namespace
 
 AnnotationController::AnnotationController(ImageView *view)
     : m_view(view)
@@ -202,40 +233,6 @@ bool AnnotationController::pageSpaceForItem(ImageItem *item, QRectF *boundsOut,
 }
 
 /** Page → display (crop-local, no item offset). Same pipeline as regionImageRect. */
-QRectF AnnotationController::pageRectToDisplay(ImageItem *item, const QRectF &pageRect,
-                                               const QRectF &pageBounds, bool pageYUp,
-                                               const QSize &sourceSize) const
-{
-    if (!item || !m_view || pageRect.isEmpty()) {
-        return {};
-    }
-    SessionImageId sid = targetSid(item);
-    const WorkspaceItemState st =
-        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
-    const ContentXform::Value x = ContentXform::Value::fromState(st);
-
-    const QRectF inSource =
-        ThumtooCache::pageRectToImageRect(pageRect, pageBounds, sourceSize, pageYUp);
-    if (inSource.isEmpty()) {
-        return {};
-    }
-    QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
-    if (disp.isEmpty()) {
-        return {};
-    }
-    const QSize logical = ContentXform::layoutSize(sourceSize, x);
-    const QSize itemSz = item->imageSize();
-    if (logical.width() > 0 && logical.height() > 0 && itemSz.width() > 0
-        && itemSz.height() > 0
-        && (logical.width() != itemSz.width() || logical.height() != itemSz.height())) {
-        disp = QRectF(
-            disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.y() * qreal(itemSz.height()) / qreal(logical.height()),
-            disp.width() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.height() * qreal(itemSz.height()) / qreal(logical.height()));
-    }
-    return disp;
-}
 
 QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
                                          const QRectF &pageBounds, bool pageYUp,
@@ -271,131 +268,12 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
     return pageRect.center();
 }
 
-QPointF AnnotationController::pageToScene(ImageItem *item, const QPointF &pagePt,
-                                          const QRectF &pageBounds, bool pageYUp,
-                                          const QSize &sourceSize) const
-{
-    const QRectF disp = pageRectToDisplay(
-        item, QRectF(pagePt.x(), pagePt.y(), 0.01, 0.01), pageBounds, pageYUp, sourceSize);
-    if (disp.isEmpty()) {
-        return {};
-    }
-    const QPointF local = disp.center() + item->offset();
-    return item->mapToScene(local);
-}
-
-QRectF AnnotationController::pageRectToScene(ImageItem *item, const QRectF &pageRect,
-                                             const QRectF &pageBounds, bool pageYUp,
-                                             const QSize &sourceSize) const
-{
-    const QRectF disp = pageRectToDisplay(item, pageRect, pageBounds, pageYUp, sourceSize);
-    if (disp.isEmpty()) {
-        return {};
-    }
-    const QRectF local = disp.translated(item->offset());
-    return item->mapToScene(local).boundingRect();
-}
-
-void AnnotationController::paintStroke(QPainter &painter, ImageItem *item,
-                                       const Annotation::Object &obj,
-                                       const QRectF &pageBounds, bool pageYUp,
-                                       const QSize &sourceSize) const
-{
-    if (!item || obj.points.size() < 1) {
-        return;
-    }
-    QPainterPath path;
-    bool first = true;
-    for (const QPointF &pp : obj.points) {
-        const QPointF scene = pageToScene(item, pp, pageBounds, pageYUp, sourceSize);
-        if (first) {
-            path.moveTo(scene);
-            first = false;
-        } else {
-            path.lineTo(scene);
-        }
-    }
-    if (obj.points.size() == 1) {
-        const QPointF scene =
-            pageToScene(item, obj.points.first(), pageBounds, pageYUp, sourceSize);
-        // Width in page units → scene via source scale and view transform.
-        qreal pageUnit = 1.0;
-        if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-            pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-        }
-        const qreal r = qMax(0.5, obj.width * 0.5 * pageUnit);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(obj.color);
-        painter.drawEllipse(scene, r, r);
-        return;
-    }
-
-    QPen pen(obj.color);
-    qreal pageUnit = 1.0;
-    if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-        pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-    }
-    // Stroke width in scene (source) units; view transform scales it on screen.
-    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawPath(path);
-}
-
-void AnnotationController::paintQuads(QPainter &painter, ImageItem *item,
-                                      const Annotation::Object &obj,
-                                      const QRectF &pageBounds, bool pageYUp,
-                                      const QSize &sourceSize) const
-{
-    if (!item || obj.quads.isEmpty()) {
-        return;
-    }
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(obj.color);
-    for (const QRectF &q : obj.quads) {
-        const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
-        if (!scene.isEmpty()) {
-            painter.drawRect(scene);
-        }
-    }
-}
 
 
-void AnnotationController::applyHighlightBlend(QPainter &painter, const QColor &color) const
-{
-    // Viewport is software raster: Multiply darkens destination so black
-    // text stays readable under yellow/green/cyan highlighters.
-    Q_UNUSED(color);
-    painter.setCompositionMode(QPainter::CompositionMode_Multiply);
-    painter.setOpacity(1.0);
-}
 
-void AnnotationController::paintObject(QPainter &painter, ImageItem *item,
-                                       const Annotation::Object &obj,
-                                       const QRectF &pageBounds, bool pageYUp,
-                                       const QSize &sourceSize) const
-{
-    painter.save();
-    if (obj.blend == Annotation::Blend::Multiply) {
-        applyHighlightBlend(painter, obj.color);
-    } else {
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        painter.setOpacity(1.0);
-    }
-    if (obj.kind == Annotation::Kind::HighlightQuad) {
-        paintQuads(painter, item, obj, pageBounds, pageYUp, sourceSize);
-    } else if (obj.kind == Annotation::Kind::ShapeRect
-               || obj.kind == Annotation::Kind::ShapeEllipse) {
-        paintShape(painter, item, obj, pageBounds, pageYUp, sourceSize);
-    } else if (obj.kind == Annotation::Kind::StickyNote) {
-        paintSticky(painter, item, obj, pageBounds, pageYUp, sourceSize);
-    } else {
-        paintStroke(painter, item, obj, pageBounds, pageYUp, sourceSize);
-    }
-    painter.restore();
-}
+
+
+
 
 void AnnotationController::paintOverlay(QPainter &painter)
 {
@@ -418,10 +296,10 @@ void AnnotationController::paintOverlay(QPainter &painter)
     if (const Annotation::Page *pg = m_session.page(sid)) {
         const QRectF pb = pg->pageBounds.isValid() ? pg->pageBounds : bounds;
         const bool py = pg->pageBounds.isValid() ? pg->pageYUp : yUp;
-        for (const Annotation::Object &obj : pg->objects) {
-            paintObject(painter, item, obj, pb, py, sourceSize);
-        }
-        paintSelectionChrome(painter, item, pb, py, sourceSize);
+        AnnotationPainter::paintPageObjects(painter, m_view, item, *pg, bounds, yUp,
+                                            sourceSize);
+        AnnotationPainter::paintSelectionChrome(painter, m_view, item, *pg, pb, py,
+                                                sourceSize, m_selectedIds);
     }
 
     if (m_drawing && m_draftSid == sid) {
@@ -439,7 +317,7 @@ void AnnotationController::paintOverlay(QPainter &painter)
             draft.color = m_color;
             draft.width = m_width;
             draft.points = m_draftPoints;
-            paintObject(painter, item, draft,
+            AnnotationPainter::paintObject(painter, m_view, item, draft,
                         m_draftBounds.isValid() ? m_draftBounds : bounds, m_draftYUp,
                         m_draftSourceSize.isValid() ? m_draftSourceSize : sourceSize);
         } else if ((m_tool == Annotation::Tool::TextHighlighter
@@ -994,77 +872,9 @@ void AnnotationController::clearCurrentPage()
 }
 
 
-void AnnotationController::paintShape(QPainter &painter, ImageItem *item,
-                                      const Annotation::Object &obj,
-                                      const QRectF &pageBounds, bool pageYUp,
-                                      const QSize &sourceSize) const
-{
-    if (!item || obj.quads.isEmpty()) {
-        return;
-    }
-    const QRectF pageR = obj.quads.first();
-    const QRectF scene = pageRectToScene(item, pageR, pageBounds, pageYUp, sourceSize);
-    if (scene.isEmpty()) {
-        return;
-    }
-    qreal pageUnit = 1.0;
-    if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-        pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-    }
-    QPen pen(obj.color);
-    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
-    pen.setCapStyle(Qt::SquareCap);
-    pen.setJoinStyle(Qt::MiterJoin);
-    painter.setPen(pen);
-    // Light fill so the shape reads on busy pages without covering ink fully.
-    QColor fill = obj.color;
-    fill.setAlpha(40);
-    painter.setBrush(fill);
-    if (obj.kind == Annotation::Kind::ShapeEllipse) {
-        painter.drawEllipse(scene);
-    } else {
-        painter.drawRect(scene);
-    }
-}
 
 
 
-void AnnotationController::paintSticky(QPainter &painter, ImageItem *item,
-                                       const Annotation::Object &obj,
-                                       const QRectF &pageBounds, bool pageYUp,
-                                       const QSize &sourceSize) const
-{
-    if (!item || obj.quads.isEmpty()) {
-        return;
-    }
-    const QRectF scene = pageRectToScene(item, obj.quads.first(), pageBounds, pageYUp,
-                                         sourceSize);
-    if (scene.isEmpty()) {
-        return;
-    }
-    painter.setPen(QPen(obj.color.darker(120), 0));
-    painter.setBrush(obj.color);
-    painter.drawRoundedRect(scene, 4, 4);
-    const qreal fold = qMin(12.0, qMax(4.0, scene.width() * 0.18));
-    QPolygonF dogear;
-    dogear << QPointF(scene.right() - fold, scene.top())
-           << QPointF(scene.right(), scene.top())
-           << QPointF(scene.right(), scene.top() + fold);
-    painter.setBrush(obj.color.darker(110));
-    painter.setPen(Qt::NoPen);
-    painter.drawPolygon(dogear);
-
-    const QString text = !obj.text.isEmpty()
-                             ? obj.text
-                             : (!obj.textSnippet.isEmpty() ? obj.textSnippet
-                                                          : QObject::tr("(note)"));
-    painter.setPen(QColor(40, 40, 40));
-    QFont font = painter.font();
-    font.setPointSizeF(qBound(8.0, scene.height() * 0.11, 18.0));
-    painter.setFont(font);
-    const QRectF textRect = scene.adjusted(6, 6, -6 - fold * 0.25, -6);
-    painter.drawText(textRect, Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
-}
 
 void AnnotationController::placeStickyAt(const QPointF &pagePt, const QRectF &pageBounds,
                                          bool pageYUp)
@@ -1213,7 +1023,7 @@ QImage AnnotationController::renderFlattenedDisplay() const
 
         if (obj.kind == Annotation::Kind::StickyNote) {
             for (const QRectF &q : obj.quads) {
-                const QRectF disp = self->pageRectToDisplay(item, q, pb, py, sourceSize);
+                const QRectF disp = AnnotationPainter::pageRectToDisplay(m_view, item, q, pb, py, sourceSize);
                 if (disp.isEmpty()) {
                     continue;
                 }
@@ -1248,7 +1058,7 @@ QImage AnnotationController::renderFlattenedDisplay() const
                 painter.setBrush(fill);
             }
             for (const QRectF &q : obj.quads) {
-                const QRectF disp = self->pageRectToDisplay(item, q, pb, py, sourceSize);
+                const QRectF disp = AnnotationPainter::pageRectToDisplay(m_view, item, q, pb, py, sourceSize);
                 if (disp.isEmpty()) {
                     continue;
                 }
@@ -1413,31 +1223,6 @@ QRectF AnnotationController::resizedQuad(const QRectF &base, ResizeCorner corner
     return out;
 }
 
-static QRectF unionOfQuads(const QVector<QRectF> &quads)
-{
-    QRectF u;
-    for (const QRectF &q : quads) {
-        if (!q.isValid()) {
-            continue;
-        }
-        u = u.isValid() ? u.united(q) : q;
-    }
-    return u;
-}
-
-/** Map @p r from @p fromU space into @p toU (uniform box scale). */
-static QRectF mapRectThroughUnions(const QRectF &r, const QRectF &fromU, const QRectF &toU)
-{
-    if (!fromU.isValid() || fromU.width() < 1e-6 || fromU.height() < 1e-6 || !toU.isValid()) {
-        return r;
-    }
-    const qreal nx = (r.x() - fromU.x()) / fromU.width();
-    const qreal ny = (r.y() - fromU.y()) / fromU.height();
-    const qreal nw = r.width() / fromU.width();
-    const qreal nh = r.height() / fromU.height();
-    return QRectF(toU.x() + nx * toU.width(), toU.y() + ny * toU.height(),
-                  qMax(1.0, nw * toU.width()), qMax(1.0, nh * toU.height()));
-}
 
 void AnnotationController::beginResizeSelection(ResizeCorner corner, quint64 id,
                                                 const Annotation::Object &baseline)
@@ -1721,99 +1506,6 @@ void AnnotationController::deleteSelected()
     }
 }
 
-void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *item,
-                                                const QRectF &pageBounds, bool pageYUp,
-                                                const QSize &sourceSize) const
-{
-    if (!item || m_selectedIds.isEmpty() || !m_view) {
-        return;
-    }
-    SessionImageId sid = targetSid(item);
-    const Annotation::Page *pg = m_session.page(sid);
-    if (!pg) {
-        return;
-    }
-    painter.save();
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    QPen pen(QColor(53, 132, 228));
-    pen.setCosmetic(true);
-    pen.setWidthF(1.5);
-    pen.setStyle(Qt::DashLine);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    for (const Annotation::Object &o : pg->objects) {
-        if (!m_selectedIds.contains(o.id)) {
-            continue;
-        }
-        if (o.kind == Annotation::Kind::HighlightQuad
-            || o.kind == Annotation::Kind::ShapeRect
-            || o.kind == Annotation::Kind::ShapeEllipse
-            || o.kind == Annotation::Kind::StickyNote) {
-            for (const QRectF &q : o.quads) {
-                const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
-                if (!scene.isEmpty()) {
-                    if (o.kind == Annotation::Kind::ShapeEllipse) {
-                        painter.drawEllipse(scene);
-                    } else {
-                        painter.drawRect(scene);
-                    }
-                }
-            }
-            // Corner handles on the union box (single or multi-quad).
-            if (m_selectedIds.size() == 1 && !o.quads.isEmpty()) {
-                const QRectF pageBox = o.quads.size() == 1 ? o.quads.first()
-                                                          : unionOfQuads(o.quads);
-                const QRectF scene =
-                    pageRectToScene(item, pageBox, pageBounds, pageYUp, sourceSize);
-                if (!scene.isEmpty()) {
-                    const qreal hs = 5.0;
-                    painter.save();
-                    painter.setBrush(QColor(255, 255, 255));
-                    painter.setPen(QPen(QColor(53, 132, 228), 0));
-                    const QPointF corners[4] = {
-                        scene.topLeft(), scene.topRight(), scene.bottomRight(),
-                        scene.bottomLeft(),
-                    };
-                    for (const QPointF &c : corners) {
-                        painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
-                    }
-                    painter.restore();
-                }
-            }
-        } else if (!o.points.isEmpty()) {
-            QPainterPath path;
-            bool first = true;
-            QVector<QPointF> scenePts;
-            scenePts.reserve(o.points.size());
-            for (const QPointF &pp : o.points) {
-                const QPointF scene = pageToScene(item, pp, pageBounds, pageYUp, sourceSize);
-                scenePts.append(scene);
-                if (first) {
-                    path.moveTo(scene);
-                    first = false;
-                } else {
-                    path.lineTo(scene);
-                }
-            }
-            painter.drawPath(path);
-            if (m_selectedIds.size() == 1 && o.kind == Annotation::Kind::ShapeLine
-                && scenePts.size() >= 2) {
-                const qreal hs = 5.0;
-                painter.save();
-                painter.setBrush(QColor(255, 255, 255));
-                painter.setPen(QPen(QColor(53, 132, 228), 0));
-                for (const QPointF &c : scenePts) {
-                    painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
-                }
-                painter.restore();
-            } else {
-                const QRectF br = path.boundingRect().adjusted(-3, -3, 3, 3);
-                painter.drawRect(br);
-            }
-        }
-    }
-    painter.restore();
-}
 
 bool AnnotationController::tryKeyPress(QKeyEvent *event)
 {
