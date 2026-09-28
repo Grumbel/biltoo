@@ -498,6 +498,9 @@ void MainWindow::createActions()
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Sticky);
             }
             updateAnnotationPanel();
+            if (m_annotationDock && act && act->isChecked()) {
+                m_annotationDock->open();
+            }
         });
     }
 

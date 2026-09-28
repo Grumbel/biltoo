@@ -694,9 +694,12 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
             if (m_selectedIds.size() == 1) {
                 Annotation::Object selObj;
                 if (m_session.findObject(m_draftSid, m_selectedIds.first(), &selObj)) {
-                    if (selObj.quads.size() == 1) {
+                    if (!selObj.quads.isEmpty()) {
+                        const QRectF handleBox = selObj.quads.size() == 1
+                                                    ? selObj.quads.first()
+                                                    : unionOfQuads(selObj.quads);
                         const ResizeCorner corner =
-                            hitTestQuadHandle(selObj.quads.first(), pagePt, handleR);
+                            hitTestQuadHandle(handleBox, pagePt, handleR);
                         if (corner != ResizeCorner::None) {
                             beginResizeSelection(corner, selObj.id, selObj);
                             event->accept();
@@ -1410,6 +1413,32 @@ QRectF AnnotationController::resizedQuad(const QRectF &base, ResizeCorner corner
     return out;
 }
 
+static QRectF unionOfQuads(const QVector<QRectF> &quads)
+{
+    QRectF u;
+    for (const QRectF &q : quads) {
+        if (!q.isValid()) {
+            continue;
+        }
+        u = u.isValid() ? u.united(q) : q;
+    }
+    return u;
+}
+
+/** Map @p r from @p fromU space into @p toU (uniform box scale). */
+static QRectF mapRectThroughUnions(const QRectF &r, const QRectF &fromU, const QRectF &toU)
+{
+    if (!fromU.isValid() || fromU.width() < 1e-6 || fromU.height() < 1e-6 || !toU.isValid()) {
+        return r;
+    }
+    const qreal nx = (r.x() - fromU.x()) / fromU.width();
+    const qreal ny = (r.y() - fromU.y()) / fromU.height();
+    const qreal nw = r.width() / fromU.width();
+    const qreal nh = r.height() / fromU.height();
+    return QRectF(toU.x() + nx * toU.width(), toU.y() + ny * toU.height(),
+                  qMax(1.0, nw * toU.width()), qMax(1.0, nh * toU.height()));
+}
+
 void AnnotationController::beginResizeSelection(ResizeCorner corner, quint64 id,
                                                 const Annotation::Object &baseline)
 {
@@ -1450,7 +1479,17 @@ void AnnotationController::applyResizeTo(const QPointF &pagePt)
     if (m_resizeCorner == ResizeCorner::None || m_resizeBaseline.quads.isEmpty()) {
         return;
     }
-    updated.quads[0] = resizedQuad(m_resizeBaseline.quads.first(), m_resizeCorner, pagePt);
+    if (m_resizeBaseline.quads.size() == 1) {
+        updated.quads[0] =
+            resizedQuad(m_resizeBaseline.quads.first(), m_resizeCorner, pagePt);
+    } else {
+        const QRectF fromU = unionOfQuads(m_resizeBaseline.quads);
+        const QRectF toU = resizedQuad(fromU, m_resizeCorner, pagePt);
+        for (int i = 0; i < updated.quads.size(); ++i) {
+            updated.quads[i] =
+                mapRectThroughUnions(m_resizeBaseline.quads.at(i), fromU, toU);
+        }
+    }
     m_session.updateObject(m_draftSid, updated);
 }
 
@@ -1718,21 +1757,27 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
                     } else {
                         painter.drawRect(scene);
                     }
-                    // Corner handles (resize) when this is the sole selected single-quad object.
-                    if (m_selectedIds.size() == 1 && o.quads.size() == 1) {
-                        const qreal hs = 5.0; // scene units, cosmetic feel
-                        painter.save();
-                        painter.setBrush(QColor(255, 255, 255));
-                        painter.setPen(QPen(QColor(53, 132, 228), 0));
-                        const QPointF corners[4] = {
-                            scene.topLeft(), scene.topRight(), scene.bottomRight(),
-                            scene.bottomLeft(),
-                        };
-                        for (const QPointF &c : corners) {
-                            painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
-                        }
-                        painter.restore();
+                }
+            }
+            // Corner handles on the union box (single or multi-quad).
+            if (m_selectedIds.size() == 1 && !o.quads.isEmpty()) {
+                const QRectF pageBox = o.quads.size() == 1 ? o.quads.first()
+                                                          : unionOfQuads(o.quads);
+                const QRectF scene =
+                    pageRectToScene(item, pageBox, pageBounds, pageYUp, sourceSize);
+                if (!scene.isEmpty()) {
+                    const qreal hs = 5.0;
+                    painter.save();
+                    painter.setBrush(QColor(255, 255, 255));
+                    painter.setPen(QPen(QColor(53, 132, 228), 0));
+                    const QPointF corners[4] = {
+                        scene.topLeft(), scene.topRight(), scene.bottomRight(),
+                        scene.bottomLeft(),
+                    };
+                    for (const QPointF &c : corners) {
+                        painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
                     }
+                    painter.restore();
                 }
             }
         } else if (!o.points.isEmpty()) {

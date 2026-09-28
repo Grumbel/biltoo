@@ -667,6 +667,33 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     if (m_imageView) {
         // Always replace session annotations (empty project must clear prior markup).
         m_imageView->hostAnnot().session().fromJsonValue(doc.annotations);
+        // sourceKey check: warn when stored path no longer matches session path for sid.
+        int mismatch = 0;
+        int checked = 0;
+        QHash<SessionImageId, QString> pathById;
+        for (int i = 0; i < m_session.size(); ++i) {
+            pathById.insert(m_session.idAt(i), m_session.pathAt(i));
+        }
+        for (auto it = m_imageView->hostAnnot().session().pages().cbegin();
+             it != m_imageView->hostAnnot().session().pages().cend(); ++it) {
+            const Annotation::Page &pg = it.value();
+            if (pg.sourceKey.isEmpty()) {
+                continue;
+            }
+            ++checked;
+            const QString cur = pathById.value(pg.sid);
+            if (cur.isEmpty() || cur != pg.sourceKey) {
+                ++mismatch;
+            }
+        }
+        if (mismatch > 0 && statusBar()) {
+            statusBar()->showMessage(
+                tr("Annotations: %1 of %2 page(s) have a sourceKey that no longer "
+                   "matches the session path (geometry may be wrong).")
+                    .arg(mismatch)
+                    .arg(checked),
+                8000);
+        }
         if (m_imageView->viewport()) {
             m_imageView->viewport()->update();
         }

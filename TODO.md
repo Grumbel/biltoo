@@ -2,24 +2,23 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2790.1-annotation-panel` (base `a989daf`).
+**Tip:** `biltoo-2791.1-annot-multiquad-sourcekey-check` (base `a989daf`).
 
-### 2790.1 — Annotations panel
-- AnnotationPanel dock: colour presets, custom colour, stroke width slider/spin,
-  layer visibility checkbox
-- Panels menu + dock toggle; sync with tool switch and Image colour/width menus
-- Also fixed pre-existing brace nesting around crop/ocr panel toggle actions
+### 2791.1
+- Multi-quad corner resize: scale all quads through union box (text highlights)
+- Project load: status bar warning when annotation sourceKey ≠ session path
+- Selecting an annotation tool opens the Annotations panel
 
 ### Prior
-- 2789.1 selectAtPagePoint -Wduplicated-cond
-- 2788–2783 annotation tools / format / compile
+- 2790.1 Annotations panel
+- 2789–2783 format, select, move, resize, compile
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2790.1-annotation-panel-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2791.1-annot-multiquad-sourcekey-check-a989daf.bundle HEAD
 ```
 
 ### Still open
-- Validate sourceKey on project load
-- AnnotationPainter split
+- AnnotationPainter split from controller
 - PDF /Annot export
+- Auto-scale geometry when pageBounds size changes vs stored
