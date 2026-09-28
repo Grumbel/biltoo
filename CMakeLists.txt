@@ -398,6 +398,8 @@ set(BILTOO_LIB_SOURCES
   src/host/pagepath.h
   src/shell/thumbnailbar.cpp
   src/shell/thumbnailbar.h
+  src/shell/chromecolors.cpp
+  src/shell/chromecolors.h
   src/shell/preferencesdialog.cpp
   src/shell/preferencesdialog.h
   src/shell/cachepreparedialog.cpp

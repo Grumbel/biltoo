@@ -3,6 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "shell/messagelogpanel.h"
+#include "shell/chromecolors.h"
 #include <QScrollBar>
 #include "text/textsearchpolicy.h"
 #include "shell/dualimageshell.h"
@@ -2805,6 +2806,11 @@ void MainWindow::showPreferences()
     dlg.setHudFontPointSize(m_imageView->hostHudPrefs().fontPointSizeValue());
     dlg.setHudTextColor(m_imageView->hostHudPrefs().textColorRef());
     dlg.setHudPanelColor(m_imageView->hostHudPrefs().panelColorRef());
+    for (int i = 0; i < 4; ++i) {
+        const auto role = static_cast<ChromeColors::Role>(i);
+        dlg.setChromeFill(role, ChromeColors::fillBase(role));
+        dlg.setChromeStroke(role, ChromeColors::strokeBase(role));
+    }
     dlg.setScrollBarsVisible(m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
     dlg.setThumbnailLabelsVisible(m_hideThumbLabelsAct && !m_hideThumbLabelsAct->isChecked());
     dlg.setAdjustmentsPanelVisible(m_adjustmentsDock && m_adjustmentsDock->isVisible());
@@ -2883,6 +2889,17 @@ void MainWindow::showPreferences()
     m_imageView->hostHud().setFontPointSize(dlg.hudFontPointSize(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     m_imageView->hostHud().setTextColor(dlg.hudTextColor(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     m_imageView->hostHud().setPanelColor(dlg.hudPanelColor(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
+    for (int i = 0; i < 4; ++i) {
+        const auto role = static_cast<ChromeColors::Role>(i);
+        ChromeColors::setFillBase(role, dlg.chromeFill(role));
+        ChromeColors::setStrokeBase(role, dlg.chromeStroke(role));
+    }
+    if (m_thumbnailBar) {
+        m_thumbnailBar->viewport()->update();
+    }
+    if (m_imageView && m_imageView->viewport()) {
+        m_imageView->viewport()->update();
+    }
 
     if (m_toggleScrollBarsAct) {
         m_toggleScrollBarsAct->setChecked(dlg.scrollBarsVisible());
@@ -4094,6 +4111,25 @@ void MainWindow::readSettings()
                 m_imageView->hostHud().setPanelColor(QColor(0, 0, 0, 160), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
             }
         }
+        {
+            static const char *const kFillKeys[] = {
+                "chromeSelectFill", "chromeViewFill", "chromeActivityFill", "chromeSearchFill"};
+            static const char *const kStrokeKeys[] = {
+                "chromeSelectStroke", "chromeViewStroke", "chromeActivityStroke", "chromeSearchStroke"};
+            for (int i = 0; i < 4; ++i) {
+                const auto role = static_cast<ChromeColors::Role>(i);
+                const QColor fill(settings.value(QLatin1String(kFillKeys[i]),
+                    ChromeColors::defaultFillBase(role).name(QColor::HexRgb)).toString());
+                const QColor stroke(settings.value(QLatin1String(kStrokeKeys[i]),
+                    ChromeColors::defaultStrokeBase(role).name(QColor::HexRgb)).toString());
+                if (fill.isValid()) {
+                    ChromeColors::setFillBase(role, fill);
+                }
+                if (stroke.isValid()) {
+                    ChromeColors::setStrokeBase(role, stroke);
+                }
+            }
+        }
         const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),
                                                 QStringLiteral("#2a2a2a")).toString());
         if (bg.isValid()) {
@@ -4368,6 +4404,19 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hostHudPrefs().fontPointSizeValue());
         settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hostHudPrefs().textColorRef().name(QColor::HexArgb));
         settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hostHudPrefs().panelColorRef().name(QColor::HexArgb));
+    }
+    {
+        static const char *const kFillKeys[] = {
+            "chromeSelectFill", "chromeViewFill", "chromeActivityFill", "chromeSearchFill"};
+        static const char *const kStrokeKeys[] = {
+            "chromeSelectStroke", "chromeViewStroke", "chromeActivityStroke", "chromeSearchStroke"};
+        for (int i = 0; i < 4; ++i) {
+            const auto role = static_cast<ChromeColors::Role>(i);
+            settings.setValue(QLatin1String(kFillKeys[i]),
+                              ChromeColors::fillBase(role).name(QColor::HexRgb));
+            settings.setValue(QLatin1String(kStrokeKeys[i]),
+                              ChromeColors::strokeBase(role).name(QColor::HexRgb));
+        }
     }
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailLabelsVisible"),

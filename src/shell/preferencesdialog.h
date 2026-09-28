@@ -8,6 +8,8 @@
 #include <QDialog>
 #include <functional>
 
+#include "shell/chromecolors.h"
+
 class QDoubleSpinBox;
 class QSpinBox;
 class QComboBox;
@@ -89,6 +91,12 @@ public:
     QColor hudPanelColor() const;
     void setHudPanelColor(const QColor &color);
 
+    /** Chrome role bases (opaque RGB); see ChromeColors / VIEW_AND_SELECTION. */
+    QColor chromeFill(ChromeColors::Role role) const;
+    QColor chromeStroke(ChromeColors::Role role) const;
+    void setChromeFill(ChromeColors::Role role, const QColor &color);
+    void setChromeStroke(ChromeColors::Role role, const QColor &color);
+
     bool scrollBarsVisible() const;
     void setScrollBarsVisible(bool on);
 
@@ -132,6 +140,7 @@ private:
     void chooseBackgroundColorAlt();
     void chooseHudTextColor();
     void chooseHudPanelColor();
+    void chooseChromeColor(ChromeColors::Role role, bool fill);
     void updateBackgroundControlsEnabled();
     /** Enable/disable per-row reset buttons from current control values. */
     void updateResetButtons();
@@ -176,6 +185,13 @@ private:
     QPushButton *m_hudPanelColorBtn = nullptr;
     QColor m_hudTextColor{255, 255, 255};
     QColor m_hudPanelColor{0, 0, 0, 160};
+
+    QPushButton *m_chromeFillBtn[4] = {};
+    QPushButton *m_chromeStrokeBtn[4] = {};
+    QToolButton *m_resetChromeFillBtn[4] = {};
+    QToolButton *m_resetChromeStrokeBtn[4] = {};
+    QColor m_chromeFill[4];
+    QColor m_chromeStroke[4];
 
     QCheckBox *m_scrollBarsCheck = nullptr;
     QCheckBox *m_thumbLabelsCheck = nullptr;

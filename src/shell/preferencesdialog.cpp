@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/preferencesdialog.h"
+#include "shell/chromecolors.h"
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
 #include "hud/hudappearance.h"
@@ -69,7 +70,14 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 {
     setWindowTitle(tr("Preferences"));
     setModal(true);
-    setMinimumWidth(400);
+    setMinimumWidth(480);
+
+    using R = ChromeColors::Role;
+    for (int i = 0; i < 4; ++i) {
+        const R role = static_cast<R>(i);
+        m_chromeFill[i] = ChromeColors::defaultFillBase(role);
+        m_chromeStroke[i] = ChromeColors::defaultStrokeBase(role);
+    }
 
     // --- Slideshow ---
     m_intervalSpin = new QDoubleSpinBox(this);
@@ -364,6 +372,58 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     auto *hudGroup = new QGroupBox(tr("HUD overlay"), this);
     hudGroup->setLayout(hudForm);
 
+    // --- Cursor / selection / activity / search chrome (VIEW_AND_SELECTION) ---
+    auto *chromeForm = new QFormLayout;
+    chromeForm->setContentsMargins(0, 0, 0, 0);
+    chromeForm->setHorizontalSpacing(12);
+    chromeForm->setVerticalSpacing(8);
+    const QStringList chromeLabels = {
+        tr("Select (page & text)"),
+        tr("View (cursor & spread)"),
+        tr("Activity (speech)"),
+        tr("Search hits"),
+    };
+    for (int i = 0; i < 4; ++i) {
+        const auto role = static_cast<ChromeColors::Role>(i);
+        m_chromeFillBtn[i] = new QPushButton(this);
+        m_chromeFillBtn[i]->setMinimumWidth(80);
+        m_chromeFillBtn[i]->setToolTip(tr("Fill colour for %1").arg(chromeLabels[i]));
+        connect(m_chromeFillBtn[i], &QPushButton::clicked, this, [this, role]() {
+            chooseChromeColor(role, /*fill=*/true);
+        });
+        m_chromeStrokeBtn[i] = new QPushButton(this);
+        m_chromeStrokeBtn[i]->setMinimumWidth(80);
+        m_chromeStrokeBtn[i]->setToolTip(tr("Stroke / outline colour for %1").arg(chromeLabels[i]));
+        connect(m_chromeStrokeBtn[i], &QPushButton::clicked, this, [this, role]() {
+            chooseChromeColor(role, /*fill=*/false);
+        });
+        updateColorButton(m_chromeFillBtn[i], m_chromeFill[i]);
+        updateColorButton(m_chromeStrokeBtn[i], m_chromeStroke[i]);
+
+        auto *pair = new QWidget(this);
+        auto *pairLay = new QHBoxLayout(pair);
+        pairLay->setContentsMargins(0, 0, 0, 0);
+        pairLay->setSpacing(6);
+        pairLay->addWidget(new QLabel(tr("Fill:"), pair));
+        pairLay->addWidget(wrapWithReset(m_chromeFillBtn[i], &m_resetChromeFillBtn[i], [this, role]() {
+            setChromeFill(role, ChromeColors::defaultFillBase(role));
+            updateResetButtons();
+        }), 1);
+        pairLay->addWidget(new QLabel(tr("Stroke:"), pair));
+        pairLay->addWidget(wrapWithReset(m_chromeStrokeBtn[i], &m_resetChromeStrokeBtn[i], [this, role]() {
+            setChromeStroke(role, ChromeColors::defaultStrokeBase(role));
+            updateResetButtons();
+        }), 1);
+
+        chromeForm->addRow(chromeLabels[i], pair);
+    }
+    auto *chromeGroup = new QGroupBox(tr("Chrome (cursor / selection)"), this);
+    chromeGroup->setToolTip(
+        tr("Semantic colours for filmstrip, Gallery, and text overlays.\n"
+           "Select = page and text selection; View = session cursor and spread;\n"
+           "Activity = speech mark; Search = find hits."));
+    chromeGroup->setLayout(chromeForm);
+
     // --- Interface (chrome that is not pure view colours) ---
     m_scrollBarsCheck = new QCheckBox(tr("Show scrollbars"), this);
     m_scrollBarsCheck->setToolTip(tr("Show scrollbars on the image view"));
@@ -480,6 +540,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     interfaceLayout->setSpacing(12);
     interfaceLayout->addWidget(viewGroup);
     interfaceLayout->addWidget(hudGroup);
+    interfaceLayout->addWidget(chromeGroup);
     interfaceLayout->addWidget(ifaceGroup);
     interfaceLayout->addStretch(1);
 
@@ -1015,6 +1076,72 @@ void PreferencesDialog::chooseHudPanelColor()
     }
 }
 
+QColor PreferencesDialog::chromeFill(ChromeColors::Role role) const
+{
+    const int i = static_cast<int>(role);
+    if (i < 0 || i > 3) {
+        return ChromeColors::defaultFillBase(role);
+    }
+    return m_chromeFill[i];
+}
+
+QColor PreferencesDialog::chromeStroke(ChromeColors::Role role) const
+{
+    const int i = static_cast<int>(role);
+    if (i < 0 || i > 3) {
+        return ChromeColors::defaultStrokeBase(role);
+    }
+    return m_chromeStroke[i];
+}
+
+void PreferencesDialog::setChromeFill(ChromeColors::Role role, const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    const int i = static_cast<int>(role);
+    if (i < 0 || i > 3) {
+        return;
+    }
+    m_chromeFill[i] = color;
+    m_chromeFill[i].setAlpha(255);
+    updateColorButton(m_chromeFillBtn[i], m_chromeFill[i]);
+}
+
+void PreferencesDialog::setChromeStroke(ChromeColors::Role role, const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    const int i = static_cast<int>(role);
+    if (i < 0 || i > 3) {
+        return;
+    }
+    m_chromeStroke[i] = color;
+    m_chromeStroke[i].setAlpha(255);
+    updateColorButton(m_chromeStrokeBtn[i], m_chromeStroke[i]);
+}
+
+void PreferencesDialog::chooseChromeColor(ChromeColors::Role role, bool fill)
+{
+    const int i = static_cast<int>(role);
+    if (i < 0 || i > 3) {
+        return;
+    }
+    const QColor current = fill ? m_chromeFill[i] : m_chromeStroke[i];
+    const QString title = fill ? tr("Chrome fill colour") : tr("Chrome stroke colour");
+    const QColor c = QColorDialog::getColor(current, this, title);
+    if (!c.isValid()) {
+        return;
+    }
+    if (fill) {
+        setChromeFill(role, c);
+    } else {
+        setChromeStroke(role, c);
+    }
+    updateResetButtons();
+}
+
 void PreferencesDialog::chooseBackgroundColor()
 {
     const QColor c = QColorDialog::getColor(m_bgColor, this, tr("Background colour"));
@@ -1322,6 +1449,13 @@ void PreferencesDialog::updateResetButtons()
     setOn(m_resetHudFontBtn, hudFontPointSize() != kDefaultHudFontPt);
     setOn(m_resetHudTextBtn, hudTextColor() != kDefaultHudTextColor);
     setOn(m_resetHudPanelBtn, hudPanelColor() != kDefaultHudPanelColor);
+    for (int i = 0; i < 4; ++i) {
+        const auto role = static_cast<ChromeColors::Role>(i);
+        setOn(m_resetChromeFillBtn[i],
+              chromeFill(role) != ChromeColors::defaultFillBase(role));
+        setOn(m_resetChromeStrokeBtn[i],
+              chromeStroke(role) != ChromeColors::defaultStrokeBase(role));
+    }
     setOn(m_resetScrollBarsBtn, scrollBarsVisible() != kDefaultScrollBars);
     setOn(m_resetThumbLabelsBtn, thumbnailLabelsVisible() != kDefaultThumbLabels);
     setOn(m_resetAdjPanelBtn, adjustmentsPanelVisible() != kDefaultAdjustmentsPanel);
