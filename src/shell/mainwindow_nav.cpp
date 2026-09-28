@@ -936,7 +936,7 @@ bool MainWindow::advanceSpreadMembership(int direction)
         return false;
     }
     const auto &st = m_spreadBook.state();
-    const int n = std::max(1, st.members.size());
+    const int n = std::max(1, int(st.members.size()));
     const int step = (st.stride == SpreadStride::ByPage)
         ? (direction > 0 ? 1 : -1)
         : (direction > 0 ? n : -n);
@@ -955,7 +955,7 @@ bool MainWindow::advanceSpreadMembership(int direction)
             newStart = 0;
         }
         if (newStart + n > m_session.size()) {
-            newStart = std::max(0, m_session.size() - n);
+            newStart = std::max(0, int(m_session.size()) - n);
         }
         if (newStart == start && n >= m_session.size()) {
             return false;
