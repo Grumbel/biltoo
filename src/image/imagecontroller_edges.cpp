@@ -61,11 +61,11 @@ bool ImageController::setHoverEdge(EdgeNavPolicy::Zone zone)
         return false;
     }
     m_hoverEdge = zone;
-    if (isNavEdge(m_hoverEdge)) {
+    if (isNavEdge(m_hoverEdge) && !m_view->hostAnnot().isToolActive()) {
         m_view->setCursor(Qt::PointingHandCursor);
     } else if (!m_view->hostChrome().isPanning()
                && !m_view->hostWorkspace().itemInteract().isRotating()) {
-        m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
+        m_view->restoreToolCursor();
     }
     if (QWidget *vp = m_view->viewport()) {
         vp->update();

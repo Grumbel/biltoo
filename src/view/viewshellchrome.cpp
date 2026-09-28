@@ -130,6 +130,12 @@ void ViewShellChrome::restoreToolCursor()
     if (!m_view) {
         return;
     }
+    // Annotation tools are a separate mode from Select/Pan/Zoom; while one is
+    // active they own the cursor (canvas tool may still be Select underneath).
+    if (m_view->hostAnnot().isToolActive()) {
+        m_view->setCursor(ToolCursors::forAnnotation(m_view->hostAnnot().tool()));
+        return;
+    }
     m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
 }
 

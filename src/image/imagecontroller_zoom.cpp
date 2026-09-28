@@ -19,7 +19,7 @@ void ImageController::cancelZoomRegion()
     m_zoomRegion.hideRubber();
     if (!m_view->hostChrome().isPanning()
         && !m_view->hostWorkspace().itemInteract().isRotating()) {
-        m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
+        m_view->restoreToolCursor();
     }
     emit m_view->statusChanged();
 }

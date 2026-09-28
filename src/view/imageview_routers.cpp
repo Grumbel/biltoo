@@ -8,6 +8,7 @@
 #include "util/biltoo_logging.h"
 #include "view/viewmodeflags.h"
 #include "image/toolpolicy.h"
+#include "image/toolcursors.h"
 #include <QPainter>
 #include <QPaintEvent>
 #include <QResizeEvent>
@@ -189,7 +190,11 @@ void ImageView::setTool(Tool tool)
 {
     m_interaction.setTool(tool);
     if (!hostChrome().isPanning()) {
-        setCursor(ToolPolicy::cursorFor(m_interaction.tool()));
+        if (hostAnnot().isToolActive()) {
+            setCursor(ToolCursors::forAnnotation(hostAnnot().tool()));
+        } else {
+            setCursor(ToolPolicy::cursorFor(m_interaction.tool()));
+        }
     }
     if (isWorkspaceMode()) {
         m_workspace.applyToolDragMode();

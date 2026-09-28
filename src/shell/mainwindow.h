@@ -371,6 +371,7 @@ private slots:
     bool isWorkspaceMode() const;
     bool isGalleryMode() const;
     bool isImageMode() const;
+    void clearAnnotationToolSelection();
     void setSelectTool();
     void setPanTool();
     void setZoomTool();

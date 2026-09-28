@@ -2253,8 +2253,32 @@ void MainWindow::toggleWorkspaceMode()
     updateWorkspaceActionVisibility();
 }
 
+
+void MainWindow::clearAnnotationToolSelection()
+{
+    // ExclusiveOptional annot group: unchecking the active tool emits triggered
+    // and AnnotationController goes to Tool::None. Block signals on actions so
+    // we only setTool once.
+    const QList<QAction *> acts = {
+        m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct, m_annotEraserAct,
+        m_annotSelectAct, m_annotRectAct, m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
+    };
+    for (QAction *a : acts) {
+        if (!a || !a->isChecked()) {
+            continue;
+        }
+        const QSignalBlocker block(a);
+        a->setChecked(false);
+    }
+    if (m_imageView) {
+        m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+    }
+    updateAnnotationPanel();
+}
+
 void MainWindow::setSelectTool()
 {
+    clearAnnotationToolSelection();
     if (m_imageView && m_imageView->hostCrop().active()) {
         // Leaving crop via another tool commits the draft (same as toolbar off).
         m_imageView->hostCrop().setCropMode(false);
@@ -2268,6 +2292,7 @@ void MainWindow::setSelectTool()
 
 void MainWindow::setPanTool()
 {
+    clearAnnotationToolSelection();
     if (m_imageView && m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().setCropMode(false);
         if (m_cropAct) {
@@ -2280,6 +2305,7 @@ void MainWindow::setPanTool()
 
 void MainWindow::setZoomTool()
 {
+    clearAnnotationToolSelection();
     if (m_imageView && m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().setCropMode(false);
         if (m_cropAct) {

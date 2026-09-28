@@ -4,6 +4,7 @@
 #include "shell/mainwindow_includes.h"
 #include "annotation/annotationtypes.h"
 #include <QActionGroup>
+#include <QSignalBlocker>
 #include "imageitem.h"
 #include <memory>
 
@@ -466,8 +467,27 @@ void MainWindow::createActions()
             }
             if (!act->isChecked()) {
                 m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+                // Cursor returns to the canvas tool (Select/Pan/Zoom).
+                m_imageView->restoreToolCursor();
                 return;
             }
+            // Annotation owns input and cursor. Keep a neutral canvas tool
+            // (Select) so Pan/Zoom do not stay "active" in the chrome.
+            if (m_selectToolAct) {
+                const QSignalBlocker block(m_selectToolAct);
+                m_selectToolAct->setChecked(true);
+            }
+            if (m_panToolAct) {
+                const QSignalBlocker block(m_panToolAct);
+                m_panToolAct->setChecked(false);
+            }
+            if (m_zoomToolAct) {
+                const QSignalBlocker block(m_zoomToolAct);
+                m_zoomToolAct->setChecked(false);
+            }
+            m_imageView->setTool(ImageView::Tool::Select);
+            // Cancel rubber-band zoom if it was armed under the Zoom tool.
+            m_imageView->hostImage().cancelZoomRegion();
             // Colour comes from user prefs / Colour menu (persisted). Width is
             // still tool-appropriate so switching Pen ↔ Highlighter feels right;
             // Stroke Width menu persists the last explicit choice via setWidth.
