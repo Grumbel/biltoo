@@ -599,12 +599,12 @@ void MainWindow::exportSessionImages()
         return static_cast<SessionExport::Format>(formatCombo->currentData().toInt());
     };
     const auto longEdgeOf = [edgeCombo, edgeSpin]() -> int {
-        const int d = edgeCombo->currentData().toInt();
-        if (d == 0) {
+        const int edgePx = edgeCombo->currentData().toInt();
+        if (edgePx == 0) {
             return 0;
         }
-        if (d > 0) {
-            return d;
+        if (edgePx > 0) {
+            return edgePx;
         }
         return edgeSpin->value();
     };
@@ -722,10 +722,10 @@ void MainWindow::exportSessionImages()
             ? suggestDest()
             : destEdit->text().trimmed();
         if (c == SessionExport::Container::Directory) {
-            const QString d = QFileDialog::getExistingDirectory(
+            const QString dir = QFileDialog::getExistingDirectory(
                 &dlg, tr("Export Folder"), start);
-            if (!d.isEmpty()) {
-                destEdit->setText(d);
+            if (!dir.isEmpty()) {
+                destEdit->setText(dir);
             }
         } else if (c == SessionExport::Container::Cbz) {
             const QString f = QFileDialog::getSaveFileName(

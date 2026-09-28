@@ -17,7 +17,8 @@ layout serialization (`LayoutSaver`), and better floating behaviour.
 
 | Qt | KDDockWidgets (QtWidgets frontend) |
 |----|-------------------------------------|
-| `QMainWindow` | `KDDockWidgets::QtWidgets::MainWindow` |
+| `QMainWindow` | `KDDockWidgets::QtWidgets::MainWindow` (`MainWindowOption_HasCentralWidget`) |
+| `setCentralWidget` | `setPersistentCentralWidget` (Qt API is private on KD MainWindow) |
 | `QDockWidget` | `KDDockWidgets::QtWidgets::DockWidget` |
 | `addDockWidget(area, dock)` | `addDockWidget(dock, Location_On*)` |
 | `dock->show()` / `hide()` | `dock->open()` / `close()` |

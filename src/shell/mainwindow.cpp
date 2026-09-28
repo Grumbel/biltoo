@@ -65,7 +65,7 @@ static bool dockIsOpen(const DockWidget *dock)
 
 MainWindow::MainWindow(QWidget *parent)
     : KDMainWindow(QStringLiteral("BiltooMainWindow"),
-                   KDDockWidgets::MainWindowOption_None,
+                   KDDockWidgets::MainWindowOption_HasCentralWidget,
                    parent)
 {
     setWindowTitle(tr("Biltoo"));
@@ -336,7 +336,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_imageView->setMinimumHeight(120);
     m_dualShell = new DualImageShell(m_imageView, this);
-    setCentralWidget(m_dualShell);
+    setPersistentCentralWidget(m_dualShell);
     connect(m_dualShell, &DualImageShell::activeViewChanged, this, [this](ImageView *view) {
         Q_UNUSED(view);
         // PreferCache / tile ticks already follow setActiveHost inside the shell.
