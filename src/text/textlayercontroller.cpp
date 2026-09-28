@@ -241,7 +241,7 @@ void TextLayerController::recomputeSearchMatches()
         return;
     }
     ensureMemberLayers();
-    auto hitsForLayer = [&](const ThumtooCache::PageTextLayer &layer, const QString &path) {
+    auto hitsForLayer = [&](const ThumtooCache::PageTextLayer &layer) {
         QVector<QString> texts;
         QVector<QRectF> bboxes;
         QVector<int> blockIds;
@@ -254,7 +254,7 @@ void TextLayerController::recomputeSearchMatches()
             blockIds.append(r.blockId);
         }
         const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
-        // Layer flag is authoritative; path is only a fallback with no layer.
+        // Layer flag is authoritative (docs/OCR_COORDINATES.md).
         const bool yUp = layer.pageYUp;
         return TextSearchPolicy::findHits(
             texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
@@ -263,7 +263,7 @@ void TextLayerController::recomputeSearchMatches()
 
     if (m_session.hasRegions()) {
         m_session.setSearchMatches(
-            hitsForLayer(m_session.layerRef(), m_session.layerPathRef()));
+            hitsForLayer(m_session.layerRef()));
     }
 
     if (!isMultiUnderlay()) {
@@ -283,7 +283,7 @@ void TextLayerController::recomputeSearchMatches()
             continue;
         }
         const QString path = pathForItem(item);
-        for (const TextSearchPolicy::SearchHit &hit : hitsForLayer(*layer, path)) {
+        for (const TextSearchPolicy::SearchHit &hit : hitsForLayer(*layer)) {
             TextLayerSession::MemberSearchHit mh;
             mh.sessionId = sid;
             mh.hit = hit;
@@ -962,7 +962,7 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
     };
 
     auto appendLayerOrder = [&](SessionImageId sid, const ThumtooCache::PageTextLayer &layer,
-                                const QString &path, int &cursor, int &prevBlock, bool &havePrev) {
+                                int &cursor, int &prevBlock, bool &havePrev) {
         const int n = layer.regions.size();
         if (n <= 0) {
             return;
@@ -1039,7 +1039,7 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
             if (!layer) {
                 continue;
             }
-            appendLayerOrder(sid, *layer, pathForItem(item), cursor, prevBlock, havePrev);
+            appendLayerOrder(sid, *layer, cursor, prevBlock, havePrev);
         }
         return plan;
     }
@@ -1057,7 +1057,7 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
         }
     }
     if (order.isEmpty()) {
-        appendLayerOrder(currentSessionId(), m_session.layerRef(), m_session.layerPathRef(),
+        appendLayerOrder(currentSessionId(), m_session.layerRef(),
                          cursor, prevBlock, havePrev);
         return plan;
     }
