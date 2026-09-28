@@ -2,13 +2,12 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2804.1-bookshelf-delete-key` (base `a989daf`).
+**Tip:** `biltoo-2805.1-bookshelf-shadow-d` (base `a989daf`).
 
-### 2804.1
-- Bookshelf UX: flat entries (click = open); Delete/Backspace removes highlighted pin
-- Removed Clear Bookshelf and Open/Remove submenus
+### 2805.1
+- Fix -Wshadow: bookshelf Delete handler local `d` → `entryData` (KDDock MainWindow::d)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2804.1-bookshelf-delete-key-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2805.1-bookshelf-shadow-d-a989daf.bundle HEAD
 ```

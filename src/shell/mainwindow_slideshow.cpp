@@ -684,9 +684,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
                 return true;
             }
             if (QAction *act = m_bookshelfMenu->activeAction()) {
-                const QVariant d = act->data();
-                if (d.isValid()) {
-                    removeBookshelfEntryAt(d.toInt());
+                const QVariant entryData = act->data();
+                if (entryData.isValid()) {
+                    removeBookshelfEntryAt(entryData.toInt());
                     return true;
                 }
             }
