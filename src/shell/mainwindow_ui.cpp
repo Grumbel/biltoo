@@ -942,6 +942,7 @@ void MainWindow::createActions()
     if (m_textDock) {
         m_toggleTextAct = m_textDock->toggleAction();
         m_toggleTextAct->setText(tr("Show Te&xt Panel"));
+        m_toggleTextAct->setIcon(resourceIcon(QStringLiteral("text-speak")));
         m_toggleTextAct->setStatusTip(
             tr("Page text / OCR regions with selection mirrored on the page"));
     }
@@ -1617,7 +1618,10 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
     m_toolBar->addSeparator();
-    m_toolBar->addAction(m_speakAct);
+    // Text panel (speaker glyph) — not Speak; TTS stays under Edit.
+    if (m_toggleTextAct) {
+        m_toolBar->addAction(m_toggleTextAct);
+    }
     m_toolBar->addAction(m_ocrPageAct);
     m_toolBar->addAction(m_showTextRegionsAct);
     m_toolBar->addSeparator();
@@ -1628,7 +1632,8 @@ void MainWindow::createToolBar()
     }
     // Help sits with chrome toggles, immediately before Fullscreen.
     m_toolBar->addAction(m_toggleHelpAct);
-    // All panels in one popup (same menu as the top-level Panels menu).
+    // Panels popup: extra separators so it reads apart from help / fullscreen.
+    m_toolBar->addSeparator();
     if (m_panelsMenu) {
         auto *panelsBtn = new QToolButton(m_toolBar);
         panelsBtn->setObjectName(QStringLiteral("PanelsToolButton"));
@@ -1641,6 +1646,7 @@ void MainWindow::createToolBar()
         panelsBtn->setAutoRaise(true);
         m_toolBar->addWidget(panelsBtn);
     }
+    m_toolBar->addSeparator();
     m_toolBar->addAction(m_fullscreenAct);
 
     // Left vertical tools strip (Select/Pan/Zoom/Crop + Workspace chrome).
