@@ -17,6 +17,7 @@
 #include <QSet>
 #include <QUndoCommand>
 #include <algorithm>
+#include "image/toolcursors.h"
 
 AttentionController::AttentionController(ImageView *view)
     : m_view(view)
@@ -204,7 +205,7 @@ void AttentionController::setAttentionMode(bool on)
         }
         ensureAttentionPoint();
         if (m_view->viewport()) {
-            m_view->viewport()->setCursor(Qt::CrossCursor);
+            m_view->viewport()->setCursor(ToolCursors::attentionDraw());
         }
     } else {
         session().leaveMode();
@@ -429,8 +430,9 @@ bool AttentionController::tryMouseMoveAttention(QMouseEvent *event)
         event->accept();
         return true;
     }
-    m_view->viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
-                                                          : Qt::CrossCursor);
+    m_view->viewport()->setCursor(attentionHandleAt(event->pos())
+                                         ? QCursor(Qt::SizeAllCursor)
+                                         : ToolCursors::attentionDraw());
     return false;
 }
 

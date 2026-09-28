@@ -24,6 +24,8 @@
 #include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QWidget>
+#include "image/toolcursors.h"
+#include <QCursor>
 
 TextLayerController::TextLayerController(ImageView *view)
     : QObject(view)
@@ -1175,7 +1177,7 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
     }
     m_session.beginRubber(event->pos());
     m_session.clearSelectedRegions();
-    m_view->setCursor(Qt::CrossCursor);
+    m_view->setCursor(ToolCursors::textSelect());
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -1267,8 +1269,8 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
             }
         } else if (m_view->hostHoverEdge() == ImageView::EdgeZone::None) {
             m_view->setCursor(m_view->hostChrome().isImageModeLeftDragPan()
-                                  ? Qt::OpenHandCursor
-                                  : Qt::ArrowCursor);
+                                  ? ToolCursors::panOpen()
+                                  : QCursor(Qt::ArrowCursor));
         }
         if (session().setLinkHoverTip(tip)) {
             emit m_view->statusChanged();

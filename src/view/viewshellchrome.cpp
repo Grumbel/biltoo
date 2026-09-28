@@ -37,6 +37,7 @@
 #include <QGraphicsScene>
 #include "imageitem.h"
 #include "image/toolpolicy.h"
+#include "image/toolcursors.h"
 #include "display/displaypipelinecontroller.h"
 
 #include <QMouseEvent>
@@ -73,7 +74,7 @@ bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
     }
     if (middle || leftPan) {
         m_viewport.beginPan(event->pos());
-        m_view->setCursor(Qt::ClosedHandCursor);
+        m_view->setCursor(ToolCursors::panClosed());
         event->accept();
         return true;
     }
@@ -909,7 +910,7 @@ bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
         && m_view->currentTool() != Tool::Pan) {
         m_viewport.spacePanHeld = true;
         if (!m_viewport.isPanning()) {
-            m_view->setCursor(Qt::OpenHandCursor);
+            m_view->setCursor(ToolCursors::panOpen());
         }
         event->accept();
         return true;

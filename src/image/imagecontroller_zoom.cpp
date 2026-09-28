@@ -6,6 +6,7 @@
 #include "image/imagecontroller.h"
 #include "imageview.h"
 #include "image/toolpolicy.h"
+#include "image/toolcursors.h"
 #include "view/viewframing.h"
 
 #include <QMouseEvent>
@@ -30,7 +31,7 @@ void ImageController::armZoomRegion()
     }
     cancelZoomRegion();
     m_zoomRegion.arm();
-    m_view->setCursor(Qt::CrossCursor);
+    m_view->setCursor(ToolCursors::crosshair());
     emit m_view->statusChanged();
     if (QWidget *vp = m_view->viewport()) {
         vp->update();

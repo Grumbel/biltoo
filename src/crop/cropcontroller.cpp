@@ -34,6 +34,8 @@
 #include <QKeyEvent>
 #include <QGuiApplication>
 #include <QtMath>
+#include "image/toolcursors.h"
+#include <QCursor>
 
 CropController::CropController(ImageView *view)
     : m_view(view)
@@ -993,7 +995,7 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
         m_view->viewport()->setCursor(Qt::SizeAllCursor);
         break;
     case CropHandle::Rotate:
-        m_view->viewport()->setCursor(Qt::ClosedHandCursor);
+        m_view->viewport()->setCursor(ToolCursors::panClosed());
         break;
     case CropHandle::Left:
     case CropHandle::Right:
@@ -1019,7 +1021,7 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
         m_view->viewport()->setCursor(Qt::PointingHandCursor);
         break;
     case CropHandle::None:
-        m_view->viewport()->setCursor(Qt::CrossCursor);
+        m_view->viewport()->setCursor(ToolCursors::cropOutside());
         break;
     }
     if (cropHoverChanged) {

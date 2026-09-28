@@ -21,6 +21,8 @@
 #include <QUndoStack>
 #include <QSettings>
 #include <QtMath>
+#include "image/toolcursors.h"
+#include <QCursor>
 
 /**
  * Coordinate contract (docs/OCR_COORDINATES.md, docs/CONTENT_COORDINATES.md):
@@ -113,10 +115,8 @@ void AnnotationController::setTool(Annotation::Tool tool)
         }
         if (m_tool == Annotation::Tool::None) {
             m_view->restoreToolCursor();
-        } else if (m_tool == Annotation::Tool::Select) {
-            m_view->setCursor(Qt::ArrowCursor);
         } else {
-            m_view->setCursor(Qt::CrossCursor);
+            m_view->setCursor(ToolCursors::forAnnotation(m_tool));
         }
         if (m_view->viewport()) {
             m_view->viewport()->update();

@@ -16,6 +16,8 @@
 #include <QToolTip>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
+#include "image/toolcursors.h"
+#include <QCursor>
 
 bool WorkspaceController::tryMousePressWorkspaceChrome(QMouseEvent *event)
 {
@@ -105,7 +107,7 @@ bool WorkspaceController::tryMousePressWorkspaceRotate(QMouseEvent *event)
                               (hit ? hit->placement() : ItemComponents::Placement{}));
     m_view->canvasScene()->clearSelection();
     hit->setSelected(true);
-    m_view->viewport()->setCursor(Qt::CrossCursor);
+    m_view->viewport()->setCursor(ToolCursors::crosshair());
     event->accept();
     return true;
 }
@@ -183,7 +185,7 @@ void WorkspaceController::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event
                     m_view->viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case 8: case 9: case 10: case 11:
-                    m_view->viewport()->setCursor(Qt::CrossCursor);
+                    m_view->viewport()->setCursor(ToolCursors::crosshair());
                     break;
                 default:
                     m_view->viewport()->setCursor(Qt::ArrowCursor);
@@ -237,7 +239,7 @@ void WorkspaceController::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event
                 switch (hoverH) {
                 case H::RotateTop: case H::RotateRight:
                 case H::RotateBottom: case H::RotateLeft:
-                    m_view->viewport()->setCursor(Qt::CrossCursor);
+                    m_view->viewport()->setCursor(ToolCursors::crosshair());
                     break;
                 case H::ScaleTopLeft: case H::ScaleBottomRight:
                     // NW–SE diagonal
