@@ -3981,8 +3981,9 @@ void MainWindow::updateFullscreenUi()
         updateThumbnailBarForMode();
         updateLayoutPanelForMode();
         updateFileExportActions();
-        if (isWorkspaceMode() && m_workspaceToolBar) {
-            m_workspaceToolBar->setVisible(true);
+        // Tools strip is used in Gallery / Image / Workspace — not Workspace-only.
+        if (m_workspaceToolBar) {
+            m_workspaceToolBar->setVisible(m_imageView != nullptr);
         }
         menuBar()->setVisible(true);
         statusBar()->setVisible(true);

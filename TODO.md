@@ -2,18 +2,20 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2795.1-toolbar-group-separators` (base `a989daf`).
+**Tip:** `biltoo-2796.1-fs-toolbar-edge-hud` (base `a989daf`).
 
-### 2795.1
-- Main and Tools toolbars: wider visible group separators (2px mid-colour line + padding)
+### 2796.1
+- Leave fullscreen: restore left Tools toolbar in all modes (not only Workspace)
+- Edge-nav HUD (prev/next/gallery chevrons): hidden while annotation tool active
+  (same as crop/attention); clear hover when tool engages
 
 ### Prior
-- 2794.1 flatten pageRectToDisplay fix
-- 2793–2783 annotation / docs
+- 2795 toolbar separators
+- 2794–2783 annotation / docs
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2795.1-toolbar-group-separators-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2796.1-fs-toolbar-edge-hud-a989daf.bundle HEAD
 ```
 
 ### Deferred

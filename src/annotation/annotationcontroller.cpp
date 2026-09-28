@@ -107,6 +107,10 @@ void AnnotationController::setTool(Annotation::Tool tool)
         m_selectedIds.clear();
     }
     if (m_view) {
+        if (m_tool != Annotation::Tool::None) {
+            // Drop any lingering edge-nav hover so chevrons do not stick under tools.
+            m_view->hostImage().clearHoverEdge();
+        }
         if (m_tool == Annotation::Tool::None) {
             m_view->restoreToolCursor();
         } else if (m_tool == Annotation::Tool::Select) {

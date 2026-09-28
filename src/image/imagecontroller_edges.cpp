@@ -34,7 +34,9 @@ EdgeNavPolicy::Zone ImageController::edgeZoneAt(const QPoint &viewPos) const
     if (!m_view->isImageMode()) {
         return EdgeNavPolicy::Zone::None;
     }
-    if (m_view->hostCrop().session().active() || m_view->hostAttention().session().active()) {
+    if (m_view->hostCrop().session().active() || m_view->hostAttention().session().active()
+        || m_view->hostAnnot().isToolActive()) {
+        // Crop / attention / annotation tools own the viewport — no edge-nav HUD.
         return EdgeNavPolicy::Zone::None;
     }
     return EdgeNavPolicy::zoneAt(
@@ -86,8 +88,9 @@ void ImageController::drawEdgeAffordances(QPainter &painter) const
     if (m_hoverEdge == EdgeNavPolicy::Zone::None || !m_view->isImageMode()) {
         return;
     }
-    // Match edgeZoneAt: no chevrons while crop/attention owns the viewport.
-    if (m_view->hostCrop().session().active() || m_view->hostAttention().session().active()) {
+    // Match edgeZoneAt: no chevrons while crop/attention/annotation owns the viewport.
+    if (m_view->hostCrop().session().active() || m_view->hostAttention().session().active()
+        || m_view->hostAnnot().isToolActive()) {
         return;
     }
     if (m_hoverEdge != EdgeNavPolicy::Zone::GalleryReturn
