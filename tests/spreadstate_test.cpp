@@ -14,6 +14,7 @@ class SpreadStateTest : public QObject
 {
     Q_OBJECT
 private slots:
+    void rtlMirrorsLtr();
     void layout_empty();
     void layout_twoPages_heightMatch();
     void fixedN_strictPairs();
@@ -86,6 +87,17 @@ void SpreadStateTest::advance_bySpreadAndByPage()
     QCOMPARE(advanceSpreadAnchor(2, 10, 2, SpreadStride::ByPage, +1), 3);
     QCOMPARE(advanceSpreadAnchor(0, 10, 2, SpreadStride::BySpread, -1), -1);
     QCOMPARE(advanceSpreadAnchor(9, 10, 2, SpreadStride::BySpread, +1), -1);
+}
+
+void SpreadStateTest::rtlMirrorsLtr()
+{
+    QVector<QSizeF> sizes{QSizeF(100, 200), QSizeF(80, 200)};
+    const auto ltr = layoutSpread(sizes, 10.0, true, SpreadDirection::Ltr);
+    const auto rtl = layoutSpread(sizes, 10.0, true, SpreadDirection::Rtl);
+    QCOMPARE(ltr.memberSlots.size(), 2);
+    QCOMPARE(rtl.memberSlots.size(), 2);
+    QVERIFY(qAbs(ltr.unionRect.width() - rtl.unionRect.width()) < 0.01);
+    QVERIFY(rtl.memberSlots.at(0).rect.left() > rtl.memberSlots.at(1).rect.left());
 }
 
 QTEST_APPLESS_MAIN(SpreadStateTest)

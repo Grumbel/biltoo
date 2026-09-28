@@ -390,7 +390,8 @@ void ImageController::onContentAppearancePropagated(ImageItem *item)
 
 
 void ImageController::applySpreadLayout(const QStringList &paths,
-                                        const QVector<SessionImageId> &ids)
+                                        const QVector<SessionImageId> &ids,
+                                        SpreadDirection direction)
 {
     if (!m_view || !m_view->isImageMode() || paths.size() < 2) {
         return;
@@ -441,7 +442,8 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         return;
     }
 
-    const SpreadLayoutResult layout = layoutSpread(sizes, /*gutter=*/12.0, /*heightMatch=*/true);
+    const SpreadLayoutResult layout =
+        layoutSpread(sizes, /*gutter=*/12.0, /*heightMatch=*/true, direction);
     for (int i = 0; i < items.size() && i < layout.memberSlots.size(); ++i) {
         ImageItem *item = items.at(i);
         ItemComponents::Placement pl = item->placement();

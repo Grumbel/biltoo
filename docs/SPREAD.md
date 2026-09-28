@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Spread — multi-page reading surface (design)
 
-**Status:** P0–P3 done. P4 binding/RTL optional.  
+**Status:** P0–P4 core done (binding UI, RTL layout, fixed-N 2–4). Vertical optional.  
 **Related:** [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [DOMAIN.md](../DOMAIN.md) (world vs viewpoint),
 `DualImageShell` (compare — **not** spread).
@@ -92,7 +92,7 @@ not inside the layout kernel:
 | `StrictPairs` | (1–2), (3–4), …; last may be 1 page |
 | `AnchorCentre` | Prefer pair containing anchor; odd/even by index |
 
-v1 can ship `StrictPairs` + `Selection` only; keep the enum open.
+v1 ships StrictPairs + CoverAlone + Selection; AnchorCentre remains available in the enum.
 
 ### 3.3 Stride (nav)
 

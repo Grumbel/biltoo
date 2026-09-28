@@ -11,6 +11,7 @@
 #include "view/viewframing.h"
 #include "color/coloradjustcommit.h"
 #include "session/sessionappearance.h"
+#include "session/spreadstate.h"
 #include "item/itemcomponents.h"
 #include "color/coloradjust.h"
 #include "item/batchtargets.h"
@@ -75,7 +76,8 @@ public:
     void hardReloadFromDisk();
     /** Place Image-mode items for spread members (docs/SPREAD.md P0). */
     void applySpreadLayout(const QStringList &paths,
-                           const QVector<SessionImageId> &ids);
+                           const QVector<SessionImageId> &ids,
+                           SpreadDirection direction = SpreadDirection::Ltr);
 
     /** Reset undo, view transform, scene rect, framing for Image enter. */
     void prepareModeCanvas();

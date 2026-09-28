@@ -46,12 +46,18 @@ enum class SpreadBindingHint {
     AnchorCentre = 2,
 };
 
+enum class SpreadDirection {
+    Ltr = 0,
+    Rtl = 1,
+};
+
 struct SpreadState {
     QVector<SessionImageId> members;
     SessionImageId anchor = kInvalidSessionImageId;
     SpreadMembershipPolicy policy = SpreadMembershipPolicy::Off;
     SpreadStride stride = SpreadStride::BySpread;
     SpreadBindingHint binding = SpreadBindingHint::StrictPairs;
+    SpreadDirection direction = SpreadDirection::Ltr;
     int fixedN = 2;
 
     bool isActive() const
@@ -74,7 +80,8 @@ struct SpreadState {
  */
 inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
                                        qreal gutter = 8.0,
-                                       bool heightMatch = true)
+                                       bool heightMatch = true,
+                                       SpreadDirection direction = SpreadDirection::Ltr)
 {
     SpreadLayoutResult out;
     if (pageSizes.isEmpty()) {
@@ -109,6 +116,14 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
     if (!out.memberSlots.isEmpty()) {
         const qreal right = out.memberSlots.last().rect.right();
         out.unionRect = QRectF(0, 0, right, maxH);
+        if (direction == SpreadDirection::Rtl && out.unionRect.width() > 1.0) {
+            const qreal totalW = out.unionRect.width();
+            for (SpreadSlot &slot : out.memberSlots) {
+                const qreal w = slot.rect.width();
+                slot.rect.moveLeft(totalW - slot.rect.right());
+                Q_UNUSED(w);
+            }
+        }
     }
     return out;
 }

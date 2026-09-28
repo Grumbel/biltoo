@@ -341,6 +341,9 @@ private slots:
     void toggleWorkspaceMode();
     /** Stage 2c.2: Image-mode side-by-side compare (shared ItemWorld + pipeline). */
     void setDoubleViewEnabled(bool on);
+    void setSpreadBindingHint(SpreadBindingHint hint);
+    void setSpreadDirection(SpreadDirection dir);
+    void setSpreadFixedN(int n);
     void syncSpreadPresentation();
     void scheduleSpreadSync();
     void viewSelectionAsSpread();
@@ -561,8 +564,18 @@ private:
     DualImageShell *m_dualShell = nullptr;
     SpreadBook m_spreadBook;
     bool m_spreadSyncScheduled = false;
+    SpreadBindingHint m_spreadBinding = SpreadBindingHint::StrictPairs;
+    SpreadDirection m_spreadDirection = SpreadDirection::Ltr;
+    int m_spreadFixedN = 2;
     QAction *m_doubleViewAct = nullptr;
     QAction *m_viewSelectionSpreadAct = nullptr;
+    QAction *m_spreadBindingStrictAct = nullptr;
+    QAction *m_spreadBindingCoverAct = nullptr;
+    QAction *m_spreadDirLtrAct = nullptr;
+    QAction *m_spreadDirRtlAct = nullptr;
+    QAction *m_spreadN2Act = nullptr;
+    QAction *m_spreadN3Act = nullptr;
+    QAction *m_spreadN4Act = nullptr;
     QAction *m_dualCompareAct = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
     QDockWidget *m_thumbnailDock = nullptr;

@@ -240,6 +240,60 @@ void MainWindow::createActions()
     m_doubleViewAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_2));
     connect(m_doubleViewAct, &QAction::toggled, this, &MainWindow::setDoubleViewEnabled);
 
+    // Spread P4: binding, direction, fixed-N (docs/SPREAD.md).
+    auto *bindingGroup = new QActionGroup(this);
+    bindingGroup->setExclusive(true);
+    m_spreadBindingStrictAct = new QAction(tr("Binding: Strict pairs"), this);
+    m_spreadBindingStrictAct->setCheckable(true);
+    m_spreadBindingStrictAct->setChecked(true);
+    m_spreadBindingStrictAct->setStatusTip(
+        tr("Fixed double-view pairs pages as (1–2), (3–4), …"));
+    m_spreadBindingCoverAct = new QAction(tr("Binding: Cover alone"), this);
+    m_spreadBindingCoverAct->setCheckable(true);
+    m_spreadBindingCoverAct->setStatusTip(
+        tr("First page alone, then pairs (2–3), (4–5), …"));
+    bindingGroup->addAction(m_spreadBindingStrictAct);
+    bindingGroup->addAction(m_spreadBindingCoverAct);
+    connect(m_spreadBindingStrictAct, &QAction::triggered, this, [this]() {
+        setSpreadBindingHint(SpreadBindingHint::StrictPairs);
+    });
+    connect(m_spreadBindingCoverAct, &QAction::triggered, this, [this]() {
+        setSpreadBindingHint(SpreadBindingHint::CoverAlone);
+    });
+
+    auto *dirGroup = new QActionGroup(this);
+    dirGroup->setExclusive(true);
+    m_spreadDirLtrAct = new QAction(tr("Spread direction: Left to right"), this);
+    m_spreadDirLtrAct->setCheckable(true);
+    m_spreadDirLtrAct->setChecked(true);
+    m_spreadDirRtlAct = new QAction(tr("Spread direction: Right to left"), this);
+    m_spreadDirRtlAct->setCheckable(true);
+    m_spreadDirRtlAct->setStatusTip(tr("RTL reading order (manga / Arabic)"));
+    dirGroup->addAction(m_spreadDirLtrAct);
+    dirGroup->addAction(m_spreadDirRtlAct);
+    connect(m_spreadDirLtrAct, &QAction::triggered, this, [this]() {
+        setSpreadDirection(SpreadDirection::Ltr);
+    });
+    connect(m_spreadDirRtlAct, &QAction::triggered, this, [this]() {
+        setSpreadDirection(SpreadDirection::Rtl);
+    });
+
+    auto *nGroup = new QActionGroup(this);
+    nGroup->setExclusive(true);
+    m_spreadN2Act = new QAction(tr("Spread pages: 2"), this);
+    m_spreadN2Act->setCheckable(true);
+    m_spreadN2Act->setChecked(true);
+    m_spreadN3Act = new QAction(tr("Spread pages: 3"), this);
+    m_spreadN3Act->setCheckable(true);
+    m_spreadN4Act = new QAction(tr("Spread pages: 4"), this);
+    m_spreadN4Act->setCheckable(true);
+    nGroup->addAction(m_spreadN2Act);
+    nGroup->addAction(m_spreadN3Act);
+    nGroup->addAction(m_spreadN4Act);
+    connect(m_spreadN2Act, &QAction::triggered, this, [this]() { setSpreadFixedN(2); });
+    connect(m_spreadN3Act, &QAction::triggered, this, [this]() { setSpreadFixedN(3); });
+    connect(m_spreadN4Act, &QAction::triggered, this, [this]() { setSpreadFixedN(4); });
+
     m_dualCompareAct = new QAction(tr("&Dual compare"), this);
     m_dualCompareAct->setObjectName(QStringLiteral("dualCompare"));
     m_dualCompareAct->setCheckable(true);
@@ -1107,6 +1161,13 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_viewSelectionSpreadAct);
     m_viewMenu->addAction(m_doubleViewAct);
+    m_viewMenu->addAction(m_spreadBindingStrictAct);
+    m_viewMenu->addAction(m_spreadBindingCoverAct);
+    m_viewMenu->addAction(m_spreadDirLtrAct);
+    m_viewMenu->addAction(m_spreadDirRtlAct);
+    m_viewMenu->addAction(m_spreadN2Act);
+    m_viewMenu->addAction(m_spreadN3Act);
+    m_viewMenu->addAction(m_spreadN4Act);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);

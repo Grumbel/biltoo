@@ -802,7 +802,7 @@ void MainWindow::setDoubleViewEnabled(bool on)
     if (anchor == kInvalidSessionImageId && m_currentIndex >= 0) {
         anchor = m_session.idAt(m_currentIndex);
     }
-    m_spreadBook.setFixedN(m_session, anchor, 2, SpreadBindingHint::StrictPairs);
+    m_spreadBook.setFixedN(m_session, anchor, m_spreadFixedN, m_spreadBinding);
     if (m_dualShell && m_dualShell->isDualEnabled()) {
         setDualCompareEnabled(false);
     }
@@ -820,6 +820,103 @@ void MainWindow::setDoubleViewEnabled(bool on)
     scheduleSpreadSync();
     updateStatus();
 }
+
+
+void MainWindow::setSpreadBindingHint(SpreadBindingHint hint)
+{
+    if (m_spreadBinding == hint) {
+        return;
+    }
+    m_spreadBinding = hint;
+    m_spreadBook.state().binding = hint;
+    if (m_spreadBindingStrictAct) {
+        QSignalBlocker b(m_spreadBindingStrictAct);
+        m_spreadBindingStrictAct->setChecked(hint == SpreadBindingHint::StrictPairs);
+    }
+    if (m_spreadBindingCoverAct) {
+        QSignalBlocker b(m_spreadBindingCoverAct);
+        m_spreadBindingCoverAct->setChecked(hint == SpreadBindingHint::CoverAlone);
+    }
+    if (m_spreadBook.isActive()
+        && m_spreadBook.state().policy == SpreadMembershipPolicy::FixedN) {
+        SessionImageId anchor = m_spreadBook.state().anchor;
+        if (anchor == kInvalidSessionImageId) {
+            anchor = currentSessionId();
+        }
+        m_spreadBook.setFixedN(m_session, anchor, m_spreadFixedN, m_spreadBinding);
+        scheduleSpreadSync();
+        updateStatus();
+    }
+}
+
+void MainWindow::setSpreadDirection(SpreadDirection dir)
+{
+    if (m_spreadDirection == dir) {
+        return;
+    }
+    m_spreadDirection = dir;
+    m_spreadBook.state().direction = dir;
+    if (m_spreadDirLtrAct) {
+        QSignalBlocker b(m_spreadDirLtrAct);
+        m_spreadDirLtrAct->setChecked(dir == SpreadDirection::Ltr);
+    }
+    if (m_spreadDirRtlAct) {
+        QSignalBlocker b(m_spreadDirRtlAct);
+        m_spreadDirRtlAct->setChecked(dir == SpreadDirection::Rtl);
+    }
+    if (m_spreadBook.isActive()) {
+        scheduleSpreadSync();
+    }
+}
+
+void MainWindow::setSpreadFixedN(int n)
+{
+    if (n < 1) {
+        n = 1;
+    }
+    if (n > 8) {
+        n = 8;
+    }
+    if (m_spreadFixedN == n) {
+        return;
+    }
+    m_spreadFixedN = n;
+    if (m_spreadN2Act) {
+        QSignalBlocker b(m_spreadN2Act);
+        m_spreadN2Act->setChecked(n == 2);
+    }
+    if (m_spreadN3Act) {
+        QSignalBlocker b(m_spreadN3Act);
+        m_spreadN3Act->setChecked(n == 3);
+    }
+    if (m_spreadN4Act) {
+        QSignalBlocker b(m_spreadN4Act);
+        m_spreadN4Act->setChecked(n == 4);
+    }
+    // Update double-view action tip for N≠2.
+    if (m_doubleViewAct) {
+        if (n == 2) {
+            m_doubleViewAct->setText(tr("Dou&ble view"));
+        } else {
+            m_doubleViewAct->setText(tr("Spread vie&w (%1 pages)").arg(n));
+        }
+    }
+    if (m_spreadBook.isActive()
+        && m_spreadBook.state().policy == SpreadMembershipPolicy::FixedN) {
+        SessionImageId anchor = m_spreadBook.state().anchor;
+        if (anchor == kInvalidSessionImageId) {
+            anchor = currentSessionId();
+        }
+        m_spreadBook.setFixedN(m_session, anchor, m_spreadFixedN, m_spreadBinding);
+        if (m_doubleViewAct && n > 1) {
+            QSignalBlocker b(m_doubleViewAct);
+            m_doubleViewAct->setChecked(true);
+        }
+        scheduleSpreadSync();
+        updateStatus();
+    }
+}
+
 
 void MainWindow::syncSpreadPresentation()
 {
@@ -841,7 +938,8 @@ void MainWindow::syncSpreadPresentation()
             applyCurrentIndexCanvasChange(m_session.pathAt(m_currentIndex), false);
         }
     }
-    m_imageView->hostImage().applySpreadLayout(paths, members);
+    m_imageView->hostImage().applySpreadLayout(paths, members,
+                                                 m_spreadBook.state().direction);
 }
 
 

@@ -2,27 +2,28 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2735.1-spread-gallery-tts-ring` (base `636e70e`).
+**Tip:** `biltoo-2736.1-spread-p4-binding-rtl` (base `636e70e`).
 
-### Spread stack — P0–P3 complete
+### Spread stack — P0–P4 core
 
 | Phase | Status |
 |-------|--------|
 | P0–P1 reading surface | complete |
-| P2 text select/copy/panel/search/glyphs | complete |
-| P3 TTS + Gallery ring | complete (2734.1 + 2735.1) |
+| P2 text | complete |
+| P3 TTS + Gallery ring | complete |
+| P4 binding / direction / N | 2736.1 |
 
-### 2735.1
-- `GalleryController::setSpeechHighlightPaths` — all spread members ringed
-- Active member strong green; companions dim
-- Speak starts with member path list; sentence progress updates active path
+### 2736.1
+- View menu: Strict pairs vs Cover alone binding
+- Spread direction LTR / RTL (`layoutSpread` mirrors slots)
+- Fixed-N preference 2 / 3 / 4 (hard cap 8 still enforced)
+- Double-view uses current binding + N prefs
 
-### Still open (P4)
-- Binding-hint UI (CoverAlone / StrictPairs toggle)
-- RTL / vertical spread direction
-- Max-N UI preference
+### Still open
+- Vertical spread direction
+- Persist prefs to project/settings
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2735.1-spread-gallery-tts-ring-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2736.1-spread-p4-binding-rtl-636e70e.bundle HEAD
 ```
