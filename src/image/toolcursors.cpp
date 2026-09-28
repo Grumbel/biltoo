@@ -67,8 +67,8 @@ QCursor loadCursor(const CursorDef &def)
     }
 
     // Hotspot in device pixels (Qt expects pixmap coordinates).
-    const int hotX = qBound(def.hotX * dpr);
-    const int hotY = qBound(def.hotY * dpr);
+    const int hotX = qRound(def.hotX * dpr);
+    const int hotY = qRound(def.hotY * dpr);
     const QCursor cur(pm, hotX, hotY);
     cache.insert(key, cur);
     return cur;
