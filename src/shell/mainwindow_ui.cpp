@@ -418,12 +418,18 @@ void MainWindow::createActions()
     m_annotEllipseAct->setCheckable(true);
     m_annotEllipseAct->setStatusTip(tr("Draw an ellipse annotation"));
     m_annotEllipseAct->setToolTip(tr("Ellipse"));
+    m_annotLineAct = new QAction(tr("&Line"), this);
+    m_annotLineAct->setIcon(resourceIcon(QStringLiteral("annot-line")));
+    m_annotLineAct->setCheckable(true);
+    m_annotLineAct->setStatusTip(tr("Draw a straight line annotation"));
+    m_annotLineAct->setToolTip(tr("Line"));
 
     {
         auto *annotGroup = new QActionGroup(this);
         annotGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
         for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct, m_annotEllipseAct}) {
+                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct, m_annotEllipseAct,
+                           m_annotLineAct}) {
             if (a) {
                 annotGroup->addAction(a);
             }
@@ -464,6 +470,10 @@ void MainWindow::createActions()
                 m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
                 m_imageView->hostAnnot().setWidth(2.5);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Ellipse);
+            } else if (act == m_annotLineAct) {
+                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
+                m_imageView->hostAnnot().setWidth(2.5);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Line);
             }
         });
     }
@@ -1279,6 +1289,9 @@ void MainWindow::createMenus()
     if (m_annotEllipseAct) {
         m_imageMenu->addAction(m_annotEllipseAct);
     }
+    if (m_annotLineAct) {
+        m_imageMenu->addAction(m_annotLineAct);
+    }
     if (m_annotClearAct) {
         m_imageMenu->addAction(m_annotClearAct);
     }
@@ -1838,6 +1851,9 @@ void MainWindow::createToolBar()
     }
     if (m_annotEllipseAct) {
         m_workspaceToolBar->addAction(m_annotEllipseAct);
+    }
+    if (m_annotLineAct) {
+        m_workspaceToolBar->addAction(m_annotLineAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

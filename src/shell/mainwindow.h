@@ -724,6 +724,7 @@ private:
     QAction *m_annotSelectAct = nullptr;
     QAction *m_annotRectAct = nullptr;
     QAction *m_annotEllipseAct = nullptr;
+    QAction *m_annotLineAct = nullptr;
     QAction *m_annotClearAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;

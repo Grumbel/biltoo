@@ -89,6 +89,7 @@ private:
     void finishFreehand();
     void finishTextHighlight();
     void finishShape();
+    void finishLine();
     void paintShape(QPainter &painter, ImageItem *item,
                     const Annotation::Object &obj, const QRectF &pageBounds,
                     bool pageYUp, const QSize &sourceSize) const;
@@ -110,6 +111,7 @@ private:
     qreal m_width = 18.0;
     QVector<QPointF> m_draftPoints;
     QPoint m_rubberOriginView;
+    QPoint m_shapeEndView;
     QRect m_rubberView;
     SessionImageId m_draftSid = kInvalidSessionImageId;
     QRectF m_draftBounds;

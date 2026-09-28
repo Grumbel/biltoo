@@ -2,16 +2,16 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2779.1-annot-shapes` (base `b8a0cf3`).
+**Tip:** `biltoo-2780.1-annot-line` (base `b8a0cf3`).
 
-### 2779.1
-- Rectangle and ellipse shape tools (page-space bounds, SourceOver stroke + light fill)
-- Select / eraser / undo / project JSON work via existing quad storage
+### 2780.1
+- **Line** tool: drag endpoints in page space (SourceOver stroke)
+- Select / eraser / undo via existing point geometry
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2779.1-annot-shapes-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2780.1-annot-line-b8a0cf3.bundle HEAD
 ```
 
 ### Next
-Line tool, export flatten, sticky notes
+Export flatten (PNG), sticky notes
