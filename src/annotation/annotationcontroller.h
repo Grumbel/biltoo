@@ -18,6 +18,7 @@ class ImageView;
 class ImageItem;
 class QPainter;
 class QMouseEvent;
+class QKeyEvent;
 
 /**
  * Annotation tools: freehand Multiply highlighter and text-snapped highlight.
@@ -53,6 +54,9 @@ public:
     bool tryMouseRelease(QMouseEvent *event);
 
     void clearCurrentPage();
+    void clearSelection();
+    QVector<quint64> selectedIds() const { return m_selectedIds; }
+    bool tryKeyPress(QKeyEvent *event);
     void commitObject(SessionImageId sid, const Annotation::Object &obj,
                       const QRectF &pageBounds, bool pageYUp, const QString &undoText);
 
@@ -86,6 +90,13 @@ private:
     void finishTextHighlight();
     void eraseAtPagePoint(const QPointF &pagePt, const QRectF &pageBounds,
                           bool pageYUp);
+    quint64 hitTestTopObject(SessionImageId sid, const QPointF &pagePt,
+                             qreal radius) const;
+    void selectAtPagePoint(const QPointF &pagePt);
+    void deleteSelected();
+    void paintSelectionChrome(QPainter &painter, ImageItem *item,
+                              const QRectF &pageBounds, bool pageYUp,
+                              const QSize &sourceSize) const;
 
     ImageView *m_view = nullptr;
     AnnotationSession m_session;
@@ -100,6 +111,7 @@ private:
     QRectF m_draftBounds;
     bool m_draftYUp = false;
     QSize m_draftSourceSize;
+    QVector<quint64> m_selectedIds;
 };
 
 #endif // ANNOTATIONCONTROLLER_H

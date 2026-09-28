@@ -39,6 +39,7 @@ enum class Tool : std::uint8_t {
     TextHighlighter = 2,
     Pen = 3,
     Eraser = 4,
+    Select = 5,
 };
 
 struct Object {

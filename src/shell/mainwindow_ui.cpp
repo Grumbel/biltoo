@@ -403,11 +403,17 @@ void MainWindow::createActions()
     m_annotEraserAct->setCheckable(true);
     m_annotEraserAct->setStatusTip(tr("Erase annotation strokes and text highlights under the cursor"));
     m_annotEraserAct->setToolTip(tr("Eraser"));
+    m_annotSelectAct = new QAction(tr("Annotation &Select"), this);
+    m_annotSelectAct->setIcon(resourceIcon(QStringLiteral("annot-select")));
+    m_annotSelectAct->setCheckable(true);
+    m_annotSelectAct->setStatusTip(tr("Select annotations (Delete removes selection)"));
+    m_annotSelectAct->setToolTip(tr("Select annotation"));
 
     {
         auto *annotGroup = new QActionGroup(this);
         annotGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
-        for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct, m_annotEraserAct}) {
+        for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                           m_annotEraserAct, m_annotSelectAct}) {
             if (a) {
                 annotGroup->addAction(a);
             }
@@ -438,6 +444,8 @@ void MainWindow::createActions()
             } else if (act == m_annotEraserAct) {
                 m_imageView->hostAnnot().setWidth(18.0);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Eraser);
+            } else if (act == m_annotSelectAct) {
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Select);
             }
         });
     }
@@ -1244,6 +1252,9 @@ void MainWindow::createMenus()
     if (m_annotEraserAct) {
         m_imageMenu->addAction(m_annotEraserAct);
     }
+    if (m_annotSelectAct) {
+        m_imageMenu->addAction(m_annotSelectAct);
+    }
     if (m_annotClearAct) {
         m_imageMenu->addAction(m_annotClearAct);
     }
@@ -1794,6 +1805,9 @@ void MainWindow::createToolBar()
     }
     if (m_annotEraserAct) {
         m_workspaceToolBar->addAction(m_annotEraserAct);
+    }
+    if (m_annotSelectAct) {
+        m_workspaceToolBar->addAction(m_annotSelectAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

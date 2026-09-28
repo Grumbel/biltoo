@@ -12,6 +12,7 @@
 #include "text/textlayergeometry.h"
 
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QUndoStack>
@@ -46,9 +47,14 @@ void AnnotationController::setTool(Annotation::Tool tool)
     m_drawing = false;
     m_draftPoints.clear();
     m_rubberView = {};
+    if (m_tool != Annotation::Tool::Select) {
+        m_selectedIds.clear();
+    }
     if (m_view) {
         if (m_tool == Annotation::Tool::None) {
             m_view->restoreToolCursor();
+        } else if (m_tool == Annotation::Tool::Select) {
+            m_view->setCursor(Qt::ArrowCursor);
         } else {
             m_view->setCursor(Qt::CrossCursor);
         }
@@ -349,6 +355,7 @@ void AnnotationController::paintOverlay(QPainter &painter)
         for (const Annotation::Object &obj : pg->objects) {
             paintObject(painter, item, obj, pb, py, sourceSize);
         }
+        paintSelectionChrome(painter, item, pb, py, sourceSize);
     }
 
     if (m_drawing && m_draftSid == sid) {
@@ -556,6 +563,8 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
     } else if (m_tool == Annotation::Tool::Eraser) {
         eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
                          bounds, yUp);
+    } else if (m_tool == Annotation::Tool::Select) {
+        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
     }
     event->accept();
     if (m_view->viewport()) {
@@ -735,4 +744,159 @@ void AnnotationController::clearCurrentPage()
             m_view->viewport()->update();
         }
     }
+}
+
+void AnnotationController::clearSelection()
+{
+    if (m_selectedIds.isEmpty()) {
+        return;
+    }
+    m_selectedIds.clear();
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+quint64 AnnotationController::hitTestTopObject(SessionImageId sid, const QPointF &pagePt,
+                                               qreal radius) const
+{
+    const Annotation::Page *pg = m_session.page(sid);
+    if (!pg) {
+        return 0;
+    }
+    // Topmost = last in list (drawn last).
+    for (int i = pg->objects.size() - 1; i >= 0; --i) {
+        if (objectHitsPagePoint(pg->objects.at(i), pagePt, radius)) {
+            return pg->objects.at(i).id;
+        }
+    }
+    return 0;
+}
+
+void AnnotationController::selectAtPagePoint(const QPointF &pagePt)
+{
+    if (m_draftSid == kInvalidSessionImageId) {
+        return;
+    }
+    const quint64 id = hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
+    m_selectedIds.clear();
+    if (id != 0) {
+        m_selectedIds.append(id);
+    }
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationController::deleteSelected()
+{
+    if (m_selectedIds.isEmpty() || !m_view) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    const SessionImageId sid = targetSid(item);
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    Annotation::Page *pg = m_session.page(sid);
+    if (!pg) {
+        return;
+    }
+    QVector<Annotation::Object> hit;
+    for (const Annotation::Object &o : pg->objects) {
+        if (m_selectedIds.contains(o.id)) {
+            hit.append(o);
+        }
+    }
+    if (hit.isEmpty()) {
+        m_selectedIds.clear();
+        return;
+    }
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        auto *cmd = new AnnotationRemoveCommand(
+            m_view, sid, hit, pg->pageBounds, pg->pageYUp,
+            hit.size() == 1 ? QObject::tr("Delete annotation")
+                            : QObject::tr("Delete annotations"));
+        stack->push(cmd);
+    } else {
+        for (const Annotation::Object &o : hit) {
+            m_session.removeObject(sid, o.id);
+        }
+    }
+    m_selectedIds.clear();
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *item,
+                                                const QRectF &pageBounds, bool pageYUp,
+                                                const QSize &sourceSize) const
+{
+    if (!item || m_selectedIds.isEmpty() || !m_view) {
+        return;
+    }
+    SessionImageId sid = targetSid(item);
+    const Annotation::Page *pg = m_session.page(sid);
+    if (!pg) {
+        return;
+    }
+    painter.save();
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    QPen pen(QColor(53, 132, 228));
+    pen.setCosmetic(true);
+    pen.setWidthF(1.5);
+    pen.setStyle(Qt::DashLine);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    for (const Annotation::Object &o : pg->objects) {
+        if (!m_selectedIds.contains(o.id)) {
+            continue;
+        }
+        if (o.kind == Annotation::Kind::HighlightQuad) {
+            for (const QRectF &q : o.quads) {
+                const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
+                if (!scene.isEmpty()) {
+                    painter.drawRect(scene);
+                }
+            }
+        } else if (!o.points.isEmpty()) {
+            QPainterPath path;
+            bool first = true;
+            for (const QPointF &pp : o.points) {
+                const QPointF scene = pageToScene(item, pp, pageBounds, pageYUp, sourceSize);
+                if (first) {
+                    path.moveTo(scene);
+                    first = false;
+                } else {
+                    path.lineTo(scene);
+                }
+            }
+            painter.drawPath(path);
+            // Bounding box handles feel
+            const QRectF br = path.boundingRect().adjusted(-3, -3, 3, 3);
+            painter.drawRect(br);
+        }
+    }
+    painter.restore();
+}
+
+bool AnnotationController::tryKeyPress(QKeyEvent *event)
+{
+    if (!event || !isToolActive()) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        if (m_tool == Annotation::Tool::Select && !m_selectedIds.isEmpty()) {
+            deleteSelected();
+            event->accept();
+            return true;
+        }
+    }
+    if (event->key() == Qt::Key_Escape && !m_selectedIds.isEmpty()) {
+        clearSelection();
+        event->accept();
+        return true;
+    }
+    return false;
 }

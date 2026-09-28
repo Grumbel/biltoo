@@ -914,7 +914,8 @@ bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
         event->accept();
         return true;
     }
-    return m_view->hostAttention().tryKeyPressAttention(event)
+    return m_view->hostAnnot().tryKeyPress(event)
+        || m_view->hostAttention().tryKeyPressAttention(event)
         || m_view->hostCrop().tryKeyPressCrop(event)
         || m_view->hostImage().tryKeyPressZoomRegion(event)
         || m_view->hostWorkspace().tryKeyPressSelectAll(event)
