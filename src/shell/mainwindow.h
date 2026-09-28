@@ -729,6 +729,7 @@ private:
     QAction *m_annotLineAct = nullptr;
     QAction *m_annotStickyAct = nullptr;
     QAction *m_annotClearAct = nullptr;
+    QAction *m_annotVisibleAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;
     QAction *m_smoothScalingAct = nullptr;

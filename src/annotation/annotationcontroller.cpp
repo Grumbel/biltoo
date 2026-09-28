@@ -18,6 +18,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QUndoStack>
+#include <QSettings>
 #include <QtMath>
 
 /**
@@ -38,6 +39,21 @@
 AnnotationController::AnnotationController(ImageView *view)
     : m_view(view)
 {
+    QSettings s;
+    s.beginGroup(QStringLiteral("annotation"));
+    const QString colorName = s.value(QStringLiteral("color")).toString();
+    if (!colorName.isEmpty()) {
+        const QColor c(colorName);
+        if (c.isValid()) {
+            m_color = c;
+        }
+    }
+    const qreal w = s.value(QStringLiteral("width"), m_width).toDouble();
+    if (w >= 1.0) {
+        m_width = w;
+    }
+    m_session.setVisible(s.value(QStringLiteral("layerVisible"), true).toBool());
+    s.endGroup();
 }
 
 void AnnotationController::setTool(Annotation::Tool tool)
@@ -70,6 +86,42 @@ void AnnotationController::setTool(Annotation::Tool tool)
 void AnnotationController::setToolActive(bool on)
 {
     setTool(on ? Annotation::Tool::FreehandHighlighter : Annotation::Tool::None);
+}
+
+void AnnotationController::setColor(const QColor &c)
+{
+    if (!c.isValid()) {
+        return;
+    }
+    m_color = c;
+    QSettings s;
+    s.beginGroup(QStringLiteral("annotation"));
+    s.setValue(QStringLiteral("color"), m_color.name(QColor::HexArgb));
+    s.endGroup();
+}
+
+void AnnotationController::setWidth(qreal w)
+{
+    m_width = qMax(1.0, w);
+    QSettings s;
+    s.beginGroup(QStringLiteral("annotation"));
+    s.setValue(QStringLiteral("width"), m_width);
+    s.endGroup();
+}
+
+void AnnotationController::setLayerVisible(bool on)
+{
+    if (m_session.isVisible() == on) {
+        return;
+    }
+    m_session.setVisible(on);
+    QSettings s;
+    s.beginGroup(QStringLiteral("annotation"));
+    s.setValue(QStringLiteral("layerVisible"), on);
+    s.endGroup();
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
 }
 
 ImageItem *AnnotationController::targetItem() const
@@ -603,7 +655,8 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
                          bounds, yUp);
     } else if (m_tool == Annotation::Tool::Select) {
-        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
+        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
+                         event->modifiers());
     } else if (m_tool == Annotation::Tool::Sticky) {
         placeStickyAt(viewToPage(item, event->pos(), bounds, yUp, sourceSize), bounds, yUp);
         m_drawing = false;
@@ -1186,15 +1239,53 @@ quint64 AnnotationController::hitTestTopObject(SessionImageId sid, const QPointF
     return 0;
 }
 
-void AnnotationController::selectAtPagePoint(const QPointF &pagePt)
+void AnnotationController::selectAtPagePoint(const QPointF &pagePt,
+                                             Qt::KeyboardModifiers mods)
 {
     if (m_draftSid == kInvalidSessionImageId) {
         return;
     }
     const quint64 id = hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
+    const bool additive = mods.testFlag(Qt::ShiftModifier);
+    const bool toggle = mods.testFlag(Qt::ControlModifier);
+    if (!additive && !toggle) {
+        m_selectedIds.clear();
+        if (id != 0) {
+            m_selectedIds.append(id);
+        }
+    } else if (id != 0) {
+        if (toggle) {
+            if (m_selectedIds.contains(id)) {
+                m_selectedIds.removeAll(id);
+            } else {
+                m_selectedIds.append(id);
+            }
+        } else if (additive) {
+            if (!m_selectedIds.contains(id)) {
+                m_selectedIds.append(id);
+            }
+        }
+    } else if (!additive && !toggle) {
+        m_selectedIds.clear();
+    }
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationController::selectAllCurrentPage()
+{
+    ImageItem *item = targetItem();
+    const SessionImageId sid = targetSid(item);
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    m_draftSid = sid;
     m_selectedIds.clear();
-    if (id != 0) {
-        m_selectedIds.append(id);
+    if (const Annotation::Page *pg = m_session.page(sid)) {
+        for (const Annotation::Object &o : pg->objects) {
+            m_selectedIds.append(o.id);
+        }
     }
     if (m_view && m_view->viewport()) {
         m_view->viewport()->update();
@@ -1315,6 +1406,13 @@ bool AnnotationController::tryKeyPress(QKeyEvent *event)
     }
     if (event->key() == Qt::Key_Escape && !m_selectedIds.isEmpty()) {
         clearSelection();
+        event->accept();
+        return true;
+    }
+    if (m_tool == Annotation::Tool::Select
+        && event->key() == Qt::Key_A
+        && event->modifiers().testFlag(Qt::ControlModifier)) {
+        selectAllCurrentPage();
         event->accept();
         return true;
     }

@@ -14,6 +14,7 @@
 #include <QSize>
 #include <QVector>
 #include <QImage>
+#include <Qt>
 
 class ImageView;
 class ImageItem;
@@ -43,10 +44,14 @@ public:
     void setToolActive(bool on);
 
     QColor color() const { return m_color; }
-    void setColor(const QColor &c) { m_color = c; }
+    void setColor(const QColor &c);
 
     qreal width() const { return m_width; }
-    void setWidth(qreal w) { m_width = qMax(1.0, w); }
+    void setWidth(qreal w);
+
+    /** Show/hide the whole annotation layer (paint + hit-test for select). */
+    bool layerVisible() const { return m_session.isVisible(); }
+    void setLayerVisible(bool on);
 
     /** Scene-space paint; call while the view transform is still active. */
     void paintOverlay(QPainter &painter);
@@ -60,6 +65,8 @@ public:
     /** Page pixels + annotations (display space of primary item). Null if none. */
     QImage renderFlattenedDisplay() const;
     void clearSelection();
+    /** Select every object on the current page (Select tool / Ctrl+A). */
+    void selectAllCurrentPage();
     QVector<quint64> selectedIds() const { return m_selectedIds; }
     bool tryKeyPress(QKeyEvent *event);
     void commitObject(SessionImageId sid, const Annotation::Object &obj,
@@ -106,7 +113,8 @@ private:
                           bool pageYUp);
     quint64 hitTestTopObject(SessionImageId sid, const QPointF &pagePt,
                              qreal radius) const;
-    void selectAtPagePoint(const QPointF &pagePt);
+    void selectAtPagePoint(const QPointF &pagePt,
+                          Qt::KeyboardModifiers mods = Qt::NoModifier);
     void deleteSelected();
     void paintSelectionChrome(QPainter &painter, ImageItem *item,
                               const QRectF &pageBounds, bool pageYUp,

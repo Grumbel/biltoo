@@ -398,6 +398,17 @@ void MainWindow::createActions()
             m_imageView->hostAnnot().clearCurrentPage();
         }
     });
+    m_annotVisibleAct = new QAction(tr("Show &Annotations"), this);
+    m_annotVisibleAct->setCheckable(true);
+    m_annotVisibleAct->setChecked(
+        m_imageView ? m_imageView->hostAnnot().layerVisible() : true);
+    m_annotVisibleAct->setStatusTip(tr("Show or hide the annotation overlay layer"));
+    m_annotVisibleAct->setToolTip(tr("Show annotations"));
+    connect(m_annotVisibleAct, &QAction::toggled, this, [this](bool on) {
+        if (m_imageView) {
+            m_imageView->hostAnnot().setLayerVisible(on);
+        }
+    });
 
     m_annotPenAct = new QAction(tr("&Pen"), this);
     m_annotPenAct->setIcon(resourceIcon(QStringLiteral("annot-pen")));
@@ -412,7 +423,7 @@ void MainWindow::createActions()
     m_annotSelectAct = new QAction(tr("Annotation &Select"), this);
     m_annotSelectAct->setIcon(resourceIcon(QStringLiteral("annot-select")));
     m_annotSelectAct->setCheckable(true);
-    m_annotSelectAct->setStatusTip(tr("Select annotations (Delete removes selection)"));
+    m_annotSelectAct->setStatusTip(tr("Select annotations (Shift add, Ctrl toggle, Ctrl+A all, Delete removes)"));
     m_annotSelectAct->setToolTip(tr("Select annotation"));
     m_annotRectAct = new QAction(tr("&Rectangle"), this);
     m_annotRectAct->setIcon(resourceIcon(QStringLiteral("annot-rect")));
@@ -456,16 +467,16 @@ void MainWindow::createActions()
                 m_imageView->hostAnnot().setTool(Annotation::Tool::None);
                 return;
             }
+            // Colour comes from user prefs / Colour menu (persisted). Width is
+            // still tool-appropriate so switching Pen ↔ Highlighter feels right;
+            // Stroke Width menu persists the last explicit choice via setWidth.
             if (act == m_annotHighlightAct) {
-                m_imageView->hostAnnot().setColor(QColor(246, 211, 45));
                 m_imageView->hostAnnot().setWidth(18.0);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
             } else if (act == m_annotTextHighlightAct) {
-                m_imageView->hostAnnot().setColor(QColor(246, 211, 45));
                 m_imageView->hostAnnot().setWidth(18.0);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
             } else if (act == m_annotPenAct) {
-                m_imageView->hostAnnot().setColor(QColor(28, 28, 28));
                 m_imageView->hostAnnot().setWidth(2.5);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Pen);
             } else if (act == m_annotEraserAct) {
@@ -474,19 +485,15 @@ void MainWindow::createActions()
             } else if (act == m_annotSelectAct) {
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Select);
             } else if (act == m_annotRectAct) {
-                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
                 m_imageView->hostAnnot().setWidth(2.5);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Rect);
             } else if (act == m_annotEllipseAct) {
-                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
                 m_imageView->hostAnnot().setWidth(2.5);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Ellipse);
             } else if (act == m_annotLineAct) {
-                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
                 m_imageView->hostAnnot().setWidth(2.5);
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Line);
             } else if (act == m_annotStickyAct) {
-                m_imageView->hostAnnot().setColor(QColor(255, 230, 100));
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Sticky);
             }
         });
@@ -1313,6 +1320,9 @@ void MainWindow::createMenus()
     if (m_annotClearAct) {
         m_imageMenu->addAction(m_annotClearAct);
     }
+    if (m_annotVisibleAct) {
+        m_imageMenu->addAction(m_annotVisibleAct);
+    }
     {
         auto *colorMenu = m_imageMenu->addMenu(tr("Highlight &Colour"));
         colorMenu->setIcon(resourceIcon(QStringLiteral("annot-highlight-colour")));
@@ -1364,6 +1374,9 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
+    if (m_annotVisibleAct) {
+        m_viewMenu->addAction(m_annotVisibleAct);
+    }
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_ocrPageAct);
     m_viewMenu->addAction(m_ocrDocumentAct);
