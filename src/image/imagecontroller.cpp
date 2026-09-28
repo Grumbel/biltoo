@@ -361,12 +361,11 @@ void ImageController::clearSceneKeepingStashes()
 void ImageController::onViewResized()
 {
     m_view->hostDisplayPipeline().maybeClimbImageModePixelsForView();
-    if (m_view->liveItems().size() != 1 || !m_view->isImageMode()) {
+    if (!m_view->isImageMode() || m_view->liveItems().isEmpty()) {
         return;
     }
-    // Do NOT call applyImageModeFraming here: it ends in refreshScrollBarGeometry,
-    // which toggles ScrollBarPolicy → layoutChildren → setGeometry → Resize →
-    // onViewResized again (infinite recursion). fitItem alone is resize-safe.
+    // Do NOT call applyImageModeFraming / refreshScrollBarGeometry here:
+    // policy toggle → layoutChildren → Resize → re-enter (infinite loop).
     static bool inViewResize = false;
     if (inViewResize) {
         return;
@@ -377,14 +376,42 @@ void ImageController::onViewResized()
         ~Clear() { f = false; }
     } clear{inViewResize};
 
+    const bool sticky = m_framing.isStickyZoomEnabled();
+    const bool wantFit = sticky || m_framing.isFitMode();
+    if (!wantFit && !(sticky && m_framing.currentStickyZoomKind() == StickyZoomKind::Actual)) {
+        return;
+    }
+
+    // DoubleView / spread: fit union of live pages (single-item path below).
+    if (m_view->liveItems().size() > 1) {
+        if (sticky && m_framing.currentStickyZoomKind() == StickyZoomKind::Actual) {
+            QRectF bounds;
+            for (ImageItem *ii : m_view->liveItems()) {
+                if (ii) {
+                    bounds = bounds.united(ii->sceneBoundingRect());
+                }
+            }
+            if (bounds.isValid()) {
+                m_view->centerOn(bounds.center());
+            }
+            return;
+        }
+        const Qt::AspectRatioMode mode =
+            (sticky && m_framing.currentStickyZoomKind() == StickyZoomKind::Fill)
+                || (!sticky && m_framing.isFillMode())
+                ? Qt::KeepAspectRatioByExpanding
+                : Qt::KeepAspectRatio;
+        fitLiveItemsUnion(mode, /*withScrollBarRefresh=*/false);
+        return;
+    }
+
     ImageItem *item = m_view->liveItems().first();
-    if (m_framing.isStickyZoomEnabled()) {
+    if (sticky) {
         switch (m_framing.currentStickyZoomKind()) {
         case StickyZoomKind::Fill:
             fitItem(item, Qt::KeepAspectRatioByExpanding);
             break;
         case StickyZoomKind::Actual:
-            // 1:1 does not depend on viewport size; keep the item centred.
             m_view->centerOn(item);
             break;
         case StickyZoomKind::Fit:

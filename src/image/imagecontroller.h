@@ -159,6 +159,8 @@ public:
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
     void applyImageModeFraming(ImageItem *item);
+    /** Fit view to union of live items (spread / DoubleView). */
+    bool fitLiveItemsUnion(Qt::AspectRatioMode mode, bool withScrollBarRefresh);
     /** Fit item in view (Image-mode layout + crop-draft rules). */
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode);
     void zoomFit();

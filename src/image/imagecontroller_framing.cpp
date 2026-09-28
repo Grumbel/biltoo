@@ -390,6 +390,52 @@ void ImageController::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     m_view->fitInView(item, mode);
 }
 
+
+bool ImageController::fitLiveItemsUnion(Qt::AspectRatioMode mode, bool withScrollBarRefresh)
+{
+    if (!m_view || m_view->liveItems().isEmpty()) {
+        return false;
+    }
+    QRectF bounds;
+    for (ImageItem *ii : m_view->liveItems()) {
+        if (ii) {
+            bounds = bounds.united(ii->sceneBoundingRect());
+        }
+    }
+    if (!bounds.isValid() || bounds.isEmpty()) {
+        return false;
+    }
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        if (!m_view->sceneRect().isNull()) {
+            m_view->setSceneRect(QRectF());
+        }
+        scene->setSceneRect(bounds.adjusted(-8, -8, 8, 8));
+    }
+    m_view->setAlignment(Qt::AlignCenter);
+    m_view->resetTransform();
+    m_view->fitInView(bounds, mode);
+    m_view->centerOn(bounds.center());
+    if (withScrollBarRefresh) {
+        // Bars may shrink the viewport; a second fit matches single-page
+        // refreshScrollBarGeometry + deferred centre behaviour for spreads.
+        m_view->refreshScrollBarGeometry();
+        m_view->fitInView(bounds, mode);
+        m_view->centerOn(bounds.center());
+        const QPointer<ImageView> guard(m_view);
+        const QRectF target = bounds;
+        const Qt::AspectRatioMode modeCopy = mode;
+        QTimer::singleShot(0, m_view, [guard, target, modeCopy]() {
+            ImageView *const view = guard.data();
+            if (!view || !view->isImageMode() || !view->viewport()) {
+                return;
+            }
+            view->fitInView(target, modeCopy);
+            view->centerOn(target.center());
+        });
+    }
+    return true;
+}
+
 void ImageController::zoomFit()
 {
     m_framing.setFitOnly();
@@ -422,24 +468,7 @@ void ImageController::zoomFit()
     }
     // Spread / multi-underlay Image: fit the whole surface, not only primary.
     if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
-        QRectF bounds;
-        for (ImageItem *ii : m_view->liveItems()) {
-            if (ii) {
-                bounds = bounds.united(ii->sceneBoundingRect());
-            }
-        }
-        if (bounds.isValid() && !bounds.isEmpty()) {
-            if (QGraphicsScene *scene = m_view->canvasScene()) {
-                if (!m_view->sceneRect().isNull()) {
-                    m_view->setSceneRect(QRectF());
-                }
-                scene->setSceneRect(bounds.adjusted(-8, -8, 8, 8));
-            }
-            m_view->setAlignment(Qt::AlignCenter);
-            m_view->resetTransform();
-            m_view->fitInView(bounds, Qt::KeepAspectRatio);
-            m_view->centerOn(bounds.center());
-            m_view->refreshScrollBarGeometry();
+        if (fitLiveItemsUnion(Qt::KeepAspectRatio, /*withScrollBarRefresh=*/true)) {
             emit m_view->statusChanged();
         }
         return;
@@ -486,29 +515,12 @@ void ImageController::zoomFill()
         return;
     }
     if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
-        QRectF bounds;
-        for (ImageItem *ii : m_view->liveItems()) {
-            if (ii) {
-                bounds = bounds.united(ii->sceneBoundingRect());
-            }
-        }
-        if (bounds.isValid() && !bounds.isEmpty()) {
-            if (QGraphicsScene *scene = m_view->canvasScene()) {
-                if (!m_view->sceneRect().isNull()) {
-                    m_view->setSceneRect(QRectF());
-                }
-                scene->setSceneRect(bounds.adjusted(-8, -8, 8, 8));
-            }
-            m_view->setAlignment(Qt::AlignCenter);
-            m_view->resetTransform();
-            m_view->fitInView(bounds, Qt::KeepAspectRatioByExpanding);
-            m_view->centerOn(bounds.center());
-            m_view->refreshScrollBarGeometry();
+        if (fitLiveItemsUnion(Qt::KeepAspectRatioByExpanding, /*withScrollBarRefresh=*/true)) {
             emit m_view->statusChanged();
         }
         return;
     }
-    if (ImageItem *item = m_view->targetItem()) {
+        if (ImageItem *item = m_view->targetItem()) {
         {
             ItemComponents::Placement pl = item->placement();
             pl.scale = 1.0;
