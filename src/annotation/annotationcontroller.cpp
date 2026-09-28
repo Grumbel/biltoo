@@ -13,6 +13,7 @@
 
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QInputDialog>
 #include <QPainter>
 #include <QPainterPath>
 #include <QUndoStack>
@@ -329,6 +330,8 @@ void AnnotationController::paintObject(QPainter &painter, ImageItem *item,
     } else if (obj.kind == Annotation::Kind::ShapeRect
                || obj.kind == Annotation::Kind::ShapeEllipse) {
         paintShape(painter, item, obj, pageBounds, pageYUp, sourceSize);
+    } else if (obj.kind == Annotation::Kind::StickyNote) {
+        paintSticky(painter, item, obj, pageBounds, pageYUp, sourceSize);
     } else {
         paintStroke(painter, item, obj, pageBounds, pageYUp, sourceSize);
     }
@@ -602,6 +605,9 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
                          bounds, yUp);
     } else if (m_tool == Annotation::Tool::Select) {
         selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
+    } else if (m_tool == Annotation::Tool::Sticky) {
+        placeStickyAt(viewToPage(item, event->pos(), bounds, yUp, sourceSize), bounds, yUp);
+        m_drawing = false;
     }
     event->accept();
     if (m_view->viewport()) {
@@ -706,7 +712,8 @@ static bool objectHitsPagePoint(const Annotation::Object &o, const QPointF &page
 {
     if (o.kind == Annotation::Kind::HighlightQuad
         || o.kind == Annotation::Kind::ShapeRect
-        || o.kind == Annotation::Kind::ShapeEllipse) {
+        || o.kind == Annotation::Kind::ShapeEllipse
+        || o.kind == Annotation::Kind::StickyNote) {
         for (const QRectF &q : o.quads) {
             if (q.adjusted(-radius, -radius, radius, radius).contains(pagePt)) {
                 return true;
@@ -830,6 +837,77 @@ void AnnotationController::paintShape(QPainter &painter, ImageItem *item,
 }
 
 
+
+void AnnotationController::paintSticky(QPainter &painter, ImageItem *item,
+                                       const Annotation::Object &obj,
+                                       const QRectF &pageBounds, bool pageYUp,
+                                       const QSize &sourceSize) const
+{
+    if (!item || obj.quads.isEmpty()) {
+        return;
+    }
+    const QRectF scene = pageRectToScene(item, obj.quads.first(), pageBounds, pageYUp,
+                                         sourceSize);
+    if (scene.isEmpty()) {
+        return;
+    }
+    painter.setPen(QPen(obj.color.darker(120), 0));
+    painter.setBrush(obj.color);
+    painter.drawRoundedRect(scene, 4, 4);
+    const qreal fold = qMin(12.0, qMax(4.0, scene.width() * 0.18));
+    QPolygonF dogear;
+    dogear << QPointF(scene.right() - fold, scene.top())
+           << QPointF(scene.right(), scene.top())
+           << QPointF(scene.right(), scene.top() + fold);
+    painter.setBrush(obj.color.darker(110));
+    painter.setPen(Qt::NoPen);
+    painter.drawPolygon(dogear);
+
+    const QString text = obj.textSnippet.isEmpty() ? QObject::tr("(note)") : obj.textSnippet;
+    painter.setPen(QColor(40, 40, 40));
+    QFont font = painter.font();
+    font.setPointSizeF(qBound(8.0, scene.height() * 0.11, 18.0));
+    painter.setFont(font);
+    const QRectF textRect = scene.adjusted(6, 6, -6 - fold * 0.25, -6);
+    painter.drawText(textRect, Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
+}
+
+void AnnotationController::placeStickyAt(const QPointF &pagePt, const QRectF &pageBounds,
+                                         bool pageYUp)
+{
+    if (!m_view || m_draftSid == kInvalidSessionImageId) {
+        return;
+    }
+    qreal w = 120.0;
+    qreal h = 90.0;
+    if (pageBounds.isValid() && pageBounds.width() > 10) {
+        w = pageBounds.width() * 0.18;
+        h = w * 0.75;
+    }
+    const QRectF box(pagePt.x() - w * 0.05, pagePt.y() - h * 0.05, w, h);
+
+    bool ok = false;
+    const QString text = QInputDialog::getMultiLineText(
+        m_view, QObject::tr("Sticky note"), QObject::tr("Note text:"),
+        QString(), &ok);
+    if (!ok) {
+        return;
+    }
+
+    Annotation::Object obj;
+    obj.id = m_session.nextId();
+    obj.kind = Annotation::Kind::StickyNote;
+    obj.blend = Annotation::Blend::SourceOver;
+    obj.color = m_color.isValid() ? m_color : QColor(255, 230, 100);
+    if (obj.color.lightness() < 80) {
+        obj.color = QColor(255, 230, 100);
+    }
+    obj.width = 1.0;
+    obj.quads.append(box);
+    obj.textSnippet = text;
+    commitObject(m_draftSid, obj, pageBounds, pageYUp, QObject::tr("Sticky note"));
+}
+
 void AnnotationController::finishLine()
 {
     if (!m_view || m_draftSid == kInvalidSessionImageId) {
@@ -939,7 +1017,25 @@ QImage AnnotationController::renderFlattenedDisplay() const
             painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
         }
 
-        if (obj.kind == Annotation::Kind::HighlightQuad
+        if (obj.kind == Annotation::Kind::StickyNote) {
+            for (const QRectF &q : obj.quads) {
+                const QRectF disp = self->pageRectToDisplay(item, q, pb, py, sourceSize);
+                if (disp.isEmpty()) {
+                    continue;
+                }
+                painter.setPen(QPen(obj.color.darker(120), 1));
+                painter.setBrush(obj.color);
+                painter.drawRoundedRect(disp, 4, 4);
+                painter.setPen(QColor(40, 40, 40));
+                QFont font = painter.font();
+                font.setPointSizeF(qBound(8.0, disp.height() * 0.11, 18.0));
+                painter.setFont(font);
+                const QString text =
+                    obj.textSnippet.isEmpty() ? QObject::tr("(note)") : obj.textSnippet;
+                painter.drawText(disp.adjusted(6, 6, -6, -6),
+                                 Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
+            }
+        } else if (obj.kind == Annotation::Kind::HighlightQuad
             || obj.kind == Annotation::Kind::ShapeRect
             || obj.kind == Annotation::Kind::ShapeEllipse) {
             painter.setPen(Qt::NoPen);
@@ -1119,7 +1215,8 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
         }
         if (o.kind == Annotation::Kind::HighlightQuad
             || o.kind == Annotation::Kind::ShapeRect
-            || o.kind == Annotation::Kind::ShapeEllipse) {
+            || o.kind == Annotation::Kind::ShapeEllipse
+            || o.kind == Annotation::Kind::StickyNote) {
             for (const QRectF &q : o.quads) {
                 const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
                 if (!scene.isEmpty()) {

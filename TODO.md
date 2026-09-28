@@ -2,16 +2,13 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2781.1-annot-export-png` (base `b8a0cf3`).
+**Tip:** `biltoo-2782.1-annot-sticky` (base `b8a0cf3`).
 
-### 2781.1
-- **File → Export Page with Annotations…** (Image mode)
-- Flattens primary display pixels + Multiply/SourceOver annotations to PNG
+### 2782.1
+- **Sticky note** tool: click to place, multi-line text dialog, yellow card chrome
+- Select / eraser / undo / PNG export / project JSON via textSnippet + bounds quad
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2781.1-annot-export-png-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2782.1-annot-sticky-b8a0cf3.bundle HEAD
 ```
-
-### Next
-Sticky notes (Phase C), underline-from-text

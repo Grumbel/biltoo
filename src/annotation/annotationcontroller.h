@@ -93,6 +93,10 @@ private:
     void finishTextHighlight();
     void finishShape();
     void finishLine();
+    void placeStickyAt(const QPointF &pagePt, const QRectF &pageBounds, bool pageYUp);
+    void paintSticky(QPainter &painter, ImageItem *item,
+                     const Annotation::Object &obj, const QRectF &pageBounds,
+                     bool pageYUp, const QSize &sourceSize) const;
     void paintShape(QPainter &painter, ImageItem *item,
                     const Annotation::Object &obj, const QRectF &pageBounds,
                     bool pageYUp, const QSize &sourceSize) const;

@@ -66,5 +66,6 @@
     <file alias="actions/annot-rect.svg">../../data/icons/actions/annot-rect.svg</file>
     <file alias="actions/annot-ellipse.svg">../../data/icons/actions/annot-ellipse.svg</file>
     <file alias="actions/annot-line.svg">../../data/icons/actions/annot-line.svg</file>
+    <file alias="actions/annot-sticky.svg">../../data/icons/actions/annot-sticky.svg</file>
   </qresource>
 </RCC>

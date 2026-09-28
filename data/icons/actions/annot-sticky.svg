@@ -1,0 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <rect x="4" y="3" width="16" height="17" rx="1.5" fill="#ffe066" stroke="#e5a50a" stroke-width="1.2"/>
+  <path d="M16 3l4 4v-2.5L18.5 3z" fill="#f6d32d"/>
+  <path d="M7 9h10M7 12h8M7 15h6" fill="none" stroke="#5e5c64" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

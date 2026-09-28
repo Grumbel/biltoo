@@ -29,6 +29,7 @@ enum class Kind : std::uint8_t {
     ShapeRect = 4,
     ShapeEllipse = 5,
     ShapeLine = 6,
+    StickyNote = 7,
 };
 
 enum class Blend : std::uint8_t {
@@ -46,6 +47,7 @@ enum class Tool : std::uint8_t {
     Rect = 6,
     Ellipse = 7,
     Line = 8,
+    Sticky = 9,
 };
 
 struct Object {
