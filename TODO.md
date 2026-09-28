@@ -2,19 +2,18 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2754.1-leptonica-pkg-config` (base `9395b3e`).
+**Tip:** `biltoo-2755.1-systemd-pkg-config` (base `9395b3e`).
 
 ### Done this tip
-- `default.nix`: `leptonica` so tesseract.pc Requires: lept is on
-  PKG_CONFIG_PATH (silence "Package 'lept' was not found")
-- CMake OCR-disabled warning mentions leptonica
-- Pair with thumtoo-348.1 (mkBuildInputs leptonica)
+- `default.nix`: `systemd` so dbus-1 Requires.private: libsystemd is on
+  PKG_CONFIG_PATH (nested thumtoo dbus probe)
+- Pair with thumtoo-349.1
 
 ### Prior
-- 2753.1: disconnect filmstrip chrome scroll slots on ~MainWindow
-- 2752.1: chrome colour prefs + cyan Select
+- 2754.1: leptonica for tesseract
+- 2753.1: filmstrip chrome dtor disconnect
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2754.1-leptonica-pkg-config-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2755.1-systemd-pkg-config-9395b3e.bundle HEAD
 ```

@@ -23,6 +23,7 @@
 , sqlite
 , libjxl
 , leptonica  # tesseract.pc Requires: lept (pkg-config noise)
+, systemd    # dbus-1.pc Requires.private: libsystemd (pkg-config noise)
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
 , cgif
 , libexif
@@ -94,6 +95,8 @@ stdenv.mkDerivation (finalAttrs: {
     libjxl
     # tesseract.pc Requires: lept — silence pkg-config spam when probing OCR.
     leptonica
+    # dbus-1.pc Requires.private: libsystemd — silence pkg-config when thumtoo probes dbus.
+    systemd
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
     # More vips Requires.private (and transitive .pc names) so pkg_check_modules(vips)
