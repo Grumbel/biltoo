@@ -53,5 +53,8 @@
     <file alias="actions/layout-panel.svg">../../data/icons/actions/layout-panel.svg</file>
     <file alias="actions/workspace-background.svg">../../data/icons/actions/workspace-background.svg</file>
     <file alias="actions/workspace-background-default.svg">../../data/icons/actions/workspace-background-default.svg</file>
+    <file alias="actions/text-speak.svg">../../data/icons/actions/text-speak.svg</file>
+    <file alias="actions/ocr-page.svg">../../data/icons/actions/ocr-page.svg</file>
+    <file alias="actions/show-text-regions.svg">../../data/icons/actions/show-text-regions.svg</file>
   </qresource>
 </RCC>

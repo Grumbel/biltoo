@@ -417,6 +417,7 @@ void MainWindow::createActions()
         }
     });
     m_showTextRegionsAct = new QAction(tr("Show &Text Regions"), this);
+    m_showTextRegionsAct->setIcon(resourceIcon(QStringLiteral("show-text-regions")));
     m_showTextRegionsAct->setCheckable(true);
     m_showTextRegionsAct->setStatusTip(
         tr("Debug: outline text and link regions from the document text layer (PDF/DjVu/EPUB pages)"));
@@ -427,6 +428,7 @@ void MainWindow::createActions()
     });
 
     m_ocrPageAct = new QAction(tr("OCR &This Page"), this);
+    m_ocrPageAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
     m_ocrPageAct->setStatusTip(
         tr("Run OCR on the current document page and use the result for Find/select"));
     m_ocrPageAct->setWhatsThis(tr(
@@ -436,6 +438,7 @@ void MainWindow::createActions()
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
     m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
+    m_ocrDocumentAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
     m_ocrDocumentAct->setStatusTip(
         tr("Run OCR on all pages of the current document (language prompt)"));
     m_ocrDocumentAct->setWhatsThis(tr(
@@ -765,6 +768,7 @@ void MainWindow::createActions()
     connect(m_copyTextAct, &QAction::triggered, this, &MainWindow::copySelectedPageText);
 
     m_speakAct = new QAction(tr("Spea&k"), this);
+    m_speakAct->setIcon(resourceIcon(QStringLiteral("text-speak")));
     m_speakAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
     m_speakAct->setStatusTip(
         tr("Read the current page from the top, or from the first selected region "
@@ -1174,6 +1178,11 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_smoothScalingAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
+    m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_ocrPageAct);
+    m_viewMenu->addAction(m_ocrDocumentAct);
+    m_viewMenu->addAction(m_ocrCancelAct);
+    m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_viewSelectionSpreadAct);
     {
@@ -1607,6 +1616,10 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
+    m_toolBar->addSeparator();
+    m_toolBar->addAction(m_speakAct);
+    m_toolBar->addAction(m_ocrPageAct);
+    m_toolBar->addAction(m_showTextRegionsAct);
     m_toolBar->addSeparator();
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);

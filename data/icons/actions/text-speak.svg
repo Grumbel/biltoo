@@ -1,0 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <!-- Speaker body -->
+  <path d="M4 9.5h3.2L11.5 6v12L7.2 14.5H4z" fill="#3584e4"/>
+  <!-- Waves -->
+  <path d="M14.2 9.2c.9.9.9 2.7 0 3.6" fill="none" stroke="#1c71d8" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M16.6 7c1.8 1.8 1.8 5.2 0 7" fill="none" stroke="#62a0ea" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M19 4.8c2.8 2.8 2.8 8.6 0 11.4" fill="none" stroke="#99c1f1" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
