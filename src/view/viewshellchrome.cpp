@@ -572,13 +572,14 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     // Scene-space chrome owned by mode/text controllers.
     m_view->hostWorkspace().paintPageGuideOutline(painter, rect);
     m_view->hostText().paintSceneOverlays(painter);
-    m_view->hostAnnot().paintOverlay(painter);
 
     // Viewport-space overlays on the same painter as the scene (required for
     // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
     if (!painter) {
         return;
     }
+    // Annotations: page→view Multiply strokes/quads (viewport device space).
+    m_view->hostAnnot().paintOverlay(*painter);
     // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
     // is not invalidated on select or scroll (was painted inside ImageItem::paint).
     if (m_view->isGalleryMode()) {
