@@ -667,8 +667,9 @@ else()
   message(WARNING
     "biltoo: thumtoo OCR DISABLED (THUMTOO_HAVE_TESSERACT=0). "
     "Tesseract was not found when configuring thumtoo. "
-    "nix develop / biltoo-configure must include pkgs.tesseract via "
-    "thumtoo.lib.mkBuildInputs. Rebuild thumtoo after fixing PKG_CONFIG_PATH.")
+    "nix develop / biltoo-configure must include pkgs.tesseract and "
+    "pkgs.leptonica (tesseract Requires: lept) via thumtoo.lib.mkBuildInputs. "
+    "Rebuild thumtoo after fixing PKG_CONFIG_PATH.")
 endif()
 # Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
 set(BILTOO_FEATURE_ARCHIVE 1)

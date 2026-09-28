@@ -2,20 +2,19 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2753.1-fix-filmstrip-chrome-dtor` (base `9395b3e`).
+**Tip:** `biltoo-2754.1-leptonica-pkg-config` (base `9395b3e`).
 
 ### Done this tip
-- Shutdown crash: `ImageView::~ImageView` → `setScene(nullptr)` → scrollbar
-  `valueChanged` → `MainWindow::scheduleFilmstripChromeUpdate` after
-  `~MainWindow` body finished (`assertObjectType<MainWindow>`). Disconnect
-  scrollbars + stop filmstrip chrome timer in `~MainWindow`.
+- `default.nix`: `leptonica` so tesseract.pc Requires: lept is on
+  PKG_CONFIG_PATH (silence "Package 'lept' was not found")
+- CMake OCR-disabled warning mentions leptonica
+- Pair with thumtoo-348.1 (mkBuildInputs leptonica)
 
 ### Prior
-- 2752.1: configurable chrome colours; brighter cyan Select
-- 2751.1: filmstrip camera on scroll
-- 2750.x / 2749.1: ChromeColors + cursor members
+- 2753.1: disconnect filmstrip chrome scroll slots on ~MainWindow
+- 2752.1: chrome colour prefs + cyan Select
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2753.1-fix-filmstrip-chrome-dtor-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2754.1-leptonica-pkg-config-9395b3e.bundle HEAD
 ```

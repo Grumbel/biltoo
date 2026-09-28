@@ -22,6 +22,7 @@
 , piperModelsDir ? null  # TEXT2SPRECH_PIPER_MODELS (bundled voice directory)
 , sqlite
 , libjxl
+, leptonica  # tesseract.pc Requires: lept (pkg-config noise)
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
 , cgif
 , libexif
@@ -91,6 +92,8 @@ stdenv.mkDerivation (finalAttrs: {
     djvulibre
     sqlite
     libjxl
+    # tesseract.pc Requires: lept — silence pkg-config spam when probing OCR.
+    leptonica
     # Qt imageformat plugins: XCF (GIMP), KRA, ORA, extra RAW/PSD helpers, …
     kimageformats
     # More vips Requires.private (and transitive .pc names) so pkg_check_modules(vips)
