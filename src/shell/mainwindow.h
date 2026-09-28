@@ -35,6 +35,7 @@ class ThumbnailBar;
 class MetadataPanel;
 class AdjustmentsPanel;
 class CropPanel;
+class AnnotationPanel;
 class OcrPanel;
 class MessageLogPanel;
 class TextPanel;
@@ -397,6 +398,7 @@ private slots:
     void openDocumentLinkUri(const QString &uri);
     void updateAdjustmentsPanel();
     void updateCropPanel();
+    void updateAnnotationPanel();
     void updateOcrPanel();
     void runOcrFromPanel();
     void updateTextPanel();
@@ -602,6 +604,8 @@ private:
     KDDockWidgets::QtWidgets::DockWidget *m_adjustmentsDock = nullptr;
     CropPanel *m_cropPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_cropDock = nullptr;
+    AnnotationPanel *m_annotationPanel = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_annotationDock = nullptr;
     OcrPanel *m_ocrPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_ocrDock = nullptr;
     QAction *m_toggleOcrAct = nullptr;
@@ -626,6 +630,7 @@ private:
     QTimer *m_adjustmentsPreviewTimer = nullptr;
     QAction *m_toggleAdjustmentsAct = nullptr;
     QAction *m_toggleCropAct = nullptr;
+    QAction *m_toggleAnnotationAct = nullptr;
     QString m_metadataPath;
     KDDockWidgets::QtWidgets::DockWidget *m_metadataDock = nullptr;
     LayoutPanel *m_layoutPanel = nullptr;

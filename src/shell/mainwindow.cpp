@@ -466,6 +466,38 @@ MainWindow::MainWindow(QWidget *parent)
     m_cropDock->setWidget(m_cropPanel);
     addDockWidget(m_cropDock, KDDockWidgets::Location_OnRight);
     m_cropDock->close();
+
+    m_annotationPanel = new AnnotationPanel(this);
+    m_annotationDock = new DockWidget(QStringLiteral("AnnotationDock"));
+    m_annotationDock->setTitle(tr("Annotations"));
+    m_annotationDock->setWidget(m_annotationPanel);
+    addDockWidget(m_annotationDock, KDDockWidgets::Location_OnRight);
+    m_annotationDock->close();
+    connect(m_annotationDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
+        if (visible) {
+            updateAnnotationPanel();
+        }
+    });
+    connect(m_annotationPanel, &AnnotationPanel::colorChanged, this, [this](const QColor &c) {
+        if (m_imageView) {
+            m_imageView->hostAnnot().setColor(c);
+        }
+    });
+    connect(m_annotationPanel, &AnnotationPanel::widthChanged, this, [this](qreal w) {
+        if (m_imageView) {
+            m_imageView->hostAnnot().setWidth(w);
+        }
+    });
+    connect(m_annotationPanel, &AnnotationPanel::layerVisibleChanged, this, [this](bool on) {
+        if (m_imageView) {
+            m_imageView->hostAnnot().setLayerVisible(on);
+        }
+        if (m_annotVisibleAct) {
+            const bool block = m_annotVisibleAct->blockSignals(true);
+            m_annotVisibleAct->setChecked(on);
+            m_annotVisibleAct->blockSignals(block);
+        }
+    });
 m_ocrPanel = new OcrPanel(this);
     m_ocrDock = new DockWidget(QStringLiteral("OcrDock"));
     m_ocrDock->setTitle(tr("OCR"));
@@ -3298,6 +3330,55 @@ void MainWindow::updateAdjustmentsPanel()
 }
 
 
+
+void MainWindow::updateAnnotationPanel()
+{
+    if (!m_annotationPanel || !m_imageView) {
+        return;
+    }
+    if (m_annotationDock && !dockIsOpen(m_annotationDock)) {
+        return;
+    }
+    const auto &annot = m_imageView->hostAnnot();
+    m_annotationPanel->setColor(annot.color());
+    m_annotationPanel->setWidth(annot.width());
+    m_annotationPanel->setLayerVisible(annot.layerVisible());
+    QString toolName;
+    switch (annot.tool()) {
+    case Annotation::Tool::FreehandHighlighter:
+        toolName = tr("Freehand highlighter");
+        break;
+    case Annotation::Tool::TextHighlighter:
+        toolName = tr("Text highlighter");
+        break;
+    case Annotation::Tool::Pen:
+        toolName = tr("Pen");
+        break;
+    case Annotation::Tool::Eraser:
+        toolName = tr("Eraser");
+        break;
+    case Annotation::Tool::Select:
+        toolName = tr("Select");
+        break;
+    case Annotation::Tool::Rect:
+        toolName = tr("Rectangle");
+        break;
+    case Annotation::Tool::Ellipse:
+        toolName = tr("Ellipse");
+        break;
+    case Annotation::Tool::Line:
+        toolName = tr("Line");
+        break;
+    case Annotation::Tool::Sticky:
+        toolName = tr("Sticky note");
+        break;
+    default:
+        toolName = tr("No annotation tool");
+        break;
+    }
+    m_annotationPanel->setStatusText(
+        tr("%1 — colour and width apply to new strokes.").arg(toolName));
+}
 
 void MainWindow::updateCropPanel()
 {

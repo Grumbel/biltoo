@@ -408,6 +408,7 @@ void MainWindow::createActions()
         if (m_imageView) {
             m_imageView->hostAnnot().setLayerVisible(on);
         }
+        updateAnnotationPanel();
     });
 
     m_annotPenAct = new QAction(tr("&Pen"), this);
@@ -496,6 +497,7 @@ void MainWindow::createActions()
             } else if (act == m_annotStickyAct) {
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Sticky);
             }
+            updateAnnotationPanel();
         });
     }
 
@@ -1056,7 +1058,14 @@ void MainWindow::createActions()
         m_toggleCropAct = m_cropDock->toggleAction();
         m_toggleCropAct->setText(tr("Show Cro&p Panel"));
         m_toggleCropAct->setStatusTip(tr("Crop margins, autocrop, and batch apply"));
-
+    }
+    if (m_annotationDock) {
+        m_toggleAnnotationAct = m_annotationDock->toggleAction();
+        m_toggleAnnotationAct->setText(tr("Show Anno&tations Panel"));
+        m_toggleAnnotationAct->setIcon(resourceIcon(QStringLiteral("annot-highlight-colour")));
+        m_toggleAnnotationAct->setStatusTip(
+            tr("Annotation colour, stroke width, and layer visibility"));
+    }
     if (m_ocrDock) {
         m_toggleOcrAct = m_ocrDock->toggleAction();
         m_toggleOcrAct->setText(tr("Show &OCR Panel"));
@@ -1080,7 +1089,6 @@ void MainWindow::createActions()
         m_toggleMessageLogAct->setText(tr("Show &Messages"));
         m_toggleMessageLogAct->setStatusTip(
             tr("Application messages (OCR, TTS, and other status/errors)"));
-    }
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
     connect(m_metadataDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
@@ -1343,6 +1351,7 @@ void MainWindow::createMenus()
                 if (m_imageView) {
                     m_imageView->hostAnnot().setColor(col);
                 }
+                updateAnnotationPanel();
             });
         }
         auto *widthMenu = m_imageMenu->addMenu(tr("Stroke &Width"));
@@ -1352,6 +1361,7 @@ void MainWindow::createMenus()
                 if (m_imageView) {
                     m_imageView->hostAnnot().setWidth(w);
                 }
+                updateAnnotationPanel();
             });
         }
     }
@@ -1425,6 +1435,9 @@ void MainWindow::createMenus()
     }
     if (m_toggleCropAct) {
         m_panelsMenu->addAction(m_toggleCropAct);
+    }
+    if (m_toggleAnnotationAct) {
+        m_panelsMenu->addAction(m_toggleAnnotationAct);
     }
     if (m_toggleOcrAct) {
         m_panelsMenu->addAction(m_toggleOcrAct);

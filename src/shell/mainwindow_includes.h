@@ -19,6 +19,8 @@
 #include "shell/metadatapanel.h"
 #include "shell/adjustmentspanel.h"
 #include "shell/croppanel.h"
+#include "shell/annotationpanel.h"
+#include "annotation/annotationtypes.h"
 #include "shell/ocrpanel.h"
 #include "shell/textpanel.h"
 #include "speech/texttospeechcontroller.h"

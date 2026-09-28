@@ -2,25 +2,24 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2789.1-fix-select-dup-cond` (base `a989daf`).
+**Tip:** `biltoo-2790.1-annotation-panel` (base `a989daf`).
 
-### 2789.1
-- Fix -Wduplicated-cond in selectAtPagePoint (dead else branch)
+### 2790.1 — Annotations panel
+- AnnotationPanel dock: colour presets, custom colour, stroke width slider/spin,
+  layer visibility checkbox
+- Panels menu + dock toggle; sync with tool switch and Image colour/width menus
+- Also fixed pre-existing brace nesting around crop/ocr panel toggle actions
 
 ### Prior
-- 2788.1 line endpoints + sourceKey
-- 2787.1 corner resize
-- 2786–2785 select move / multi-select / prefs
-- 2784 format v2
-- 2783 compile fix
+- 2789.1 selectAtPagePoint -Wduplicated-cond
+- 2788–2783 annotation tools / format / compile
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2789.1-fix-select-dup-cond-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2790.1-annotation-panel-a989daf.bundle HEAD
 ```
 
 ### Still open
-- Validate sourceKey vs current path on project load
+- Validate sourceKey on project load
 - AnnotationPainter split
 - PDF /Annot export
-- Multi-quad uniform scale

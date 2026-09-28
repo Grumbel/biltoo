@@ -426,6 +426,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/adjustmentspanel.h
   src/shell/croppanel.cpp
   src/shell/croppanel.h
+  src/shell/annotationpanel.cpp
+  src/shell/annotationpanel.h
   src/shell/ocrpanel.cpp
   src/shell/ocrpanel.h
   src/shell/messagelogwidget.cpp
