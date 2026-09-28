@@ -310,6 +310,8 @@ set(BILTOO_LIB_SOURCES
   src/view/viewtransform.h
   src/workspace/workspacenavgeometry.h
   src/image/toolpolicy.h
+  src/image/toolcursors.cpp
+  src/image/toolcursors.h
   src/view/viewinteraction.h
   src/hud/hudgeometry.h
   src/text/textsearchpolicy.h

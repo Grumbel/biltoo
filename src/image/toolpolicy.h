@@ -4,29 +4,23 @@
 #ifndef TOOLPOLICY_H
 #define TOOLPOLICY_H
 
+#include "image/toolcursors.h"
 #include "imageview_types.h"
 
+#include <QCursor>
 #include <Qt>
 #include <QtCore/qnamespace.h>
 
 /**
- * Pure Workspace / Image tool chrome: cursor shape and rubber-band drag mode.
+ * Pure Workspace / Image tool chrome: cursor and rubber-band drag mode.
  * ImageView still owns Tool state and applies Qt widgets.
  */
 namespace ToolPolicy {
 
-/** Cursor for @p tool (Arrow for Select and unknown). */
-inline Qt::CursorShape cursorFor(Tool tool)
+/** Cursor for @p tool (custom pixmap with stock fallback). */
+inline QCursor cursorFor(Tool tool)
 {
-    switch (tool) {
-    case Tool::Pan:
-        return Qt::OpenHandCursor;
-    case Tool::Zoom:
-        return Qt::CrossCursor;
-    case Tool::Select:
-    default:
-        return Qt::ArrowCursor;
-    }
+    return ToolCursors::forTool(tool);
 }
 
 /**
