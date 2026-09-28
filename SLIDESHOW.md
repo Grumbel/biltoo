@@ -7,6 +7,10 @@ schedule soft encode or Full native decode. When the Store has a **durable tile
 pyramid**, climb policy is **SoftDisplay** (PreferCache / TileSynth) only —
 `EscalateToFull` is for cold paths without tiles.
 
+Pure-phase paint uses **phase-owned** tile LOD sessions (not the hidden Image
+underlay item). Session **wake** forces a viewport update when tiles complete so
+the dwell is not stuck on coarse overview tiles until the next slide.
+
 
 ## Timeline
 

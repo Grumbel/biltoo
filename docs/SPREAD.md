@@ -236,11 +236,13 @@ until user toggles Double view).
 
 ## 7. UI contract
 
-### 7.1 Toolbar — Double view
+### 7.1 Toolbar / menu — Double view
 
 - Toggle; checked when `policy` is `FixedN` with n=2 (or n>1 active from toggle).
 - Tooltip: facing pages (spread), not “compare”.
-- Optional split button later: 1 / 2 / 3 pages.
+- **View → Double view** submenu: toggle, binding (strict pairs / cover alone),
+  direction (LTR / RTL / vertical), fixed-N (2 / 3 / 4), and dual compare.
+- Toolbar still exposes the Double view action for quick toggle.
 
 ### 7.2 Gallery — View Selection
 

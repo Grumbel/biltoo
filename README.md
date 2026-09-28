@@ -23,9 +23,14 @@ view a gallery overview, or arrange pages on the workspace.
 * Open individual files, directories, or archives
 * Navigate files and pages with the keyboard
 * Zoom and pan
-* Slideshow and fullscreen modes
+* Slideshow and fullscreen modes (tile climb refreshes during the dwell)
 * Gallery view for browsing an open set of files
 * Workspace for arranging multiple images or pages on a single canvas
+* **Double view** (facing pages / fixed-N spread): View → Double view submenu
+  for binding, reading direction, and page count; optional dual compare
+* Filmstrip with distinct **cursor** (amber) and **selection** (cyan/blue)
+  chrome, camera viewport on the current thumb, and spread-member marks
+* Configurable chrome colours (Preferences → Interface → Chrome)
 * Compare images or pages side by side
 * Prepare sheets for print or export
 * Export the workspace to PDF or PNG
@@ -33,6 +38,8 @@ view a gallery overview, or arrange pages on the workspace.
 * Session-only editing: the original files are never modified
 * Cached image sizes and previews for fast browsing of large collections
 * View images directly inside archives without extracting them
+* Panels menu for filmstrip, metadata, tools, and optional Messages log
+  (hidden by default; preference is remembered)
 
 ## Screenshots
 

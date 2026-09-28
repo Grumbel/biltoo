@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # View, focus, and selection language
 
-**Status:** P0–P5 shipped; theme-aware ChromeColors + status terminology polish.  
+**Status:** P0–P5 shipped; configurable ChromeColors (Preferences) + status terminology polish.  
 **Related:** [DOMAIN.md](../DOMAIN.md), [SPREAD.md](SPREAD.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [ACTIVITY.md](ACTIVITY.md).
 
@@ -157,12 +157,14 @@ Prefer these names in UI strings, docs, and new symbols:
 
 ## 4. Unified colour language
 
-Semantic colours, independent of light/dark theme (theme maps these roles to
-concrete QColor / palette roles):
+Semantic colours for Select / View / Activity / Search. Base RGB is configurable
+in **Preferences → Interface → Chrome** (fill and stroke per role); call sites
+still pass alpha. Default **Select** is a brighter cyan so it separates from
+neutral grey filmstrip chrome.
 
-| Role | Hue family | Used for | Not for |
+| Role | Hue family (default) | Used for | Not for |
 |------|------------|----------|---------|
-| **Select** | **Blue** | Page selection chrome, text selection fill, “will be affected by command” | Cursor, speech, search |
+| **Select** | **Cyan / blue** | Page selection chrome, text selection fill, “will be affected by command” | Cursor, speech, search |
 | **Activity** | **Green** | Speech mark, optional in-progress decode/activity rings | Selection, cursor |
 | **View** | **Yellow / amber** | Session cursor on filmstrip, spread-member marks, “you are here”, camera-related HUD chips | Selection fills |
 | **Search** | **Violet / magenta** (optional fourth) | Search hits only | Everything else |
@@ -173,8 +175,8 @@ concrete QColor / palette roles):
 | State | Visual |
 |-------|--------|
 | Cursor only | **Amber** left edge or frame (View role); not full-cell blue |
-| Page selection | **Blue** selection wash or outline (Select role) |
-| Cursor ∩ selected | Amber edge **plus** blue wash |
+| Page selection | **Cyan/blue** selection wash or outline (Select role) |
+| Cursor ∩ selected | Amber edge **plus** Select wash |
 | Spread member (not cursor) | Small amber mark / double-edge, no blue |
 | Speech on that page | Optional green dot (Activity), never replaces cursor/select |
 
@@ -300,12 +302,14 @@ Phased so each step is shippable:
 
 - Filmstrip: Select blue wash vs View amber cursor edge.
 - Filmstrip: **camera viewport** rectangle on the cursor thumb (normalised
-  content coords), updated from Image camera on status refresh.
+  content coords), updated from Image camera on status refresh and while
+  panning/scrolling (coalesced).
 - Filmstrip: **spread members** get a left amber bar (cursor keeps full frame).
 - Filmstrip tooltips describe click / Ctrl / Shift by multi-select mode.
 - Prev/Next status tips name **cursor** vs **spread** motion.
-- `ChromeColors` helper (`src/shell/chromecolors.h`) — theme-aware (dark/light
-  Window palette picks stroke/fill lightness; hues fixed per §4).
+- `ChromeColors` (`src/shell/chromecolors.h` / `.cpp`) — role fills/strokes with
+  Preferences-backed bases (Select defaults brighter cyan); filmstrip, text
+  selection, and Gallery activity rings share the same roles.
 - P5: text rubber-band/selection/speech/search + Gallery focus/speech/select
   rings use the same `ChromeColors` roles.
 - Status/menu: Prev/Next/First/Last say **page** + **cursor**; OCR/crop empty
