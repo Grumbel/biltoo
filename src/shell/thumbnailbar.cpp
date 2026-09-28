@@ -413,7 +413,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             const int d = qBound(6, contentRect.width() / 8, 12);
             const QRect dot(contentRect.left() + 3, contentRect.top() + 3, d, d);
             painter->setPen(QPen(ChromeColors::searchStroke(180), 1));
-            painter->setBrush(QColor(180, 80, 220, 200));
+            painter->setBrush(ChromeColors::searchFill(200));
             painter->setRenderHint(QPainter::Antialiasing, true);
             painter->drawEllipse(dot);
         }
@@ -3442,7 +3442,8 @@ void ThumbnailBar::paintEvent(QPaintEvent *event)
     }
     QPainter painter(viewport());
     painter.setRenderHint(QPainter::Antialiasing, false);
-    const QColor line = palette().color(QPalette::Highlight);
+    // Select role — drop guide matches page-selection chrome, not Qt Highlight.
+    const QColor line = ChromeColors::selectStroke(230);
     QPen pen(line, 2);
     painter.setPen(pen);
 
