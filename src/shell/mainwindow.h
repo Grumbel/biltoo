@@ -345,6 +345,8 @@ private slots:
     void setSpreadDirection(SpreadDirection dir);
     void setSpreadFixedN(int n);
     void syncSpreadPresentation();
+    /** Move spread membership by @p direction (−1/+1); false at end. */
+    bool advanceSpreadMembership(int direction);
     void scheduleSpreadSync();
     void viewSelectionAsSpread();
     /** Status bar line: optional "Spread a–b/N · " prefix + ImageView::statusText(). */

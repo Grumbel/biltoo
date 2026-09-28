@@ -643,26 +643,8 @@ void MainWindow::goPrevious()
         return;
     }
     if (m_spreadBook.isActive()) {
-        const int anchorIdx = m_session.indexOfId(m_spreadBook.state().anchor);
-        const int base = anchorIdx >= 0 ? anchorIdx : m_currentIndex;
-        const int next = advanceSpreadAnchor(base, m_session.size(),
-            m_spreadBook.state().members.size(), m_spreadBook.state().stride, -1);
-        if (next < 0) {
+        if (!advanceSpreadMembership(-1)) {
             return;
-        }
-        m_spreadBook.state().anchor = m_session.idAt(next);
-        m_spreadBook.rebuild(m_session);
-        const int first = m_session.indexOfId(m_spreadBook.state().members.isEmpty()
-            ? m_session.idAt(next)
-            : m_spreadBook.state().members.first());
-        setCurrentIndex(first >= 0 ? first : next);
-        // Membership changed — force layout + prune stale underlays.
-        if (m_imageView) {
-            m_imageView->hostImage().applySpreadLayout(
-                m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
-                m_spreadBook.state().direction, /*forceFit=*/true);
-        } else {
-            syncSpreadPresentation();
         }
         onSlideshowUserNavigated();
         return;
@@ -685,25 +667,8 @@ void MainWindow::goNext()
         return;
     }
     if (m_spreadBook.isActive()) {
-        const int anchorIdx = m_session.indexOfId(m_spreadBook.state().anchor);
-        const int base = anchorIdx >= 0 ? anchorIdx : m_currentIndex;
-        const int next = advanceSpreadAnchor(base, m_session.size(),
-            m_spreadBook.state().members.size(), m_spreadBook.state().stride, +1);
-        if (next < 0) {
+        if (!advanceSpreadMembership(+1)) {
             return;
-        }
-        m_spreadBook.state().anchor = m_session.idAt(next);
-        m_spreadBook.rebuild(m_session);
-        const int first = m_session.indexOfId(m_spreadBook.state().members.isEmpty()
-            ? m_session.idAt(next)
-            : m_spreadBook.state().members.first());
-        setCurrentIndex(first >= 0 ? first : next);
-        if (m_imageView) {
-            m_imageView->hostImage().applySpreadLayout(
-                m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
-                m_spreadBook.state().direction, /*forceFit=*/true);
-        } else {
-            syncSpreadPresentation();
         }
         onSlideshowUserNavigated();
         return;
@@ -964,6 +929,87 @@ void MainWindow::setSpreadFixedN(int n)
 }
 
 
+
+bool MainWindow::advanceSpreadMembership(int direction)
+{
+    if (!m_spreadBook.isActive() || direction == 0 || m_session.isEmpty()) {
+        return false;
+    }
+    const auto &st = m_spreadBook.state();
+    const int n = std::max(1, st.members.size());
+    const int step = (st.stride == SpreadStride::ByPage)
+        ? (direction > 0 ? 1 : -1)
+        : (direction > 0 ? n : -n);
+
+    if (st.policy == SpreadMembershipPolicy::Selection
+        || st.policy == SpreadMembershipPolicy::Explicit) {
+        // Slide a window of size n along the session from the first member.
+        int start = m_session.indexOfId(st.members.isEmpty()
+            ? st.anchor
+            : st.members.first());
+        if (start < 0) {
+            start = m_currentIndex;
+        }
+        int newStart = start + step;
+        if (newStart < 0) {
+            newStart = 0;
+        }
+        if (newStart + n > m_session.size()) {
+            newStart = std::max(0, m_session.size() - n);
+        }
+        if (newStart == start && n >= m_session.size()) {
+            return false;
+        }
+        if (newStart == start) {
+            // At end: still try one step from anchor for tiny sessions
+            if (step < 0 && start == 0) {
+                return false;
+            }
+            if (step > 0 && start + n >= m_session.size()) {
+                return false;
+            }
+        }
+        QVector<SessionImageId> nextMembers;
+        nextMembers.reserve(n);
+        for (int i = newStart; i < m_session.size() && nextMembers.size() < n; ++i) {
+            nextMembers.append(m_session.idAt(i));
+        }
+        if (nextMembers.isEmpty() || nextMembers == st.members) {
+            return false;
+        }
+        m_spreadBook.state().members = nextMembers;
+        m_spreadBook.state().anchor = nextMembers.first();
+        m_spreadBook.state().fixedN = nextMembers.size();
+    } else {
+        // FixedN / default: move anchor then rebuild membership window.
+        const int anchorIdx = m_session.indexOfId(st.anchor);
+        const int base = anchorIdx >= 0 ? anchorIdx : m_currentIndex;
+        const int next = advanceSpreadAnchor(base, m_session.size(), n, st.stride, direction);
+        if (next < 0) {
+            return false;
+        }
+        m_spreadBook.state().anchor = m_session.idAt(next);
+        m_spreadBook.rebuild(m_session);
+        if (m_spreadBook.state().members.isEmpty()) {
+            return false;
+        }
+    }
+
+    const int first = m_session.indexOfId(m_spreadBook.state().members.first());
+    if (first >= 0) {
+        setCurrentIndex(first);
+    }
+    if (m_imageView && m_imageView->isImageMode()) {
+        m_imageView->hostImage().applySpreadLayout(
+            m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+            m_spreadBook.state().direction, /*forceFit=*/true);
+    } else {
+        syncSpreadPresentation();
+    }
+    updateStatus();
+    return true;
+}
+
 void MainWindow::syncSpreadPresentation()
 {
     if (!m_imageView || !m_spreadBook.isActive()) {
@@ -1044,5 +1090,11 @@ void MainWindow::viewSelectionAsSpread()
         setCurrentIndex(first);
     }
     scheduleSpreadSync();
+    if (m_imageView && m_imageView->isImageMode()) {
+        m_imageView->hostImage().applySpreadLayout(
+            m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+            m_spreadBook.state().direction, /*forceFit=*/true);
+    }
+    updateUpToGalleryAction();
     updateStatus();
 }

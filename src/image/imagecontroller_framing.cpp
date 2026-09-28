@@ -420,6 +420,30 @@ void ImageController::zoomFit()
         }
         return;
     }
+    // Spread / multi-underlay Image: fit the whole surface, not only primary.
+    if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
+        QRectF bounds;
+        for (ImageItem *ii : m_view->liveItems()) {
+            if (ii) {
+                bounds = bounds.united(ii->sceneBoundingRect());
+            }
+        }
+        if (bounds.isValid() && !bounds.isEmpty()) {
+            if (QGraphicsScene *scene = m_view->canvasScene()) {
+                if (!m_view->sceneRect().isNull()) {
+                    m_view->setSceneRect(QRectF());
+                }
+                scene->setSceneRect(bounds.adjusted(-8, -8, 8, 8));
+            }
+            m_view->setAlignment(Qt::AlignCenter);
+            m_view->resetTransform();
+            m_view->fitInView(bounds, Qt::KeepAspectRatio);
+            m_view->centerOn(bounds.center());
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
     if (ImageItem *item = m_view->targetItem()) {
         {
             ItemComponents::Placement pl = item->placement();
@@ -428,10 +452,6 @@ void ImageController::zoomFit()
             item->applyPlacement(pl);
         }
         fitItem(item, Qt::KeepAspectRatio);
-        m_view->refreshScrollBarGeometry();
-        emit m_view->statusChanged();
-    } else if (m_view->liveItems().size() > 1) {
-        m_view->fitInView(m_view->canvasScene()->itemsBoundingRect(), Qt::KeepAspectRatio);
         m_view->refreshScrollBarGeometry();
         emit m_view->statusChanged();
     }
@@ -465,6 +485,29 @@ void ImageController::zoomFill()
         }
         return;
     }
+    if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
+        QRectF bounds;
+        for (ImageItem *ii : m_view->liveItems()) {
+            if (ii) {
+                bounds = bounds.united(ii->sceneBoundingRect());
+            }
+        }
+        if (bounds.isValid() && !bounds.isEmpty()) {
+            if (QGraphicsScene *scene = m_view->canvasScene()) {
+                if (!m_view->sceneRect().isNull()) {
+                    m_view->setSceneRect(QRectF());
+                }
+                scene->setSceneRect(bounds.adjusted(-8, -8, 8, 8));
+            }
+            m_view->setAlignment(Qt::AlignCenter);
+            m_view->resetTransform();
+            m_view->fitInView(bounds, Qt::KeepAspectRatioByExpanding);
+            m_view->centerOn(bounds.center());
+            m_view->refreshScrollBarGeometry();
+            emit m_view->statusChanged();
+        }
+        return;
+    }
     if (ImageItem *item = m_view->targetItem()) {
         {
             ItemComponents::Placement pl = item->placement();
@@ -473,11 +516,6 @@ void ImageController::zoomFill()
             item->applyPlacement(pl);
         }
         fitItem(item, Qt::KeepAspectRatioByExpanding);
-        m_view->refreshScrollBarGeometry();
-        emit m_view->statusChanged();
-    } else if (m_view->liveItems().size() > 1) {
-        m_view->fitInView(m_view->canvasScene()->itemsBoundingRect(),
-                          Qt::KeepAspectRatioByExpanding);
         m_view->refreshScrollBarGeometry();
         emit m_view->statusChanged();
     }
