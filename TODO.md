@@ -2,7 +2,7 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2731.1-spread-p0p1-complete` (base `636e70e`).
+**Tip:** `biltoo-2731.2-spread-docs-status` (base `636e70e`).
 
 ### Spread P0+P1 — complete
 
@@ -26,5 +26,5 @@
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2731.1-spread-p0p1-complete-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2731.2-spread-docs-status-636e70e.bundle HEAD
 ```
