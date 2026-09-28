@@ -864,6 +864,10 @@ void MainWindow::setSpreadDirection(SpreadDirection dir)
         QSignalBlocker b(m_spreadDirRtlAct);
         m_spreadDirRtlAct->setChecked(dir == SpreadDirection::Rtl);
     }
+    if (m_spreadDirVertAct) {
+        QSignalBlocker b(m_spreadDirVertAct);
+        m_spreadDirVertAct->setChecked(dir == SpreadDirection::Vertical);
+    }
     if (m_spreadBook.isActive()) {
         scheduleSpreadSync();
     }

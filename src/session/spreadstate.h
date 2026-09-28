@@ -49,6 +49,7 @@ enum class SpreadBindingHint {
 enum class SpreadDirection {
     Ltr = 0,
     Rtl = 1,
+    Vertical = 2,
 };
 
 struct SpreadState {
@@ -75,8 +76,8 @@ struct SpreadState {
 };
 
 /**
- * Horizontal LTR layout. pageSizes aligned with member order.
- * heightMatch: scale each page so heights equal the minimum positive height.
+ * Horizontal LTR/RTL or vertical stack. pageSizes aligned with member order.
+ * heightMatch: match cross-axis size (height for H, width for V) to the minimum.
  */
 inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
                                        qreal gutter = 8.0,
@@ -87,9 +88,42 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
     if (pageSizes.isEmpty()) {
         return out;
     }
+    out.memberSlots.reserve(pageSizes.size());
+
+    if (direction == SpreadDirection::Vertical) {
+        // Stack top→bottom; optional width-match to minimum positive width.
+        qreal targetW = 0;
+        if (heightMatch) { // reuse flag as "match cross-axis"
+            for (const QSizeF &sz : pageSizes) {
+                if (sz.width() > 1.0) {
+                    targetW = targetW <= 0 ? sz.width() : std::min(targetW, sz.width());
+                }
+            }
+        }
+        qreal y = 0;
+        qreal maxW = 0;
+        for (const QSizeF &sz : pageSizes) {
+            SpreadSlot slot;
+            qreal w = std::max(1.0, sz.width());
+            qreal h = std::max(1.0, sz.height());
+            if (heightMatch && targetW > 1.0 && w > 1.0) {
+                const qreal s = targetW / w;
+                h *= s;
+                w = targetW;
+            }
+            slot.rect = QRectF(0, y, w, h);
+            out.memberSlots.append(slot);
+            y += h + gutter;
+            maxW = std::max(maxW, w);
+        }
+        if (!out.memberSlots.isEmpty()) {
+            out.unionRect = QRectF(0, 0, maxW, out.memberSlots.last().rect.bottom());
+        }
+        return out;
+    }
+
     qreal targetH = 0;
     if (heightMatch) {
-        targetH = 0;
         for (const QSizeF &sz : pageSizes) {
             if (sz.height() > 1.0) {
                 targetH = targetH <= 0 ? sz.height() : std::min(targetH, sz.height());
@@ -98,7 +132,6 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
     }
     qreal x = 0;
     qreal maxH = 0;
-    out.memberSlots.reserve(pageSizes.size());
     for (const QSizeF &sz : pageSizes) {
         SpreadSlot slot;
         qreal w = std::max(1.0, sz.width());
@@ -119,9 +152,7 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
         if (direction == SpreadDirection::Rtl && out.unionRect.width() > 1.0) {
             const qreal totalW = out.unionRect.width();
             for (SpreadSlot &slot : out.memberSlots) {
-                const qreal w = slot.rect.width();
                 slot.rect.moveLeft(totalW - slot.rect.right());
-                Q_UNUSED(w);
             }
         }
     }

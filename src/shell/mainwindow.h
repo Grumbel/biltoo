@@ -573,6 +573,7 @@ private:
     QAction *m_spreadBindingCoverAct = nullptr;
     QAction *m_spreadDirLtrAct = nullptr;
     QAction *m_spreadDirRtlAct = nullptr;
+    QAction *m_spreadDirVertAct = nullptr;
     QAction *m_spreadN2Act = nullptr;
     QAction *m_spreadN3Act = nullptr;
     QAction *m_spreadN4Act = nullptr;

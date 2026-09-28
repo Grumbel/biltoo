@@ -4056,6 +4056,74 @@ void MainWindow::readSettings()
         }
     }
     rebuildRecentProjectsMenu();
+
+    // Spread P4 prefs (binding, direction, fixed-N).
+    {
+        const QString bind = settings.value(QStringLiteral("spread/binding"),
+                                            QStringLiteral("strictPairs")).toString();
+        if (bind == QLatin1String("coverAlone")) {
+            m_spreadBinding = SpreadBindingHint::CoverAlone;
+        } else if (bind == QLatin1String("anchorCentre")) {
+            m_spreadBinding = SpreadBindingHint::AnchorCentre;
+        } else {
+            m_spreadBinding = SpreadBindingHint::StrictPairs;
+        }
+        const QString dir = settings.value(QStringLiteral("spread/direction"),
+                                           QStringLiteral("ltr")).toString();
+        if (dir == QLatin1String("rtl")) {
+            m_spreadDirection = SpreadDirection::Rtl;
+        } else if (dir == QLatin1String("vertical")) {
+            m_spreadDirection = SpreadDirection::Vertical;
+        } else {
+            m_spreadDirection = SpreadDirection::Ltr;
+        }
+        m_spreadFixedN = settings.value(QStringLiteral("spread/fixedN"), 2).toInt();
+        if (m_spreadFixedN < 1) {
+            m_spreadFixedN = 1;
+        }
+        if (m_spreadFixedN > 8) {
+            m_spreadFixedN = 8;
+        }
+        m_spreadBook.state().binding = m_spreadBinding;
+        m_spreadBook.state().direction = m_spreadDirection;
+        m_spreadBook.state().fixedN = m_spreadFixedN;
+        // Sync menu checks without triggering rebuild.
+        if (m_spreadBindingStrictAct) {
+            QSignalBlocker b(m_spreadBindingStrictAct);
+            m_spreadBindingStrictAct->setChecked(m_spreadBinding == SpreadBindingHint::StrictPairs);
+        }
+        if (m_spreadBindingCoverAct) {
+            QSignalBlocker b(m_spreadBindingCoverAct);
+            m_spreadBindingCoverAct->setChecked(m_spreadBinding == SpreadBindingHint::CoverAlone);
+        }
+        if (m_spreadDirLtrAct) {
+            QSignalBlocker b(m_spreadDirLtrAct);
+            m_spreadDirLtrAct->setChecked(m_spreadDirection == SpreadDirection::Ltr);
+        }
+        if (m_spreadDirRtlAct) {
+            QSignalBlocker b(m_spreadDirRtlAct);
+            m_spreadDirRtlAct->setChecked(m_spreadDirection == SpreadDirection::Rtl);
+        }
+        if (m_spreadDirVertAct) {
+            QSignalBlocker b(m_spreadDirVertAct);
+            m_spreadDirVertAct->setChecked(m_spreadDirection == SpreadDirection::Vertical);
+        }
+        if (m_spreadN2Act) {
+            QSignalBlocker b(m_spreadN2Act);
+            m_spreadN2Act->setChecked(m_spreadFixedN == 2);
+        }
+        if (m_spreadN3Act) {
+            QSignalBlocker b(m_spreadN3Act);
+            m_spreadN3Act->setChecked(m_spreadFixedN == 3);
+        }
+        if (m_spreadN4Act) {
+            QSignalBlocker b(m_spreadN4Act);
+            m_spreadN4Act->setChecked(m_spreadFixedN == 4);
+        }
+        if (m_doubleViewAct && m_spreadFixedN != 2) {
+            m_doubleViewAct->setText(tr("Spread vie&w (%1 pages)").arg(m_spreadFixedN));
+        }
+    }
 }
 
 void MainWindow::writeSettings()
@@ -4114,6 +4182,23 @@ void MainWindow::writeSettings()
     default: sortKey = QStringLiteral("name"); break;
     }
     settings.setValue(QStringLiteral("sortMode"), sortKey);
+    {
+        QString bind = QStringLiteral("strictPairs");
+        if (m_spreadBinding == SpreadBindingHint::CoverAlone) {
+            bind = QStringLiteral("coverAlone");
+        } else if (m_spreadBinding == SpreadBindingHint::AnchorCentre) {
+            bind = QStringLiteral("anchorCentre");
+        }
+        settings.setValue(QStringLiteral("spread/binding"), bind);
+        QString dir = QStringLiteral("ltr");
+        if (m_spreadDirection == SpreadDirection::Rtl) {
+            dir = QStringLiteral("rtl");
+        } else if (m_spreadDirection == SpreadDirection::Vertical) {
+            dir = QStringLiteral("vertical");
+        }
+        settings.setValue(QStringLiteral("spread/direction"), dir);
+        settings.setValue(QStringLiteral("spread/fixedN"), m_spreadFixedN);
+    }
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     if (m_imageView) {
         settings.setValue(QStringLiteral("slideshowTransition"),

@@ -269,13 +269,20 @@ void MainWindow::createActions()
     m_spreadDirRtlAct = new QAction(tr("Spread direction: Right to left"), this);
     m_spreadDirRtlAct->setCheckable(true);
     m_spreadDirRtlAct->setStatusTip(tr("RTL reading order (manga / Arabic)"));
+    m_spreadDirVertAct = new QAction(tr("Spread direction: Vertical"), this);
+    m_spreadDirVertAct->setCheckable(true);
+    m_spreadDirVertAct->setStatusTip(tr("Stack pages top to bottom"));
     dirGroup->addAction(m_spreadDirLtrAct);
     dirGroup->addAction(m_spreadDirRtlAct);
+    dirGroup->addAction(m_spreadDirVertAct);
     connect(m_spreadDirLtrAct, &QAction::triggered, this, [this]() {
         setSpreadDirection(SpreadDirection::Ltr);
     });
     connect(m_spreadDirRtlAct, &QAction::triggered, this, [this]() {
         setSpreadDirection(SpreadDirection::Rtl);
+    });
+    connect(m_spreadDirVertAct, &QAction::triggered, this, [this]() {
+        setSpreadDirection(SpreadDirection::Vertical);
     });
 
     auto *nGroup = new QActionGroup(this);
@@ -1165,6 +1172,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_spreadBindingCoverAct);
     m_viewMenu->addAction(m_spreadDirLtrAct);
     m_viewMenu->addAction(m_spreadDirRtlAct);
+    m_viewMenu->addAction(m_spreadDirVertAct);
     m_viewMenu->addAction(m_spreadN2Act);
     m_viewMenu->addAction(m_spreadN3Act);
     m_viewMenu->addAction(m_spreadN4Act);

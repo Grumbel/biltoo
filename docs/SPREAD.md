@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Spread — multi-page reading surface (design)
 
-**Status:** P0–P4 core done (binding UI, RTL layout, fixed-N 2–4). Vertical optional.  
+**Status:** P0–P4 complete (binding, LTR/RTL/Vertical, fixed-N, settings persistence).  
 **Related:** [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [DOMAIN.md](../DOMAIN.md) (world vs viewpoint),
 `DualImageShell` (compare — **not** spread).
