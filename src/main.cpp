@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
               |  F::Flag_ShowButtonsOnTabBarIfTitleBarHidden
               |  F::Flag_TitleBarHasMaximizeButton;
         KDDockWidgets::Config::self().setFlags(flags);
+        // Slimmer split grips between central canvas and side docks (default is thicker).
+        KDDockWidgets::Config::self().setSeparatorThickness(3);
         KDDockWidgets::Config::self().setViewFactory(new biltoo::DockViewFactory);
     }
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the

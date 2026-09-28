@@ -910,6 +910,12 @@ private:
     bool m_helpVisibleBeforeFullscreen = false;
     bool m_locationBarVisibleBeforeFullscreen = false;
     bool m_searchBarVisibleBeforeFullscreen = false;
+    bool m_ocrVisibleBeforeFullscreen = false;
+    bool m_cropVisibleBeforeFullscreen = false;
+    bool m_annotationVisibleBeforeFullscreen = false;
+    bool m_textVisibleBeforeFullscreen = false;
+    bool m_tocVisibleBeforeFullscreen = false;
+    bool m_messageLogVisibleBeforeFullscreen = false;
 };
 
 #endif // MAINWINDOW_H

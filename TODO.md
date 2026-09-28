@@ -2,19 +2,22 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2797.1-fullscreen-hide-location-search` (base `a989daf`).
+**Tip:** `biltoo-2798.1-fullscreen-all-docks` (base `a989daf`).
 
-### 2797.1
-- Fullscreen hides Location and Search toolbars (common “thin bar at top” when pinned)
-- Restore from pre-fullscreen visibility / pin flags on leave
+### 2798.1
+- Fullscreen closes *all* tool docks (OCR, Crop, Annotations, Text, TOC, Messages, …)
+  and restores prior open state on leave (was only a subset → OCR stayed open)
+- KDDock separator thickness 3 (slightly thinner grips)
 
-### Prior
-- 2796 fs tools toolbar + edge HUD
-- 2795 toolbar separators
+### Note — thin top grey strip
+Still under investigation: few pixels at top of canvas in window *and* fullscreen.
+Not Location/Search alone (present when those are hidden). Suspects: residual
+QMainWindow toolbar-break row, KDDock central frame edge, or DE chrome in
+screenshots. Not fixed as a definite root cause yet.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2797.1-fullscreen-hide-location-search-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2798.1-fullscreen-all-docks-a989daf.bundle HEAD
 ```
 
 ### Deferred

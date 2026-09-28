@@ -3918,10 +3918,19 @@ void MainWindow::updateFullscreenUi()
             m_adjustmentsDock && dockIsOpen(m_adjustmentsDock);
         m_helpVisibleBeforeFullscreen =
             m_helpDock && dockIsOpen(m_helpDock);
+        m_ocrVisibleBeforeFullscreen = m_ocrDock && dockIsOpen(m_ocrDock);
+        m_cropVisibleBeforeFullscreen = m_cropDock && dockIsOpen(m_cropDock);
+        m_annotationVisibleBeforeFullscreen =
+            m_annotationDock && dockIsOpen(m_annotationDock);
+        m_textVisibleBeforeFullscreen = m_textDock && dockIsOpen(m_textDock);
+        m_tocVisibleBeforeFullscreen = m_tocDock && dockIsOpen(m_tocDock);
+        m_messageLogVisibleBeforeFullscreen =
+            m_messageLogDock && dockIsOpen(m_messageLogDock);
         m_locationBarVisibleBeforeFullscreen =
             m_locationBar && m_locationBar->isVisible();
         m_searchBarVisibleBeforeFullscreen =
             m_searchBar && m_searchBar->isVisible();
+
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
@@ -3934,19 +3943,20 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_thumbnailDock) {
             setDockOpen(m_thumbnailDock, false);
-        } else {
+        } else if (m_thumbnailBar) {
             m_thumbnailBar->setVisible(false);
         }
         setDockOpen(m_metadataDock, false);
-        if (m_layoutDock) {
-            setDockOpen(m_layoutDock, false);
-        }
-        if (m_adjustmentsDock) {
-            setDockOpen(m_adjustmentsDock, false);
-        }
-        if (m_helpDock) {
-            setDockOpen(m_helpDock, false);
-        }
+        setDockOpen(m_layoutDock, false);
+        setDockOpen(m_adjustmentsDock, false);
+        setDockOpen(m_helpDock, false);
+        setDockOpen(m_ocrDock, false);
+        setDockOpen(m_cropDock, false);
+        setDockOpen(m_annotationDock, false);
+        setDockOpen(m_textDock, false);
+        setDockOpen(m_tocDock, false);
+        setDockOpen(m_messageLogDock, false);
+
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
         m_toggleMetadataAct->setChecked(false);
@@ -3958,6 +3968,24 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleHelpAct) {
             m_toggleHelpAct->setChecked(false);
+        }
+        if (m_toggleOcrAct) {
+            m_toggleOcrAct->setChecked(false);
+        }
+        if (m_toggleCropAct) {
+            m_toggleCropAct->setChecked(false);
+        }
+        if (m_toggleAnnotationAct) {
+            m_toggleAnnotationAct->setChecked(false);
+        }
+        if (m_toggleTextAct) {
+            m_toggleTextAct->setChecked(false);
+        }
+        if (m_toggleTocAct) {
+            m_toggleTocAct->setChecked(false);
+        }
+        if (m_toggleMessageLogAct) {
+            m_toggleMessageLogAct->setChecked(false);
         }
         menuBar()->setVisible(false);
         statusBar()->setVisible(false);
@@ -3985,6 +4013,42 @@ void MainWindow::updateFullscreenUi()
         }
         if (m_toggleHelpAct) {
             m_toggleHelpAct->setChecked(m_helpVisibleBeforeFullscreen);
+        }
+        if (m_ocrDock) {
+            setDockOpen(m_ocrDock, m_ocrVisibleBeforeFullscreen);
+        }
+        if (m_toggleOcrAct) {
+            m_toggleOcrAct->setChecked(m_ocrVisibleBeforeFullscreen);
+        }
+        if (m_cropDock) {
+            setDockOpen(m_cropDock, m_cropVisibleBeforeFullscreen);
+        }
+        if (m_toggleCropAct) {
+            m_toggleCropAct->setChecked(m_cropVisibleBeforeFullscreen);
+        }
+        if (m_annotationDock) {
+            setDockOpen(m_annotationDock, m_annotationVisibleBeforeFullscreen);
+        }
+        if (m_toggleAnnotationAct) {
+            m_toggleAnnotationAct->setChecked(m_annotationVisibleBeforeFullscreen);
+        }
+        if (m_textDock) {
+            setDockOpen(m_textDock, m_textVisibleBeforeFullscreen);
+        }
+        if (m_toggleTextAct) {
+            m_toggleTextAct->setChecked(m_textVisibleBeforeFullscreen);
+        }
+        if (m_tocDock) {
+            setDockOpen(m_tocDock, m_tocVisibleBeforeFullscreen);
+        }
+        if (m_toggleTocAct) {
+            m_toggleTocAct->setChecked(m_tocVisibleBeforeFullscreen);
+        }
+        if (m_messageLogDock) {
+            setDockOpen(m_messageLogDock, m_messageLogVisibleBeforeFullscreen);
+        }
+        if (m_toggleMessageLogAct) {
+            m_toggleMessageLogAct->setChecked(m_messageLogVisibleBeforeFullscreen);
         }
         // Thumbnails and Layout panel follow per-mode rules, not a single
         // pre-fullscreen snapshot (Gallery must not regain a Workspace layout dock).
