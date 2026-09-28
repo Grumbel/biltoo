@@ -12,6 +12,7 @@
 #include "text/textlayergeometry.h"
 
 #include <QMouseEvent>
+#include <QEvent>
 #include <QKeyEvent>
 #include <QInputDialog>
 #include <QPainter>
@@ -604,7 +605,43 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
                          bounds, yUp);
     } else if (m_tool == Annotation::Tool::Select) {
-        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
+        const QPointF pagePt = viewToPage(item, event->pos(), bounds, yUp, sourceSize);
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            const quint64 hitId =
+                hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
+            Annotation::Object hitObj;
+            if (hitId != 0 && m_session.findObject(m_draftSid, hitId, &hitObj)
+                && hitObj.kind == Annotation::Kind::StickyNote) {
+                bool ok = false;
+                const QString text = QInputDialog::getMultiLineText(
+                    m_view, QObject::tr("Edit sticky note"), QObject::tr("Note text:"),
+                    hitObj.textSnippet, &ok);
+                if (ok) {
+                    Annotation::Object updated = hitObj;
+                    updated.textSnippet = text;
+                    if (QUndoStack *stack = m_view->hostUndoStack()) {
+                        stack->beginMacro(QObject::tr("Edit sticky note"));
+                        stack->push(new AnnotationRemoveCommand(
+                            m_view, m_draftSid, QVector<Annotation::Object>{hitObj},
+                            bounds, yUp, QString()));
+                        stack->push(new AnnotationAddCommand(
+                            m_view, m_draftSid, updated, bounds, yUp, QString()));
+                        stack->endMacro();
+                    } else {
+                        m_session.removeObject(m_draftSid, hitId);
+                        m_session.addObject(m_draftSid, updated, bounds, yUp);
+                    }
+                    m_selectedIds = {hitId};
+                    if (m_view->viewport()) {
+                        m_view->viewport()->update();
+                    }
+                }
+                m_drawing = false;
+                event->accept();
+                return true;
+            }
+        }
+        selectAtPagePoint(pagePt);
     } else if (m_tool == Annotation::Tool::Sticky) {
         placeStickyAt(viewToPage(item, event->pos(), bounds, yUp, sourceSize), bounds, yUp);
         m_drawing = false;

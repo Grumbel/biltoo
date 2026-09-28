@@ -2,13 +2,20 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2782.1-annot-sticky` (base `b8a0cf3`).
+**Tip:** `biltoo-2782.2-sticky-edit-verify` (base `b8a0cf3`).
 
-### 2782.1
-- **Sticky note** tool: click to place, multi-line text dialog, yellow card chrome
-- Select / eraser / undo / PNG export / project JSON via textSnippet + bounds quad
+### Verified
+- Annotation tools: freehand/text highlight, pen, eraser, select, rect/ellipse/line, sticky
+- Software-raster viewport + Multiply
+- Project JSON annotations save/load
+- Export Page with Annotations (PNG)
+- Icons in qrc; exclusive tool group; CMake sources
+
+### 2782.2
+- Double-click sticky (Select tool) → edit text (undo macro)
+- Double-click routed via ViewShellChrome::handleMouseDoubleClick
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2782.1-annot-sticky-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2782.2-sticky-edit-verify-b8a0cf3.bundle HEAD
 ```
