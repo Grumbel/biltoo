@@ -4799,6 +4799,14 @@ void MainWindow::setDualCompareEnabled(bool on)
         return;
     }
     if (on) {
+        // Dual compare is independent of Spread (docs/SPREAD.md).
+        if (m_spreadBook.isActive()) {
+            m_spreadBook.clear();
+            if (m_doubleViewAct && m_doubleViewAct->isChecked()) {
+                QSignalBlocker b(m_doubleViewAct);
+                m_doubleViewAct->setChecked(false);
+            }
+        }
         // Dual is Image-mode compare only (not Gallery pack Facing).
         if (!m_imageView->isImageMode()) {
             m_imageView->setViewMode(ImageView::ViewMode::Image);

@@ -249,6 +249,14 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     if (sessionIndex < 0 || sessionIndex >= m_session.size()) {
         return;
     }
+    // Single-tile open leaves spread (docs/SPREAD.md leave table).
+    if (m_spreadBook.isActive()) {
+        m_spreadBook.clear();
+        if (m_doubleViewAct && m_doubleViewAct->isChecked()) {
+            QSignalBlocker b(m_doubleViewAct);
+            m_doubleViewAct->setChecked(false);
+        }
+    }
     const QString path = m_session.paths().at(sessionIndex);
     const SessionImageId sid = sessionIdAt(sessionIndex);
 

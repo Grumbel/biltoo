@@ -47,6 +47,10 @@ TextLayerController::TextLayerController(ImageView *view)
 
 void TextLayerController::paintRubberBandOverlay(QPainter &painter)
 {
+    // Spread multi-underlay: text selection deferred to P2 (docs/SPREAD.md).
+    if (m_view && m_view->isImageMode() && m_view->itemCount() > 1) {
+        return;
+    }
     if (m_session.isRubberbanding() && m_session.hasRubberRect()) {
         painter.save();
         QPen pen(QColor(40, 120, 220, 220));
@@ -848,6 +852,9 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))) {
         return false;
     }
+    if (m_view->itemCount() > 1) {
+        return false; // Spread text selection is P2
+    }
     // Select tool: left-drag rubber-band. Pan tool: keep Shift+drag as text select.
     const bool selectTool = m_view->currentTool() == Tool::Select;
     const bool shiftSelect = event->modifiers() & Qt::ShiftModifier;
@@ -967,6 +974,10 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
 void TextLayerController::paintSceneOverlays(QPainter *painter) const
 {
     if (!painter || !m_view || !m_view->isImageMode()) {
+        return;
+    }
+    // Spread: primary-only text would mis-teach the model until P2.
+    if (m_view->itemCount() > 1) {
         return;
     }
     // Paint when any overlay layer is active (not only region outlines / search).

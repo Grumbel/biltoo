@@ -9,6 +9,9 @@ bool SpreadBook::setFixedN(const SessionDocument &session, SessionImageId anchor
     if (n < 1) {
         n = 1;
     }
+    if (n > 8) {
+        n = 8; // docs/SPREAD.md v1 hard cap
+    }
     m_state.policy = SpreadMembershipPolicy::FixedN;
     m_state.fixedN = n;
     m_state.binding = binding;
@@ -22,7 +25,11 @@ bool SpreadBook::setFromSelection(const SessionDocument &session,
 {
     m_state.policy = SpreadMembershipPolicy::Selection;
     m_state.members.clear();
+    constexpr int kMaxSpreadMembers = 8; // docs/SPREAD.md v1 hard cap
     for (SessionImageId id : orderedIds) {
+        if (m_state.members.size() >= kMaxSpreadMembers) {
+            break;
+        }
         if (session.hasId(id) && !m_state.members.contains(id)) {
             m_state.members.append(id);
         }

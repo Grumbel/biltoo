@@ -2,24 +2,29 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2730.1-spread-status-and-sync` (base `636e70e`).
+**Tip:** `biltoo-2731.1-spread-p0p1-complete` (base `636e70e`).
 
-### Stack
-- **2729.1** — multi-underlay install (no clearLiveCanvas wipe on soft/full)
-- **2730.1** — status range + event-driven spread sync + FixedN filmstrip
+### Spread P0+P1 — complete
 
-### 2730.1
-- Status bar: `Spread a–b/N · …` via `statusLabelText()`
-- Prev/Next tips: next/previous **spread** (or page when `ByPage`)
-- `scheduleSpreadSync()` coalesced QueuedConnection; statusChanged re-syncs layout
-  when soft sizes arrive (replaces dual 0/100 ms timers)
-- FixedN: filmstrip/`setCurrentIndex` moves membership window to anchor pair
+| Item | Status |
+|------|--------|
+| SpreadState / SpreadBook / layoutSpread | done |
+| Double view (Ctrl+2), nav stride | done |
+| Multi-underlay install (no wipe on soft/full) | done (2729.1) |
+| View Selection + Gallery context menu | done |
+| Status `Spread a–b/N` + prev/next tips | done (2730.1) |
+| Event-driven layout sync | done (2730.1) |
+| FixedN filmstrip moves window | done (2730.1) |
+| Single Gallery open / Dual compare clear spread | done (2731.1) |
+| Spread clears Dual; N≤8 cap | done (2731.1) |
+| Text overlay deferred while N>1 | done (2731.1) |
 
-### Still open
-- P2 cross-page text selection
-- Optional: stride UI (BySpread vs ByPage), CoverAlone binding toggle
+### Next (P2+)
+- Cross-page text selection / copy (SpreadTextCoordinator)
+- TTS spans across members
+- Binding hints UI, RTL, N>2 polish
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2730.1-spread-status-and-sync-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2731.1-spread-p0p1-complete-636e70e.bundle HEAD
 ```

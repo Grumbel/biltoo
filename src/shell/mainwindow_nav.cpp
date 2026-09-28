@@ -803,6 +803,9 @@ void MainWindow::setDoubleViewEnabled(bool on)
         anchor = m_session.idAt(m_currentIndex);
     }
     m_spreadBook.setFixedN(m_session, anchor, 2, SpreadBindingHint::StrictPairs);
+    if (m_dualShell && m_dualShell->isDualEnabled()) {
+        setDualCompareEnabled(false);
+    }
     if (m_imageView && !m_imageView->isImageMode()) {
         m_imageView->setViewMode(ImageView::ViewMode::Image);
     }
@@ -880,6 +883,9 @@ void MainWindow::viewSelectionAsSpread()
     }
     if (!m_spreadBook.setFromSelection(m_session, ids)) {
         return;
+    }
+    if (m_dualShell && m_dualShell->isDualEnabled()) {
+        setDualCompareEnabled(false);
     }
     if (m_doubleViewAct) {
         QSignalBlocker b(m_doubleViewAct);
