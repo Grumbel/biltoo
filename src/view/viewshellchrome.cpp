@@ -785,6 +785,16 @@ void ViewShellChrome::refreshScrollBarGeometry()
     if (!m_view) {
         return;
     }
+    // Policy toggle can emit Resize; never re-enter (would recurse forever).
+    if (m_refreshingScrollBars) {
+        return;
+    }
+    m_refreshingScrollBars = true;
+    struct Clear {
+        bool &f;
+        ~Clear() { f = false; }
+    } clear{m_refreshingScrollBars};
+
     // fitInView / sceneRect changes can leave AsNeeded bars with a stale range
     // until policy is toggled. Re-apply the current policies to force
     // QAbstractScrollArea to recompute visibility (public API only).

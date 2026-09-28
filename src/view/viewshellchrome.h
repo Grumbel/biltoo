@@ -137,6 +137,8 @@ private:
     void refreshViewportAfterMaterialChange(bool updateSolidBrush = false);
 
     ImageView *m_view = nullptr;
+    /** Guards refreshScrollBarGeometry against Resize re-entry. */
+    bool m_refreshingScrollBars = false;
     ViewportChrome m_viewport;
     CanvasBackground m_canvasBg;
 };

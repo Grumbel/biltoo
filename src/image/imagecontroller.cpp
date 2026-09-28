@@ -364,13 +364,34 @@ void ImageController::onViewResized()
     if (m_view->liveItems().size() != 1 || !m_view->isImageMode()) {
         return;
     }
+    // Do NOT call applyImageModeFraming here: it ends in refreshScrollBarGeometry,
+    // which toggles ScrollBarPolicy → layoutChildren → setGeometry → Resize →
+    // onViewResized again (infinite recursion). fitItem alone is resize-safe.
+    static bool inViewResize = false;
+    if (inViewResize) {
+        return;
+    }
+    inViewResize = true;
+    struct Clear {
+        bool &f;
+        ~Clear() { f = false; }
+    } clear{inViewResize};
+
     ImageItem *item = m_view->liveItems().first();
-    // Sticky Fit/Fill/1:1 is a *policy*, not only the current fitMode flag.
-    // Fullscreen / chrome hide changes the viewport; re-apply the pinned kind
-    // so framing matches the new size (fitMode alone misses sticky Actual and
-    // any path that cleared fit flags while sticky stayed on).
     if (m_framing.isStickyZoomEnabled()) {
-        applyImageModeFraming(item);
+        switch (m_framing.currentStickyZoomKind()) {
+        case StickyZoomKind::Fill:
+            fitItem(item, Qt::KeepAspectRatioByExpanding);
+            break;
+        case StickyZoomKind::Actual:
+            // 1:1 does not depend on viewport size; keep the item centred.
+            m_view->centerOn(item);
+            break;
+        case StickyZoomKind::Fit:
+        default:
+            fitItem(item, Qt::KeepAspectRatio);
+            break;
+        }
         return;
     }
     if (m_framing.isFitMode()) {
