@@ -1384,10 +1384,41 @@ void GalleryController::paintSearchHitFrames(QPainter *painter, const QRectF &ex
 
 void GalleryController::setSpeechHighlightPath(const QString &path)
 {
-    if (m_speechHighlightPath == path) {
+    if (m_speechHighlightPath == path && m_speechHighlightPaths.size() <= 1
+        && (path.isEmpty() ? m_speechHighlightPaths.isEmpty()
+                           : (m_speechHighlightPaths.size() == 1
+                              && m_speechHighlightPaths.first() == path))) {
         return;
     }
     m_speechHighlightPath = path;
+    m_speechHighlightPaths.clear();
+    if (!path.isEmpty()) {
+        m_speechHighlightPaths.append(path);
+    }
+    if (m_view && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void GalleryController::setSpeechHighlightPaths(const QStringList &paths,
+                                                const QString &activePath)
+{
+    QStringList cleaned;
+    cleaned.reserve(paths.size());
+    for (const QString &p : paths) {
+        if (!p.isEmpty() && !cleaned.contains(p)) {
+            cleaned.append(p);
+        }
+    }
+    QString active = activePath;
+    if (active.isEmpty() && !cleaned.isEmpty()) {
+        active = cleaned.first();
+    }
+    if (m_speechHighlightPaths == cleaned && m_speechHighlightPath == active) {
+        return;
+    }
+    m_speechHighlightPaths = cleaned;
+    m_speechHighlightPath = active;
     if (m_view && m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -1395,41 +1426,51 @@ void GalleryController::setSpeechHighlightPath(const QString &path)
 
 void GalleryController::paintSpeechHighlightFrame(QPainter *painter, const QRectF &exposed) const
 {
-    if (!painter || !m_view || m_speechHighlightPath.isEmpty()) {
+    if (!painter || !m_view) {
+        return;
+    }
+    QStringList paths = m_speechHighlightPaths;
+    if (paths.isEmpty() && !m_speechHighlightPath.isEmpty()) {
+        paths.append(m_speechHighlightPath);
+    }
+    if (paths.isEmpty()) {
         return;
     }
     QGraphicsScene *scene = m_view->canvasScene();
     if (!scene) {
         return;
     }
-    ImageItem *target = m_view->findItemForPath(m_speechHighlightPath);
-    if (!target || target->isInteractive()) {
-        return;
-    }
-    const QRectF local = target->displayContentRect();
-    const QPolygonF scenePoly = target->mapToScene(local);
-    const QRectF bounds = scenePoly.boundingRect();
-    if (!exposed.isNull() && !exposed.intersects(bounds)) {
-        return;
-    }
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    // Match Image-mode TTS green (spoken region wash).
-    const QColor wash(40, 200, 100, 48);
-    QPen outer(QColor(0, 0, 0, 180));
-    outer.setCosmetic(true);
-    outer.setWidthF(6.0);
-    QPen inner(QColor(40, 200, 100, 240));
-    inner.setCosmetic(true);
-    inner.setWidthF(3.0);
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(wash);
-    painter->drawPolygon(scenePoly);
-    painter->setBrush(Qt::NoBrush);
-    painter->setPen(outer);
-    painter->drawPolygon(scenePoly);
-    painter->setPen(inner);
-    painter->drawPolygon(scenePoly);
+    for (const QString &path : paths) {
+        ImageItem *target = m_view->findItemForPath(path);
+        if (!target || target->isInteractive()) {
+            continue;
+        }
+        const QRectF local = target->displayContentRect();
+        const QPolygonF scenePoly = target->mapToScene(local);
+        const QRectF bounds = scenePoly.boundingRect();
+        if (!exposed.isNull() && !exposed.intersects(bounds)) {
+            continue;
+        }
+        const bool active = (path == m_speechHighlightPath) || m_speechHighlightPath.isEmpty();
+        // Active: full TTS green; other spread members: dim companion ring.
+        const QColor wash = active ? QColor(40, 200, 100, 48) : QColor(40, 200, 100, 20);
+        QPen outer(QColor(0, 0, 0, active ? 180 : 90));
+        outer.setCosmetic(true);
+        outer.setWidthF(active ? 6.0 : 4.0);
+        QPen inner(QColor(40, 200, 100, active ? 240 : 120));
+        inner.setCosmetic(true);
+        inner.setWidthF(active ? 3.0 : 2.0);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(wash);
+        painter->drawPolygon(scenePoly);
+        painter->setBrush(Qt::NoBrush);
+        painter->setPen(outer);
+        painter->drawPolygon(scenePoly);
+        painter->setPen(inner);
+        painter->drawPolygon(scenePoly);
+    }
     painter->restore();
 }
 

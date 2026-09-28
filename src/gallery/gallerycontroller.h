@@ -163,7 +163,13 @@ public:
     void setSearchHitIndex(const SessionSearchIndex *index);
     /** Gallery ring for the page currently being spoken (session path). */
     void setSpeechHighlightPath(const QString &path);
+    /**
+     * Spread TTS: ring every member path; @p activePath gets the strong ring,
+     * others a dim companion (docs/SPREAD.md §5.3).
+     */
+    void setSpeechHighlightPaths(const QStringList &paths, const QString &activePath = QString());
     QString speechHighlightPath() const { return m_speechHighlightPath; }
+    QStringList speechHighlightPaths() const { return m_speechHighlightPaths; }
 
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
@@ -272,6 +278,7 @@ private:
     ImageView *m_view = nullptr;
     const SessionSearchIndex *m_searchHitIndex = nullptr;
     QString m_speechHighlightPath;
+    QStringList m_speechHighlightPaths;
     GallerySizeResolve m_sizeResolve;
     GalleryDecodeBook m_decodeBook;
     LayoutPrefs m_layout;

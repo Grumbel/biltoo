@@ -5089,6 +5089,20 @@ void MainWindow::connectTextToSpeech()
                 m_ttsSentenceStart = start;
                 m_ttsSentenceEnd = end;
                 text.setSpeakingHighlight(speakSid, regions, 0.0);
+                // Emphasize the active member tile in Gallery while spread speaks.
+                if (speakSid != kInvalidSessionImageId && m_imageView->isGalleryMode()) {
+                    const int idx = m_session.indexOfId(speakSid);
+                    if (idx >= 0) {
+                        const QString p = m_session.pathAt(idx);
+                        QStringList paths = m_imageView->hostGallery().speechHighlightPaths();
+                        if (paths.isEmpty() && !m_ttsSpeakPath.isEmpty()) {
+                            paths.append(m_ttsSpeakPath);
+                        }
+                        if (!p.isEmpty()) {
+                            m_imageView->hostGallery().setSpeechHighlightPaths(paths, p);
+                        }
+                    }
+                }
             });
     connect(m_tts, &TextToSpeechController::audioPositionChanged, this,
             [this](qint64 pos, qint64 dur) {
@@ -5130,6 +5144,16 @@ void MainWindow::connectTextToSpeech()
                     localProg = 1.0;
                 }
                 text.setSpeakingHighlight(activeSid, {activeRi}, localProg);
+                if (activeSid != kInvalidSessionImageId && m_imageView->isGalleryMode()) {
+                    const int idx = m_session.indexOfId(activeSid);
+                    if (idx >= 0) {
+                        const QString p = m_session.pathAt(idx);
+                        QStringList paths = m_imageView->hostGallery().speechHighlightPaths();
+                        if (!p.isEmpty()) {
+                            m_imageView->hostGallery().setSpeechHighlightPaths(paths, p);
+                        }
+                    }
+                }
             });
 
     // Panel → TTS (voice/tempo/vol) is wired only in connectTextPanel() so
@@ -5221,7 +5245,26 @@ void MainWindow::speakSelectionOrPage()
     }
     m_ttsSpeakPath = m_imageView->hostImage().classicPath();
     m_ttsSpeakSpans = plan.spans;
-    m_imageView->hostGallery().setSpeechHighlightPath(m_ttsSpeakPath);
+    QStringList speakPaths;
+    if (m_imageView->itemCount() > 1) {
+        for (ImageItem *item : m_imageView->liveItems()) {
+            if (item && !item->path().isEmpty() && !speakPaths.contains(item->path())) {
+                speakPaths.append(item->path());
+            }
+        }
+    }
+    if (speakPaths.isEmpty() && m_spreadBook.isActive()) {
+        for (const QString &mp : m_spreadBook.memberPaths(m_session)) {
+            if (!mp.isEmpty() && !speakPaths.contains(mp)) {
+                speakPaths.append(mp);
+            }
+        }
+    }
+    if (speakPaths.size() > 1) {
+        m_imageView->hostGallery().setSpeechHighlightPaths(speakPaths, m_ttsSpeakPath);
+    } else {
+        m_imageView->hostGallery().setSpeechHighlightPath(m_ttsSpeakPath);
+    }
     m_tts->speakText(plan.text, startSentence);
 }
 
