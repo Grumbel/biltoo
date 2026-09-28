@@ -423,7 +423,7 @@ void MainWindow::createActions()
     m_annotSelectAct = new QAction(tr("Annotation &Select"), this);
     m_annotSelectAct->setIcon(resourceIcon(QStringLiteral("annot-select")));
     m_annotSelectAct->setCheckable(true);
-    m_annotSelectAct->setStatusTip(tr("Select annotations (Shift add, Ctrl toggle, Ctrl+A all, Delete removes)"));
+    m_annotSelectAct->setStatusTip(tr("Select annotations (Shift add, Ctrl toggle, drag to move, Ctrl+A all, Delete removes)"));
     m_annotSelectAct->setToolTip(tr("Select annotation"));
     m_annotRectAct = new QAction(tr("&Rectangle"), this);
     m_annotRectAct->setIcon(resourceIcon(QStringLiteral("annot-rect")));

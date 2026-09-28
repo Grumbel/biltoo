@@ -66,6 +66,9 @@ void AnnotationController::setTool(Annotation::Tool tool)
     m_draftPoints.clear();
     m_rubberView = {};
     m_shapeEndView = {};
+    if (m_moving) {
+        cancelMoveSelection();
+    }
     if (m_tool != Annotation::Tool::Select) {
         m_selectedIds.clear();
     }
@@ -655,8 +658,19 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
                          bounds, yUp);
     } else if (m_tool == Annotation::Tool::Select) {
-        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
-                         event->modifiers());
+        const QPointF pagePt =
+            viewToPage(item, event->pos(), bounds, yUp, sourceSize);
+        const Qt::KeyboardModifiers mods = event->modifiers();
+        selectAtPagePoint(pagePt, mods);
+        const bool additive = mods.testFlag(Qt::ShiftModifier)
+                              || mods.testFlag(Qt::ControlModifier);
+        if (!additive) {
+            const quint64 hit =
+                hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
+            if (hit != 0 && m_selectedIds.contains(hit)) {
+                beginMoveSelection(pagePt);
+            }
+        }
     } else if (m_tool == Annotation::Tool::Sticky) {
         placeStickyAt(viewToPage(item, event->pos(), bounds, yUp, sourceSize), bounds, yUp);
         m_drawing = false;
@@ -751,6 +765,10 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
         eraseAtPagePoint(
             viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize),
             m_draftBounds, m_draftYUp);
+    } else if (m_tool == Annotation::Tool::Select && m_moving) {
+        const QPointF pagePt =
+            viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize);
+        applyMoveDelta(pagePt - m_moveOriginPage);
     }
     event->accept();
     if (m_view->viewport()) {
@@ -778,6 +796,8 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
         finishShape();
     } else if (m_tool == Annotation::Tool::Line) {
         finishLine();
+    } else if (m_tool == Annotation::Tool::Select && m_moving) {
+        finishMoveSelection();
     }
     m_draftPoints.clear();
     m_rubberView = {};
@@ -1239,6 +1259,102 @@ quint64 AnnotationController::hitTestTopObject(SessionImageId sid, const QPointF
     return 0;
 }
 
+
+Annotation::Object AnnotationController::translatedObject(const Annotation::Object &o,
+                                                          const QPointF &delta)
+{
+    Annotation::Object out = o;
+    for (QPointF &pt : out.points) {
+        pt += delta;
+    }
+    for (QRectF &q : out.quads) {
+        q.translate(delta);
+    }
+    return out;
+}
+
+void AnnotationController::beginMoveSelection(const QPointF &pageOrigin)
+{
+    m_moving = true;
+    m_moveDidDrag = false;
+    m_moveOriginPage = pageOrigin;
+    m_moveBaseline.clear();
+    if (m_draftSid == kInvalidSessionImageId) {
+        return;
+    }
+    const Annotation::Page *pg = m_session.page(m_draftSid);
+    if (!pg) {
+        return;
+    }
+    for (const Annotation::Object &o : pg->objects) {
+        if (m_selectedIds.contains(o.id)) {
+            m_moveBaseline.append(o);
+        }
+    }
+}
+
+void AnnotationController::applyMoveDelta(const QPointF &delta)
+{
+    if (!m_moving || m_moveBaseline.isEmpty()) {
+        return;
+    }
+    if (delta.x() * delta.x() + delta.y() * delta.y() > 1e-6) {
+        m_moveDidDrag = true;
+    }
+    for (const Annotation::Object &base : m_moveBaseline) {
+        m_session.updateObject(m_draftSid, translatedObject(base, delta));
+    }
+}
+
+void AnnotationController::finishMoveSelection()
+{
+    if (!m_moving) {
+        return;
+    }
+    if (m_moveDidDrag && !m_moveBaseline.isEmpty() && m_view
+        && m_draftSid != kInvalidSessionImageId) {
+        QVector<Annotation::Object> after;
+        after.reserve(m_moveBaseline.size());
+        for (const Annotation::Object &base : m_moveBaseline) {
+            Annotation::Object cur;
+            if (m_session.findObject(m_draftSid, base.id, &cur)) {
+                after.append(cur);
+            } else {
+                after.append(translatedObject(base, QPointF()));
+            }
+        }
+        if (QUndoStack *stack = m_view->hostUndoStack()) {
+            stack->push(new AnnotationMoveCommand(
+                m_view, m_draftSid, m_moveBaseline, after,
+                m_moveBaseline.size() == 1 ? QObject::tr("Move annotation")
+                                           : QObject::tr("Move annotations")));
+        }
+    } else if (m_moveDidDrag == false && !m_moveBaseline.isEmpty()) {
+        // Snap back to baseline (no-op if never dragged).
+        for (const Annotation::Object &base : m_moveBaseline) {
+            m_session.updateObject(m_draftSid, base);
+        }
+    }
+    m_moving = false;
+    m_moveDidDrag = false;
+    m_moveBaseline.clear();
+    m_moveOriginPage = {};
+}
+
+void AnnotationController::cancelMoveSelection()
+{
+    if (!m_moving) {
+        return;
+    }
+    for (const Annotation::Object &base : m_moveBaseline) {
+        m_session.updateObject(m_draftSid, base);
+    }
+    m_moving = false;
+    m_moveDidDrag = false;
+    m_moveBaseline.clear();
+    m_moveOriginPage = {};
+}
+
 void AnnotationController::selectAtPagePoint(const QPointF &pagePt,
                                              Qt::KeyboardModifiers mods)
 {
@@ -1404,10 +1520,17 @@ bool AnnotationController::tryKeyPress(QKeyEvent *event)
             return true;
         }
     }
-    if (event->key() == Qt::Key_Escape && !m_selectedIds.isEmpty()) {
-        clearSelection();
-        event->accept();
-        return true;
+    if (event->key() == Qt::Key_Escape) {
+        if (m_moving) {
+            cancelMoveSelection();
+            event->accept();
+            return true;
+        }
+        if (!m_selectedIds.isEmpty()) {
+            clearSelection();
+            event->accept();
+            return true;
+        }
     }
     if (m_tool == Annotation::Tool::Select
         && event->key() == Qt::Key_A

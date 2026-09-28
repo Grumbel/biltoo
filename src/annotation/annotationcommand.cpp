@@ -128,3 +128,52 @@ void AnnotationReplaceCommand::redo()
         m_view->viewport()->update();
     }
 }
+
+
+AnnotationMoveCommand::AnnotationMoveCommand(ImageView *view, SessionImageId sid,
+                                             const QVector<Annotation::Object> &before,
+                                             const QVector<Annotation::Object> &after,
+                                             const QString &text)
+    : QUndoCommand(text)
+    , m_view(view)
+    , m_sid(sid)
+    , m_before(before)
+    , m_after(after)
+{
+}
+
+void AnnotationMoveCommand::apply(const QVector<Annotation::Object> &objs)
+{
+    if (!m_view) {
+        return;
+    }
+    for (const Annotation::Object &o : objs) {
+        if (!m_view->hostAnnot().session().updateObject(m_sid, o)) {
+            Annotation::Page *pg = m_view->hostAnnot().session().page(m_sid);
+            const QRectF bounds = pg ? pg->pageBounds : QRectF();
+            const bool yUp = pg ? pg->pageYUp : false;
+            m_view->hostAnnot().session().addObject(m_sid, o, bounds, yUp);
+        }
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationMoveCommand::undo()
+{
+    if (!m_view || !m_applied) {
+        return;
+    }
+    apply(m_before);
+    m_applied = false;
+}
+
+void AnnotationMoveCommand::redo()
+{
+    if (!m_view) {
+        return;
+    }
+    apply(m_after);
+    m_applied = true;
+}

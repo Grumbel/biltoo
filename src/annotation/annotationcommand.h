@@ -69,4 +69,28 @@ private:
     bool m_applied = false;
 };
 
+/**
+ * Translate one or more objects (Select drag-move). before/after paired by id;
+ * list order matches selection order at commit time.
+ */
+class AnnotationMoveCommand : public QUndoCommand
+{
+public:
+    AnnotationMoveCommand(ImageView *view, SessionImageId sid,
+                          const QVector<Annotation::Object> &before,
+                          const QVector<Annotation::Object> &after, const QString &text);
+
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const QVector<Annotation::Object> &objs);
+
+    ImageView *m_view = nullptr;
+    SessionImageId m_sid = kInvalidSessionImageId;
+    QVector<Annotation::Object> m_before;
+    QVector<Annotation::Object> m_after;
+    bool m_applied = false;
+};
+
 #endif // ANNOTATIONCOMMAND_H

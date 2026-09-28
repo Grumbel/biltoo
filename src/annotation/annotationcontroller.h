@@ -135,6 +135,20 @@ private:
     bool m_draftYUp = false;
     QSize m_draftSourceSize;
     QVector<quint64> m_selectedIds;
+
+    /** Select-tool drag move (page space). */
+    bool m_moving = false;
+    bool m_moveDidDrag = false;
+    QPointF m_moveOriginPage;
+    QVector<Annotation::Object> m_moveBaseline;
+
+    static Annotation::Object translatedObject(const Annotation::Object &o,
+                                               const QPointF &delta);
+    void beginMoveSelection(const QPointF &pageOrigin);
+    void applyMoveDelta(const QPointF &delta);
+    void finishMoveSelection();
+    void cancelMoveSelection();
 };
+
 
 #endif // ANNOTATIONCONTROLLER_H
