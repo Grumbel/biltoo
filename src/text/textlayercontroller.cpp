@@ -736,8 +736,11 @@ void TextLayerController::finishRubberBand()
             continue;
         }
         const int n = layer->regions.size();
-        QVector<QRectF> regionRects(n);
-        QVector<int> selBlocks(n, -1);
+        QVector<QRectF> regionRects;
+        regionRects.resize(n);
+        QVector<int> selBlocks;
+        selBlocks.resize(n);
+        selBlocks.fill(-1);
         for (int i = 0; i < n; ++i) {
             const auto &r = layer->regions.at(i);
             if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {

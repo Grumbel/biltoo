@@ -96,6 +96,12 @@ find_package(PkgConfig)
 # report warnings from dependency headers (e.g. Qt qarraydataops.h
 # -Wstringop-overflow false positives). thumtoo is *not* marked: it is our
 # library and we want diagnostics from its headers when included.
+#
+# Two layers:
+#  1) Mark IMPORTED targets' INTERFACE includes as SYSTEM (genex-safe).
+#  2) biltoo_consume_system_includes(<consumer>) also pushes those dirs onto
+#     the consumer with SYSTEM BEFORE so -isystem wins over any later -I
+#     of the same path (required for GCC to suppress header diagnostics).
 function(biltoo_mark_system_includes)
   foreach(_tgt IN LISTS ARGN)
     if(NOT TARGET "${_tgt}")
@@ -105,23 +111,45 @@ function(biltoo_mark_system_includes)
     if(_aliased)
       set(_tgt "${_aliased}")
     endif()
-    get_target_property(_imported "${_tgt}" IMPORTED)
-    if(NOT _imported)
-      continue()
-    endif()
-    get_target_property(_incs "${_tgt}" INTERFACE_INCLUDE_DIRECTORIES)
-    if(NOT _incs OR _incs STREQUAL "_incs-NOTFOUND")
-      continue()
-    endif()
-    get_target_property(_sys "${_tgt}" INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
-    if(NOT _sys OR _sys STREQUAL "_sys-NOTFOUND")
-      set_property(TARGET "${_tgt}" PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_incs}")
-    else()
-      set_property(TARGET "${_tgt}" APPEND PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_incs}")
-    endif()
+    # Genex form works when INTERFACE_INCLUDE_DIRECTORIES is itself genex.
+    set_property(TARGET "${_tgt}" APPEND PROPERTY
+      INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+      "$<TARGET_PROPERTY:${_tgt},INTERFACE_INCLUDE_DIRECTORIES>")
   endforeach()
 endfunction()
 
+# Push dependency include dirs onto @p consumer as SYSTEM BEFORE (-isystem first).
+function(biltoo_consume_system_includes consumer)
+  if(NOT TARGET "${consumer}")
+    return()
+  endif()
+  foreach(_dep IN LISTS ARGN)
+    if(NOT TARGET "${_dep}")
+      continue()
+    endif()
+    get_target_property(_aliased "${_dep}" ALIASED_TARGET)
+    if(_aliased)
+      set(_dep "${_aliased}")
+    endif()
+    # Absolute dirs from Qt6 package variables when available (non-genex).
+    get_target_property(_incs "${_dep}" INTERFACE_INCLUDE_DIRECTORIES)
+    if(_incs AND NOT _incs STREQUAL "_incs-NOTFOUND")
+      # Filter out genex-only entries for the non-genex BEFORE path; also
+      # attach genex SYSTEM includes for generator-time paths.
+      set(_plain "")
+      foreach(_inc IN LISTS _incs)
+        if(NOT _inc MATCHES "\$<")
+          list(APPEND _plain "${_inc}")
+        endif()
+      endforeach()
+      if(_plain)
+        target_include_directories("${consumer}" SYSTEM BEFORE PRIVATE ${_plain})
+      endif()
+      target_include_directories("${consumer}" SYSTEM BEFORE PRIVATE
+        "$<TARGET_PROPERTY:${_dep},INTERFACE_INCLUDE_DIRECTORIES>")
+    endif()
+  endforeach()
+endfunction()
 
 biltoo_mark_system_includes(
   Qt6::Core
@@ -543,6 +571,20 @@ target_link_libraries(biltoo_lib PUBLIC
   Qt6::Network
 )
 
+# Force -isystem ahead of -I for Qt headers (GCC suppresses warnings only when
+# the system form wins the include path). Reconfigure required.
+biltoo_consume_system_includes(biltoo_lib
+  Qt6::Core
+  Qt6::Gui
+  Qt6::Widgets
+  Qt6::Svg
+  Qt6::OpenGLWidgets
+  Qt6::PrintSupport
+  Qt6::Multimedia
+  Qt6::Network
+)
+message(STATUS "Biltoo: Qt includes marked SYSTEM BEFORE for biltoo_lib")
+
 # ---------------------------------------------------------------------------
 # Optional dependencies (pkg-config). Each sets BILTOO_FEATURE_* for version.h
 # and BILTOO_HAVE_* compile definitions used by #ifdef in the sources.
@@ -592,6 +634,7 @@ endif()
 
 # Optional native libs: system includes (same policy as Qt).
 biltoo_mark_system_includes(PkgConfig::VIPS PkgConfig::EXIV2 PkgConfig::GIOUNIX)
+biltoo_consume_system_includes(biltoo_lib PkgConfig::VIPS PkgConfig::EXIV2 PkgConfig::GIOUNIX)
 
 # thumtoo — required Store index + tiles / soft / archive-page URIs
 if(NOT THUMTOO_SOURCE_DIR OR NOT EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
@@ -718,6 +761,7 @@ set_tests_properties(biltoo-help PROPERTIES
 find_package(Qt6 COMPONENTS Test QUIET)
 if(Qt6Test_FOUND)
   biltoo_mark_system_includes(Qt6::Test)
+  # Unit-test executables link Qt directly; mark for each below as needed.
   add_executable(biltoo-projectfile-test
     tests/projectfile_roundtrip.cpp
     src/session/projectfile.cpp
