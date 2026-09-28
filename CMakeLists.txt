@@ -200,6 +200,10 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/slideshowcontroller.cpp
   src/slideshow/slideshowcontroller.h
   src/crop/cropcontroller.cpp
+  src/annotation/annotationcontroller.cpp
+  src/annotation/annotationcontroller.h
+  src/annotation/annotationsession.h
+  src/annotation/annotationtypes.h
   src/crop/cropcontroller_appearance.cpp
   src/crop/cropcontroller_batch.cpp
   src/crop/croprecipe.cpp

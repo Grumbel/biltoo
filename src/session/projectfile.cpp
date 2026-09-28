@@ -336,6 +336,10 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         root.insert(QStringLiteral("workspaceBackground"), wb);
     }
 
+    if (!doc.annotations.isEmpty()) {
+        root.insert(QStringLiteral("annotations"), doc.annotations);
+    }
+
     const QJsonDocument jd(root);
     QFile f(projectPath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -452,6 +456,11 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
         doc->workspaceBackground = b;
         doc->hasWorkspaceBackground = !b.isAppDefault();
     }
+
+    if (root.contains(QStringLiteral("annotations"))) {
+        doc->annotations = root.value(QStringLiteral("annotations")).toArray();
+    }
+
     return true;
 }
 

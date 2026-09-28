@@ -244,6 +244,7 @@
     SlideshowController m_slideshow;
     /** Phase 6 Tier 2a: crop/attention session state on controllers. */
     CropController m_cropCtrl;
+    AnnotationController m_annotCtrl;
     AttentionController m_attentionCtrl;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;

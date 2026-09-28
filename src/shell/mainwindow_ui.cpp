@@ -370,6 +370,28 @@ void MainWindow::createActions()
     m_cropAct->setToolTip(tr("Crop mode"));
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 
+    m_annotHighlightAct = new QAction(tr("Freehand &Highlighter"), this);
+    m_annotHighlightAct->setCheckable(true);
+    m_annotHighlightAct->setStatusTip(
+        tr("Draw translucent highlighter strokes (Multiply blend; mouse)"));
+    m_annotHighlightAct->setToolTip(tr("Freehand highlighter"));
+    connect(m_annotHighlightAct, &QAction::toggled, this, [this](bool on) {
+        if (!m_imageView) {
+            return;
+        }
+        if (on && m_cropAct && m_cropAct->isChecked()) {
+            m_cropAct->setChecked(false);
+        }
+        m_imageView->hostAnnot().setToolActive(on);
+    });
+    m_annotClearAct = new QAction(tr("Clear Page &Annotations"), this);
+    m_annotClearAct->setStatusTip(tr("Remove all annotation strokes on the current page"));
+    connect(m_annotClearAct, &QAction::triggered, this, [this]() {
+        if (m_imageView) {
+            m_imageView->hostAnnot().clearCurrentPage();
+        }
+    });
+
     m_attentionAct = new QAction(tr("&Attention Point"), this);
     m_attentionAct->setCheckable(true);
     m_attentionAct->setShortcut(Qt::SHIFT | Qt::Key_A);
@@ -1663,6 +1685,9 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_zoomToolAct);
     if (m_cropAct) {
         m_workspaceToolBar->addAction(m_cropAct);
+    }
+    if (m_annotHighlightAct) {
+        m_workspaceToolBar->addAction(m_annotHighlightAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

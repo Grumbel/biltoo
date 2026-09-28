@@ -101,6 +101,8 @@
     /** Display pipeline host: crop controller (draft freeze). */
     CropController &hostCrop() override { return m_cropCtrl; }
     const CropController &hostCrop() const override { return m_cropCtrl; }
+    AnnotationController &hostAnnot() { return m_annotCtrl; }
+    const AnnotationController &hostAnnot() const { return m_annotCtrl; }
     AttentionController &hostAttention() { return m_attentionCtrl; }
     const AttentionController &hostAttention() const { return m_attentionCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */

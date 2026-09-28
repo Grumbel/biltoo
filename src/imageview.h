@@ -48,6 +48,7 @@
 #include "gallery/gallerycontroller.h"
 #include "slideshow/slideshowcontroller.h"
 #include "crop/cropcontroller.h"
+#include "annotation/annotationcontroller.h"
 #include "attention/attentioncontroller.h"
 #include "display/displaypipelinecontroller.h"
 #include "workspace/workspacecontroller.h"

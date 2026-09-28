@@ -572,6 +572,7 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     // Scene-space chrome owned by mode/text controllers.
     m_view->hostWorkspace().paintPageGuideOutline(painter, rect);
     m_view->hostText().paintSceneOverlays(painter);
+    m_view->hostAnnot().paintOverlay(painter);
 
     // Viewport-space overlays on the same painter as the scene (required for
     // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
@@ -819,6 +820,7 @@ bool ViewShellChrome::handleMousePress(QMouseEvent *event)
         return false;
     }
     return m_view->hostSlideshow().tryMousePressSlideshowSeek(event)
+        || m_view->hostAnnot().tryMousePress(event)
         || m_view->hostAttention().tryMousePressAttention(event)
         || m_view->hostCrop().tryMousePressCrop(event)
         || m_view->hostImage().tryMousePressZoomRegion(event)
@@ -837,6 +839,9 @@ bool ViewShellChrome::handleMouseMove(QMouseEvent *event)
 {
     if (!m_view || !event) {
         return false;
+    }
+    if (m_view->hostAnnot().tryMouseMove(event)) {
+        return true;
     }
     if (m_view->hostText().tryMouseMoveRubber(event)) {
         return true;
@@ -874,6 +879,7 @@ bool ViewShellChrome::handleMouseRelease(QMouseEvent *event)
         return false;
     }
     if (m_view->hostSlideshow().tryMouseReleaseSlideshowSeek(event)
+        || m_view->hostAnnot().tryMouseRelease(event)
         || m_view->hostText().tryMouseReleaseRubber(event)
         || m_view->hostAttention().tryMouseReleaseAttention(event)
         || m_view->hostCrop().tryMouseReleaseCrop(event)

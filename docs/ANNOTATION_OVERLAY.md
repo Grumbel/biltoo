@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Annotation overlay — research and design
 
-Status: **design / not implemented**. Research for a graphics overlay with
+Status: **Phase A in progress** — freehand Multiply highlighter + project embed. Research for a graphics overlay with
 paint tools, blend modes that keep dark text readable, and text-section
 highlighting. Implements nothing yet.
 
@@ -287,12 +287,12 @@ undo without a clear boundary.
 
 ---
 
-## 12. Open questions for implementation kickoff
+## 12. Decisions (locked 2026-09-28)
 
-1. Project file schema: embed annotations in `.biltoo` vs sidecar?
-2. Default tool after “annotation mode”: Text highlight or freehand highlighter?
-3. Should sticky notes v1 be in scope or strictly Phase C?
-4. Stylus: accept mouse-only for A/B, or wire pressure from tablet events early?
+1. **Persistence:** embed in `.biltoo` project JSON (`annotations` array).
+2. **Default tool:** freehand highlighter (Multiply).
+3. **Sticky notes:** Phase C only.
+4. **Input:** mouse only for Phase A/B; stylus/pressure later.
 
 ---
 

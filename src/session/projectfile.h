@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QSizeF>
 #include <QString>
@@ -44,6 +45,8 @@ struct ProjectDocument {
     /** When hasWorkspaceBackground, workspaceBackground is project-owned. */
     bool hasWorkspaceBackground = false;
     WorkspaceBackground workspaceBackground;
+    /** Annotation overlay pages (SessionImageId-keyed); empty if none. */
+    QJsonArray annotations;
 };
 
 namespace ProjectFile {

@@ -339,6 +339,9 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     }
 
     attachWorkspaceBackgroundToDocument(&doc, projDir);
+    if (m_imageView) {
+        doc.annotations = m_imageView->hostAnnot().session().toJson();
+    }
     return ProjectFile::save(projectPath, doc, error);
 }
 
@@ -661,6 +664,12 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     stopSlideshow();
     installProjectSession(paths, ids, appearanceByRow, rowHasAppearance, rowHasPose,
                           doc, projectPath, missing);
+    if (m_imageView && !doc.annotations.isEmpty()) {
+        m_imageView->hostAnnot().session().fromJson(doc.annotations);
+        if (m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    }
     return true;
 }
 

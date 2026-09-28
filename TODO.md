@@ -2,22 +2,27 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2771.1-annotation-overlay-design` (base `b8a0cf3`).
+**Tip:** `biltoo-2772.1-annot-freehand-highlighter` (base `b8a0cf3`).
 
-### Stack
-… 2770.1 toolbar text panel → **2771.1** annotation overlay design doc
+### Decisions (user)
+1. Embed annotations in `.biltoo`
+2. Default tool = freehand highlighter
+3. Sticky notes → Phase C
+4. Mouse only for now
 
-### 2771.1
-- Research write-up: `docs/ANNOTATION_OVERLAY.md`
-- Tools, blend modes (Multiply for highlighter), text-snapped vs freehand,
-  page-space model, phased implementation plan
-- **Not implemented yet** — next work is Phase A foundation
+### 2772.1 Phase A foundation
+- `src/annotation/` types, session, controller
+- Freehand highlighter, Multiply blend, page/source space
+- Paint + mouse via ViewShellChrome
+- Tools toolbar + Image menu (Clear page)
+- Project save/load `annotations` JSON array
 
-### Next (implementation kickoff)
-1. Confirm open questions in §12 of ANNOTATION_OVERLAY.md
-2. Phase A: types + Multiply painter + text-region highlight + freehand highlighter
+### Next
+- Text-snapped highlight (region quads)
+- Colour/width UI, undo, stroke simplify
+- Verify Multiply on GL viewport with dark text
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2771.1-annotation-overlay-design-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2772.1-annot-freehand-highlighter-b8a0cf3.bundle HEAD
 ```
