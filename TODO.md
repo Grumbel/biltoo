@@ -2,26 +2,23 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2750.2-fix-chromecolors-double-promotion` (base `9395b3e`).
+**Tip:** `biltoo-2751.1-filmstrip-camera-on-scroll` (base `9395b3e`).
 
 ### Done this tip
-- Fix `-Wdouble-promotion` in `ChromeColors::isDarkChrome` (`0.5` → `0.5f`)
+- Filmstrip camera viewport follows Image pan/scroll: coalesce scrollbar
+  `valueChanged` → `updateFilmstripChrome` (~32 ms). Zoom already emitted
+  `statusChanged`; pan did not.
 
-### Prior (2750.1)
-- Theme-aware `ChromeColors` (dark/light Window palette → stroke/fill lightness)
-- Filmstrip search dot + drop guide use Select/Search roles
-- Nav menu: Previous/Next/First/Last **Page**; tips name **cursor**
-- OCR / crop empty state: **no page under cursor**
-- Select tool tip: page selection vs text-region selection
-- docs/VIEW_AND_SELECTION.md status + §8 progress notes
-- 2749.1: declare ThumbnailBar `m_cursorIndex` / `m_cursorViewportNorm`
+### Prior
+- 2750.2: `-Wdouble-promotion` in ChromeColors::isDarkChrome
+- 2750.1: theme-aware ChromeColors + page/cursor status terminology
+- 2749.1: ThumbnailBar cursor members
 
 ### Remaining (low priority)
 - Further UI copy that still says “image” where “page” is clearer
-- Optional: palette-change event → force filmstrip/canvas repaint (roles
-  recompute on next paint already)
+- Optional: palette-change event → force filmstrip/canvas repaint
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2750.2-fix-chromecolors-double-promotion-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2751.1-filmstrip-camera-on-scroll-9395b3e.bundle HEAD
 ```

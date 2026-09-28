@@ -383,6 +383,8 @@ private slots:
     void updateStatus();
     /** Filmstrip cursor chrome + camera viewport on cursor thumb. */
     void updateFilmstripChrome();
+    /** Coalesce Image pan/scroll → filmstrip camera rect (not full updateStatus). */
+    void scheduleFilmstripChromeUpdate();
     void ensureWorkStatusPoll(bool workBusy);
     void refreshWorkActivityStatusBar();
     /** Refresh metadata dock from selection / session focus (deduped by path). */
@@ -850,6 +852,8 @@ private:
     bool m_inUpdateStatus = false;
     /** Delay clearing the Loading… status so transient 0 does not flicker. */
     QTimer *m_decodeStatusClearTimer = nullptr;
+    /** Coalesce scrollbar pan → filmstrip camera viewport (~30 Hz). */
+    QTimer *m_filmstripChromeTimer = nullptr;
     /** Polls thumtoo WorkActivity while busy (~5 Hz) so the status bar stays live. */
     QTimer *m_workStatusTimer = nullptr;
     bool m_slideshowAdvancing = false; // true while timer-driven next runs

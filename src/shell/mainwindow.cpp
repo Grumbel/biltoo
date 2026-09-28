@@ -3,6 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "shell/messagelogpanel.h"
+#include <QScrollBar>
 #include "text/textsearchpolicy.h"
 #include "shell/dualimageshell.h"
 #include "session/sessionopen.h"
@@ -811,6 +812,18 @@ MainWindow::MainWindow(QWidget *parent)
             scheduleSpreadSync();
         }
     });
+    // Pan/scroll moves the camera without statusChanged (zoom still emits).
+    // Keep the filmstrip viewport rect in sync without rebuilding the whole
+    // status/metadata path on every scrollbar tick.
+    m_filmstripChromeTimer = new QTimer(this);
+    m_filmstripChromeTimer->setSingleShot(true);
+    m_filmstripChromeTimer->setInterval(32);
+    connect(m_filmstripChromeTimer, &QTimer::timeout, this,
+            &MainWindow::updateFilmstripChrome);
+    connect(m_imageView->horizontalScrollBar(), &QScrollBar::valueChanged, this,
+            &MainWindow::scheduleFilmstripChromeUpdate);
+    connect(m_imageView->verticalScrollBar(), &QScrollBar::valueChanged, this,
+            &MainWindow::scheduleFilmstripChromeUpdate);
 
     m_slideshowTimer = new QTimer(this);
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
@@ -3406,6 +3419,14 @@ void MainWindow::updateFilmstripChrome()
         }
     }
     m_thumbnailBar->setCursorViewportNorm(norm);
+}
+
+void MainWindow::scheduleFilmstripChromeUpdate()
+{
+    if (!m_filmstripChromeTimer || !m_imageView || !m_imageView->isImageMode()) {
+        return;
+    }
+    m_filmstripChromeTimer->start();
 }
 
 void MainWindow::updateStatus()
