@@ -288,7 +288,7 @@ undo without a clear boundary.
 | PDF-native annotations | **Defer**; session overlay first |
 | Highlight vs path fallback | Prefer text-snapped when layer exists; freehand always available |
 | Re-OCR invalidates region ids | Store **quads**, not indices |
-| Multiply on OpenGL | Verify `QPainter` composition on `QOpenGLWidget` path; fall back to intermediate ARGB image if needed |
+| Multiply blend | Software-raster viewport (default); Multiply via QPainter composition |
 | Crop changes | Page-space storage → paint follows crop (same as OCR boxes) |
 | Gallery mode | Annotations only in Image mode for v1 |
 

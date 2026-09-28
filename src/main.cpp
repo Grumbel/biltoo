@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Before QApplication: vsync + buffers for QOpenGLWidget viewports.
+    // Before QApplication: surface format (harmless with software viewport).
     {
         QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
         fmt.setSwapInterval(1);

@@ -13,7 +13,6 @@
 
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPaintEngine>
 #include <QPainterPath>
 #include <QUndoStack>
 #include <QtMath>
@@ -299,24 +298,11 @@ void AnnotationController::paintQuads(QPainter &painter, ImageItem *item,
 
 void AnnotationController::applyHighlightBlend(QPainter &painter, const QColor &color) const
 {
-    // Multiply lets black text show through on software raster. QOpenGLWidget's
-    // paint engine often ignores Multiply and draws opaque SourceOver, which
-    // covers glyphs — fall back to translucent SourceOver there.
-    QPaintEngine *engine = painter.paintEngine();
-    const bool multiplyOk = engine
-        && (engine->type() == QPaintEngine::Raster
-            || engine->type() == QPaintEngine::Picture
-            || engine->type() == QPaintEngine::Pdf
-            || engine->type() == QPaintEngine::MacPrinter);
-    if (multiplyOk) {
-        painter.setCompositionMode(QPainter::CompositionMode_Multiply);
-        painter.setOpacity(1.0);
-        Q_UNUSED(color);
-    } else {
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        // ~40% cover — black ink remains readable under yellow/green/etc.
-        painter.setOpacity(0.42);
-    }
+    // Viewport is software raster: Multiply darkens destination so black
+    // text stays readable under yellow/green/cyan highlighters.
+    Q_UNUSED(color);
+    painter.setCompositionMode(QPainter::CompositionMode_Multiply);
+    painter.setOpacity(1.0);
 }
 
 void AnnotationController::paintObject(QPainter &painter, ImageItem *item,

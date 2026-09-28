@@ -52,7 +52,7 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
     m_secondary->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_secondary->setMinimumHeight(120);
-    // Primary keeps QOpenGLWidget. A second GL viewport created late under a
+    // Primary uses software-raster viewport. A second view created late under a
     // splitter stays blank on some drivers; software viewport is reliable for
     // the compare pane (QPainter path, no context share needed).
     {

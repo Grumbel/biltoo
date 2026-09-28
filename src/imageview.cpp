@@ -35,7 +35,6 @@
 #include <QPainterPath>
 #include <QPolygonF>
 #include <QPaintEvent>
-#include <QOpenGLWidget>
 #include <QScrollBar>
 #include <QRubberBand>
 #include <QTimer>
@@ -302,8 +301,10 @@ ImageView::ImageView(QWidget *parent)
     m_slideshow.ensureProgressTimer();
 
     setRenderHint(QPainter::SmoothPixmapTransform, DisplayQuality::smoothScaling());
-    // OpenGL viewport — overlays must use drawForeground (see paintEvent).
-    setViewport(new QOpenGLWidget);
+    // Software-raster viewport (default QWidget): full QPainter composition
+    // modes (Multiply highlighter). QOpenGLWidget ignored Multiply and painted
+    // opaque SourceOver over glyphs. Overlays still go through drawForeground
+    // (single paint path; avoids a second QPainter on the viewport).
     setAcceptDrops(true);
     if (viewport()) {
         viewport()->setAcceptDrops(true);

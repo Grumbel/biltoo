@@ -259,7 +259,7 @@ bool ViewShellChrome::handleViewportEvent(QEvent *event)
     if (!event) {
         return false;
     }
-    // Viewport is a QOpenGLWidget; it receives drag/drop when acceptDrops is
+    // Viewport receives drag/drop when acceptDrops is
     // set on it. Forward to the view shell so scene mapping runs here.
     switch (event->type()) {
     case QEvent::DragEnter:
@@ -574,7 +574,7 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     m_view->hostText().paintSceneOverlays(painter);
 
     // Viewport-space overlays on the same painter as the scene (required for
-    // QOpenGLWidget: a second QPainter(viewport()) after paintEvent whites out).
+    // Prefer drawForeground over a second QPainter(viewport()) after paintEvent.
     if (!painter) {
         return;
     }
