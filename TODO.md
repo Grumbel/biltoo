@@ -2,19 +2,18 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2747.1-filmstrip-spread-marks` (base `636e70e`).
+**Tip:** `biltoo-2748.1-chromecolors-text-gallery` (base `636e70e`).
 
-### Done this tip
-- Filmstrip **spread member** amber left bar (non-cursor members)
-- Filmstrip tooltips: cursor vs Ctrl/Shift selection
-- Prev/Next tips: cursor vs spread motion language
-- VIEW_AND_SELECTION.md P2–P4 progress
+### Done
+- P5: text overlays (select / rubber / speech / search / hover) use ChromeColors
+- Gallery focus ring (View), speech rings (Activity), tile selection (Select)
+- searchFill added to ChromeColors
 
-### Still open
-- P5 text/speech/search brush audit (speech already green; search violet on filmstrip)
-- Optional: text-layer Select blue via ChromeColors
+### View/selection language track
+- P0–P5 design + filmstrip + chrome unification largely complete
+- Remaining polish: theme-aware mapping, more status-string terminology
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2747.1-filmstrip-spread-marks-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2748.1-chromecolors-text-gallery-636e70e.bundle HEAD
 ```

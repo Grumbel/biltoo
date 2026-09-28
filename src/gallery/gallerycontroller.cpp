@@ -49,6 +49,7 @@
 #include <QMouseEvent>
 #include <QDrag>
 #include <QColor>
+#include "shell/chromecolors.h"
 #include <QFontMetrics>
 #include <QFont>
 #include <QPainter>
@@ -1352,8 +1353,8 @@ void GalleryController::paintSearchHitFrames(QPainter *painter, const QRectF &ex
     }
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    const QColor wash(255, 200, 40, 40);
-    QPen ring(QColor(255, 190, 30, 220));
+    const QColor wash = ChromeColors::viewFill(40);
+    QPen ring(ChromeColors::viewStroke(220));
     ring.setCosmetic(true);
     ring.setWidthF(2.5);
     for (QGraphicsItem *gi : scene->items()) {
@@ -1455,11 +1456,11 @@ void GalleryController::paintSpeechHighlightFrame(QPainter *painter, const QRect
         }
         const bool active = (path == m_speechHighlightPath) || m_speechHighlightPath.isEmpty();
         // Active: full TTS green; other spread members: dim companion ring.
-        const QColor wash = active ? QColor(40, 200, 100, 48) : QColor(40, 200, 100, 20);
+        const QColor wash = active ? ChromeColors::activityFill(48) : ChromeColors::activityFill(20);
         QPen outer(QColor(0, 0, 0, active ? 180 : 90));
         outer.setCosmetic(true);
         outer.setWidthF(active ? 6.0 : 4.0);
-        QPen inner(QColor(40, 200, 100, active ? 240 : 120));
+        QPen inner(ChromeColors::activityStroke(active ? 240 : 120));
         inner.setCosmetic(true);
         inner.setWidthF(active ? 3.0 : 2.0);
         painter->setPen(Qt::NoPen);
@@ -1495,11 +1496,11 @@ void GalleryController::paintSelectionFrames(QPainter *painter, const QRectF &ex
     QPen outer(QColor(0, 0, 0, 200));
     outer.setCosmetic(true);
     outer.setWidthF(7.0);
-    QPen inner(QColor(0, 200, 255, 255));
+    QPen inner(ChromeColors::selectStroke(255));
     inner.setCosmetic(true);
     inner.setWidthF(3.0);
     // Soft wash so the cell is obviously "in" the selection set.
-    const QColor wash(0, 180, 255, 36);
+    const QColor wash = ChromeColors::selectFill(36);
     for (QGraphicsItem *gi : selected) {
         auto *item = qgraphicsitem_cast<ImageItem *>(gi);
         if (!item || item->isInteractive()) {

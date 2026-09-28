@@ -48,6 +48,10 @@ inline QColor searchStroke(int alpha = 220)
 {
     return QColor(180, 80, 220, alpha);
 }
+inline QColor searchFill(int alpha = 100)
+{
+    return QColor(180, 80, 220, alpha);
+}
 
 } // namespace ChromeColors
 

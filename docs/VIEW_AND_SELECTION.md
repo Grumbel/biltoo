@@ -305,6 +305,8 @@ Phased so each step is shippable:
 - Filmstrip tooltips describe click / Ctrl / Shift by multi-select mode.
 - Prev/Next status tips name **cursor** vs **spread** motion.
 - `ChromeColors` helper (`src/shell/chromecolors.h`).
+- P5: text rubber-band/selection/speech/search + Gallery focus/speech/select
+  rings use the same `ChromeColors` roles.
 
 ---
 

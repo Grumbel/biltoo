@@ -4,6 +4,7 @@
 // Page text / link regions, search, rubber-band selection (owned by TextLayerController).
 
 #include "text/textlayercontroller.h"
+#include "shell/chromecolors.h"
 #include "content/contentxform.h"
 #include "imageview.h"
 #include "imageitem.h"
@@ -49,11 +50,11 @@ void TextLayerController::paintRubberBandOverlay(QPainter &painter)
 {
     if (m_session.isRubberbanding() && m_session.hasRubberRect()) {
         painter.save();
-        QPen pen(QColor(40, 120, 220, 220));
+        QPen pen(ChromeColors::selectStroke(220));
         pen.setStyle(Qt::DashLine);
         pen.setWidth(1);
         painter.setPen(pen);
-        painter.setBrush(QColor(60, 160, 255, 40));
+        painter.setBrush(ChromeColors::selectFill(40));
         painter.drawRect(m_session.rubberRectRef().normalized());
         painter.restore();
     }
@@ -1330,8 +1331,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             selIds = m_session.selectedRegionsRef();
         }
         if (!selIds.isEmpty()) {
-            painter->setPen(QPen(QColor(20, 90, 200, 230), 0));
-            painter->setBrush(QColor(40, 140, 255, 110));
+            painter->setPen(QPen(ChromeColors::selectStroke(230), 0));
+            painter->setBrush(ChromeColors::selectFill(110));
             for (int idxSel : selIds) {
                 if (idxSel < 0 || idxSel >= layer.regions.size()) {
                     continue;
@@ -1388,7 +1389,7 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         if (!isPrimary) {
             if (sid != kInvalidSessionImageId && !m_session.memberSearchMatches.isEmpty()) {
                 painter->setPen(Qt::NoPen);
-                painter->setBrush(QColor(255, 220, 40, 110));
+                painter->setBrush(ChromeColors::searchFill(110));
                 for (const TextLayerSession::MemberSearchHit &mh : m_session.memberSearchMatches) {
                     if (mh.sessionId != sid) {
                         continue;
@@ -1432,8 +1433,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
                     img = QRectF(QPointF(img.left(), img.top()),
                                  QPointF(x1, img.bottom()));
                 }
-                painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
-                painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
+                painter->setPen(QPen(ChromeColors::activityStroke(230), 0));
+                painter->setBrush(ChromeColors::activityFill(isActive ? 130 : 70));
                 const QRectF local = img.translated(item->offset());
                 painter->drawPolygon(item->mapToScene(local));
             }
@@ -1442,7 +1443,7 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         }
         if (m_session.hasSearchMatches()) {
             painter->setPen(Qt::NoPen);
-            painter->setBrush(QColor(255, 220, 40, 110));
+            painter->setBrush(ChromeColors::searchFill(110));
             for (const TextSearchPolicy::SearchHit &hit : m_session.searchMatchesRef()) {
                 if (hit.regionIndex < 0 || hit.regionIndex >= layer.regions.size()) {
                     continue;
@@ -1467,8 +1468,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             const auto &r = layer.regions.at(m_session.hoverRegionIndex());
             const QRectF img = regionImageRectFor(item, path, layer, r);
             if (!img.isEmpty()) {
-                painter->setPen(QPen(QColor(255, 140, 0, 230), 0));
-                painter->setBrush(QColor(255, 180, 40, 60));
+                painter->setPen(QPen(ChromeColors::viewStroke(230), 0));
+                painter->setBrush(ChromeColors::viewFill(60));
                 const QRectF local = img.translated(item->offset());
                 painter->drawPolygon(item->mapToScene(local));
             }
@@ -1494,8 +1495,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
                     img = QRectF(QPointF(img.left(), img.top()),
                                  QPointF(x1, img.bottom()));
                 }
-                painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
-                painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
+                painter->setPen(QPen(ChromeColors::activityStroke(230), 0));
+                painter->setBrush(ChromeColors::activityFill(isActive ? 130 : 70));
                 const QRectF local = img.translated(item->offset());
                 painter->drawPolygon(item->mapToScene(local));
             }
