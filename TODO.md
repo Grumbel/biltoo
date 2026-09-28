@@ -2,22 +2,26 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2733.1-spread-p2-panel-search` (base `636e70e`).
+**Tip:** `biltoo-2734.1-spread-p3-tts-glyphs` (base `636e70e`).
 
-### Spread P2 progress
+### Spread stack
+| Phase | Status |
+|-------|--------|
+| P0–P1 reading surface | complete |
+| P2 text select/copy/panel/search | complete |
+| P3 TTS + secondary glyphs | 2734.1 |
 
-| Item | Status |
-|------|--------|
-| Per-member layers, rubber-band, paint, copy | 2732.1 |
-| Text panel flatten across spread members | 2733.1 |
-| Panel multi-select → TextSelection bag | 2733.1 |
-| Search hits on secondary pages | 2733.1 |
+### 2734.1
+- `SpeakSpan` carries `sessionId`; `buildSpeakPlan` joins all spread members
+- Speaking highlight targets the active member underlay
+- Glyph paint on every spread underlay
+- Speak uses full-spread plan; multiSelection anchors start sentence
 
 ### Still open
-- Glyphs on secondary underlays
-- P3 TTS spans across members
+- Gallery TTS ring for all spread members while speaking
+- Binding-hint UI / RTL (P4)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2733.1-spread-p2-panel-search-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2734.1-spread-p3-tts-glyphs-636e70e.bundle HEAD
 ```

@@ -5068,21 +5068,27 @@ void MainWindow::connectTextToSpeech()
                     return;
                 }
                 TextLayerController &text = m_imageView->hostText();
-                // Region indices belong to m_ttsSpeakPath only — not the page on screen.
-                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath) {
+                // Region indices belong to the Speak plan path; spread keeps
+                // multiple underlays so only clear when classic path left Image.
+                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath
+                    && m_imageView->itemCount() <= 1) {
                     text.clearSpeakingHighlight();
                     return;
                 }
                 QVector<int> regions;
+                SessionImageId speakSid = kInvalidSessionImageId;
                 for (const auto &sp : m_ttsSpeakSpans) {
                     if (sp.end > start && sp.start < end) {
                         regions.append(sp.regionIndex);
+                        if (speakSid == kInvalidSessionImageId) {
+                            speakSid = sp.sessionId;
+                        }
                     }
                 }
                 m_ttsSpeakRegions = regions;
                 m_ttsSentenceStart = start;
                 m_ttsSentenceEnd = end;
-                text.setSpeakingHighlight(regions, 0.0);
+                text.setSpeakingHighlight(speakSid, regions, 0.0);
             });
     connect(m_tts, &TextToSpeechController::audioPositionChanged, this,
             [this](qint64 pos, qint64 dur) {
@@ -5090,7 +5096,8 @@ void MainWindow::connectTextToSpeech()
                     return;
                 }
                 TextLayerController &text = m_imageView->hostText();
-                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath) {
+                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath
+                    && m_imageView->itemCount() <= 1) {
                     text.clearSpeakingHighlight();
                     return;
                 }
@@ -5102,27 +5109,27 @@ void MainWindow::connectTextToSpeech()
                     + int(qBound(0.0, frac, 1.0) * double(spanLen - 1) + 0.5);
                 const auto &spans = m_ttsSpeakSpans;
                 int activeRi = m_ttsSpeakRegions.first();
+                SessionImageId activeSid = kInvalidSessionImageId;
                 double localProg = frac;
                 for (const auto &sp : spans) {
                     if (sp.end <= m_ttsSentenceStart || sp.start >= m_ttsSentenceEnd) {
                         continue;
                     }
-                    // Containment, or join-space just before this span (sp.start - 1).
                     if (globalOff >= sp.start && globalOff < sp.end) {
                         activeRi = sp.regionIndex;
+                        activeSid = sp.sessionId;
                         const int len = qMax(1, sp.end - sp.start);
                         localProg = double(globalOff - sp.start) / double(len);
                         break;
                     }
                     if (globalOff < sp.start) {
-                        // Landed on separator before this span → prefer previous box.
                         break;
                     }
-                    // globalOff past this span — keep walking; last in-range is fallback.
                     activeRi = sp.regionIndex;
+                    activeSid = sp.sessionId;
                     localProg = 1.0;
                 }
-                text.setSpeakingHighlight({activeRi}, localProg);
+                text.setSpeakingHighlight(activeSid, {activeRi}, localProg);
             });
 
     // Panel → TTS (voice/tempo/vol) is wired only in connectTextPanel() so
@@ -5160,7 +5167,7 @@ void MainWindow::speakSelectionOrPage()
     }
 
     TextLayerController &text = m_imageView->hostText();
-    // Always speak the full page; selection is a start anchor only.
+    // Full page or full spread; selection is a start anchor only.
     const auto plan = text.buildSpeakPlan(/*pageOnly=*/true);
     if (plan.text.trimmed().isEmpty()) {
         const QString msg = tr("No text to speak (load a text/OCR layer)");
@@ -5175,14 +5182,29 @@ void MainWindow::speakSelectionOrPage()
 
     int startSentence = 0;
     const auto &sel = text.session().selectedRegionsRef();
-    if (!sel.isEmpty() && !plan.spans.isEmpty()) {
+    const auto &multi = text.session().multiSelection;
+    if ((!sel.isEmpty() || !multi.isEmpty()) && !plan.spans.isEmpty()) {
         // Earliest SpeakPlan offset among selected regions (top of selection).
         int anchor = plan.text.size();
-        for (int ri : sel) {
-            for (const auto &sp : plan.spans) {
-                if (sp.regionIndex == ri) {
-                    anchor = qMin(anchor, sp.start);
-                    break;
+        if (!multi.isEmpty()) {
+            for (const TextSelRef &ref : multi.refs()) {
+                for (const auto &sp : plan.spans) {
+                    if (sp.regionIndex == ref.regionIndex
+                        && (ref.sessionId == kInvalidSessionImageId
+                            || sp.sessionId == kInvalidSessionImageId
+                            || sp.sessionId == ref.sessionId)) {
+                        anchor = qMin(anchor, sp.start);
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (int ri : sel) {
+                for (const auto &sp : plan.spans) {
+                    if (sp.regionIndex == ri) {
+                        anchor = qMin(anchor, sp.start);
+                        break;
+                    }
                 }
             }
         }

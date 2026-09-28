@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Spread — multi-page reading surface (design)
 
-**Status:** P0–P2 partial in tree. Cross-page select/copy/paint done; panel flatten + TTS P3.  
+**Status:** P0–P3 in tree. TTS spans carry sid; secondary glyphs; panel flatten.  
 **Related:** [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [DOMAIN.md](../DOMAIN.md) (world vs viewpoint),
 `DualImageShell` (compare — **not** spread).
@@ -297,8 +297,8 @@ class SpreadTextCoordinator {
 |-------|------|-----------|
 | **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Done:** state/book/layout, Double view, nav stride, multi-underlay install, text paint deferred. |
 | **P1** | Gallery View Selection; status range | **Done:** View Selection + Gallery menu; status range; event-driven sync; FixedN filmstrip; leave/dual mutual exclusion; N≤8. |
-| **P2** | Text coordinator + cross-page rubber-band/copy | **Mostly done:** layers, rubber-band, paint, copy, panel flatten, multi search hits. Glyphs secondary optional. |
-| **P3** | Speak plan + highlights over members | TTS spans carry sid |
+| **P2** | Text coordinator + cross-page rubber-band/copy | **Done:** layers, rubber-band, paint, copy, panel flatten, multi search, secondary glyphs. |
+| **P3** | Speak plan + highlights over members | **Done:** SpeakSpan.sessionId; full-spread plan; highlight on active member. Gallery ring polish optional. |
 | **P4** | N>2, binding hints, RTL, heightMatch prefs | Foldout / polish |
 
 Do not ship P0 with “text only on primary” if P2 is near; a half-broken

@@ -74,6 +74,7 @@ public:
      * blocks; space when blockId is unknown (OCR-friendly continuous speech).
      */
     struct SpeakSpan {
+        SessionImageId sessionId = kInvalidSessionImageId;
         int regionIndex = -1;
         int start = 0; ///< inclusive offset into SpeakPlan::text
         int end = 0;   ///< exclusive
@@ -99,6 +100,9 @@ public:
 
     /** Highlight region(s) currently being spoken; progress 0..1 within the active span. */
     void setSpeakingHighlight(const QVector<int> &regionIndices, double progress);
+    /** Spread: highlight on a specific member (sid); empty sid → primary. */
+    void setSpeakingHighlight(SessionImageId sessionId, const QVector<int> &regionIndices,
+                              double progress);
     void clearSpeakingHighlight();
     void clearSelection();
     bool copySelectedText();
@@ -140,6 +144,7 @@ private:
 
     ImageView *m_view = nullptr;
     QVector<int> m_speakingRegions;
+    SessionImageId m_speakingSessionId = kInvalidSessionImageId;
     double m_speakingProgress = 0.0;
     TextLayerSession m_session;
     /** Spread member layers keyed by SessionImageId (primary also in m_session). */

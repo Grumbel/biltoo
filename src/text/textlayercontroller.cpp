@@ -891,6 +891,131 @@ QString TextLayerController::pageTextInReadingOrder() const
 TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly) const
 {
     SpeakPlan plan;
+
+    auto appendJoined = [&](SessionImageId sid, int idx, const QString &rawText, int block,
+                            int &cursor, int &prevBlock, bool &havePrev) {
+        const QString tx = rawText.trimmed();
+        if (tx.isEmpty()) {
+            return;
+        }
+        if (havePrev) {
+            QString sep;
+            if (prevBlock >= 0 && block >= 0 && prevBlock != block) {
+                sep = QStringLiteral("\n\n");
+            } else if (plan.text.endsWith(QLatin1Char('-'))
+                       && !tx.isEmpty() && tx.at(0).isLetter()) {
+                plan.text.chop(1);
+                cursor = plan.text.size();
+                if (!plan.spans.isEmpty()) {
+                    SpeakSpan &prev = plan.spans.last();
+                    if (prev.end > prev.start) {
+                        prev.end = cursor;
+                    }
+                }
+                sep.clear();
+            } else {
+                sep = QLatin1Char(' ');
+            }
+            if (!sep.isEmpty()) {
+                plan.text += sep;
+                cursor += sep.size();
+            }
+        }
+        SpeakSpan sp;
+        sp.sessionId = sid;
+        sp.regionIndex = idx;
+        sp.start = cursor;
+        sp.end = cursor + tx.size();
+        plan.spans.append(sp);
+        plan.text += tx;
+        cursor = sp.end;
+        prevBlock = block;
+        havePrev = true;
+    };
+
+    auto appendLayerOrder = [&](SessionImageId sid, const ThumtooCache::PageTextLayer &layer,
+                                const QString &path, int &cursor, int &prevBlock, bool &havePrev) {
+        const int n = layer.regions.size();
+        if (n <= 0) {
+            return;
+        }
+        QVector<int> order;
+        order.reserve(n);
+        QVector<QRectF> rects;
+        QVector<int> blocks;
+        for (int i = 0; i < n; ++i) {
+            order.append(i);
+            rects.append(layer.regions.at(i).bbox);
+            blocks.append(layer.regions.at(i).blockId);
+        }
+        const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
+        const bool yUp = path.isEmpty() ? layer.pageYUp : ThumtooCache::pageSpaceYUpForPath(path);
+        TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks, yUp, ocrOrder);
+        for (int idx : order) {
+            if (idx < 0 || idx >= n) {
+                continue;
+            }
+            const auto &r = layer.regions.at(idx);
+            appendJoined(sid, idx, r.text, r.blockId, cursor, prevBlock, havePrev);
+        }
+    };
+
+    int cursor = 0;
+    int prevBlock = -999;
+    bool havePrev = false;
+
+    if (!pageOnly && !m_session.multiSelection.isEmpty()) {
+        const_cast<TextLayerController *>(this)->ensureMemberLayers();
+        for (const TextSelRef &ref : m_session.multiSelection.refs()) {
+            if (ref.regionIndex < 0) {
+                continue;
+            }
+            if (!ref.text.isEmpty()) {
+                appendJoined(ref.sessionId, ref.regionIndex, ref.text, -1,
+                             cursor, prevBlock, havePrev);
+                continue;
+            }
+            if (!m_view) {
+                continue;
+            }
+            for (ImageItem *item : m_view->liveItems()) {
+                if (!item || item->sessionId() != ref.sessionId) {
+                    continue;
+                }
+                const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+                if (!layer || ref.regionIndex >= layer->regions.size()) {
+                    break;
+                }
+                const auto &r = layer->regions.at(ref.regionIndex);
+                appendJoined(ref.sessionId, ref.regionIndex, r.text, r.blockId,
+                             cursor, prevBlock, havePrev);
+                break;
+            }
+        }
+        if (!plan.text.isEmpty()) {
+            return plan;
+        }
+    }
+
+    if (isMultiUnderlay()) {
+        const_cast<TextLayerController *>(this)->ensureMemberLayers();
+        for (ImageItem *item : m_view->liveItems()) {
+            if (!item) {
+                continue;
+            }
+            SessionImageId sid = item->sessionId();
+            if (sid == kInvalidSessionImageId) {
+                sid = m_view->hostSessionId().currentIdValue();
+            }
+            const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+            if (!layer) {
+                continue;
+            }
+            appendLayerOrder(sid, *layer, pathForItem(item), cursor, prevBlock, havePrev);
+        }
+        return plan;
+    }
+
     if (!hasLayer()) {
         return plan;
     }
@@ -904,72 +1029,16 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
         }
     }
     if (order.isEmpty()) {
-        const int n = m_session.regionCount();
-        order.reserve(n);
-        QVector<QRectF> rects;
-        QVector<int> blocks;
-        for (int i = 0; i < n; ++i) {
-            order.append(i);
-            const auto &r = m_session.regionAt(i);
-            rects.append(r.bbox);
-            blocks.append(r.blockId);
-        }
-        const bool ocrOrder = m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
-        TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks, pageYUp(), ocrOrder);
+        appendLayerOrder(currentSessionId(), m_session.layerRef(), m_session.layerPathRef(),
+                         cursor, prevBlock, havePrev);
+        return plan;
     }
-
-    int cursor = 0;
-    int prevBlock = -999;
-    bool havePrev = false;
     for (int idx : order) {
         if (idx < 0 || idx >= m_session.regionCount()) {
             continue;
         }
-        QString tx = m_session.regionAt(idx).text.trimmed();
-        if (tx.isEmpty()) {
-            continue;
-        }
-        const int block = m_session.regionAt(idx).blockId;
-
-        if (havePrev) {
-            QString sep;
-            if (prevBlock >= 0 && block >= 0 && prevBlock != block) {
-                // Paragraph / column island boundary — hard break for the splitter.
-                sep = QStringLiteral("\n\n");
-            } else {
-                // Same block, or unknown blockIds: continuous prose for Piper.
-                // Soft-join hyphenated line ends: "word-" + "next" → "wordnext".
-                if (plan.text.endsWith(QLatin1Char('-'))
-                    && !tx.isEmpty() && tx.at(0).isLetter()) {
-                    plan.text.chop(1);
-                    cursor = plan.text.size();
-                    // Previous span still counted the hyphen — shrink it.
-                    if (!plan.spans.isEmpty()) {
-                        SpeakSpan &prev = plan.spans.last();
-                        if (prev.end > prev.start) {
-                            prev.end = cursor;
-                        }
-                    }
-                    sep.clear();
-                } else {
-                    sep = QLatin1Char(' ');
-                }
-            }
-            if (!sep.isEmpty()) {
-                plan.text += sep;
-                cursor += sep.size();
-            }
-        }
-
-        SpeakSpan sp;
-        sp.regionIndex = idx;
-        sp.start = cursor;
-        sp.end = cursor + tx.size();
-        plan.spans.append(sp);
-        plan.text += tx;
-        cursor = sp.end;
-        prevBlock = block;
-        havePrev = true;
+        const auto &r = m_session.regionAt(idx);
+        appendJoined(currentSessionId(), idx, r.text, r.blockId, cursor, prevBlock, havePrev);
     }
     return plan;
 }
@@ -989,6 +1058,14 @@ QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
 
 void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices, double progress)
 {
+    setSpeakingHighlight(kInvalidSessionImageId, regionIndices, progress);
+}
+
+void TextLayerController::setSpeakingHighlight(SessionImageId sessionId,
+                                               const QVector<int> &regionIndices,
+                                               double progress)
+{
+    m_speakingSessionId = sessionId;
     m_speakingRegions = regionIndices;
     m_speakingProgress = qBound(0.0, progress, 1.0);
     if (m_view && m_view->viewport()) {
@@ -998,10 +1075,12 @@ void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices
 
 void TextLayerController::clearSpeakingHighlight()
 {
-    if (m_speakingRegions.isEmpty() && m_speakingProgress == 0.0) {
+    if (m_speakingRegions.isEmpty() && m_speakingProgress == 0.0
+        && m_speakingSessionId == kInvalidSessionImageId) {
         return;
     }
     m_speakingRegions.clear();
+    m_speakingSessionId = kInvalidSessionImageId;
     m_speakingProgress = 0.0;
     if (m_view && m_view->viewport()) {
         m_view->viewport()->update();
@@ -1243,35 +1322,6 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             }
         }
 
-        // Secondary pages: search hits from memberSearchMatches.
-        if (!isPrimary) {
-            if (sid != kInvalidSessionImageId && !m_session.memberSearchMatches.isEmpty()) {
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(QColor(255, 220, 40, 110));
-                for (const TextLayerSession::MemberSearchHit &mh : m_session.memberSearchMatches) {
-                    if (mh.sessionId != sid) {
-                        continue;
-                    }
-                    if (mh.hit.regionIndex < 0 || mh.hit.regionIndex >= layer.regions.size()) {
-                        continue;
-                    }
-                    const auto &r = layer.regions.at(mh.hit.regionIndex);
-                    QRectF img = regionImageRectFor(item, path, layer, r);
-                    if (img.isEmpty()) {
-                        continue;
-                    }
-                    const qreal a = qBound(0.0, mh.hit.startFrac, 1.0);
-                    const qreal b = qBound(0.0, mh.hit.endFrac, 1.0);
-                    if (b > a && (a > 0.0 || b < 1.0)) {
-                        img = QRectF(img.left() + img.width() * a, img.top(),
-                                     img.width() * (b - a), img.height());
-                    }
-                    const QRectF local = img.translated(item->offset());
-                    painter->drawPolygon(item->mapToScene(local));
-                }
-            }
-            return;
-        }
         if (m_session.showsGlyphs()) {
             for (const ThumtooCache::TextRegion &r : layer.regions) {
                 if (r.text.isEmpty()) {
@@ -1310,6 +1360,62 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
                 painter->restore();
             }
         }
+        // Secondary pages: search hits from memberSearchMatches.
+        if (!isPrimary) {
+            if (sid != kInvalidSessionImageId && !m_session.memberSearchMatches.isEmpty()) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor(255, 220, 40, 110));
+                for (const TextLayerSession::MemberSearchHit &mh : m_session.memberSearchMatches) {
+                    if (mh.sessionId != sid) {
+                        continue;
+                    }
+                    if (mh.hit.regionIndex < 0 || mh.hit.regionIndex >= layer.regions.size()) {
+                        continue;
+                    }
+                    const auto &r = layer.regions.at(mh.hit.regionIndex);
+                    QRectF img = regionImageRectFor(item, path, layer, r);
+                    if (img.isEmpty()) {
+                        continue;
+                    }
+                    const qreal a = qBound(0.0, mh.hit.startFrac, 1.0);
+                    const qreal b = qBound(0.0, mh.hit.endFrac, 1.0);
+                    if (b > a && (a > 0.0 || b < 1.0)) {
+                        img = QRectF(img.left() + img.width() * a, img.top(),
+                                     img.width() * (b - a), img.height());
+                    }
+                    const QRectF local = img.translated(item->offset());
+                    painter->drawPolygon(item->mapToScene(local));
+                }
+            }
+        const bool speakHere = !m_speakingRegions.isEmpty()
+            && (m_speakingSessionId == kInvalidSessionImageId
+                || m_speakingSessionId == sid
+                || (isPrimary && m_speakingSessionId == kInvalidSessionImageId));
+        if (speakHere) {
+            for (int i = 0; i < m_speakingRegions.size(); ++i) {
+                const int idx = m_speakingRegions.at(i);
+                if (idx < 0 || idx >= int(layer.regions.size())) {
+                    continue;
+                }
+                const auto &r = layer.regions.at(idx);
+                QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty()) {
+                    continue;
+                }
+                const bool isActive = (i == m_speakingRegions.size() - 1);
+                if (isActive && m_speakingProgress > 0.0 && m_speakingProgress < 1.0) {
+                    const qreal x1 = img.left() + img.width() * m_speakingProgress;
+                    img = QRectF(QPointF(img.left(), img.top()),
+                                 QPointF(x1, img.bottom()));
+                }
+                painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
+                painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
+                const QRectF local = img.translated(item->offset());
+                painter->drawPolygon(item->mapToScene(local));
+            }
+        }
+            return;
+        }
         if (m_session.hasSearchMatches()) {
             painter->setPen(Qt::NoPen);
             painter->setBrush(QColor(255, 220, 40, 110));
@@ -1343,7 +1449,11 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
                 painter->drawPolygon(item->mapToScene(local));
             }
         }
-        if (!m_speakingRegions.isEmpty()) {
+        const bool speakHere = !m_speakingRegions.isEmpty()
+            && (m_speakingSessionId == kInvalidSessionImageId
+                || m_speakingSessionId == sid
+                || (isPrimary && m_speakingSessionId == kInvalidSessionImageId));
+        if (speakHere) {
             for (int i = 0; i < m_speakingRegions.size(); ++i) {
                 const int idx = m_speakingRegions.at(i);
                 if (idx < 0 || idx >= int(layer.regions.size())) {
