@@ -848,7 +848,26 @@ MainWindow::MainWindow(QWidget *parent)
     updateWorkspaceActionVisibility();
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow()
+{
+    // ImageView::~ImageView calls setScene(nullptr) → scrollbar valueChanged.
+    // By then ~MainWindow body has finished and Qt's FunctorCall asserts
+    // assertObjectType<MainWindow>. Disconnect before child widgets die.
+    if (m_filmstripChromeTimer) {
+        m_filmstripChromeTimer->stop();
+        m_filmstripChromeTimer->disconnect(this);
+    }
+    if (m_imageView) {
+        if (QScrollBar *h = m_imageView->horizontalScrollBar()) {
+            disconnect(h, &QScrollBar::valueChanged, this,
+                       &MainWindow::scheduleFilmstripChromeUpdate);
+        }
+        if (QScrollBar *v = m_imageView->verticalScrollBar()) {
+            disconnect(v, &QScrollBar::valueChanged, this,
+                       &MainWindow::scheduleFilmstripChromeUpdate);
+        }
+    }
+}
 
 bool MainWindow::isWorkspaceMode() const
 {
