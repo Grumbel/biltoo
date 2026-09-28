@@ -295,7 +295,7 @@ class SpreadTextCoordinator {
 
 | Phase | Ship | Done when |
 |-------|------|-----------|
-| **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | Two pages side by side, fit union, Next moves pair |
+| **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Partial in tree:** state/book/layout, View→Double view, nav stride, side-by-side item layout. Text/selection still single-page. |
 | **P1** | Gallery View Selection; status range | Selection opens spread |
 | **P2** | Text coordinator + cross-page rubber-band/copy | One selection across gutter |
 | **P3** | Speak plan + highlights over members | TTS spans carry sid |

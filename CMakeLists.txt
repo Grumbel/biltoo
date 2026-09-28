@@ -284,6 +284,9 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionseedbook.h
   src/session/sessiondocument.cpp
   src/session/sessiondocument.h
+  src/session/spreadstate.h
+  src/session/spreadbook.cpp
+  src/session/spreadbook.h
   src/session/sessionsearchindex.h
   src/session/sessionopen.cpp
   src/session/sessionopen.h

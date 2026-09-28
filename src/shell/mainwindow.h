@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "item/itemcomponents.h"
 #include "session/sessiondocument.h"
+#include "session/spreadbook.h"
 #include "session/sessionsearchindex.h"
 #include "session/sessionsort.h"
 #include "imageview_types.h"
@@ -339,6 +340,8 @@ private slots:
     void toggleScrollBars();
     void toggleWorkspaceMode();
     /** Stage 2c.2: Image-mode side-by-side compare (shared ItemWorld + pipeline). */
+    void setDoubleViewEnabled(bool on);
+    void syncSpreadPresentation();
     void setDualCompareEnabled(bool on);
 
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
@@ -552,6 +555,8 @@ private:
     ImageView *m_imageView = nullptr;
     /** Stage 2c.2: owns splitter; primary is m_imageView. */
     DualImageShell *m_dualShell = nullptr;
+    SpreadBook m_spreadBook;
+    QAction *m_doubleViewAct = nullptr;
     QAction *m_dualCompareAct = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
     QDockWidget *m_thumbnailDock = nullptr;

@@ -133,6 +133,10 @@ void ImageController::applyImageModeFraming(ImageItem *item)
     if (!itemHasReliableFrameSize(item)) {
         return;
     }
+    // Spread owns multi-item placement + fit-to-union (docs/SPREAD.md).
+    if (m_view->liveItems().size() > 1) {
+        return;
+    }
     if (m_framing.isStickyZoomEnabled()) {
         // Fit: unique home pose (centred). Fill / 1:1: frame, then best-effort
         // restore viewport centre in image-normalized coords (prev/next compare).

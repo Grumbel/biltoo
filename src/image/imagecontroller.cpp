@@ -12,6 +12,8 @@
 #include <QSet>
 #include <QFileInfo>
 #include "host/thumtoocache.h"
+#include "session/spreadstate.h"
+#include "item/itemcomponents.h"
 #include "display/imagecache.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"
@@ -383,5 +385,87 @@ void ImageController::onContentAppearancePropagated(ImageItem *item)
     scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     if (QWidget *vp = m_view->viewport()) {
         vp->update();
+    }
+}
+
+
+void ImageController::applySpreadLayout(const QStringList &paths,
+                                        const QVector<SessionImageId> &ids)
+{
+    if (!m_view || !m_view->isImageMode() || paths.size() < 2) {
+        return;
+    }
+    QVector<QSizeF> sizes;
+    QList<ImageItem *> items;
+    sizes.reserve(paths.size());
+    items.reserve(paths.size());
+
+    for (int i = 0; i < paths.size(); ++i) {
+        const QString &path = paths.at(i);
+        if (path.isEmpty()) {
+            continue;
+        }
+        SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
+        ImageItem *item = m_view->findItemForPath(path);
+        if (!item) {
+            const QSize sz = m_view->contentLayoutSize(path, sid);
+            if (sz.width() > 1 && sz.height() > 1) {
+                item = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
+            }
+        }
+        if (!item) {
+            continue;
+        }
+        if (sid != kInvalidSessionImageId) {
+            item->setSessionId(sid);
+        }
+        // Prefer cached pixels when present; otherwise kick a size/soft probe.
+        const QImage cached = ImageCache::get(path);
+        if (!cached.isNull() && !item->hasDisplayPixels()) {
+            m_view->hostDisplayPipeline().hostSetPreviewImage(item, cached);
+        } else if (!item->hasDisplayPixels()) {
+            ThumtooCache::scheduleProbe(path);
+        }
+        QSizeF sz = item->displayContentRect().size();
+        if (sz.width() < 1 || sz.height() < 1) {
+            const QSize isz = m_view->contentLayoutSize(path, sid);
+            sz = QSizeF(isz);
+        }
+        sizes.append(sz);
+        items.append(item);
+    }
+    if (items.size() < 2) {
+        return;
+    }
+
+    const SpreadLayoutResult layout = layoutSpread(sizes, /*gutter=*/12.0, /*heightMatch=*/true);
+    for (int i = 0; i < items.size() && i < layout.slots.size(); ++i) {
+        ImageItem *item = items.at(i);
+        ItemComponents::Placement pl = item->placement();
+        pl.pos = layout.slots.at(i).rect.topLeft();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        pl.rotation = 0.0;
+        // Match height-matched slot size via scale when intrinsic differs.
+        const QRectF local = item->displayContentRect();
+        if (local.height() > 1.0 && layout.slots.at(i).rect.height() > 1.0) {
+            const qreal s = layout.slots.at(i).rect.height() / local.height();
+            if (s > 0.01 && s < 100.0 && qAbs(s - 1.0) > 0.001) {
+                pl.scale = s;
+                pl.scaleY = s;
+            }
+        }
+        item->applyPlacement(pl);
+    }
+
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        const QRectF u = layout.unionRect.adjusted(-8, -8, 8, 8);
+        scene->setSceneRect(u);
+        m_view->setSceneRect(u);
+    }
+    m_view->resetTransform();
+    m_view->fitInView(layout.unionRect, Qt::KeepAspectRatio);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
     }
 }

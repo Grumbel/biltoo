@@ -225,6 +225,15 @@ void MainWindow::createActions()
 
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
+    m_doubleViewAct = new QAction(tr("Dou&ble view"), this);
+    m_doubleViewAct->setObjectName(QStringLiteral("doubleView"));
+    m_doubleViewAct->setCheckable(true);
+    m_doubleViewAct->setChecked(false);
+    m_doubleViewAct->setStatusTip(
+        tr("Show two session pages side by side as one reading surface (not compare)"));
+    m_doubleViewAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_2));
+    connect(m_doubleViewAct, &QAction::toggled, this, &MainWindow::setDoubleViewEnabled);
+
     m_dualCompareAct = new QAction(tr("&Dual compare"), this);
     m_dualCompareAct->setObjectName(QStringLiteral("dualCompare"));
     m_dualCompareAct->setCheckable(true);
@@ -1090,6 +1099,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
+    m_viewMenu->addAction(m_doubleViewAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);

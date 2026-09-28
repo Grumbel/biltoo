@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "session/spreadstate.h"
 #include "shell/dualimageshell.h"
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
@@ -25,6 +26,7 @@
 #include <QThreadPool>
 #include <QElapsedTimer>
 #include <QTimer>
+#include <QSignalBlocker>
 #include <QHash>
 #include <QSet>
 #include <QDebug>
@@ -625,6 +627,24 @@ void MainWindow::goPrevious()
         m_dualShell->navigateSecondary(-1, m_session.paths(), m_session.ids());
         return;
     }
+    if (m_spreadBook.isActive()) {
+        const int anchorIdx = m_session.indexOfId(m_spreadBook.state().anchor);
+        const int base = anchorIdx >= 0 ? anchorIdx : m_currentIndex;
+        const int next = advanceSpreadAnchor(base, m_session.size(),
+            m_spreadBook.state().members.size(), m_spreadBook.state().stride, -1);
+        if (next < 0) {
+            return;
+        }
+        m_spreadBook.state().anchor = m_session.idAt(next);
+        m_spreadBook.rebuild(m_session);
+        const int first = m_session.indexOfId(m_spreadBook.state().members.isEmpty()
+            ? m_session.idAt(next)
+            : m_spreadBook.state().members.first());
+        setCurrentIndex(first >= 0 ? first : next);
+        syncSpreadPresentation();
+        onSlideshowUserNavigated();
+        return;
+    }
     int idx = m_currentIndex - 1;
     if (idx < 0) {
         idx = m_session.paths().size() - 1;
@@ -640,6 +660,24 @@ void MainWindow::goNext()
     }
     if (m_dualShell && m_dualShell->isSecondaryActive()) {
         m_dualShell->navigateSecondary(+1, m_session.paths(), m_session.ids());
+        return;
+    }
+    if (m_spreadBook.isActive()) {
+        const int anchorIdx = m_session.indexOfId(m_spreadBook.state().anchor);
+        const int base = anchorIdx >= 0 ? anchorIdx : m_currentIndex;
+        const int next = advanceSpreadAnchor(base, m_session.size(),
+            m_spreadBook.state().members.size(), m_spreadBook.state().stride, +1);
+        if (next < 0) {
+            return;
+        }
+        m_spreadBook.state().anchor = m_session.idAt(next);
+        m_spreadBook.rebuild(m_session);
+        const int first = m_session.indexOfId(m_spreadBook.state().members.isEmpty()
+            ? m_session.idAt(next)
+            : m_spreadBook.state().members.first());
+        setCurrentIndex(first >= 0 ? first : next);
+        syncSpreadPresentation();
+        onSlideshowUserNavigated();
         return;
     }
     int idx = m_currentIndex + 1;
@@ -666,5 +704,76 @@ void MainWindow::goLast()
     }
     setCurrentIndex(m_session.paths().size() - 1);
     onSlideshowUserNavigated();
+}
+
+
+
+void MainWindow::setDoubleViewEnabled(bool on)
+{
+    if (!on) {
+        m_spreadBook.clear();
+        if (m_doubleViewAct && m_doubleViewAct->isChecked()) {
+            QSignalBlocker b(m_doubleViewAct);
+            m_doubleViewAct->setChecked(false);
+        }
+        if (m_imageView && m_imageView->isImageMode()) {
+            // Reload single underlay at current index.
+            if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+                setCurrentIndex(m_currentIndex);
+            }
+        }
+        updateStatus();
+        return;
+    }
+    if (m_session.size() < 2) {
+        if (m_doubleViewAct) {
+            QSignalBlocker b(m_doubleViewAct);
+            m_doubleViewAct->setChecked(false);
+        }
+        statusBar()->showMessage(tr("Double view needs at least two pages"), 3000);
+        return;
+    }
+    SessionImageId anchor = currentSessionId();
+    if (anchor == kInvalidSessionImageId && m_currentIndex >= 0) {
+        anchor = m_session.idAt(m_currentIndex);
+    }
+    m_spreadBook.setFixedN(m_session, anchor, 2, SpreadBindingHint::StrictPairs);
+    if (m_imageView && !m_imageView->isImageMode()) {
+        m_imageView->setViewMode(ImageView::ViewMode::Image);
+    }
+    const auto &members = m_spreadBook.state().members;
+    if (!members.isEmpty()) {
+        const int idx = m_session.indexOfId(members.first());
+        if (idx >= 0) {
+            setCurrentIndex(idx);
+        }
+    }
+    // Layout after underlay load (LoadReplace is async).
+    QTimer::singleShot(0, this, [this]() { syncSpreadPresentation(); });
+    QTimer::singleShot(100, this, [this]() { syncSpreadPresentation(); });
+    updateStatus();
+}
+
+void MainWindow::syncSpreadPresentation()
+{
+    if (!m_imageView || !m_spreadBook.isActive()) {
+        return;
+    }
+    if (!m_imageView->isImageMode()) {
+        return;
+    }
+    m_spreadBook.rebuild(m_session);
+    const QStringList paths = m_spreadBook.memberPaths(m_session);
+    const auto &members = m_spreadBook.state().members;
+    // Ensure current index is the first member for classicPath load identity.
+    if (!members.isEmpty()) {
+        const int firstIdx = m_session.indexOfId(members.first());
+        if (firstIdx >= 0 && firstIdx != m_currentIndex) {
+            m_currentIndex = firstIdx;
+            publishSessionCursorForIndex(m_currentIndex);
+            applyCurrentIndexCanvasChange(m_session.pathAt(m_currentIndex), false);
+        }
+    }
+    m_imageView->hostImage().applySpreadLayout(paths, members);
 }
 

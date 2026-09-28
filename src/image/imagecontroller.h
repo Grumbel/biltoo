@@ -73,6 +73,9 @@ public:
     void reloadFromDisk();
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
+    /** Place Image-mode items for spread members (docs/SPREAD.md P0). */
+    void applySpreadLayout(const QStringList &paths,
+                           const QVector<SessionImageId> &ids);
 
     /** Reset undo, view transform, scene rect, framing for Image enter. */
     void prepareModeCanvas();
