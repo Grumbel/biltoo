@@ -613,7 +613,7 @@ void MainWindow::finishCurrentIndexChromeUpdate()
     if (isImageMode()) {
         updateNavigationActions();
         if (m_imageView && m_statusLabel) {
-            m_statusLabel->setText(m_imageView->statusText());
+            m_statusLabel->setText(statusLabelText());
         }
         if (m_imageView) {
             m_imageView->hostSlideshow().setSessionPosition(m_currentIndex, m_session.paths().size(),
@@ -624,7 +624,7 @@ void MainWindow::finishCurrentIndexChromeUpdate()
     }
     if (isGalleryMode()) {
         updateNavigationActions();
-        m_statusLabel->setText(m_imageView ? m_imageView->statusText() : QString());
+        m_statusLabel->setText(m_imageView ? statusLabelText() : QString());
     } else {
         updateStatus();
         updateNavigationActions();
@@ -652,6 +652,24 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     }
 
     m_currentIndex = index;
+
+    // FixedN double-view: filmstrip/session cursor moves the membership window.
+    if (isImageMode() && m_spreadBook.isActive()
+        && m_spreadBook.state().policy == SpreadMembershipPolicy::FixedN) {
+        const SessionImageId anchor = m_session.idAt(index);
+        if (anchor != kInvalidSessionImageId) {
+            m_spreadBook.state().anchor = anchor;
+            m_spreadBook.rebuild(m_session);
+            const auto &members = m_spreadBook.state().members;
+            if (!members.isEmpty()) {
+                const int first = m_session.indexOfId(members.first());
+                if (first >= 0) {
+                    m_currentIndex = first;
+                }
+            }
+        }
+    }
+
     const QString path = m_session.paths().at(m_currentIndex);
 
     // Publish session cursor before decode so Image-mode items bind the correct
@@ -659,6 +677,9 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     // Slideshow auto-advance must not pulse filename/index (only user nav or pinned HUD).
     publishSessionCursorForIndex(m_currentIndex);
     applyCurrentIndexCanvasChange(path, ensureGalleryVisible);
+    if (m_spreadBook.isActive() && isImageMode()) {
+        scheduleSpreadSync();
+    }
     finishCurrentIndexChromeUpdate();
 }
 

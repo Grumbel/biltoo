@@ -26,6 +26,7 @@
 #include <QThreadPool>
 #include <QElapsedTimer>
 #include <QTimer>
+#include <QMetaObject>
 #include <QSignalBlocker>
 #include <QHash>
 #include <QSet>
@@ -75,6 +76,20 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
     const bool canSlideshow = hasFiles && m_imageView && !m_imageView->isWorkspaceMode();
     m_previousAct->setEnabled(imageNav);
     m_nextAct->setEnabled(imageNav);
+    if (m_previousAct && m_nextAct) {
+        if (imageNav && m_spreadBook.isActive()) {
+            const bool byPage = m_spreadBook.state().stride == SpreadStride::ByPage;
+            m_previousAct->setStatusTip(
+                byPage ? tr("Show previous page (spread active)")
+                       : tr("Show previous spread"));
+            m_nextAct->setStatusTip(
+                byPage ? tr("Show next page (spread active)")
+                       : tr("Show next spread"));
+        } else {
+            m_previousAct->setStatusTip(tr("Show previous image"));
+            m_nextAct->setStatusTip(tr("Show next image"));
+        }
+    }
     const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");
     if (m_previousAct) {
         m_previousAct->setProperty("biltooDisabledHelp", imageNavReason);
@@ -708,6 +723,56 @@ void MainWindow::goLast()
 
 
 
+QString MainWindow::statusLabelText() const
+{
+    if (!m_imageView) {
+        return {};
+    }
+    const QString base = m_imageView->statusText();
+    if (!m_spreadBook.isActive() || !m_imageView->isImageMode()) {
+        return base;
+    }
+    const auto &members = m_spreadBook.state().members;
+    if (members.isEmpty()) {
+        return base;
+    }
+    const int firstIdx = m_session.indexOfId(members.first());
+    const int lastIdx = m_session.indexOfId(members.last());
+    if (firstIdx < 0 || lastIdx < 0) {
+        return base;
+    }
+    const int first = firstIdx + 1;
+    const int last = lastIdx + 1;
+    const int total = m_session.size();
+    QString range;
+    if (first == last) {
+        range = tr("Spread %1/%2").arg(first).arg(total);
+    } else {
+        range = tr("Spread %1–%2/%3").arg(first).arg(last).arg(total);
+    }
+    if (base.isEmpty()) {
+        return range;
+    }
+    return range + QStringLiteral(" · ") + base;
+}
+
+void MainWindow::scheduleSpreadSync()
+{
+    if (!m_spreadBook.isActive() || !m_imageView || !m_imageView->isImageMode()) {
+        return;
+    }
+    if (m_spreadSyncScheduled) {
+        return;
+    }
+    m_spreadSyncScheduled = true;
+    QMetaObject::invokeMethod(this, [this]() {
+        m_spreadSyncScheduled = false;
+        if (m_spreadBook.isActive() && m_imageView && m_imageView->isImageMode()) {
+            syncSpreadPresentation();
+        }
+    }, Qt::QueuedConnection);
+}
+
 void MainWindow::setDoubleViewEnabled(bool on)
 {
     if (!on) {
@@ -748,9 +813,8 @@ void MainWindow::setDoubleViewEnabled(bool on)
             setCurrentIndex(idx);
         }
     }
-    // Layout after underlay load (LoadReplace is async).
-    QTimer::singleShot(0, this, [this]() { syncSpreadPresentation(); });
-    QTimer::singleShot(100, this, [this]() { syncSpreadPresentation(); });
+    // Layout after underlay load; further installs re-sync via statusChanged.
+    scheduleSpreadSync();
     updateStatus();
 }
 
@@ -828,7 +892,6 @@ void MainWindow::viewSelectionAsSpread()
     if (first >= 0) {
         setCurrentIndex(first);
     }
-    QTimer::singleShot(0, this, [this]() { syncSpreadPresentation(); });
-    QTimer::singleShot(100, this, [this]() { syncSpreadPresentation(); });
+    scheduleSpreadSync();
     updateStatus();
 }

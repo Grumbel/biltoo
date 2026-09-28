@@ -806,6 +806,11 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     connect(m_imageView, &ImageView::statusChanged, this, &MainWindow::updateStatus);
+    connect(m_imageView, &ImageView::statusChanged, this, [this]() {
+        if (m_spreadBook.isActive()) {
+            scheduleSpreadSync();
+        }
+    });
 
     m_slideshowTimer = new QTimer(this);
     m_slideshowTimer->setTimerType(Qt::PreciseTimer);
@@ -3457,7 +3462,7 @@ void MainWindow::updateStatus()
             m_decodeStatusClearTimer->start();
         }
     }
-    m_statusLabel->setText(m_imageView->statusText());
+    m_statusLabel->setText(statusLabelText());
 }
 
 void MainWindow::onMouseInfoChanged(const ImageMouseInfo &info)

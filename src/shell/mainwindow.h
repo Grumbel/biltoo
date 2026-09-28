@@ -342,7 +342,10 @@ private slots:
     /** Stage 2c.2: Image-mode side-by-side compare (shared ItemWorld + pipeline). */
     void setDoubleViewEnabled(bool on);
     void syncSpreadPresentation();
+    void scheduleSpreadSync();
     void viewSelectionAsSpread();
+    /** Status bar line: optional "Spread a–b/N · " prefix + ImageView::statusText(). */
+    QString statusLabelText() const;
     void setDualCompareEnabled(bool on);
 
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
@@ -557,6 +560,7 @@ private:
     /** Stage 2c.2: owns splitter; primary is m_imageView. */
     DualImageShell *m_dualShell = nullptr;
     SpreadBook m_spreadBook;
+    bool m_spreadSyncScheduled = false;
     QAction *m_doubleViewAct = nullptr;
     QAction *m_viewSelectionSpreadAct = nullptr;
     QAction *m_dualCompareAct = nullptr;
