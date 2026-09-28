@@ -24,7 +24,7 @@ struct SpreadSlot {
 };
 
 struct SpreadLayoutResult {
-    QVector<SpreadSlot> slots;
+    QVector<SpreadSlot> memberSlots;
     QRectF unionRect;
 };
 
@@ -91,7 +91,7 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
     }
     qreal x = 0;
     qreal maxH = 0;
-    out.slots.reserve(pageSizes.size());
+    out.memberSlots.reserve(pageSizes.size());
     for (const QSizeF &sz : pageSizes) {
         SpreadSlot slot;
         qreal w = std::max(1.0, sz.width());
@@ -102,12 +102,12 @@ inline SpreadLayoutResult layoutSpread(const QVector<QSizeF> &pageSizes,
             h = targetH;
         }
         slot.rect = QRectF(x, 0, w, h);
-        out.slots.append(slot);
+        out.memberSlots.append(slot);
         x += w + gutter;
         maxH = std::max(maxH, h);
     }
-    if (!out.slots.isEmpty()) {
-        const qreal right = out.slots.last().rect.right();
+    if (!out.memberSlots.isEmpty()) {
+        const qreal right = out.memberSlots.last().rect.right();
         out.unionRect = QRectF(0, 0, right, maxH);
     }
     return out;

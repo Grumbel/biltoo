@@ -439,17 +439,17 @@ void ImageController::applySpreadLayout(const QStringList &paths,
     }
 
     const SpreadLayoutResult layout = layoutSpread(sizes, /*gutter=*/12.0, /*heightMatch=*/true);
-    for (int i = 0; i < items.size() && i < layout.slots.size(); ++i) {
+    for (int i = 0; i < items.size() && i < layout.memberSlots.size(); ++i) {
         ImageItem *item = items.at(i);
         ItemComponents::Placement pl = item->placement();
-        pl.pos = layout.slots.at(i).rect.topLeft();
+        pl.pos = layout.memberSlots.at(i).rect.topLeft();
         pl.scale = 1.0;
         pl.scaleY = 1.0;
         pl.rotation = 0.0;
         // Match height-matched slot size via scale when intrinsic differs.
         const QRectF local = item->displayContentRect();
-        if (local.height() > 1.0 && layout.slots.at(i).rect.height() > 1.0) {
-            const qreal s = layout.slots.at(i).rect.height() / local.height();
+        if (local.height() > 1.0 && layout.memberSlots.at(i).rect.height() > 1.0) {
+            const qreal s = layout.memberSlots.at(i).rect.height() / local.height();
             if (s > 0.01 && s < 100.0 && qAbs(s - 1.0) > 0.001) {
                 pl.scale = s;
                 pl.scaleY = s;
