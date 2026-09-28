@@ -13,6 +13,7 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPaintEngine>
 #include <QPainterPath>
 #include <QUndoStack>
 #include <QtMath>
@@ -111,12 +112,15 @@ bool AnnotationController::pageSpaceForItem(ImageItem *item, QRectF *boundsOut,
     }
     *sourceSizeOut = sourceSize;
 
-    // Prefer live text layer (authoritative pageYUp), then cache, then pixel box.
-    if (m_view->hostText().session().hasLayerRegions()
-        && m_view->hostText().session().pageBoundsValid()) {
-        *boundsOut = m_view->hostText().session().pageBounds();
-        *yUpOut = m_view->hostText().pageYUp();
-        return true;
+    // Prefer layer for *this* item path (not a stale primary from another page).
+    m_view->hostText().ensureMemberLayers();
+    if (const ThumtooCache::PageTextLayer *live = m_view->hostText().layerForItem(item)) {
+        if (live->pageBounds.isValid() && live->pageBounds.width() > 1
+            && live->pageBounds.height() > 1) {
+            *boundsOut = live->pageBounds;
+            *yUpOut = live->pageYUp;
+            return true;
+        }
     }
 
     const auto layer = ThumtooCache::cachedPageTextLayer(path);
@@ -292,6 +296,29 @@ void AnnotationController::paintQuads(QPainter &painter, ImageItem *item,
     }
 }
 
+
+void AnnotationController::applyHighlightBlend(QPainter &painter, const QColor &color) const
+{
+    // Multiply lets black text show through on software raster. QOpenGLWidget's
+    // paint engine often ignores Multiply and draws opaque SourceOver, which
+    // covers glyphs — fall back to translucent SourceOver there.
+    QPaintEngine *engine = painter.paintEngine();
+    const bool multiplyOk = engine
+        && (engine->type() == QPaintEngine::Raster
+            || engine->type() == QPaintEngine::Picture
+            || engine->type() == QPaintEngine::Pdf
+            || engine->type() == QPaintEngine::MacPrinter);
+    if (multiplyOk) {
+        painter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        painter.setOpacity(1.0);
+        Q_UNUSED(color);
+    } else {
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        // ~40% cover — black ink remains readable under yellow/green/etc.
+        painter.setOpacity(0.42);
+    }
+}
+
 void AnnotationController::paintObject(QPainter &painter, ImageItem *item,
                                        const Annotation::Object &obj,
                                        const QRectF &pageBounds, bool pageYUp,
@@ -299,9 +326,10 @@ void AnnotationController::paintObject(QPainter &painter, ImageItem *item,
 {
     painter.save();
     if (obj.blend == Annotation::Blend::Multiply) {
-        painter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        applyHighlightBlend(painter, obj.color);
     } else {
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        painter.setOpacity(1.0);
     }
     if (obj.kind == Annotation::Kind::HighlightQuad) {
         paintQuads(painter, item, obj, pageBounds, pageYUp, sourceSize);
@@ -423,18 +451,32 @@ void AnnotationController::finishTextHighlight()
     if (!item) {
         return;
     }
-    if (!m_view->hostText().session().hasRegions()) {
+    // Bind text layer to *this* underlay (not a stale primary / other page).
+    m_view->hostText().ensureMemberLayers();
+    const ThumtooCache::PageTextLayer *layerPtr = m_view->hostText().layerForItem(item);
+    if (!layerPtr || layerPtr->regions.isEmpty()) {
         m_view->hostText().refresh();
+        m_view->hostText().ensureMemberLayers();
+        layerPtr = m_view->hostText().layerForItem(item);
     }
-    const auto &layer = m_view->hostText().session().layerRef();
-    if (layer.regions.isEmpty()) {
+    // Cache fallback by path if controller bag still empty.
+    ThumtooCache::PageTextLayer cachedLayer;
+    const QString path = m_view->hostText().pathForItem(item);
+    if ((!layerPtr || layerPtr->regions.isEmpty()) && !path.isEmpty()) {
+        cachedLayer = ThumtooCache::cachedPageTextLayer(path);
+        if (!cachedLayer.regions.isEmpty()) {
+            layerPtr = &cachedLayer;
+        }
+    }
+    if (!layerPtr || layerPtr->regions.isEmpty()) {
         return;
     }
+    const ThumtooCache::PageTextLayer &layer = *layerPtr;
 
     QVector<QRectF> regionRects;
     regionRects.reserve(layer.regions.size());
     for (const auto &r : layer.regions) {
-        regionRects.append(m_view->hostText().regionImageRect(r));
+        regionRects.append(m_view->hostText().regionImageRectFor(item, path, layer, r));
     }
     const QRectF sceneRect = m_view->mapToScene(m_rubberView).boundingRect();
     const QRectF local = item->mapFromScene(sceneRect).boundingRect();

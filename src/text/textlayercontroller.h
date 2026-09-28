@@ -121,6 +121,9 @@ public:
                               const ThumtooCache::TextRegion &region) const;
     /** Load cached text layers for all live Image underlays (spread members). */
     void ensureMemberLayers();
+    QString pathForItem(ImageItem *item) const;
+    /** Text layer for underlay item (member bag or primary if path matches). */
+    const ThumtooCache::PageTextLayer *layerForItem(ImageItem *item) const;
 
 signals:
     void layerChanged();
@@ -139,8 +142,6 @@ private:
     void selectRegionAtViewPos(const QPoint &viewPos);
 
     bool isMultiUnderlay() const;
-    QString pathForItem(ImageItem *item) const;
-    const ThumtooCache::PageTextLayer *layerForItem(ImageItem *item) const;
 
     ImageView *m_view = nullptr;
     QVector<int> m_speakingRegions;

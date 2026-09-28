@@ -73,6 +73,7 @@ private:
     QRectF pageRectToScene(ImageItem *item, const QRectF &pageRect,
                            const QRectF &pageBounds, bool pageYUp,
                            const QSize &sourceSize) const;
+    void applyHighlightBlend(QPainter &painter, const QColor &color) const;
     void paintStroke(QPainter &painter, ImageItem *item,
                      const Annotation::Object &obj, const QRectF &pageBounds,
                      bool pageYUp, const QSize &sourceSize) const;
