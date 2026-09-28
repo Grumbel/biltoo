@@ -1851,7 +1851,22 @@ QList<int> MainWindow::sessionSelectionIndices() const
             }
         }
     }
-    if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
+    if (m_imageView && isGalleryMode()) {
+        // Gallery multi-select lives on scene items (not WorkspaceController).
+        for (ImageItem *it : m_imageView->liveItems()) {
+            if (!it || !it->isSelected()) {
+                continue;
+            }
+            const SessionImageId sid = it->sessionId();
+            int idx = (sid != kInvalidSessionImageId) ? m_session.indexOfId(sid) : -1;
+            if (idx < 0) {
+                idx = m_session.indexOfPathPreferId(it->path());
+            }
+            if (idx >= 0 && idx < m_session.size()) {
+                set.insert(idx);
+            }
+        }
+    } else if (m_imageView && isWorkspaceMode()) {
         for (int idx : m_imageView->hostWorkspace().selectedSessionIndices()) {
             if (idx >= 0 && idx < m_session.size()) {
                 set.insert(idx);
@@ -3503,6 +3518,10 @@ void MainWindow::showContextMenu(const QPoint &pos)
     if (isImageMode()) {
         menu.addAction(m_previousAct);
         menu.addAction(m_nextAct);
+        menu.addSeparator();
+    }
+    if (isGalleryMode() && m_viewSelectionSpreadAct) {
+        menu.addAction(m_viewSelectionSpreadAct);
         menu.addSeparator();
     }
     menu.addAction(m_zoomFitAct);

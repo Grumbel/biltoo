@@ -225,6 +225,12 @@ void MainWindow::createActions()
 
 
     m_fullscreenAct = new QAction(tr("F&ullscreen"), this);
+    m_viewSelectionSpreadAct = new QAction(tr("View &Selection"), this);
+    m_viewSelectionSpreadAct->setObjectName(QStringLiteral("viewSelectionSpread"));
+    m_viewSelectionSpreadAct->setStatusTip(
+        tr("Open the selected pages as a reading surface (one page, or side-by-side)"));
+    connect(m_viewSelectionSpreadAct, &QAction::triggered, this, &MainWindow::viewSelectionAsSpread);
+
     m_doubleViewAct = new QAction(tr("Dou&ble view"), this);
     m_doubleViewAct->setObjectName(QStringLiteral("doubleView"));
     m_doubleViewAct->setCheckable(true);
@@ -1099,6 +1105,7 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
+    m_viewMenu->addAction(m_viewSelectionSpreadAct);
     m_viewMenu->addAction(m_doubleViewAct);
     m_viewMenu->addAction(m_dualCompareAct);
     m_viewMenu->addSeparator();

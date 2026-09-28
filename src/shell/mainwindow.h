@@ -342,6 +342,7 @@ private slots:
     /** Stage 2c.2: Image-mode side-by-side compare (shared ItemWorld + pipeline). */
     void setDoubleViewEnabled(bool on);
     void syncSpreadPresentation();
+    void viewSelectionAsSpread();
     void setDualCompareEnabled(bool on);
 
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
@@ -557,6 +558,7 @@ private:
     DualImageShell *m_dualShell = nullptr;
     SpreadBook m_spreadBook;
     QAction *m_doubleViewAct = nullptr;
+    QAction *m_viewSelectionSpreadAct = nullptr;
     QAction *m_dualCompareAct = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
     QDockWidget *m_thumbnailDock = nullptr;

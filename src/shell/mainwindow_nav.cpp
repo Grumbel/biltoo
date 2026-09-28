@@ -777,3 +777,58 @@ void MainWindow::syncSpreadPresentation()
     m_imageView->hostImage().applySpreadLayout(paths, members);
 }
 
+
+void MainWindow::viewSelectionAsSpread()
+{
+    const QList<int> indices = sessionSelectionIndices();
+    if (indices.isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Select one or more pages first"), 3000);
+        }
+        return;
+    }
+    QVector<SessionImageId> ids;
+    ids.reserve(indices.size());
+    for (int idx : indices) {
+        const SessionImageId sid = m_session.idAt(idx);
+        if (sid != kInvalidSessionImageId) {
+            ids.append(sid);
+        }
+    }
+    if (ids.isEmpty()) {
+        return;
+    }
+    if (ids.size() == 1) {
+        m_spreadBook.clear();
+        if (m_doubleViewAct) {
+            QSignalBlocker b(m_doubleViewAct);
+            m_doubleViewAct->setChecked(false);
+        }
+        const int idx = m_session.indexOfId(ids.first());
+        if (idx >= 0) {
+            if (m_imageView && !m_imageView->isImageMode()) {
+                m_imageView->setViewMode(ImageView::ViewMode::Image);
+            }
+            setCurrentIndex(idx);
+        }
+        updateStatus();
+        return;
+    }
+    if (!m_spreadBook.setFromSelection(m_session, ids)) {
+        return;
+    }
+    if (m_doubleViewAct) {
+        QSignalBlocker b(m_doubleViewAct);
+        m_doubleViewAct->setChecked(true);
+    }
+    if (m_imageView && !m_imageView->isImageMode()) {
+        m_imageView->setViewMode(ImageView::ViewMode::Image);
+    }
+    const int first = m_session.indexOfId(m_spreadBook.state().members.first());
+    if (first >= 0) {
+        setCurrentIndex(first);
+    }
+    QTimer::singleShot(0, this, [this]() { syncSpreadPresentation(); });
+    QTimer::singleShot(100, this, [this]() { syncSpreadPresentation(); });
+    updateStatus();
+}
