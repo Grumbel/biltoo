@@ -173,8 +173,10 @@ inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsi
                 const QPointF d = p - a;
                 dist = qSqrt(d.x() * d.x() + d.y() * d.y());
             } else {
-                const qreal t = qBound(0.0, 1.0,
-                    ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2);
+                // Qt: qBound(value, min, max) — not (min, max, value).
+                const qreal t = qBound(
+                    ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2,
+                    0.0, 1.0);
                 const QPointF proj(a.x() + t * ab.x(), a.y() + t * ab.y());
                 const QPointF d = p - proj;
                 dist = qSqrt(d.x() * d.x() + d.y() * d.y());
