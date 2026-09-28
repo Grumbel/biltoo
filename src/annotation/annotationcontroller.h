@@ -13,6 +13,7 @@
 #include <QRectF>
 #include <QSize>
 #include <QVector>
+#include <QImage>
 
 class ImageView;
 class ImageItem;
@@ -54,6 +55,8 @@ public:
     bool tryMouseRelease(QMouseEvent *event);
 
     void clearCurrentPage();
+    /** Page pixels + annotations (display space of primary item). Null if none. */
+    QImage renderFlattenedDisplay() const;
     void clearSelection();
     QVector<quint64> selectedIds() const { return m_selectedIds; }
     bool tryKeyPress(QKeyEvent *event);

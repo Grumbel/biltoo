@@ -2,16 +2,16 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2780.1-annot-line` (base `b8a0cf3`).
+**Tip:** `biltoo-2781.1-annot-export-png` (base `b8a0cf3`).
 
-### 2780.1
-- **Line** tool: drag endpoints in page space (SourceOver stroke)
-- Select / eraser / undo via existing point geometry
+### 2781.1
+- **File → Export Page with Annotations…** (Image mode)
+- Flattens primary display pixels + Multiply/SourceOver annotations to PNG
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2780.1-annot-line-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2781.1-annot-export-png-b8a0cf3.bundle HEAD
 ```
 
 ### Next
-Export flatten (PNG), sticky notes
+Sticky notes (Phase C), underline-from-text

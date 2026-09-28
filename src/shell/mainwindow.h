@@ -150,6 +150,7 @@ public:
     void exportPdf();
     void exportDocumentText();
     void exportPng();
+    void exportAnnotatedPng();
     /** Bake session rotate/flip/crop into new files (dir / cbz / pdf). */
     void exportSessionImages();
     void togglePageGuide();
@@ -701,6 +702,7 @@ private:
     QAction *m_exportPdfAct = nullptr;
     QAction *m_exportTextAct = nullptr;
     QAction *m_exportPngAct = nullptr;
+    QAction *m_exportAnnotatedPngAct = nullptr;
     QAction *m_exportSessionImagesAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
     QAction *m_fitPageGuideAct = nullptr;

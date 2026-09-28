@@ -892,6 +892,124 @@ void AnnotationController::finishShape()
                                                             : QObject::tr("Rectangle"));
 }
 
+
+QImage AnnotationController::renderFlattenedDisplay() const
+{
+    if (!m_view) {
+        return {};
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        return {};
+    }
+    QImage base = item->displayImage();
+    if (base.isNull()) {
+        return {};
+    }
+    QImage out = base.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    if (out.isNull()) {
+        return {};
+    }
+
+    QRectF bounds;
+    bool yUp = false;
+    QSize sourceSize;
+    // Const cast for pageSpace helpers that are non-const only due to ensureMemberLayers
+    auto *self = const_cast<AnnotationController *>(this);
+    if (!self->pageSpaceForItem(item, &bounds, &yUp, &sourceSize)) {
+        return out;
+    }
+    SessionImageId sid = targetSid(item);
+    const Annotation::Page *pg = m_session.page(sid);
+    if (!pg || pg->objects.isEmpty()) {
+        return out;
+    }
+    const QRectF pb = pg->pageBounds.isValid() ? pg->pageBounds : bounds;
+    const bool py = pg->pageBounds.isValid() ? pg->pageYUp : yUp;
+
+    QPainter painter(&out);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Draw in display-pixel space (image coords, no item offset / scene).
+    for (const Annotation::Object &obj : pg->objects) {
+        painter.save();
+        if (obj.blend == Annotation::Blend::Multiply) {
+            painter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        } else {
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        }
+
+        if (obj.kind == Annotation::Kind::HighlightQuad
+            || obj.kind == Annotation::Kind::ShapeRect
+            || obj.kind == Annotation::Kind::ShapeEllipse) {
+            painter.setPen(Qt::NoPen);
+            if (obj.kind == Annotation::Kind::HighlightQuad) {
+                painter.setBrush(obj.color);
+            } else {
+                QPen pen(obj.color);
+                qreal pageUnit = 1.0;
+                if (pb.width() > 1 && sourceSize.width() > 0) {
+                    pageUnit = qreal(sourceSize.width()) / pb.width();
+                }
+                pen.setWidthF(qMax(0.5, obj.width * pageUnit));
+                painter.setPen(pen);
+                QColor fill = obj.color;
+                fill.setAlpha(40);
+                painter.setBrush(fill);
+            }
+            for (const QRectF &q : obj.quads) {
+                const QRectF disp = self->pageRectToDisplay(item, q, pb, py, sourceSize);
+                if (disp.isEmpty()) {
+                    continue;
+                }
+                if (obj.kind == Annotation::Kind::ShapeEllipse) {
+                    painter.drawEllipse(disp);
+                } else {
+                    painter.drawRect(disp);
+                }
+            }
+        } else if (!obj.points.isEmpty()) {
+            // Strokes + lines
+            QPainterPath path;
+            bool first = true;
+            for (const QPointF &pp : obj.points) {
+                const QRectF disp = self->pageRectToDisplay(
+                    item, QRectF(pp.x(), pp.y(), 0.01, 0.01), pb, py, sourceSize);
+                const QPointF pt = disp.center();
+                if (first) {
+                    path.moveTo(pt);
+                    first = false;
+                } else {
+                    path.lineTo(pt);
+                }
+            }
+            QPen pen(obj.color);
+            qreal pageUnit = 1.0;
+            if (pb.width() > 1 && sourceSize.width() > 0) {
+                pageUnit = qreal(sourceSize.width()) / pb.width();
+            }
+            pen.setWidthF(qMax(0.5, obj.width * pageUnit));
+            pen.setCapStyle(Qt::RoundCap);
+            pen.setJoinStyle(Qt::RoundJoin);
+            painter.setPen(pen);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawPath(path);
+            if (obj.points.size() == 1) {
+                const qreal r = qMax(0.5, obj.width * 0.5 * pageUnit);
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(obj.color);
+                const QRectF disp = self->pageRectToDisplay(
+                    item, QRectF(obj.points.first().x(), obj.points.first().y(), 0.01, 0.01),
+                    pb, py, sourceSize);
+                painter.drawEllipse(disp.center(), r, r);
+            }
+        }
+        painter.restore();
+    }
+    painter.end();
+    return out;
+}
+
 void AnnotationController::clearSelection()
 {
     if (m_selectedIds.isEmpty()) {

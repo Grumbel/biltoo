@@ -109,6 +109,12 @@ void MainWindow::createActions()
         tr("Workspace: export the page guide or content bounds as a PNG"));
     connect(m_exportPngAct, &QAction::triggered, this, &MainWindow::exportPng);
 
+    m_exportAnnotatedPngAct = new QAction(tr("Export Page with &Annotations…"), this);
+    m_exportAnnotatedPngAct->setIcon(themeIcon(QStringLiteral("image-x-generic"), QStyle::SP_FileDialogContentsView));
+    m_exportAnnotatedPngAct->setStatusTip(
+        tr("Save the current page image with annotations flattened (Image mode)"));
+    connect(m_exportAnnotatedPngAct, &QAction::triggered, this, &MainWindow::exportAnnotatedPng);
+
     m_exportPdfAct = new QAction(tr("Export &Page as PDF…"), this);
     m_exportPdfAct->setIcon(themeIcon(QStringLiteral("application-pdf"), QStyle::SP_FileDialogContentsView));
     m_exportPdfAct->setStatusTip(
@@ -1233,6 +1239,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_exportTextAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exportPngAct);
+    m_fileMenu->addAction(m_exportAnnotatedPngAct);
     m_fileMenu->addAction(m_exportPdfAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);

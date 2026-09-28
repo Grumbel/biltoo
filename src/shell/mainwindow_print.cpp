@@ -237,6 +237,60 @@ void MainWindow::printPreview()
     syncPageGuide(m_imageView, &printer);
 }
 
+
+void MainWindow::exportAnnotatedPng()
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (!m_imageView->isImageMode()) {
+        statusBar()->showMessage(
+            tr("Export with annotations is available in Image mode."), 4000);
+        return;
+    }
+    const QImage flat = m_imageView->hostAnnot().renderFlattenedDisplay();
+    if (flat.isNull()) {
+        statusBar()->showMessage(tr("No page image to export."), 4000);
+        return;
+    }
+
+    QSettings settings;
+    settings.beginGroup(QStringLiteral("exportAnnotated"));
+    const QString lastDir = settings.value(QStringLiteral("lastDir"), QDir::homePath()).toString();
+    settings.endGroup();
+
+    QString stem = QStringLiteral("page_annotated");
+    if (ImageItem *item = m_imageView->primaryItem()) {
+        const QFileInfo fi(item->path());
+        if (!fi.completeBaseName().isEmpty()) {
+            stem = fi.completeBaseName() + QStringLiteral("_annotated");
+        }
+    }
+    const QString suggest = QDir(lastDir).filePath(stem + QStringLiteral(".png"));
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export Page with Annotations"), suggest,
+        tr("PNG images (*.png)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    QString out = path;
+    if (!out.endsWith(QLatin1String(".png"), Qt::CaseInsensitive)) {
+        out += QStringLiteral(".png");
+    }
+    if (!flat.save(out, "PNG")) {
+        statusBar()->showMessage(tr("Failed to write %1").arg(out), 6000);
+        return;
+    }
+    settings.beginGroup(QStringLiteral("exportAnnotated"));
+    settings.setValue(QStringLiteral("lastDir"), QFileInfo(out).absolutePath());
+    settings.endGroup();
+    statusBar()->showMessage(tr("Exported %1×%2 → %3")
+                                 .arg(flat.width())
+                                 .arg(flat.height())
+                                 .arg(QFileInfo(out).fileName()),
+                             5000);
+}
+
 void MainWindow::exportPdf()
 {
     if (!m_imageView) {
@@ -426,6 +480,11 @@ void MainWindow::updateFileExportActions()
         // Page/sheet export: Workspace primary (also allow Image single-frame later).
         m_exportPngAct->setEnabled(workspace);
         m_exportPngAct->setVisible(workspace);
+    }
+    if (m_exportAnnotatedPngAct) {
+        const bool image = m_imageView && m_imageView->isImageMode();
+        m_exportAnnotatedPngAct->setEnabled(image);
+        m_exportAnnotatedPngAct->setVisible(image || workspace);
     }
     if (m_exportPdfAct) {
         m_exportPdfAct->setEnabled(workspace);
