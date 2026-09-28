@@ -146,6 +146,7 @@ public:
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
+    void updateInteractionToolTip();
     int currentIndex() const;
     /** Session cursor row (may differ from multi-select). */
     int cursorIndex() const { return m_cursorIndex; }
@@ -228,6 +229,13 @@ public:
     /** Session rows currently on the Workspace canvas (membership badge). */
     void setOnCanvasIndices(const QSet<int> &indices);
     bool isOnCanvas(int row) const { return m_onCanvasIndices.contains(row); }
+
+    /**
+     * Session rows in the active Image spread (reading set), excluding the
+     * pure visual of the cursor frame. Amber left mark (View role).
+     */
+    void setSpreadMemberIndices(const QSet<int> &indices);
+    bool isSpreadMember(int row) const { return m_spreadMemberIndices.contains(row); }
 
     void setBarOrientation(Qt::Orientation orientation);
     Qt::Orientation barOrientation() const { return m_orientation; }
@@ -395,6 +403,7 @@ private:
     const SessionSearchIndex *m_searchHitIndex = nullptr;
 
     QSet<int> m_onCanvasIndices;
+    QSet<int> m_spreadMemberIndices;
     ThumbnailDelegate *m_delegate = nullptr;
 
     QPoint m_pressPos;

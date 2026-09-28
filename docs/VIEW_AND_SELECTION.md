@@ -296,11 +296,14 @@ Phased so each step is shippable:
    until Double View is toggled (do not snap to FixedN on click).
 4. **Search colour:** **violet** (fourth role), distinct from speech green.
 
-### P2 progress
+### P2–P4 progress
 
 - Filmstrip: Select blue wash vs View amber cursor edge.
 - Filmstrip: **camera viewport** rectangle on the cursor thumb (normalised
   content coords), updated from Image camera on status refresh.
+- Filmstrip: **spread members** get a left amber bar (cursor keeps full frame).
+- Filmstrip tooltips describe click / Ctrl / Shift by multi-select mode.
+- Prev/Next status tips name **cursor** vs **spread** motion.
 - `ChromeColors` helper (`src/shell/chromecolors.h`).
 
 ---

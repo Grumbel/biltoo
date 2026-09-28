@@ -3354,6 +3354,19 @@ void MainWindow::updateFilmstripChrome()
     if (m_currentIndex >= 0) {
         m_thumbnailBar->setCursorIndex(m_currentIndex);
     }
+    // Spread reading-set marks (View amber) on filmstrip.
+    {
+        QSet<int> spreadRows;
+        if (m_spreadBook.isActive()) {
+            for (const SessionImageId sid : m_spreadBook.state().members) {
+                const int idx = m_session.indexOfId(sid);
+                if (idx >= 0) {
+                    spreadRows.insert(idx);
+                }
+            }
+        }
+        m_thumbnailBar->setSpreadMemberIndices(spreadRows);
+    }
     QRectF norm;
     if (m_imageView && m_imageView->isImageMode() && m_imageView->viewport()) {
         // Prefer underlay matching session cursor; else primary.

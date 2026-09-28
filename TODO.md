@@ -2,21 +2,19 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2746.1-filmstrip-cursor-viewport` (base `636e70e`).
+**Tip:** `biltoo-2747.1-filmstrip-spread-marks` (base `636e70e`).
 
-### Design
-- docs/VIEW_AND_SELECTION.md — §8 decisions accepted; P2 progress noted
+### Done this tip
+- Filmstrip **spread member** amber left bar (non-cursor members)
+- Filmstrip tooltips: cursor vs Ctrl/Shift selection
+- Prev/Next tips: cursor vs spread motion language
+- VIEW_AND_SELECTION.md P2–P4 progress
 
-### Implemented (P2 start)
-- `ChromeColors` (Select blue / View amber / Activity green / Search violet)
-- Filmstrip: selection wash = blue; cursor = amber frame
-- Filmstrip: **camera viewport** rectangle on cursor thumb
-- `updateFilmstripChrome()` from `updateStatus()`
-
-### Next
-- P3 keyboard/modifier tooltips; P4 spread-member marks on filmstrip
+### Still open
+- P5 text/speech/search brush audit (speech already green; search violet on filmstrip)
+- Optional: text-layer Select blue via ChromeColors
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2746.1-filmstrip-cursor-viewport-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2747.1-filmstrip-spread-marks-636e70e.bundle HEAD
 ```

@@ -80,14 +80,14 @@ void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
         if (imageNav && m_spreadBook.isActive()) {
             const bool byPage = m_spreadBook.state().stride == SpreadStride::ByPage;
             m_previousAct->setStatusTip(
-                byPage ? tr("Show previous page (spread active)")
-                       : tr("Show previous spread"));
+                byPage ? tr("Previous page in session (moves cursor / reading set)")
+                       : tr("Previous spread (moves reading set by N pages)"));
             m_nextAct->setStatusTip(
-                byPage ? tr("Show next page (spread active)")
-                       : tr("Show next spread"));
+                byPage ? tr("Next page in session (moves cursor / reading set)")
+                       : tr("Next spread (moves reading set by N pages)"));
         } else {
-            m_previousAct->setStatusTip(tr("Show previous image"));
-            m_nextAct->setStatusTip(tr("Show next image"));
+            m_previousAct->setStatusTip(tr("Previous page (moves session cursor)"));
+            m_nextAct->setStatusTip(tr("Next page (moves session cursor)"));
         }
     }
     const QString imageNavReason = tr("Available in Image mode when the session has more than one image.");

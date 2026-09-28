@@ -419,6 +419,14 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         }
     }
 
+    // Spread membership (View role) — left amber bar; cursor gets full frame.
+    if (bar && bar->isSpreadMember(index.row()) && contentRect.isValid()
+        && bar->cursorIndex() != index.row()) {
+        const int w = qBound(3, contentRect.width() / 24, 6);
+        painter->fillRect(QRect(contentRect.left(), contentRect.top(), w, contentRect.height()),
+                          ChromeColors::viewStroke(220));
+    }
+
     // Session cursor (View amber) — distinct from page selection blue.
     if (bar && bar->cursorIndex() == index.row() && contentRect.isValid()) {
         painter->setRenderHint(QPainter::Antialiasing, true);
@@ -477,7 +485,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     }
     setStatusTip(tr("Drag to reorder on the strip, or onto the Workspace canvas; "
                     "double-click or Enter opens the image"));
-    setToolTip(tr("Drag to reorder · Workspace · double-click opens"));
+    updateInteractionToolTip();
 
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {
@@ -1722,8 +1730,22 @@ void ThumbnailBar::setOnCanvasIndices(const QSet<int> &indices)
         return;
     }
     m_onCanvasIndices = indices;
-    viewport()->update();
+    if (viewport()) {
+        viewport()->update();
+    }
 }
+
+void ThumbnailBar::setSpreadMemberIndices(const QSet<int> &indices)
+{
+    if (m_spreadMemberIndices == indices) {
+        return;
+    }
+    m_spreadMemberIndices = indices;
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 
 bool ThumbnailBar::isSessionCropped(int row) const
 {
@@ -2664,6 +2686,20 @@ void ThumbnailBar::setVisibleLoadsSuspended(bool on)
 }
 
 
+
+void ThumbnailBar::updateInteractionToolTip()
+{
+    if (m_multiSelect) {
+        setToolTip(tr(
+            "Click: select page · Ctrl+click: toggle · Shift+click: range\n"
+            "Drag: reorder · Double-click: open in Image"));
+    } else {
+        setToolTip(tr(
+            "Click: go to page (cursor) · Ctrl/Shift+click: multi-select when enabled\n"
+            "Drag: reorder · Double-click: open"));
+    }
+}
+
 void ThumbnailBar::setCursorIndex(int index)
 {
     if (m_cursorIndex == index) {
@@ -2802,6 +2838,7 @@ void ThumbnailBar::setMultiSelectEnabled(bool on)
         clearSelection();
     }
     blockSignals(blocked);
+    updateInteractionToolTip();
 }
 
 QList<int> ThumbnailBar::selectedIndices() const
