@@ -148,6 +148,23 @@ private:
     void applyMoveDelta(const QPointF &delta);
     void finishMoveSelection();
     void cancelMoveSelection();
+
+    /** Corner resize for single selected object with one quad (0=TL..3=BL). */
+    enum class ResizeCorner : int { None = -1, TL = 0, TR = 1, BR = 2, BL = 3 };
+    static ResizeCorner hitTestQuadHandle(const QRectF &quad, const QPointF &pagePt,
+                                          qreal radius);
+    static QRectF resizedQuad(const QRectF &base, ResizeCorner corner,
+                              const QPointF &pagePt);
+    void beginResizeSelection(ResizeCorner corner, quint64 id,
+                              const Annotation::Object &baseline);
+    void applyResizeTo(const QPointF &pagePt);
+    void finishResizeSelection();
+    void cancelResizeSelection();
+
+    bool m_resizing = false;
+    ResizeCorner m_resizeCorner = ResizeCorner::None;
+    quint64 m_resizeId = 0;
+    Annotation::Object m_resizeBaseline;
 };
 
 

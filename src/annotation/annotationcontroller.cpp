@@ -66,6 +66,9 @@ void AnnotationController::setTool(Annotation::Tool tool)
     m_draftPoints.clear();
     m_rubberView = {};
     m_shapeEndView = {};
+    if (m_resizing) {
+        cancelResizeSelection();
+    }
     if (m_moving) {
         cancelMoveSelection();
     }
@@ -665,6 +668,27 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         const bool additive = mods.testFlag(Qt::ShiftModifier)
                               || mods.testFlag(Qt::ControlModifier);
         if (!additive) {
+            qreal handleR = 12.0;
+            if (bounds.isValid()) {
+                handleR = qMax(8.0, qMin(bounds.width(), bounds.height()) * 0.02);
+            }
+            // Corner resize: single selection with one quad (shapes / sticky / one highlight).
+            if (m_selectedIds.size() == 1) {
+                Annotation::Object selObj;
+                if (m_session.findObject(m_draftSid, m_selectedIds.first(), &selObj)
+                    && selObj.quads.size() == 1) {
+                    const ResizeCorner corner =
+                        hitTestQuadHandle(selObj.quads.first(), pagePt, handleR);
+                    if (corner != ResizeCorner::None) {
+                        beginResizeSelection(corner, selObj.id, selObj);
+                        event->accept();
+                        if (m_view->viewport()) {
+                            m_view->viewport()->update();
+                        }
+                        return true;
+                    }
+                }
+            }
             const quint64 hit =
                 hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
             if (hit != 0 && m_selectedIds.contains(hit)) {
@@ -765,6 +789,10 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
         eraseAtPagePoint(
             viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize),
             m_draftBounds, m_draftYUp);
+    } else if (m_tool == Annotation::Tool::Select && m_resizing) {
+        const QPointF pagePt =
+            viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize);
+        applyResizeTo(pagePt);
     } else if (m_tool == Annotation::Tool::Select && m_moving) {
         const QPointF pagePt =
             viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize);
@@ -796,6 +824,8 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
         finishShape();
     } else if (m_tool == Annotation::Tool::Line) {
         finishLine();
+    } else if (m_tool == Annotation::Tool::Select && m_resizing) {
+        finishResizeSelection();
     } else if (m_tool == Annotation::Tool::Select && m_moving) {
         finishMoveSelection();
     }
@@ -1273,6 +1303,139 @@ Annotation::Object AnnotationController::translatedObject(const Annotation::Obje
     return out;
 }
 
+
+AnnotationController::ResizeCorner
+AnnotationController::hitTestQuadHandle(const QRectF &quad, const QPointF &pagePt,
+                                        qreal radius)
+{
+    if (!quad.isValid() || !(radius > 0)) {
+        return ResizeCorner::None;
+    }
+    const QPointF corners[4] = {
+        quad.topLeft(),
+        quad.topRight(),
+        quad.bottomRight(),
+        quad.bottomLeft(),
+    };
+    const qreal r2 = radius * radius;
+    ResizeCorner best = ResizeCorner::None;
+    qreal bestD = r2;
+    for (int i = 0; i < 4; ++i) {
+        const qreal dx = pagePt.x() - corners[i].x();
+        const qreal dy = pagePt.y() - corners[i].y();
+        const qreal d = dx * dx + dy * dy;
+        if (d <= bestD) {
+            bestD = d;
+            best = static_cast<ResizeCorner>(i);
+        }
+    }
+    return best;
+}
+
+QRectF AnnotationController::resizedQuad(const QRectF &base, ResizeCorner corner,
+                                         const QPointF &pagePt)
+{
+    if (corner == ResizeCorner::None || !base.isValid()) {
+        return base;
+    }
+    QPointF fixed;
+    switch (corner) {
+    case ResizeCorner::TL:
+        fixed = base.bottomRight();
+        break;
+    case ResizeCorner::TR:
+        fixed = base.bottomLeft();
+        break;
+    case ResizeCorner::BR:
+        fixed = base.topLeft();
+        break;
+    case ResizeCorner::BL:
+        fixed = base.topRight();
+        break;
+    default:
+        return base;
+    }
+    QRectF out = QRectF(fixed, pagePt).normalized();
+    if (out.width() < 2.0) {
+        out.setWidth(2.0);
+        if (corner == ResizeCorner::TL || corner == ResizeCorner::BL) {
+            out.moveRight(fixed.x());
+        } else {
+            out.moveLeft(fixed.x());
+        }
+    }
+    if (out.height() < 2.0) {
+        out.setHeight(2.0);
+        if (corner == ResizeCorner::TL || corner == ResizeCorner::TR) {
+            out.moveBottom(fixed.y());
+        } else {
+            out.moveTop(fixed.y());
+        }
+    }
+    return out;
+}
+
+void AnnotationController::beginResizeSelection(ResizeCorner corner, quint64 id,
+                                                const Annotation::Object &baseline)
+{
+    m_resizing = true;
+    m_resizeCorner = corner;
+    m_resizeId = id;
+    m_resizeBaseline = baseline;
+    m_moving = false;
+    m_moveDidDrag = false;
+    m_moveBaseline.clear();
+}
+
+void AnnotationController::applyResizeTo(const QPointF &pagePt)
+{
+    if (!m_resizing || m_resizeCorner == ResizeCorner::None
+        || m_resizeBaseline.quads.isEmpty()) {
+        return;
+    }
+    Annotation::Object updated = m_resizeBaseline;
+    updated.quads[0] = resizedQuad(m_resizeBaseline.quads.first(), m_resizeCorner, pagePt);
+    m_session.updateObject(m_draftSid, updated);
+}
+
+void AnnotationController::finishResizeSelection()
+{
+    if (!m_resizing) {
+        return;
+    }
+    Annotation::Object after;
+    if (m_session.findObject(m_draftSid, m_resizeId, &after) && m_view) {
+        const QRectF a = after.quads.isEmpty() ? QRectF() : after.quads.first();
+        const QRectF b = m_resizeBaseline.quads.isEmpty() ? QRectF()
+                                                         : m_resizeBaseline.quads.first();
+        if (a != b) {
+            if (QUndoStack *stack = m_view->hostUndoStack()) {
+                stack->push(new AnnotationReplaceCommand(
+                    m_view, m_draftSid, m_resizeBaseline, after,
+                    QObject::tr("Resize annotation")));
+            }
+        } else {
+            m_session.updateObject(m_draftSid, m_resizeBaseline);
+        }
+    }
+    m_resizing = false;
+    m_resizeCorner = ResizeCorner::None;
+    m_resizeId = 0;
+    m_resizeBaseline = {};
+}
+
+void AnnotationController::cancelResizeSelection()
+{
+    if (!m_resizing) {
+        return;
+    }
+    m_session.updateObject(m_draftSid, m_resizeBaseline);
+    m_resizing = false;
+    m_resizeCorner = ResizeCorner::None;
+    m_resizeId = 0;
+    m_resizeBaseline = {};
+}
+
 void AnnotationController::beginMoveSelection(const QPointF &pageOrigin)
 {
     m_moving = true;
@@ -1485,6 +1648,21 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
                     } else {
                         painter.drawRect(scene);
                     }
+                    // Corner handles (resize) when this is the sole selected single-quad object.
+                    if (m_selectedIds.size() == 1 && o.quads.size() == 1) {
+                        const qreal hs = 5.0; // scene units, cosmetic feel
+                        painter.save();
+                        painter.setBrush(QColor(255, 255, 255));
+                        painter.setPen(QPen(QColor(53, 132, 228), 0));
+                        const QPointF corners[4] = {
+                            scene.topLeft(), scene.topRight(), scene.bottomRight(),
+                            scene.bottomLeft(),
+                        };
+                        for (const QPointF &c : corners) {
+                            painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
+                        }
+                        painter.restore();
+                    }
                 }
             }
         } else if (!o.points.isEmpty()) {
@@ -1521,6 +1699,11 @@ bool AnnotationController::tryKeyPress(QKeyEvent *event)
         }
     }
     if (event->key() == Qt::Key_Escape) {
+        if (m_resizing) {
+            cancelResizeSelection();
+            event->accept();
+            return true;
+        }
         if (m_moving) {
             cancelMoveSelection();
             event->accept();
