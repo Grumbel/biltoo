@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include <kddockwidgets/core/DockWidget.h>
 #include "shell/messagelogpanel.h"
 #include "shell/chromecolors.h"
 #include <QScrollBar>

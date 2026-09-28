@@ -2,15 +2,12 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2762.1-kddock-tabs-config` (base `7a2bd7b`).
+**Tip:** `biltoo-2762.2-kddock-core-dockwidget-include` (base `7a2bd7b`).
 
-### 2762.1
-- Config: title-bar maximize button
-- Default tab groups: right tools (metadata host), left layout+TOC
-- Filmstrip `isFloatingChanged` → re-sync orientation
-- Reset layout re-applies tab groups
+### 2762.2
+- Include `kddockwidgets/core/DockWidget.h` for `addDockWidgetAsTab` (was incomplete type)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2762.1-kddock-tabs-config-7a2bd7b.bundle HEAD
+git pull --ff-only …/biltoo-2762.2-kddock-core-dockwidget-include-7a2bd7b.bundle HEAD
 ```
