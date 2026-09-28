@@ -1681,6 +1681,58 @@ void MainWindow::createMenus()
     m_helpMenu->addAction(m_aboutAct);
 }
 
+
+namespace {
+
+/** Wider, visible group break between toolbar icon clusters. */
+void addToolbarGroupSeparator(QToolBar *bar)
+{
+    if (!bar) {
+        return;
+    }
+    const bool vertical = bar->orientation() == Qt::Vertical;
+    auto *host = new QWidget(bar);
+    host->setObjectName(QStringLiteral("ToolBarGroupSeparator"));
+    host->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    auto *line = new QFrame(host);
+    line->setObjectName(QStringLiteral("ToolBarGroupSeparatorLine"));
+    line->setFrameShadow(QFrame::Plain);
+    if (vertical) {
+        host->setFixedHeight(18);
+        line->setFrameShape(QFrame::HLine);
+        line->setFixedHeight(2);
+        auto *lay = new QVBoxLayout(host);
+        lay->setContentsMargins(4, 7, 4, 7);
+        lay->setSpacing(0);
+        lay->addWidget(line);
+        line->setStyleSheet(QStringLiteral(
+            "QFrame#ToolBarGroupSeparatorLine {"
+            "  background: palette(mid);"
+            "  border: none;"
+            "  min-height: 2px;"
+            "  max-height: 2px;"
+            "}"));
+    } else {
+        host->setFixedWidth(18);
+        line->setFrameShape(QFrame::VLine);
+        line->setFixedWidth(2);
+        auto *lay = new QHBoxLayout(host);
+        lay->setContentsMargins(7, 4, 7, 4);
+        lay->setSpacing(0);
+        lay->addWidget(line);
+        line->setStyleSheet(QStringLiteral(
+            "QFrame#ToolBarGroupSeparatorLine {"
+            "  background: palette(mid);"
+            "  border: none;"
+            "  min-width: 2px;"
+            "  max-width: 2px;"
+            "}"));
+    }
+    bar->addWidget(host);
+}
+
+} // namespace
+
 void MainWindow::createToolBar()
 {
     m_toolBar = addToolBar(tr("Main"));
@@ -1716,10 +1768,10 @@ void MainWindow::createToolBar()
         sortBtn->setMenu(sortPopup);
         m_toolBar->addWidget(sortBtn);
     }
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_undoAct);
     m_toolBar->addAction(m_redoAct);
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_rotateLeftAct);
     m_toolBar->addAction(m_rotateRightAct);
     m_toolBar->addAction(m_flipHAct);
@@ -1727,7 +1779,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_cropAct);
     m_toolBar->addAction(m_viewBackgroundAct);
     // Attention Point stays under Image menu (specialized; not main-bar).
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
     // small menu button = pick a different layout (QToolButton::MenuButtonPopup).
     {
@@ -1831,14 +1883,14 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     // Text panel (speaker glyph) — not Speak; TTS stays under Edit.
     if (m_toggleTextAct) {
         m_toolBar->addAction(m_toggleTextAct);
     }
     m_toolBar->addAction(m_ocrPageAct);
     m_toolBar->addAction(m_showTextRegionsAct);
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_toggleThumbnailBarAct);
     m_toolBar->addAction(m_toggleMetadataAct);
     if (m_toggleAdjustmentsAct) {
@@ -1847,7 +1899,7 @@ void MainWindow::createToolBar()
     // Help sits with chrome toggles, immediately before Fullscreen.
     m_toolBar->addAction(m_toggleHelpAct);
     // Panels popup: extra separators so it reads apart from help / fullscreen.
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     if (m_panelsMenu) {
         auto *panelsBtn = new QToolButton(m_toolBar);
         panelsBtn->setObjectName(QStringLiteral("PanelsToolButton"));
@@ -1860,7 +1912,7 @@ void MainWindow::createToolBar()
         panelsBtn->setAutoRaise(true);
         m_toolBar->addWidget(panelsBtn);
     }
-    m_toolBar->addSeparator();
+    addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_fullscreenAct);
 
     // Left vertical tools strip (Select/Pan/Zoom/Crop + Workspace chrome).
@@ -1905,15 +1957,15 @@ void MainWindow::createToolBar()
     if (m_annotStickyAct) {
         m_workspaceToolBar->addAction(m_annotStickyAct);
     }
-    m_workspaceToolBar->addSeparator();
+    addToolbarGroupSeparator(m_workspaceToolBar);
     // Page guide pair, then temporary default toggle, then layout.
     // Background itself lives on the main toolbar (mode-dispatch) and in the
     // Workspace menu — not duplicated on this vertical bar.
     m_workspaceToolBar->addAction(m_pageGuideAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
-    m_workspaceToolBar->addSeparator();
+    addToolbarGroupSeparator(m_workspaceToolBar);
     m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
-    m_workspaceToolBar->addSeparator();
+    addToolbarGroupSeparator(m_workspaceToolBar);
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
 

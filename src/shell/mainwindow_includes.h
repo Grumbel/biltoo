@@ -88,6 +88,7 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QToolBar>
+#include <QFrame>
 #include <QToolButton>
 #include <QUndoCommand>
 #include <QUndoStack>

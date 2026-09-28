@@ -2,19 +2,18 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2794.1-fix-flatten-pageRectToDisplay` (base `a989daf`).
+**Tip:** `biltoo-2795.1-toolbar-group-separators` (base `a989daf`).
 
-### 2794.1
-- Fix renderFlattenedDisplay: remaining pageRectToDisplay → AnnotationPainter
+### 2795.1
+- Main and Tools toolbars: wider visible group separators (2px mid-colour line + padding)
 
 ### Prior
-- 2793.1 PDF write-back defer docs
-- 2792.1 AnnotationPainter
-- 2791–2783 annotation tools / panel / format
+- 2794.1 flatten pageRectToDisplay fix
+- 2793–2783 annotation / docs
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2794.1-fix-flatten-pageRectToDisplay-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2795.1-toolbar-group-separators-a989daf.bundle HEAD
 ```
 
 ### Deferred
