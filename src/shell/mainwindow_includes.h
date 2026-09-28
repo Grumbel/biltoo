@@ -50,7 +50,6 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QDirIterator>
-#include <QDockWidget>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>

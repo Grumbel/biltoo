@@ -22,6 +22,7 @@
 , piperModelsDir ? null  # TEXT2SPRECH_PIPER_MODELS (bundled voice directory)
 , sqlite
 , libjxl
+, kddockwidgets
 , leptonica  # tesseract.pc Requires: lept (pkg-config noise)
 , systemd    # dbus-1.pc Requires.private: libsystemd (pkg-config noise)
   # Further vips Requires.private (and their .pc deps) — pkg-config noise only.
@@ -93,6 +94,7 @@ stdenv.mkDerivation (finalAttrs: {
     djvulibre
     sqlite
     libjxl
+    kddockwidgets
     # tesseract.pc Requires: lept — silence pkg-config spam when probing OCR.
     leptonica
     # dbus-1.pc Requires.private: libsystemd — silence pkg-config when thumtoo probes dbus.

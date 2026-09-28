@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow.h"
+#include <kddockwidgets/Config.h>
+#include <kddockwidgets/KDDockWidgets.h>
 #include "view/viewtransform.h"
 #include "util/biltoo_logging.h"
 #include "util/debugflags.h"
@@ -73,6 +75,8 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    // Before any MainWindow/DockWidget: KDDockWidgets QtWidgets frontend.
+    KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtWidgets);
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the
     // linker may drop the RCC object and :/icons/* is empty at runtime.
     Q_INIT_RESOURCE(icons);

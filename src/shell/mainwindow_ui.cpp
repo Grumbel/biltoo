@@ -898,72 +898,72 @@ void MainWindow::createActions()
     connect(m_toggleThumbnailBarAct, &QAction::triggered, this, &MainWindow::toggleThumbnailBar);
 
     // Use the dock's own toggle action so the close button and menu/toolbar stay in sync
-    m_toggleMetadataAct = m_metadataDock->toggleViewAction();
+    m_toggleMetadataAct = m_metadataDock->toggleAction();
     m_toggleMetadataAct->setText(tr("Show &Metadata"));
     m_toggleMetadataAct->setShortcut(Qt::CTRL | Qt::Key_E);
     m_toggleMetadataAct->setIcon(themeIcon(QStringLiteral("dialog-information"), QStyle::SP_FileDialogInfoView));
     m_toggleMetadataAct->setStatusTip(tr("Show or hide the metadata side panel"));
-    m_toggleTocAct = m_tocDock->toggleViewAction();
+    m_toggleTocAct = m_tocDock->toggleAction();
     m_toggleTocAct->setText(tr("Show &Contents"));
     m_toggleTocAct->setStatusTip(tr("Show or hide the document table of contents"));
 
-    m_toggleHelpAct = m_helpDock->toggleViewAction();
+    m_toggleHelpAct = m_helpDock->toggleAction();
     m_toggleHelpAct->setText(tr("Show &Help Panel"));
     m_toggleHelpAct->setIcon(themeIcon(QStringLiteral("help-contents"), QStyle::SP_DialogHelpButton));
     m_toggleHelpAct->setStatusTip(tr("Show or hide the detailed action help panel"));
 
     if (m_adjustmentsDock) {
-        m_toggleAdjustmentsAct = m_adjustmentsDock->toggleViewAction();
+        m_toggleAdjustmentsAct = m_adjustmentsDock->toggleAction();
         m_toggleAdjustmentsAct->setText(tr("Show &Adjustments"));
         m_toggleAdjustmentsAct->setShortcut(Qt::CTRL | Qt::Key_U);
         m_toggleAdjustmentsAct->setIcon(resourceIcon(QStringLiteral("color-adjustments")));
         m_toggleAdjustmentsAct->setStatusTip(tr("Colour grade, histogram, and vectorscope"));
     }
     if (m_cropDock) {
-        m_toggleCropAct = m_cropDock->toggleViewAction();
+        m_toggleCropAct = m_cropDock->toggleAction();
         m_toggleCropAct->setText(tr("Show Cro&p Panel"));
         m_toggleCropAct->setStatusTip(tr("Crop margins, autocrop, and batch apply"));
 
     if (m_ocrDock) {
-        m_toggleOcrAct = m_ocrDock->toggleViewAction();
+        m_toggleOcrAct = m_ocrDock->toggleAction();
         m_toggleOcrAct->setText(tr("Show &OCR Panel"));
         m_toggleOcrAct->setStatusTip(
             tr("OCR options, progress, and log (page or whole document)"));
-        connect(m_ocrDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        connect(m_ocrDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
             if (visible) {
                 updateOcrPanel();
             }
         });
     }
     if (m_textDock) {
-        m_toggleTextAct = m_textDock->toggleViewAction();
+        m_toggleTextAct = m_textDock->toggleAction();
         m_toggleTextAct->setText(tr("Show Te&xt Panel"));
         m_toggleTextAct->setStatusTip(
             tr("Page text / OCR regions with selection mirrored on the page"));
     }
     if (m_messageLogDock) {
-        m_toggleMessageLogAct = m_messageLogDock->toggleViewAction();
+        m_toggleMessageLogAct = m_messageLogDock->toggleAction();
         m_toggleMessageLogAct->setText(tr("Show &Messages"));
         m_toggleMessageLogAct->setStatusTip(
             tr("Application messages (OCR, TTS, and other status/errors)"));
     }
     }
     // Ensure closing via the dock title-bar [x] updates the action; showing again works
-    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    connect(m_metadataDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
         if (m_toggleMetadataAct->isChecked() != visible) {
             QSignalBlocker blocker(m_toggleMetadataAct);
             m_toggleMetadataAct->setChecked(visible);
         }
     });
 
-    m_toggleLayoutPanelAct = m_layoutDock->toggleViewAction();
+    m_toggleLayoutPanelAct = m_layoutDock->toggleAction();
     m_toggleLayoutPanelAct->setText(tr("Show &Layout Panel"));
     m_toggleLayoutPanelAct->setIcon(resourceIcon(QStringLiteral("layout-panel")));
     m_toggleLayoutPanelAct->setStatusTip(
         tr("Show or hide the Workspace layout panel (arrange selected images)"));
     // Start disabled: panel is Workspace-only (enabled in updateLayoutPanelForMode).
     m_toggleLayoutPanelAct->setEnabled(false);
-    connect(m_layoutDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    connect(m_layoutDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
         if (m_toggleLayoutPanelAct && m_toggleLayoutPanelAct->isChecked() != visible) {
             QSignalBlocker blocker(m_toggleLayoutPanelAct);
             m_toggleLayoutPanelAct->setChecked(visible);
@@ -1017,8 +1017,8 @@ void MainWindow::createActions()
     m_helpGuideImageAct = new QAction(tr("&Image Mode"), this);
     m_helpGuideImageAct->setStatusTip(tr("Overview of Image mode (single-image viewing)"));
     connect(m_helpGuideImageAct, &QAction::triggered, this, [this]() {
-        if (m_helpDock && !m_helpDock->isVisible()) {
-            m_helpDock->show();
+        if (m_helpDock && !m_helpDock->isOpen()) {
+            m_helpDock->open();
         }
         if (m_helpPanel) {
             m_helpPanel->showAction(m_helpGuideImageAct);
@@ -1028,8 +1028,8 @@ void MainWindow::createActions()
     m_helpGuideGalleryAct = new QAction(tr("&Gallery Mode"), this);
     m_helpGuideGalleryAct->setStatusTip(tr("Overview of Gallery mode (packed session overview)"));
     connect(m_helpGuideGalleryAct, &QAction::triggered, this, [this]() {
-        if (m_helpDock && !m_helpDock->isVisible()) {
-            m_helpDock->show();
+        if (m_helpDock && !m_helpDock->isOpen()) {
+            m_helpDock->open();
         }
         if (m_helpPanel) {
             m_helpPanel->showAction(m_helpGuideGalleryAct);
@@ -1039,8 +1039,8 @@ void MainWindow::createActions()
     m_helpGuideWorkspaceAct = new QAction(tr("&Workspace Mode"), this);
     m_helpGuideWorkspaceAct->setStatusTip(tr("Overview of Workspace mode (free-form layout)"));
     connect(m_helpGuideWorkspaceAct, &QAction::triggered, this, [this]() {
-        if (m_helpDock && !m_helpDock->isVisible()) {
-            m_helpDock->show();
+        if (m_helpDock && !m_helpDock->isOpen()) {
+            m_helpDock->open();
         }
         if (m_helpPanel) {
             m_helpPanel->showAction(m_helpGuideWorkspaceAct);
@@ -1050,8 +1050,8 @@ void MainWindow::createActions()
     m_helpGuideFilmstripAct = new QAction(tr("&Filmstrip"), this);
     m_helpGuideFilmstripAct->setStatusTip(tr("Overview of the thumbnail filmstrip"));
     connect(m_helpGuideFilmstripAct, &QAction::triggered, this, [this]() {
-        if (m_helpDock && !m_helpDock->isVisible()) {
-            m_helpDock->show();
+        if (m_helpDock && !m_helpDock->isOpen()) {
+            m_helpDock->open();
         }
         showFilmstripHelp();
     });
@@ -1059,8 +1059,8 @@ void MainWindow::createActions()
     m_helpGuideSessionAct = new QAction(tr("&Session and Identity"), this);
     m_helpGuideSessionAct->setStatusTip(tr("How session paths and SessionImageId relate"));
     connect(m_helpGuideSessionAct, &QAction::triggered, this, [this]() {
-        if (m_helpDock && !m_helpDock->isVisible()) {
-            m_helpDock->show();
+        if (m_helpDock && !m_helpDock->isOpen()) {
+            m_helpDock->open();
         }
         if (m_helpPanel) {
             m_helpPanel->showAction(m_helpGuideSessionAct);

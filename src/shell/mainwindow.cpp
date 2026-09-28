@@ -37,12 +37,36 @@ namespace {
 // Bump when dock object names / structure change, or when a saved
 // dockLayoutState blob is known to crash on restore (Qt QDockAreaLayout).
 // Mismatched version → ignore blob and use built-in defaults.
-constexpr int kDockLayoutStateVersion = 1;
+using DockWidget = KDDockWidgets::QtWidgets::DockWidget;
+using KDMainWindow = KDDockWidgets::QtWidgets::MainWindow;
+
+// KD LayoutSaver blob (not Qt QMainWindow::saveState).
+constexpr int kDockLayoutStateVersion = 2;
+
+static void setDockOpen(DockWidget *dock, bool open)
+{
+    if (!dock) {
+        return;
+    }
+    if (open) {
+        dock->open();
+    } else {
+        dock->close();
+    }
+}
+
+static bool dockIsOpen(const DockWidget *dock)
+{
+    return dock && dock->isOpen();
+}
+
 
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : KDMainWindow(QStringLiteral("BiltooMainWindow"),
+                   KDDockWidgets::MainWindowOption_None,
+                   parent)
 {
     setWindowTitle(tr("Biltoo"));
     setWindowIcon(QApplication::windowIcon());
@@ -319,39 +343,29 @@ MainWindow::MainWindow(QWidget *parent)
         // Session navigation and filmstrip stay on primary (m_imageView).
     });
 
-    m_thumbnailDock = new QDockWidget(tr("Filmstrip"), this);
-    m_thumbnailDock->setObjectName(QStringLiteral("ThumbnailDock"));
+    m_thumbnailDock = new DockWidget(QStringLiteral("ThumbnailDock"));
+    m_thumbnailDock->setTitle(tr("Filmstrip"));
     m_thumbnailDock->setWidget(m_thumbnailBar);
-    m_thumbnailDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea
-                                     | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-    m_thumbnailDock->setFeatures(QDockWidget::DockWidgetClosable
-                                 | QDockWidget::DockWidgetMovable
-                                 | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::BottomDockWidgetArea, m_thumbnailDock);
-    connect(m_thumbnailDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    addDockWidget(m_thumbnailDock, KDDockWidgets::Location_OnBottom);
+    connect(m_thumbnailDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (m_toggleThumbnailBarAct && m_toggleThumbnailBarAct->isChecked() != visible) {
             m_toggleThumbnailBarAct->setChecked(visible);
         }
         if (!isFullScreen()) {
             m_thumbnailBarVisibleBeforeFullscreen = visible;
         }
+        onThumbnailDockLocationChanged();
     });
-    connect(m_thumbnailDock, &QDockWidget::dockLocationChanged, this,
-            &MainWindow::onThumbnailDockLocationChanged);
 
     m_metadataPanel = new MetadataPanel(this);
-    m_metadataDock = new QDockWidget(tr("Metadata"), this);
-    m_metadataDock->setObjectName(QStringLiteral("MetadataDock"));
+    m_metadataDock = new DockWidget(QStringLiteral("MetadataDock"));
+    m_metadataDock->setTitle(tr("Metadata"));
     m_metadataDock->setWidget(m_metadataPanel);
-    m_metadataDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_metadataDock->setFeatures(QDockWidget::DockWidgetClosable
-                                | QDockWidget::DockWidgetMovable
-                                | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
-    m_metadataDock->hide();
-    // When the user opens the panel, load metadata for the current selection
+    addDockWidget(m_metadataDock, KDDockWidgets::Location_OnRight);
+    m_metadataDock->close();
+// When the user opens the panel, load metadata for the current selection
     // (selection itself skips decode while the dock is hidden).
-    connect(m_metadataDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    connect(m_metadataDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible && m_metadataPanel) {
             m_metadataPath.clear();
             updateMetadataPanel();
@@ -359,16 +373,12 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     m_adjustmentsPanel = new AdjustmentsPanel(this);
-    m_adjustmentsDock = new QDockWidget(tr("Adjustments"), this);
-    m_adjustmentsDock->setObjectName(QStringLiteral("AdjustmentsDock"));
+    m_adjustmentsDock = new DockWidget(QStringLiteral("AdjustmentsDock"));
+    m_adjustmentsDock->setTitle(tr("Adjustments"));
     m_adjustmentsDock->setWidget(m_adjustmentsPanel);
-    m_adjustmentsDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_adjustmentsDock->setFeatures(QDockWidget::DockWidgetClosable
-                                   | QDockWidget::DockWidgetMovable
-                                   | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_adjustmentsDock);
-    m_adjustmentsDock->hide();
-    connect(m_adjustmentsDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    addDockWidget(m_adjustmentsDock, KDDockWidgets::Location_OnRight);
+    m_adjustmentsDock->close();
+connect(m_adjustmentsDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateAdjustmentsPanel();
             updateCropPanel();
@@ -422,27 +432,18 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
     m_cropPanel = new CropPanel(this);
-    m_cropDock = new QDockWidget(tr("Crop"), this);
-    m_cropDock->setObjectName(QStringLiteral("CropDock"));
+    m_cropDock = new DockWidget(QStringLiteral("CropDock"));
+    m_cropDock->setTitle(tr("Crop"));
     m_cropDock->setWidget(m_cropPanel);
-    m_cropDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_cropDock->setFeatures(QDockWidget::DockWidgetClosable
-                            | QDockWidget::DockWidgetMovable
-                            | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_cropDock);
-    m_cropDock->hide();
-
-    m_ocrPanel = new OcrPanel(this);
-    m_ocrDock = new QDockWidget(tr("OCR"), this);
-    m_ocrDock->setObjectName(QStringLiteral("OcrDock"));
+    addDockWidget(m_cropDock, KDDockWidgets::Location_OnRight);
+    m_cropDock->close();
+m_ocrPanel = new OcrPanel(this);
+    m_ocrDock = new DockWidget(QStringLiteral("OcrDock"));
+    m_ocrDock->setTitle(tr("OCR"));
     m_ocrDock->setWidget(m_ocrPanel);
-    m_ocrDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_ocrDock->setFeatures(QDockWidget::DockWidgetClosable
-                           | QDockWidget::DockWidgetMovable
-                           | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_ocrDock);
-    m_ocrDock->hide();
-    {
+    addDockWidget(m_ocrDock, KDDockWidgets::Location_OnRight);
+    m_ocrDock->close();
+{
         QSettings settings;
         m_ocrPanel->setLanguage(
             settings.value(QStringLiteral("ocr/lang"), QStringLiteral("eng")).toString());
@@ -453,16 +454,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_ocrPanel, &OcrPanel::cancelRequested, this, &MainWindow::cancelOcrBatch);
 
     m_textPanel = new TextPanel(this);
-    m_textDock = new QDockWidget(tr("Text"), this);
-    m_textDock->setObjectName(QStringLiteral("TextDock"));
+    m_textDock = new DockWidget(QStringLiteral("TextDock"));
+    m_textDock->setTitle(tr("Text"));
     m_textDock->setWidget(m_textPanel);
-    m_textDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_textDock->setFeatures(QDockWidget::DockWidgetClosable
-                            | QDockWidget::DockWidgetMovable
-                            | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_textDock);
-    m_textDock->hide();
-    connect(m_textDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    addDockWidget(m_textDock, KDDockWidgets::Location_OnRight);
+    m_textDock->close();
+connect(m_textDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateTextPanel();
             connectTextPanel();
@@ -470,19 +467,15 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     m_messageLogPanel = new MessageLogPanel(this);
-    m_messageLogDock = new QDockWidget(tr("Messages"), this);
-    m_messageLogDock->setObjectName(QStringLiteral("MessageLogDock"));
+    m_messageLogDock = new DockWidget(QStringLiteral("MessageLogDock"));
+    m_messageLogDock->setTitle(tr("Messages"));
     m_messageLogDock->setWidget(m_messageLogPanel);
-    m_messageLogDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::LeftDockWidgetArea
-                                      | Qt::RightDockWidgetArea);
-    m_messageLogDock->setFeatures(QDockWidget::DockWidgetClosable
-                                  | QDockWidget::DockWidgetMovable
-                                  | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::BottomDockWidgetArea, m_messageLogDock);
-    // Default off. dockLayoutState must not re-open it; preference key
+    addDockWidget(m_messageLogDock, KDDockWidgets::Location_OnBottom);
+    m_messageLogDock->close();
+// Default off. dockLayoutState must not re-open it; preference key
     // messageLogVisible is applied in readSettings after restoreState.
-    m_messageLogDock->hide();
-    connect(m_messageLogDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    m_messageLogDock->close();
+    connect(m_messageLogDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         QSettings settings;
         settings.setValue(QStringLiteral("messageLogVisible"), visible);
     });
@@ -504,7 +497,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_tts = new TextToSpeechController(this);
     connectTextToSpeech();
 
-    connect(m_cropDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    connect(m_cropDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateCropPanel();
         }
@@ -697,47 +690,35 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     m_layoutPanel = new LayoutPanel(this);
-    m_layoutDock = new QDockWidget(tr("Layout"), this);
-    m_layoutDock->setObjectName(QStringLiteral("LayoutDock"));
+    m_layoutDock = new DockWidget(QStringLiteral("LayoutDock"));
+    m_layoutDock->setTitle(tr("Layout"));
     m_layoutDock->setWidget(m_layoutPanel);
-    m_layoutDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_layoutDock->setFeatures(QDockWidget::DockWidgetClosable
-                              | QDockWidget::DockWidgetMovable
-                              | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::LeftDockWidgetArea, m_layoutDock);
-    m_layoutDock->hide();
-    connect(m_layoutPanel, &LayoutPanel::applyRequested,
+    addDockWidget(m_layoutDock, KDDockWidgets::Location_OnLeft);
+    m_layoutDock->close();
+connect(m_layoutPanel, &LayoutPanel::applyRequested,
             this, &MainWindow::applyWorkspaceLayoutFromPanel);
 
     m_tocPanel = new TocPanel(this);
-    m_tocDock = new QDockWidget(tr("Contents"), this);
-    m_tocDock->setObjectName(QStringLiteral("TocDock"));
+    m_tocDock = new DockWidget(QStringLiteral("TocDock"));
+    m_tocDock->setTitle(tr("Contents"));
     m_tocDock->setWidget(m_tocPanel);
-    m_tocDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_tocDock->setFeatures(QDockWidget::DockWidgetClosable
-                           | QDockWidget::DockWidgetMovable
-                           | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::LeftDockWidgetArea, m_tocDock);
-    m_tocDock->hide();
-    connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocumentPage);
+    addDockWidget(m_tocDock, KDDockWidgets::Location_OnLeft);
+    m_tocDock->close();
+connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocumentPage);
     connect(m_tocPanel, &TocPanel::openExternalUri, this, &MainWindow::openDocumentLinkUri);
-    connect(m_tocDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+    connect(m_tocDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateTocPanel();
         }
     });
 
     m_helpPanel = new HelpPanel(this);
-    m_helpDock = new QDockWidget(tr("Help"), this);
-    m_helpDock->setObjectName(QStringLiteral("HelpDock"));
+    m_helpDock = new DockWidget(QStringLiteral("HelpDock"));
+    m_helpDock->setTitle(tr("Help"));
     m_helpDock->setWidget(m_helpPanel);
-    m_helpDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_helpDock->setFeatures(QDockWidget::DockWidgetClosable
-                            | QDockWidget::DockWidgetMovable
-                            | QDockWidget::DockWidgetFloatable);
-    addDockWidget(Qt::RightDockWidgetArea, m_helpDock);
-    m_helpDock->hide();
-    connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
+    addDockWidget(m_helpDock, KDDockWidgets::Location_OnRight);
+    m_helpDock->close();
+connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
             this, &MainWindow::showKeyboardShortcuts);
 
     createActions();
@@ -845,7 +826,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_cursorHideTimer, &QTimer::timeout, this, &MainWindow::hideSlideshowCursor);
 
     if (m_thumbnailDock) {
-        m_thumbnailDock->setVisible(false);
+        setDockOpen(m_thumbnailDock, false);
     } else {
         m_thumbnailBar->setVisible(false);
     }
@@ -2526,7 +2507,7 @@ void MainWindow::toggleThumbnailBar()
 {
     const bool visible = m_toggleThumbnailBarAct->isChecked();
     if (m_thumbnailDock) {
-        m_thumbnailDock->setVisible(visible);
+        setDockOpen(m_thumbnailDock, visible);
     } else if (m_thumbnailBar) {
         m_thumbnailBar->setVisible(visible);
     }
@@ -2565,74 +2546,52 @@ void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
     m_dockLocationGuard = true;
     m_thumbnailBar->setBarOrientation(barOrientation);
 
-    Qt::DockWidgetArea area = Qt::BottomDockWidgetArea;
+    KDDockWidgets::Location loc = KDDockWidgets::Location_OnBottom;
     switch (edge) {
     case ThumbnailEdge::Top:
-        area = Qt::TopDockWidgetArea;
+        loc = KDDockWidgets::Location_OnTop;
         break;
     case ThumbnailEdge::Left:
-        area = Qt::LeftDockWidgetArea;
+        loc = KDDockWidgets::Location_OnLeft;
         break;
     case ThumbnailEdge::Right:
-        area = Qt::RightDockWidgetArea;
+        loc = KDDockWidgets::Location_OnRight;
         break;
     case ThumbnailEdge::Bottom:
     default:
-        area = Qt::BottomDockWidgetArea;
+        loc = KDDockWidgets::Location_OnBottom;
         break;
     }
-    addDockWidget(area, m_thumbnailDock);
+    addDockWidget(m_thumbnailDock, loc);
 
     const int thumbSize = m_thumbnailBar->thumbSize();
-    const int barExtent = ThumbnailBar::extentForThumbSize(thumbSize);
-    // Let the user resize the dock; seed a sensible default extent.
+    // Prefer size hints on the bar; KD handles splitter extent.
     if (horizontalBar) {
         m_thumbnailBar->setMinimumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
         m_thumbnailBar->setMaximumHeight(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
         m_thumbnailBar->setMinimumWidth(0);
         m_thumbnailBar->setMaximumWidth(QWIDGETSIZE_MAX);
-        resizeDocks({m_thumbnailDock}, {barExtent}, Qt::Vertical);
     } else {
         m_thumbnailBar->setMinimumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize));
         m_thumbnailBar->setMaximumWidth(ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize));
         m_thumbnailBar->setMinimumHeight(0);
         m_thumbnailBar->setMaximumHeight(QWIDGETSIZE_MAX);
-        resizeDocks({m_thumbnailDock}, {barExtent}, Qt::Horizontal);
     }
     m_thumbnailBar->setThumbSize(thumbSize);
     m_dockLocationGuard = false;
     updateThumbnailEdgeActions();
 }
 
-void MainWindow::onThumbnailDockLocationChanged(Qt::DockWidgetArea area)
+void MainWindow::onThumbnailDockLocationChanged()
 {
+    // KDDockWidgets does not emit Qt::DockWidgetArea. Edge is driven by
+    // explicit View → filmstrip edge actions; keep orientation in sync with
+    // the last chosen m_thumbnailEdge when the dock opens.
     if (m_dockLocationGuard || !m_thumbnailBar) {
         return;
     }
-    ThumbnailEdge edge = m_thumbnailEdge;
-    switch (area) {
-    case Qt::LeftDockWidgetArea:
-        edge = ThumbnailEdge::Left;
-        break;
-    case Qt::RightDockWidgetArea:
-        edge = ThumbnailEdge::Right;
-        break;
-    case Qt::TopDockWidgetArea:
-        edge = ThumbnailEdge::Top;
-        break;
-    case Qt::BottomDockWidgetArea:
-        edge = ThumbnailEdge::Bottom;
-        break;
-    default:
-        // Floating: keep last edge / orientation.
-        return;
-    }
-    if (edge == m_thumbnailEdge) {
-        return;
-    }
-    m_thumbnailEdge = edge;
     const bool horizontalBar =
-        (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
+        (m_thumbnailEdge == ThumbnailEdge::Bottom || m_thumbnailEdge == ThumbnailEdge::Top);
     m_thumbnailBar->setBarOrientation(horizontalBar ? Qt::Horizontal : Qt::Vertical);
     updateThumbnailEdgeActions();
 }
@@ -2716,8 +2675,8 @@ void MainWindow::showKeyboardShortcuts()
     KeyboardShortcutsDialog dlg(actions, categories, this);
     connect(&dlg, &KeyboardShortcutsDialog::actionHighlighted, this, [this](QAction *act) {
         if (m_helpPanel && act) {
-            if (m_helpDock && !m_helpDock->isVisible()) {
-                m_helpDock->show();
+            if (m_helpDock && !dockIsOpen(m_helpDock)) {
+                m_helpDock->open();
             }
             m_helpPanel->showAction(act);
         }
@@ -2838,7 +2797,7 @@ void MainWindow::showPreferences()
     }
     dlg.setScrollBarsVisible(m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
     dlg.setThumbnailLabelsVisible(m_hideThumbLabelsAct && !m_hideThumbLabelsAct->isChecked());
-    dlg.setAdjustmentsPanelVisible(m_adjustmentsDock && m_adjustmentsDock->isVisible());
+    dlg.setAdjustmentsPanelVisible(m_adjustmentsDock && dockIsOpen(m_adjustmentsDock));
     dlg.setLayoutPanelPreferredInWorkspace(m_layoutPreferredInWorkspace);
     dlg.setThumbnailsPreferredWorkspace(m_thumbnailsPreferredWorkspace);
     dlg.setThumbnailsPreferredGallery(m_thumbnailsPreferredGallery);
@@ -2938,7 +2897,7 @@ void MainWindow::showPreferences()
     }
     if (m_adjustmentsDock) {
         const bool showAdj = dlg.adjustmentsPanelVisible();
-        m_adjustmentsDock->setVisible(showAdj);
+        setDockOpen(m_adjustmentsDock, showAdj);
         if (m_toggleAdjustmentsAct) {
             m_toggleAdjustmentsAct->setChecked(showAdj);
         }
@@ -3123,7 +3082,7 @@ void MainWindow::updateMetadataPanel()
     }
     // Hidden dock: do not decode on every Gallery/Workspace selection.
     // VisibilityChanged reconnect refreshes when the user opens the panel.
-    if (m_metadataDock && !m_metadataDock->isVisible()) {
+    if (m_metadataDock && !dockIsOpen(m_metadataDock)) {
         return;
     }
     QString path;
@@ -3158,7 +3117,7 @@ void MainWindow::updateAdjustmentsPanel()
         return;
     }
     // Hidden dock: never copy tile pixels on Gallery selection (was a major lag spike).
-    if (m_adjustmentsDock && !m_adjustmentsDock->isVisible()) {
+    if (m_adjustmentsDock && !dockIsOpen(m_adjustmentsDock)) {
         return;
     }
     ImageItem *item = m_imageView->targetItem();
@@ -3199,7 +3158,7 @@ void MainWindow::updateCropPanel()
     if (!m_cropPanel || !m_imageView) {
         return;
     }
-    if (m_cropDock && !m_cropDock->isVisible()) {
+    if (m_cropDock && !dockIsOpen(m_cropDock)) {
         return;
     }
     ImageItem *item = m_imageView->targetItem();
@@ -3478,7 +3437,7 @@ void MainWindow::updateStatus()
     }
     m_inUpdateStatus = true;
     const auto statusGuard = qScopeGuard([this]() { m_inUpdateStatus = false; });
-    if (m_tocDock && m_tocDock->isVisible()) {
+    if (m_tocDock && dockIsOpen(m_tocDock)) {
         updateTocPanel();
     }
     if (m_imageView && !m_imageView->hostTextLayer().linkHoverTipRef().isEmpty()) {
@@ -3490,10 +3449,10 @@ void MainWindow::updateStatus()
     updateMetadataPanel();
     updateAdjustmentsPanel();
     updateCropPanel();
-    if (m_ocrDock && m_ocrDock->isVisible()) {
+    if (m_ocrDock && dockIsOpen(m_ocrDock)) {
         updateOcrPanel();
     }
-    if (m_textDock && m_textDock->isVisible()) {
+    if (m_textDock && dockIsOpen(m_textDock)) {
         updateTextPanel();
     }
     // Session index on ImageView so status bar and on-image HUD share n/N.
@@ -3723,33 +3682,33 @@ void MainWindow::updateFullscreenUi()
     if (fs) {
         m_toolBarVisibleBeforeFullscreen = m_toolBar->isVisible();
         m_thumbnailBarVisibleBeforeFullscreen =
-            m_thumbnailDock ? m_thumbnailDock->isVisible() : m_thumbnailBar->isVisible();
+            m_thumbnailDock ? dockIsOpen(m_thumbnailDock) : m_thumbnailBar->isVisible();
         m_metadataVisibleBeforeFullscreen =
-            m_metadataDock && m_metadataDock->isVisible();
+            m_metadataDock && dockIsOpen(m_metadataDock);
         m_layoutVisibleBeforeFullscreen =
-            m_layoutDock && m_layoutDock->isVisible();
+            m_layoutDock && dockIsOpen(m_layoutDock);
         m_adjustmentsVisibleBeforeFullscreen =
-            m_adjustmentsDock && m_adjustmentsDock->isVisible();
+            m_adjustmentsDock && dockIsOpen(m_adjustmentsDock);
         m_helpVisibleBeforeFullscreen =
-            m_helpDock && m_helpDock->isVisible();
+            m_helpDock && dockIsOpen(m_helpDock);
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
         }
         if (m_thumbnailDock) {
-            m_thumbnailDock->setVisible(false);
+            setDockOpen(m_thumbnailDock, false);
         } else {
             m_thumbnailBar->setVisible(false);
         }
-        m_metadataDock->setVisible(false);
+        setDockOpen(m_metadataDock, false);
         if (m_layoutDock) {
-            m_layoutDock->setVisible(false);
+            setDockOpen(m_layoutDock, false);
         }
         if (m_adjustmentsDock) {
-            m_adjustmentsDock->setVisible(false);
+            setDockOpen(m_adjustmentsDock, false);
         }
         if (m_helpDock) {
-            m_helpDock->setVisible(false);
+            setDockOpen(m_helpDock, false);
         }
         m_toggleToolBarAct->setChecked(false);
         m_toggleThumbnailBarAct->setChecked(false);
@@ -3773,19 +3732,19 @@ void MainWindow::updateFullscreenUi()
         m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
         m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
         if (m_metadataDock) {
-            m_metadataDock->setVisible(m_metadataVisibleBeforeFullscreen);
+            setDockOpen(m_metadataDock, m_metadataVisibleBeforeFullscreen);
         }
         if (m_toggleMetadataAct) {
             m_toggleMetadataAct->setChecked(m_metadataVisibleBeforeFullscreen);
         }
         if (m_adjustmentsDock) {
-            m_adjustmentsDock->setVisible(m_adjustmentsVisibleBeforeFullscreen);
+            setDockOpen(m_adjustmentsDock, m_adjustmentsVisibleBeforeFullscreen);
         }
         if (m_toggleAdjustmentsAct) {
             m_toggleAdjustmentsAct->setChecked(m_adjustmentsVisibleBeforeFullscreen);
         }
         if (m_helpDock) {
-            m_helpDock->setVisible(m_helpVisibleBeforeFullscreen);
+            setDockOpen(m_helpDock, m_helpVisibleBeforeFullscreen);
         }
         if (m_toggleHelpAct) {
             m_toggleHelpAct->setChecked(m_helpVisibleBeforeFullscreen);
@@ -3881,7 +3840,12 @@ void MainWindow::readSettings()
         settings.remove(QStringLiteral("windowStateVersion"));
         settings.remove(QStringLiteral("windowStateQt"));
         if (ver == kDockLayoutStateVersion && !state.isEmpty()) {
-            restoreState(state);
+            {
+                KDDockWidgets::LayoutSaver saver;
+                if (!saver.restoreLayout(state)) {
+                    qWarning("biltoo: KD LayoutSaver restoreLayout failed");
+                }
+            }
         } else if (ver != 0 && ver != kDockLayoutStateVersion) {
             settings.remove(QStringLiteral("dockLayoutState"));
             settings.remove(QStringLiteral("dockLayoutVersion"));
@@ -3893,7 +3857,7 @@ void MainWindow::readSettings()
     if (m_adjustmentsDock) {
         const bool showAdj =
             settings.value(QStringLiteral("adjustmentsPanelVisible"), false).toBool();
-        m_adjustmentsDock->setVisible(showAdj);
+        setDockOpen(m_adjustmentsDock, showAdj);
         if (m_toggleAdjustmentsAct) {
             m_toggleAdjustmentsAct->setChecked(showAdj);
         }
@@ -3937,7 +3901,7 @@ void MainWindow::readSettings()
     if (m_messageLogDock) {
         const bool showLog =
             settings.value(QStringLiteral("messageLogVisible"), false).toBool();
-        m_messageLogDock->setVisible(showLog);
+        setDockOpen(m_messageLogDock, showLog);
         if (m_toggleMessageLogAct) {
             m_toggleMessageLogAct->setChecked(showLog);
         }
@@ -4307,9 +4271,12 @@ void MainWindow::writeSettings()
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("dockLayoutVersion"), kDockLayoutStateVersion);
-    settings.setValue(QStringLiteral("dockLayoutState"), saveState());
+    {
+        KDDockWidgets::LayoutSaver saver;
+        settings.setValue(QStringLiteral("dockLayoutState"), saver.serializeLayout());
+    }
     if (m_messageLogDock) {
-        settings.setValue(QStringLiteral("messageLogVisible"), m_messageLogDock->isVisible());
+        settings.setValue(QStringLiteral("messageLogVisible"), dockIsOpen(m_messageLogDock));
     }
     settings.remove(QStringLiteral("windowState"));
     settings.remove(QStringLiteral("windowStateVersion"));
@@ -4324,7 +4291,7 @@ void MainWindow::writeSettings()
     }
     if (m_adjustmentsDock) {
         settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
-                          m_adjustmentsDock->isVisible());
+                          dockIsOpen(m_adjustmentsDock));
     }
     settings.setValue(QStringLiteral("toolBarVisible"),
                       isFullScreen() ? m_toolBarVisibleBeforeFullscreen
@@ -4473,83 +4440,68 @@ void MainWindow::resetDockLayout()
     settings.remove(QStringLiteral("windowStateVersion"));
     settings.remove(QStringLiteral("windowStateQt"));
 
-    // Built-in defaults: filmstrip bottom (mode prefs still apply later),
-    // metadata right, help/toc left-ish as constructed, tool panels hidden.
-    if (m_thumbnailDock) {
-        removeDockWidget(m_thumbnailDock);
-        addDockWidget(Qt::BottomDockWidgetArea, m_thumbnailDock);
-    }
-    if (m_metadataDock) {
-        removeDockWidget(m_metadataDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_metadataDock);
-        m_metadataDock->show();
-        if (m_toggleMetadataAct) {
-            m_toggleMetadataAct->setChecked(true);
+    // Re-dock to construction defaults (KD locations).
+    auto redock = [this](DockWidget *dock, KDDockWidgets::Location loc, bool open) {
+        if (!dock) {
+            return;
         }
+        addDockWidget(dock, loc);
+        setDockOpen(dock, open);
+    };
+    redock(m_thumbnailDock, KDDockWidgets::Location_OnBottom, true);
+    redock(m_metadataDock, KDDockWidgets::Location_OnRight, true);
+    if (m_toggleMetadataAct) {
+        m_toggleMetadataAct->setChecked(true);
     }
-    if (m_helpDock) {
-        removeDockWidget(m_helpDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_helpDock);
-        m_helpDock->hide();
-        if (m_toggleHelpAct) {
-            m_toggleHelpAct->setChecked(false);
-        }
+    redock(m_helpDock, KDDockWidgets::Location_OnRight, false);
+    if (m_toggleHelpAct) {
+        m_toggleHelpAct->setChecked(false);
     }
-    if (m_tocDock) {
-        removeDockWidget(m_tocDock);
-        addDockWidget(Qt::LeftDockWidgetArea, m_tocDock);
-        m_tocDock->hide();
-        if (m_toggleTocAct) {
-            m_toggleTocAct->setChecked(false);
-        }
+    redock(m_tocDock, KDDockWidgets::Location_OnLeft, false);
+    if (m_toggleTocAct) {
+        m_toggleTocAct->setChecked(false);
     }
-    if (m_adjustmentsDock) {
-        removeDockWidget(m_adjustmentsDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_adjustmentsDock);
-        m_adjustmentsDock->hide();
-        if (m_toggleAdjustmentsAct) {
-            m_toggleAdjustmentsAct->setChecked(false);
-        }
-        settings.setValue(QStringLiteral("adjustmentsPanelVisible"), false);
+    redock(m_adjustmentsDock, KDDockWidgets::Location_OnRight, false);
+    if (m_toggleAdjustmentsAct) {
+        m_toggleAdjustmentsAct->setChecked(false);
     }
-    if (m_cropDock) {
-        removeDockWidget(m_cropDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_cropDock);
-        m_cropDock->hide();
-        if (m_toggleCropAct) {
-            m_toggleCropAct->setChecked(false);
-        }
+    settings.setValue(QStringLiteral("adjustmentsPanelVisible"), false);
+    redock(m_cropDock, KDDockWidgets::Location_OnRight, false);
+    if (m_toggleCropAct) {
+        m_toggleCropAct->setChecked(false);
     }
-    if (m_ocrDock) {
-        removeDockWidget(m_ocrDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_ocrDock);
-        m_ocrDock->hide();
-        if (m_toggleOcrAct) {
-            m_toggleOcrAct->setChecked(false);
-        }
+    redock(m_ocrDock, KDDockWidgets::Location_OnRight, false);
+    if (m_toggleOcrAct) {
+        m_toggleOcrAct->setChecked(false);
     }
-    if (m_textDock) {
-        removeDockWidget(m_textDock);
-        addDockWidget(Qt::RightDockWidgetArea, m_textDock);
-        m_textDock->hide();
-        if (m_toggleTextAct) {
-            m_toggleTextAct->setChecked(false);
-        }
+    redock(m_textDock, KDDockWidgets::Location_OnRight, false);
+    if (m_toggleTextAct) {
+        m_toggleTextAct->setChecked(false);
     }
-    if (m_layoutDock) {
-        removeDockWidget(m_layoutDock);
-        addDockWidget(Qt::LeftDockWidgetArea, m_layoutDock);
-        m_layoutDock->hide();
-        m_layoutPreferredInWorkspace = false;
-        settings.setValue(QStringLiteral("layoutPreferredInWorkspace"), false);
-        if (m_toggleLayoutPanelAct) {
-            m_toggleLayoutPanelAct->setChecked(false);
-        }
+    redock(m_messageLogDock, KDDockWidgets::Location_OnBottom, false);
+    if (m_toggleMessageLogAct) {
+        m_toggleMessageLogAct->setChecked(false);
+    }
+    settings.setValue(QStringLiteral("messageLogVisible"), false);
+    redock(m_layoutDock, KDDockWidgets::Location_OnLeft, false);
+    if (m_toggleLayoutPanelAct) {
+        m_toggleLayoutPanelAct->setChecked(false);
+    }
+
+    if (m_thumbnailBar) {
+        m_thumbnailEdge = ThumbnailEdge::Bottom;
+        m_thumbnailBar->setBarOrientation(Qt::Horizontal);
+        updateThumbnailEdgeActions();
+    }
+    if (m_toggleThumbnailBarAct) {
+        m_toggleThumbnailBarAct->setChecked(true);
     }
     updateLayoutPanelForMode();
-    updateWorkspaceActionVisibility();
-    statusBar()->showMessage(tr("Panel layout reset to defaults"), 3000);
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Panel layout reset to defaults"), 4000);
+    }
 }
+
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
@@ -4761,11 +4713,11 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
         }
         syncThumbnailCanvasMembership();
         if (m_session.paths().size() > 1 && m_thumbnailBar
-            && !(m_thumbnailDock ? m_thumbnailDock->isVisible()
+            && !(m_thumbnailDock ? dockIsOpen(m_thumbnailDock)
                                 : m_thumbnailBar->isVisible())) {
             m_toggleThumbnailBarAct->setChecked(true);
             if (m_thumbnailDock) {
-                m_thumbnailDock->setVisible(true);
+                setDockOpen(m_thumbnailDock, true);
             } else {
                 m_thumbnailBar->setVisible(true);
             }
@@ -5640,9 +5592,9 @@ void MainWindow::cancelOcrBatch()
 
 void MainWindow::ocrCurrentPage()
 {
-    if (m_ocrPanel && m_ocrDock && !m_ocrDock->isVisible()) {
-        m_ocrDock->show();
-        m_ocrDock->raise();
+    if (m_ocrPanel && m_ocrDock && !dockIsOpen(m_ocrDock)) {
+        m_ocrDock->open();
+        m_ocrDock->open();
     }
     startOcrCurrentPage();
 }
@@ -5977,9 +5929,9 @@ void MainWindow::ocrDocument()
     if (m_ocrPanel) {
         lang = m_ocrPanel->language();
         jobs = m_ocrPanel->jobs();
-        if (m_ocrDock && !m_ocrDock->isVisible()) {
-            m_ocrDock->show();
-            m_ocrDock->raise();
+        if (m_ocrDock && !dockIsOpen(m_ocrDock)) {
+            m_ocrDock->open();
+            m_ocrDock->open();
         }
     } else {
         lang = settings.value(QStringLiteral("ocr/lang"), QStringLiteral("eng")).toString();

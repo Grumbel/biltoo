@@ -2,23 +2,22 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2758.1-docs-readme-features` (base `9395b3e`).
+**Tip:** `biltoo-2759.1-kddockwidgets` (base `9395b3e`).
 
-**No VERSION commit** — version/tag is owned on the maintainer side.
+### 2759.1 — KDDockWidgets panel shell (first cut)
+- Required dep: `kddockwidgets` (Nix) + `find_package(KDDockWidgets-qt6)`
+- `MainWindow` : `KDDockWidgets::QtWidgets::MainWindow`
+- All tool docks → `QtWidgets::DockWidget` (`open`/`close`/`isOpen`/`toggleAction`)
+- Layout: `LayoutSaver` serialize/restore; `dockLayoutVersion` = 2
+- `initFrontend(QtWidgets)` in `main`
+- docs/KDDOCK.md mapping notes
+- Filmstrip edge uses KD `Location_*`; no Qt `resizeDocks`
 
-### Done this tip
-- README: Double view, filmstrip chrome, chrome prefs, slideshow tiles, Messages
-- docs/VIEW_AND_SELECTION.md: configurable ChromeColors; filmstrip camera on pan
-- docs/SPREAD.md: View → Double view submenu contract
-- SLIDESHOW.md: phase tile sessions + wake
-
-### Prior (code, still in history before this tip)
-- 2757.1: Double view submenu; Messages `messageLogVisible`
-- 2756.1: slideshow tile wake
-- 2755.1 / 2754.1: systemd / leptonica pkg-config
-- 2753.1–2752.x: filmstrip chrome dtor; chrome colour prefs
+**Expect compile feedback** on exact include paths / signal names
+(`isOpenChanged` vs KD version) under your Nix Qt6 tree.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2758.1-docs-readme-features-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2759.1-kddockwidgets-9395b3e.bundle HEAD
+# nix develop / biltoo-configure — needs pkgs.kddockwidgets on PATH
 ```

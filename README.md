@@ -40,6 +40,7 @@ view a gallery overview, or arrange pages on the workspace.
 * View images directly inside archives without extracting them
 * Panels menu for filmstrip, metadata, tools, and optional Messages log
   (hidden by default; preference is remembered)
+* Dockable panels via **KDDockWidgets** (nested splits/tabs, saved layout)
 
 ## Screenshots
 

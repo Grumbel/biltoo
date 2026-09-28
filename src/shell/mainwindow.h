@@ -13,7 +13,8 @@
 #include "imageview_types.h"
 #include "session/projectfile.h"
 
-#include <QMainWindow>
+#include <kddockwidgets/qtwidgets/MainWindow.h>
+#include <kddockwidgets/qtwidgets/DockWidget.h>
 #include <atomic>
 #include <QLineEdit>
 #include <QToolBar>
@@ -40,7 +41,6 @@ class TextToSpeechController;
 class LayoutPanel;
 class TocPanel;
 class HelpPanel;
-class QDockWidget;
 class QToolBar;
 class QAction;
 class QActionGroup;
@@ -52,7 +52,7 @@ class QMenu;
 class QSpinBox;
 class QTimer;
 
-class MainWindow : public QMainWindow
+class MainWindow : public KDDockWidgets::QtWidgets::MainWindow
 {
     Q_OBJECT
 
@@ -460,7 +460,7 @@ private:
     void applyThumbnailVisibility();
     enum class ThumbnailEdge { Bottom, Top, Left, Right };
     void setThumbnailBarPosition(ThumbnailEdge edge);
-    void onThumbnailDockLocationChanged(Qt::DockWidgetArea area);
+    void onThumbnailDockLocationChanged();
     void updateThumbnailEdgeActions();
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();
@@ -588,21 +588,21 @@ private:
     QAction *m_spreadN4Act = nullptr;
     QAction *m_dualCompareAct = nullptr;
     ThumbnailBar *m_thumbnailBar = nullptr;
-    QDockWidget *m_thumbnailDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_thumbnailDock = nullptr;
     bool m_dockLocationGuard = false;
     bool m_syncingSelection = false;
     MetadataPanel *m_metadataPanel = nullptr;
     AdjustmentsPanel *m_adjustmentsPanel = nullptr;
-    QDockWidget *m_adjustmentsDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_adjustmentsDock = nullptr;
     CropPanel *m_cropPanel = nullptr;
-    QDockWidget *m_cropDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_cropDock = nullptr;
     OcrPanel *m_ocrPanel = nullptr;
-    QDockWidget *m_ocrDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_ocrDock = nullptr;
     QAction *m_toggleOcrAct = nullptr;
     TextPanel *m_textPanel = nullptr;
-    QDockWidget *m_textDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_textDock = nullptr;
     MessageLogPanel *m_messageLogPanel = nullptr;
-    QDockWidget *m_messageLogDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_messageLogDock = nullptr;
     QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
     /** Session path the active SpeakPlan was built for (region indices are page-local). */
@@ -621,13 +621,13 @@ private:
     QAction *m_toggleAdjustmentsAct = nullptr;
     QAction *m_toggleCropAct = nullptr;
     QString m_metadataPath;
-    QDockWidget *m_metadataDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_metadataDock = nullptr;
     LayoutPanel *m_layoutPanel = nullptr;
-    QDockWidget *m_layoutDock = nullptr;
-    QDockWidget *m_tocDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_layoutDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_tocDock = nullptr;
     TocPanel *m_tocPanel = nullptr;
     HelpPanel *m_helpPanel = nullptr;
-    QDockWidget *m_helpDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_helpDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;

@@ -670,7 +670,7 @@ void MainWindow::updateLayoutPanelForMode()
         "biltooDisabledHelp",
         tr("The Layout panel is only available in Workspace mode."));
     if (!workspace) {
-        if (m_layoutDock->isVisible()) {
+        if (m_layoutDock->isOpen()) {
             m_layoutDock->setVisible(false);
         }
         if (m_toggleLayoutPanelAct->isChecked()) {
@@ -683,7 +683,7 @@ void MainWindow::updateLayoutPanelForMode()
         return;
     }
     const bool show = m_layoutPreferredInWorkspace;
-    if (m_layoutDock->isVisible() != show) {
+    if (m_layoutDock->isOpen() != show) {
         m_layoutDock->setVisible(show);
     }
     if (m_toggleLayoutPanelAct->isChecked() != show) {

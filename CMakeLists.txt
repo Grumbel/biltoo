@@ -562,7 +562,11 @@ else()
   message(STATUS "Biltoo optim/debug: see CMAKE_CXX_FLAGS / multi-config generator")
 endif()
 
+
+# KDDockWidgets (Qt6) — replaces QDockWidget for the panel shell.
+find_package(KDDockWidgets-qt6 CONFIG REQUIRED)
 target_link_libraries(biltoo_lib PUBLIC
+    KDAB::kddockwidgets
   Qt6::Core
   Qt6::Gui
   Qt6::Widgets
