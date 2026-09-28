@@ -368,13 +368,11 @@ MainWindow::MainWindow(QWidget *parent)
         if (!isFullScreen()) {
             m_thumbnailBarVisibleBeforeFullscreen = visible;
         }
-        onThumbnailDockLocationChanged();
+        scheduleFilmstripOrientationSync();
     });
     connect(m_thumbnailDock, &DockWidget::isFloatingChanged, this, [this](bool floating) {
         if (!floating) {
-            // User finished a drag-redock; re-apply orientation for the last edge
-            // (View → filmstrip edge still owns the semantic edge).
-            onThumbnailDockLocationChanged();
+            scheduleFilmstripOrientationSync();
         }
     });
 
@@ -2613,16 +2611,52 @@ void MainWindow::setThumbnailBarPosition(ThumbnailEdge edge)
 
 void MainWindow::onThumbnailDockLocationChanged()
 {
-    // KDDockWidgets does not emit Qt::DockWidgetArea. Edge is driven by
-    // explicit View → filmstrip edge actions; keep orientation in sync with
-    // the last chosen m_thumbnailEdge when the dock opens.
-    if (m_dockLocationGuard || !m_thumbnailBar) {
+    // KD has no Qt::DockWidgetArea signal. Infer edge from the filmstrip dock's
+    // centre relative to this window so drag-redock updates H/V orientation.
+    if (m_dockLocationGuard || !m_thumbnailBar || !m_thumbnailDock) {
         return;
     }
+    if (m_thumbnailDock->isFloating() || !dockIsOpen(m_thumbnailDock)) {
+        return;
+    }
+
+    const QPoint center = m_thumbnailDock->mapTo(this, m_thumbnailDock->rect().center());
+    const QRect area = rect();
+    if (area.width() < 16 || area.height() < 16) {
+        return;
+    }
+    const int distLeft = center.x();
+    const int distRight = area.width() - center.x();
+    const int distTop = center.y();
+    const int distBottom = area.height() - center.y();
+    const int nearest = std::min(std::min(distLeft, distRight), std::min(distTop, distBottom));
+
+    ThumbnailEdge edge = m_thumbnailEdge;
+    if (nearest == distBottom) {
+        edge = ThumbnailEdge::Bottom;
+    } else if (nearest == distTop) {
+        edge = ThumbnailEdge::Top;
+    } else if (nearest == distLeft) {
+        edge = ThumbnailEdge::Left;
+    } else if (nearest == distRight) {
+        edge = ThumbnailEdge::Right;
+    }
+
+    if (edge != m_thumbnailEdge) {
+        m_thumbnailEdge = edge;
+        updateThumbnailEdgeActions();
+    }
     const bool horizontalBar =
-        (m_thumbnailEdge == ThumbnailEdge::Bottom || m_thumbnailEdge == ThumbnailEdge::Top);
+        (edge == ThumbnailEdge::Bottom || edge == ThumbnailEdge::Top);
     m_thumbnailBar->setBarOrientation(horizontalBar ? Qt::Horizontal : Qt::Vertical);
-    updateThumbnailEdgeActions();
+}
+
+void MainWindow::scheduleFilmstripOrientationSync()
+{
+    // KD finishes reparent/geometry after the signal; run twice — immediate +
+    // after the next event-loop turn when group geometry is stable.
+    QTimer::singleShot(0, this, [this]() { onThumbnailDockLocationChanged(); });
+    QTimer::singleShot(50, this, [this]() { onThumbnailDockLocationChanged(); });
 }
 
 void MainWindow::updateThumbnailEdgeActions()

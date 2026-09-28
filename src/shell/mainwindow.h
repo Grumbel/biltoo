@@ -462,6 +462,7 @@ private:
     enum class ThumbnailEdge { Bottom, Top, Left, Right };
     void setThumbnailBarPosition(ThumbnailEdge edge);
     void onThumbnailDockLocationChanged();
+    void scheduleFilmstripOrientationSync();
     void updateThumbnailEdgeActions();
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();

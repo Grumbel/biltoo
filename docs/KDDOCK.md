@@ -31,9 +31,11 @@ main window is constructed.
 
 ## Filmstrip edge
 
-`QDockWidget::dockLocationChanged` is not mirrored 1:1. Edge/orientation is
-updated when the filmstrip dock opens or via View filmstrip-edge actions;
-revisit if KD exposes a stable location signal we can bind.
+KD has no `dockLocationChanged(Qt::DockWidgetArea)`. After open, float end, or
+Move/Resize/ParentChange on the filmstrip dock, biltoo infers the edge from the
+dock centre relative to the main window and sets `ThumbnailBar` horizontal
+(top/bottom) or vertical (left/right). View → filmstrip edge actions still call
+`addDockWidget(Location_*)` explicitly.
 
 ## Layout version
 

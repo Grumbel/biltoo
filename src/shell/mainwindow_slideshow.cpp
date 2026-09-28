@@ -587,6 +587,12 @@ void MainWindow::updateHelpPanelFromWidget(QWidget *widget, const QPoint &localP
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    // Filmstrip dock moved/resized by KD → re-detect edge for H/V orientation.
+    if (m_thumbnailDock && watched == m_thumbnailDock
+        && (event->type() == QEvent::Move || event->type() == QEvent::Resize
+            || event->type() == QEvent::Show || event->type() == QEvent::ParentChange)) {
+        scheduleFilmstripOrientationSync();
+    }
     // Help panel: pick up disabled toolbar/menu items (QAction::hovered skips them).
     if (m_helpPanel
         && (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove)) {

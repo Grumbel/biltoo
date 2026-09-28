@@ -2,12 +2,14 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2762.2-kddock-core-dockwidget-include` (base `7a2bd7b`).
+**Tip:** `biltoo-2763.1-filmstrip-orient-from-geometry` (base `7a2bd7b`).
 
-### 2762.2
-- Include `kddockwidgets/core/DockWidget.h` for `addDockWidgetAsTab` (was incomplete type)
+### 2763.1
+- Infer filmstrip edge from dock centre vs main window after KD redock
+- `scheduleFilmstripOrientationSync` (0 ms + 50 ms) on open/float end/Move/Resize/ParentChange
+- Horizontal top/bottom, vertical left/right
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2762.2-kddock-core-dockwidget-include-7a2bd7b.bundle HEAD
+git pull --ff-only …/biltoo-2763.1-filmstrip-orient-from-geometry-7a2bd7b.bundle HEAD
 ```
