@@ -404,6 +404,10 @@ private:
 
     QSet<int> m_onCanvasIndices;
     QSet<int> m_spreadMemberIndices;
+    /** Session cursor row (Image page); independent of multi-select wash. */
+    int m_cursorIndex = -1;
+    /** Visible camera rect on cursor page, content-normalised [0,1]² (empty = none). */
+    QRectF m_cursorViewportNorm;
     ThumbnailDelegate *m_delegate = nullptr;
 
     QPoint m_pressPos;
