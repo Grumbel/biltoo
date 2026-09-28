@@ -236,26 +236,58 @@ TextLayerResolve::Prefer TextLayerController::layerPrefer() const
 void TextLayerController::recomputeSearchMatches()
 {
     m_session.clearSearchMatches();
-    if (!m_session.hasSearchQuery() || !m_session.hasRegions()) {
+    if (!m_session.hasSearchQuery()) {
         return;
     }
-    QVector<QString> texts;
-    QVector<QRectF> bboxes;
-    QVector<int> blockIds;
-    texts.reserve(m_session.regionCount());
-    bboxes.reserve(m_session.regionCount());
-    blockIds.reserve(m_session.regionCount());
-    for (int i = 0; i < m_session.regionCount(); ++i) {
-        const auto &r = m_session.regionAt(i);
-        texts.append(r.text);
-        bboxes.append(r.bbox);
-        blockIds.append(r.blockId);
+    ensureMemberLayers();
+    auto hitsForLayer = [&](const ThumtooCache::PageTextLayer &layer, const QString &path) {
+        QVector<QString> texts;
+        QVector<QRectF> bboxes;
+        QVector<int> blockIds;
+        texts.reserve(layer.regions.size());
+        bboxes.reserve(layer.regions.size());
+        blockIds.reserve(layer.regions.size());
+        for (const auto &r : layer.regions) {
+            texts.append(r.text);
+            bboxes.append(r.bbox);
+            blockIds.append(r.blockId);
+        }
+        const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
+        const bool yUp = path.isEmpty() ? pageYUp() : ThumtooCache::pageSpaceYUpForPath(path);
+        return TextSearchPolicy::findHits(
+            texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
+            blockIds, yUp, ocrOrder);
+    };
+
+    if (m_session.hasRegions()) {
+        m_session.setSearchMatches(
+            hitsForLayer(m_session.layerRef(), m_session.layerPathRef()));
     }
-    const bool ocrOrder = m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
-    const QVector<TextSearchPolicy::SearchHit> hits = TextSearchPolicy::findHits(
-        texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
-        blockIds, pageYUp(), ocrOrder);
-    m_session.setSearchMatches(hits);
+
+    if (!isMultiUnderlay()) {
+        return;
+    }
+    ImageItem *primary = m_view->primaryItem();
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item == primary) {
+            continue;
+        }
+        const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+        if (!layer || layer->regions.isEmpty()) {
+            continue;
+        }
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QString path = pathForItem(item);
+        for (const TextSearchPolicy::SearchHit &hit : hitsForLayer(*layer, path)) {
+            TextLayerSession::MemberSearchHit mh;
+            mh.sessionId = sid;
+            mh.hit = hit;
+            m_session.memberSearchMatches.append(mh);
+        }
+    }
 }
 
 int TextLayerController::setSearchQuery(const QString &query)
@@ -1146,7 +1178,8 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
         return;
     }
     const bool wantPaint = m_session.showsRegions() || m_session.showsGlyphs()
-        || m_session.hasSearchMatches() || m_session.hasSelection()
+        || m_session.hasSearchMatches() || !m_session.memberSearchMatches.isEmpty()
+        || m_session.hasSelection()
         || m_session.hoverRegionIndex() >= 0 || !m_speakingRegions.isEmpty();
     if (!wantPaint) {
         return;
@@ -1210,8 +1243,33 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
             }
         }
 
-        // Glyphs / search / hover / TTS: primary underlay only for this slice.
+        // Secondary pages: search hits from memberSearchMatches.
         if (!isPrimary) {
+            if (sid != kInvalidSessionImageId && !m_session.memberSearchMatches.isEmpty()) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor(255, 220, 40, 110));
+                for (const TextLayerSession::MemberSearchHit &mh : m_session.memberSearchMatches) {
+                    if (mh.sessionId != sid) {
+                        continue;
+                    }
+                    if (mh.hit.regionIndex < 0 || mh.hit.regionIndex >= layer.regions.size()) {
+                        continue;
+                    }
+                    const auto &r = layer.regions.at(mh.hit.regionIndex);
+                    QRectF img = regionImageRectFor(item, path, layer, r);
+                    if (img.isEmpty()) {
+                        continue;
+                    }
+                    const qreal a = qBound(0.0, mh.hit.startFrac, 1.0);
+                    const qreal b = qBound(0.0, mh.hit.endFrac, 1.0);
+                    if (b > a && (a > 0.0 || b < 1.0)) {
+                        img = QRectF(img.left() + img.width() * a, img.top(),
+                                     img.width() * (b - a), img.height());
+                    }
+                    const QRectF local = img.translated(item->offset());
+                    painter->drawPolygon(item->mapToScene(local));
+                }
+            }
             return;
         }
         if (m_session.showsGlyphs()) {

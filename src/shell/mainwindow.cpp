@@ -4883,6 +4883,19 @@ void MainWindow::connectTextPanel()
                 }
                 m_imageView->hostText().setSelectedRegions(ids);
             });
+    connect(m_textPanel, &TextPanel::selectionMultiChanged, this,
+            [this](const TextSelection &bag) {
+                if (!m_imageView) {
+                    return;
+                }
+                TextLayerController &ctl = m_imageView->hostText();
+                ctl.session().multiSelection = bag;
+                const SessionImageId sid = m_imageView->hostSessionId().currentIdValue();
+                ctl.session().setSelectedRegions(bag.regionIndicesFor(sid));
+                if (m_imageView->viewport()) {
+                    m_imageView->viewport()->update();
+                }
+            });
     connect(m_textPanel, &TextPanel::hoverRegionChanged, this,
             [this](int regionIndex) {
                 if (!m_imageView) {
@@ -4921,8 +4934,12 @@ void MainWindow::connectTextPanel()
         if (!m_textPanel || !m_imageView) {
             return;
         }
-        m_textPanel->setSelectedRegions(
-            m_imageView->hostText().session().selectedRegionsRef());
+        const auto &sess = m_imageView->hostText().session();
+        if (m_imageView->itemCount() > 1 && !sess.multiSelection.isEmpty()) {
+            m_textPanel->setMultiSelection(sess.multiSelection);
+        } else {
+            m_textPanel->setSelectedRegions(sess.selectedRegionsRef());
+        }
     });
     connect(&text, &TextLayerController::hoverChanged, this,
             [this](int regionIndex) {
@@ -5223,6 +5240,45 @@ void MainWindow::updateTextPanel()
     }
     m_textPanel->setShowGlyphsChecked(sess.showsGlyphs());
     m_textPanel->setShowOutlinesChecked(sess.showsRegions());
+
+    const bool spreadSurface = m_imageView->isImageMode() && m_imageView->itemCount() > 1;
+    if (spreadSurface) {
+        text.ensureMemberLayers();
+        QVector<TextPanelModel::MemberLayer> members;
+        int totalRegions = 0;
+        for (ImageItem *item : m_imageView->liveItems()) {
+            if (!item) {
+                continue;
+            }
+            SessionImageId sid = item->sessionId();
+            if (sid == kInvalidSessionImageId) {
+                sid = m_imageView->hostSessionId().currentIdValue();
+            }
+            TextPanelModel::MemberLayer mem;
+            mem.sessionId = sid;
+            const int idx = (sid != kInvalidSessionImageId) ? m_session.indexOfId(sid) : -1;
+            mem.pageLabel = (idx >= 0)
+                ? tr("p.%1").arg(idx + 1)
+                : QFileInfo(item->path()).fileName();
+            const QString ipath = item->path().isEmpty() ? path : item->path();
+            if (!ipath.isEmpty()) {
+                mem.layer = TextLayerResolve::load(ipath, sess.layerPreferValue());
+            }
+            totalRegions += mem.layer.regions.size();
+            members.append(mem);
+        }
+        m_textPanel->setMemberLayers(members);
+        m_textPanel->setLayerInfo(
+            tr("Spread — %n region(s) across %1 page(s)", "", totalRegions)
+                .arg(members.size()));
+        if (!sess.multiSelection.isEmpty()) {
+            m_textPanel->setMultiSelection(sess.multiSelection);
+        } else {
+            m_textPanel->setSelectedRegions(sess.selectedRegionsRef());
+        }
+        return;
+    }
+
     const auto &layer = sess.layerRef();
     m_textPanel->setLayer(layer);
     const int n = layer.regions.size();

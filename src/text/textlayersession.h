@@ -30,6 +30,12 @@ struct TextLayerSession {
     bool searchFuzzy = true;
     TextLayerResolve::Prefer layerPrefer = TextLayerResolve::Prefer::Auto;
     QVector<TextSearchPolicy::SearchHit> searchMatches;
+    /** Spread: search hits on non-primary members (sid + hit). */
+    struct MemberSearchHit {
+        SessionImageId sessionId = kInvalidSessionImageId;
+        TextSearchPolicy::SearchHit hit;
+    };
+    QVector<MemberSearchHit> memberSearchMatches;
     bool rubberbanding = false;
     QPoint rubberOrigin;
     QRect rubberRect;
@@ -93,7 +99,11 @@ struct TextLayerSession {
         searchMatches.clear();
     }
 
-    void clearSearchMatches() { searchMatches.clear(); }
+    void clearSearchMatches()
+    {
+        searchMatches.clear();
+        memberSearchMatches.clear();
+    }
 
     void setSearchMatches(const QVector<TextSearchPolicy::SearchHit> &hits)
     {

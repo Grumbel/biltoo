@@ -4,13 +4,15 @@
 #define TEXTPANELMODEL_H
 
 #include "host/thumtoocache.h"
+#include "imageview_types.h"
 
 #include <QAbstractListModel>
+#include <QString>
 #include <QVector>
 
 /**
- * Read-only list model over a PageTextLayer's regions (one row per region).
- * Roles carry text, kind, and the stable region index for selection bridging.
+ * List model over one or more PageTextLayers (single page or spread flatten).
+ * Rows are reading order within each page, pages in member order.
  */
 class TextPanelModel : public QAbstractListModel {
     Q_OBJECT
@@ -20,6 +22,14 @@ public:
         KindRole,
         RegionIndexRole,
         IsLinkRole,
+        SessionIdRole,
+        PageLabelRole,
+    };
+
+    struct MemberLayer {
+        SessionImageId sessionId = kInvalidSessionImageId;
+        QString pageLabel;
+        ThumtooCache::PageTextLayer layer;
     };
 
     explicit TextPanelModel(QObject *parent = nullptr);
@@ -29,15 +39,25 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void setLayer(const ThumtooCache::PageTextLayer &layer);
+    /** Ordered members (spread reading order). Empty → clear. */
+    void setMemberLayers(const QVector<MemberLayer> &members);
     void clear();
 
+    bool isMultiPage() const { return m_members.size() > 1; }
     int regionIndexAt(int row) const;
+    SessionImageId sessionIdAt(int row) const;
     int rowForRegion(int regionIndex) const;
+    int rowForRegion(SessionImageId sessionId, int regionIndex) const;
 
 private:
-    ThumtooCache::PageTextLayer m_layer;
-    /** Rows in reading order → original region index. */
-    QVector<int> m_order;
+    void rebuildOrder();
+
+    QVector<MemberLayer> m_members;
+    struct RowRef {
+        int memberIndex = 0;
+        int regionIndex = 0;
+    };
+    QVector<RowRef> m_order;
 };
 
 #endif

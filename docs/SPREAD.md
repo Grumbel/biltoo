@@ -297,7 +297,7 @@ class SpreadTextCoordinator {
 |-------|------|-----------|
 | **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Done:** state/book/layout, Double view, nav stride, multi-underlay install, text paint deferred. |
 | **P1** | Gallery View Selection; status range | **Done:** View Selection + Gallery menu; status range; event-driven sync; FixedN filmstrip; leave/dual mutual exclusion; N≤8. |
-| **P2** | Text coordinator + cross-page rubber-band/copy | **Partial:** per-member layers; multi-item rubber-band/hit; selection paint; copy via TextSelection. Panel flatten still single-page. |
+| **P2** | Text coordinator + cross-page rubber-band/copy | **Mostly done:** layers, rubber-band, paint, copy, panel flatten, multi search hits. Glyphs secondary optional. |
 | **P3** | Speak plan + highlights over members | TTS spans carry sid |
 | **P4** | N>2, binding hints, RTL, heightMatch prefs | Foldout / polish |
 

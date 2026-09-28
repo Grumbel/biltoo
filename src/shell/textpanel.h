@@ -4,6 +4,8 @@
 #define TEXTPANEL_H
 
 #include "host/thumtoocache.h"
+#include "text/textpanelmodel.h"
+#include "text/textselection.h"
 
 #include <QWidget>
 #include <QVector>
@@ -35,11 +37,14 @@ public:
 
     void setLayerInfo(const QString &info);
     void setLayer(const ThumtooCache::PageTextLayer &layer);
+    void setMemberLayers(const QVector<TextPanelModel::MemberLayer> &members);
     void clearLayer();
     void setShowGlyphsChecked(bool on);
     void setShowOutlinesChecked(bool on);
 
     void setSelectedRegions(const QVector<int> &regionIndices);
+    /** Multi-page selection (spread); selects matching rows across members. */
+    void setMultiSelection(const TextSelection &selection);
     void setHoverRegion(int regionIndex);
 
     void setSpeechStatus(const QString &text, bool isError = false);
@@ -54,6 +59,8 @@ public:
 
 signals:
     void selectionRegionsChanged(const QVector<int> &regionIndices);
+    /** Emitted when the panel is multi-page and selection spans sids. */
+    void selectionMultiChanged(const TextSelection &selection);
     void hoverRegionChanged(int regionIndex);
     void showGlyphsToggled(bool on);
     void showOutlinesToggled(bool on);

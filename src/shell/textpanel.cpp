@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/textpanel.h"
+#include <QHash>
+#include <QPair>
 #include "shell/messagelogwidget.h"
 #include "text/textpanelmodel.h"
 
@@ -171,6 +173,13 @@ void TextPanel::setLayer(const ThumtooCache::PageTextLayer &layer)
     }
 }
 
+void TextPanel::setMemberLayers(const QVector<TextPanelModel::MemberLayer> &members)
+{
+    if (m_model) {
+        m_model->setMemberLayers(members);
+    }
+}
+
 void TextPanel::clearLayer()
 {
     if (m_model) {
@@ -241,6 +250,37 @@ void TextPanel::setSpeakEnabled(bool on)
     }
 }
 
+void TextPanel::setMultiSelection(const TextSelection &selection)
+{
+    if (!m_view || !m_model) {
+        return;
+    }
+    m_blockSel = true;
+    QItemSelection sel;
+    QVector<int> primaryOnly;
+    for (const TextSelRef &ref : selection.refs()) {
+        const int row = m_model->rowForRegion(ref.sessionId, ref.regionIndex);
+        if (row < 0) {
+            continue;
+        }
+        const QModelIndex idx = m_model->index(row, 0);
+        sel.select(idx, idx);
+        if (!m_model->isMultiPage() || ref.sessionId == m_model->sessionIdAt(row)) {
+            primaryOnly.append(ref.regionIndex);
+        }
+    }
+    m_view->selectionModel()->select(sel, QItemSelectionModel::ClearAndSelect);
+    if (!selection.isEmpty()) {
+        const int row = m_model->rowForRegion(selection.refs().first().sessionId,
+                                              selection.refs().first().regionIndex);
+        if (row >= 0) {
+            m_view->scrollTo(m_model->index(row, 0), QAbstractItemView::EnsureVisible);
+        }
+    }
+    m_lastEmittedSelection = primaryOnly;
+    m_blockSel = false;
+}
+
 void TextPanel::setSelectedRegions(const QVector<int> &regionIndices)
 {
     if (!m_view || !m_model) {
@@ -302,8 +342,40 @@ void TextPanel::onViewSelectionChanged()
     if (m_blockSel || !m_view || !m_model) {
         return;
     }
-    QVector<int> regions;
     const auto rows = m_view->selectionModel()->selectedRows();
+    if (m_model->isMultiPage()) {
+        TextSelection bag;
+        // Preserve list order (already reading order across members).
+        QVector<QPair<SessionImageId, QVector<int>>> bySid;
+        QVector<SessionImageId> sidOrder;
+        QHash<SessionImageId, QVector<int>> map;
+        QHash<SessionImageId, QVector<QString>> texts;
+        for (const QModelIndex &idx : rows) {
+            const int row = idx.row();
+            const int ri = m_model->regionIndexAt(row);
+            const SessionImageId sid = m_model->sessionIdAt(row);
+            if (ri < 0 || sid == kInvalidSessionImageId) {
+                continue;
+            }
+            if (!map.contains(sid)) {
+                sidOrder.append(sid);
+            }
+            map[sid].append(ri);
+            const QString tx = m_model->data(idx, TextPanelModel::TextRole).toString();
+            texts[sid].append(tx);
+        }
+        for (SessionImageId sid : sidOrder) {
+            bag.setForSession(sid, map.value(sid), texts.value(sid));
+        }
+        emit selectionMultiChanged(bag);
+        QVector<int> primary;
+        if (!sidOrder.isEmpty()) {
+            primary = map.value(sidOrder.first());
+        }
+        m_lastEmittedSelection = primary;
+        return;
+    }
+    QVector<int> regions;
     regions.reserve(rows.size());
     for (const QModelIndex &idx : rows) {
         const int ri = m_model->regionIndexAt(idx.row());
