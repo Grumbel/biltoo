@@ -9,6 +9,7 @@
 #include "imageview.h"
 
 #include <QFont>
+#include <QLineF>
 #include <QPainterPath>
 #include <QPen>
 #include <QPolygonF>
@@ -83,6 +84,28 @@ QPointF AnnotationPainter::pageToScene(ImageView *view, ImageItem *item, const Q
     return item->mapToScene(local);
 }
 
+/** Scene-space length of one page unit (for non-cosmetic stroke widths). */
+static qreal pageUnitInScene(ImageView *view, ImageItem *item, const QRectF &pageBounds,
+                             bool pageYUp, const QSize &sourceSize)
+{
+    if (!view || !item || pageBounds.width() < 1e-6) {
+        return 1.0;
+    }
+    const QPointF c = pageBounds.center();
+    const QPointF a =
+        AnnotationPainter::pageToScene(view, item, c, pageBounds, pageYUp, sourceSize);
+    const QPointF b = AnnotationPainter::pageToScene(
+        view, item, QPointF(c.x() + 1.0, c.y()), pageBounds, pageYUp, sourceSize);
+    const qreal d = QLineF(a, b).length();
+    if (d > 1e-6) {
+        return d;
+    }
+    if (sourceSize.width() > 0) {
+        return qreal(sourceSize.width()) / pageBounds.width();
+    }
+    return 1.0;
+}
+
 QRectF AnnotationPainter::pageRectToScene(ImageView *view, ImageItem *item,
                                           const QRectF &pageRect, const QRectF &pageBounds,
                                           bool pageYUp, const QSize &sourceSize)
@@ -123,11 +146,9 @@ void AnnotationPainter::paintStroke(QPainter &painter, ImageView *view, ImageIte
     if (obj.points.size() == 1) {
         const QPointF scene =
             pageToScene(view, item, obj.points.first(), pageBounds, pageYUp, sourceSize);
-        qreal pageUnit = 1.0;
-        if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-            pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-        }
-        const qreal r = qMax(0.5, obj.width * 0.5 * pageUnit);
+        const qreal pageUnit =
+            pageUnitInScene(view, item, pageBounds, pageYUp, sourceSize);
+        const qreal r = qMax(0.25, obj.width * 0.5 * pageUnit);
         painter.setPen(Qt::NoPen);
         painter.setBrush(obj.color);
         painter.drawEllipse(scene, r, r);
@@ -135,11 +156,10 @@ void AnnotationPainter::paintStroke(QPainter &painter, ImageView *view, ImageIte
     }
 
     QPen pen(obj.color);
-    qreal pageUnit = 1.0;
-    if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-        pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-    }
-    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
+    const qreal pageUnit = pageUnitInScene(view, item, pageBounds, pageYUp, sourceSize);
+    // Non-cosmetic: width is in scene units and scales with the view transform.
+    pen.setCosmetic(false);
+    pen.setWidthF(qMax(0.25, obj.width * pageUnit));
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     painter.setPen(pen);
@@ -176,12 +196,10 @@ void AnnotationPainter::paintShape(QPainter &painter, ImageView *view, ImageItem
     if (scene.isEmpty()) {
         return;
     }
-    qreal pageUnit = 1.0;
-    if (pageBounds.width() > 1 && sourceSize.width() > 0) {
-        pageUnit = qreal(sourceSize.width()) / pageBounds.width();
-    }
+    const qreal pageUnit = pageUnitInScene(view, item, pageBounds, pageYUp, sourceSize);
     QPen pen(obj.color);
-    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
+    pen.setCosmetic(false);
+    pen.setWidthF(qMax(0.25, obj.width * pageUnit));
     pen.setCapStyle(Qt::SquareCap);
     pen.setJoinStyle(Qt::MiterJoin);
     painter.setPen(pen);
