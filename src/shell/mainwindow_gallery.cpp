@@ -613,7 +613,7 @@ void MainWindow::updateThumbnailBarForMode()
     // CLI force flags override per-mode preferences for the strip.
     if (m_forceNoThumbnails) {
         if (m_thumbnailDock) {
-            m_thumbnailDock->setVisible(false);
+            m_thumbnailDock->close();
         } else {
             m_thumbnailBar->setVisible(false);
         }
@@ -625,7 +625,11 @@ void MainWindow::updateThumbnailBarForMode()
     if (m_forceThumbnails) {
         const bool show = !m_session.paths().isEmpty();
         if (m_thumbnailDock) {
-            m_thumbnailDock->setVisible(show);
+            if (show) {
+                m_thumbnailDock->open();
+            } else {
+                m_thumbnailDock->close();
+            }
         } else {
             m_thumbnailBar->setVisible(show);
         }
@@ -646,8 +650,15 @@ void MainWindow::updateThumbnailBarForMode()
         // Image mode: auto when multi-file session (legacy applyThumbnailVisibility).
         show = m_session.paths().size() > 1;
     }
+    // KDDockWidgets: open()/close() — not QWidget::setVisible — so the strip
+    // actually joins the layout (Gallery previously used setVisible and could
+    // leave an empty or detached filmstrip).
     if (m_thumbnailDock) {
-        m_thumbnailDock->setVisible(show);
+        if (show) {
+            m_thumbnailDock->open();
+        } else {
+            m_thumbnailDock->close();
+        }
     } else {
         m_thumbnailBar->setVisible(show);
     }

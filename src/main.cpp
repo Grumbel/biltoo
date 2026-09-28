@@ -4,6 +4,7 @@
 #include "shell/mainwindow.h"
 #include <kddockwidgets/Config.h>
 #include <kddockwidgets/KDDockWidgets.h>
+#include "shell/biltoo_dock_viewfactory.h"
 #include "view/viewtransform.h"
 #include "util/biltoo_logging.h"
 #include "util/debugflags.h"
@@ -81,12 +82,14 @@ int main(int argc, char *argv[])
         // Title-bar chrome: hide title bars when tabs are visible (drag via tab bar);
         // keep close/float on the tab bar. Do not force AlwaysShowTabs — single
         // docks stay without a tab strip. Floating single docks keep a title bar.
+        // Filmstrip: zero-height title bar via DockViewFactory (no label chrome).
         using F = KDDockWidgets::Config::Flag;
         auto flags = KDDockWidgets::Config::self().flags();
         flags |= F::Flag_HideTitleBarWhenTabsVisible
               |  F::Flag_ShowButtonsOnTabBarIfTitleBarHidden
               |  F::Flag_TitleBarHasMaximizeButton;
         KDDockWidgets::Config::self().setFlags(flags);
+        KDDockWidgets::Config::self().setViewFactory(new biltoo::DockViewFactory);
     }
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the
     // linker may drop the RCC object and :/icons/* is empty at runtime.
