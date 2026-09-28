@@ -3918,9 +3918,19 @@ void MainWindow::updateFullscreenUi()
             m_adjustmentsDock && dockIsOpen(m_adjustmentsDock);
         m_helpVisibleBeforeFullscreen =
             m_helpDock && dockIsOpen(m_helpDock);
+        m_locationBarVisibleBeforeFullscreen =
+            m_locationBar && m_locationBar->isVisible();
+        m_searchBarVisibleBeforeFullscreen =
+            m_searchBar && m_searchBar->isVisible();
         m_toolBar->setVisible(false);
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
+        }
+        if (m_locationBar) {
+            m_locationBar->setVisible(false);
+        }
+        if (m_searchBar) {
+            m_searchBar->setVisible(false);
         }
         if (m_thumbnailDock) {
             setDockOpen(m_thumbnailDock, false);
@@ -3984,6 +3994,15 @@ void MainWindow::updateFullscreenUi()
         // Tools strip is used in Gallery / Image / Workspace — not Workspace-only.
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(m_imageView != nullptr);
+        }
+        if (m_locationBar) {
+            // Pinned or was open before fullscreen (e.g. Ctrl+L).
+            m_locationBar->setVisible(m_locationBarVisibleBeforeFullscreen
+                                      || m_locationBarPinned);
+        }
+        if (m_searchBar) {
+            m_searchBar->setVisible(m_searchBarVisibleBeforeFullscreen
+                                    || m_searchBarPinned);
         }
         menuBar()->setVisible(true);
         statusBar()->setVisible(true);

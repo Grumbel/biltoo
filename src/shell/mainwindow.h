@@ -908,6 +908,8 @@ private:
     bool m_layoutVisibleBeforeFullscreen = false;
     bool m_adjustmentsVisibleBeforeFullscreen = false;
     bool m_helpVisibleBeforeFullscreen = false;
+    bool m_locationBarVisibleBeforeFullscreen = false;
+    bool m_searchBarVisibleBeforeFullscreen = false;
 };
 
 #endif // MAINWINDOW_H
