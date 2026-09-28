@@ -9,7 +9,7 @@ Status: **Not in scope for the current annotation / export work.**
 Recorded 2026-09-28 so a later version can pick this up without rediscovering the constraints.
 
 Related: [ANNOTATION_OVERLAY.md](ANNOTATION_OVERLAY.md), [SESSION_EXPORT_AND_ORDER.md](SESSION_EXPORT_AND_ORDER.md),
-[CONTENT_COORDINATES.md](CONTENT_COORDINATES.md).
+[CONTENT_COORDINATES.md](CONTENT_COORDINATES.md), [SESSION_VS_CONTAINER.md](SESSION_VS_CONTAINER.md).
 
 ---
 

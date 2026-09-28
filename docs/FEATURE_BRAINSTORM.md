@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 
 **Annotation overlay (design):** [ANNOTATION_OVERLAY.md](ANNOTATION_OVERLAY.md)
+**Session vs PDF/ZIP container (open tension):** [SESSION_VS_CONTAINER.md](SESSION_VS_CONTAINER.md)
 # Feature brainstorm (containers, codecs, alpha, faces, annotations)
 
 Status: **ideas only** — not a commitment or implementation plan. Capture
