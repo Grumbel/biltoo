@@ -656,7 +656,14 @@ void MainWindow::goPrevious()
             ? m_session.idAt(next)
             : m_spreadBook.state().members.first());
         setCurrentIndex(first >= 0 ? first : next);
-        syncSpreadPresentation();
+        // Membership changed — force layout + prune stale underlays.
+        if (m_imageView) {
+            m_imageView->hostImage().applySpreadLayout(
+                m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+                m_spreadBook.state().direction, /*forceFit=*/true);
+        } else {
+            syncSpreadPresentation();
+        }
         onSlideshowUserNavigated();
         return;
     }
@@ -691,7 +698,13 @@ void MainWindow::goNext()
             ? m_session.idAt(next)
             : m_spreadBook.state().members.first());
         setCurrentIndex(first >= 0 ? first : next);
-        syncSpreadPresentation();
+        if (m_imageView) {
+            m_imageView->hostImage().applySpreadLayout(
+                m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+                m_spreadBook.state().direction, /*forceFit=*/true);
+        } else {
+            syncSpreadPresentation();
+        }
         onSlideshowUserNavigated();
         return;
     }
@@ -808,8 +821,11 @@ void MainWindow::setDoubleViewEnabled(bool on)
     if (m_dualShell && m_dualShell->isDualEnabled()) {
         setDualCompareEnabled(false);
     }
-    if (m_imageView && !m_imageView->isImageMode()) {
-        m_imageView->setViewMode(ImageView::ViewMode::Image);
+    // Preference only when not already in Image — do not jump modes.
+    // Image enter (openSessionIndex / setCurrentIndex) applies the layout.
+    if (!m_imageView || !m_imageView->isImageMode()) {
+        updateStatus();
+        return;
     }
     const auto &members = m_spreadBook.state().members;
     if (!members.isEmpty()) {
@@ -818,13 +834,11 @@ void MainWindow::setDoubleViewEnabled(bool on)
             setCurrentIndex(idx);
         }
     }
-    // Layout after underlay load; force fit once for the new membership.
-    if (m_imageView) {
-        m_imageView->hostImage().applySpreadLayout(
-            m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
-            m_spreadBook.state().direction, /*forceFit=*/true);
-    }
+    m_imageView->hostImage().applySpreadLayout(
+        m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+        m_spreadBook.state().direction, /*forceFit=*/true);
     scheduleSpreadSync();
+    updateUpToGalleryAction();
     updateStatus();
 }
 

@@ -2,15 +2,15 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2739.1-doubleview-toolbar-zoom-persist` (base `636e70e`).
+**Tip:** `biltoo-2740.1-doubleview-prev-center-toolbar` (base `636e70e`).
 
-### 2739.1 Double View UX
-- Toolbar split button (toggle + menu: binding / direction / N)
-- Sticky Double View across Gallery → Image (FixedN kept; selection spreads still clear)
-- Zoom preserved: `applySpreadLayout` only fitInView on membership change / forceFit
-- Scene rect from item scene bounds + centerOn after fit
+### 2740.1
+- Prune non-member underlays on spread layout (fixes Prev leaving old pages)
+- fitInView + AlignCenter (centering)
+- Double View toggle does not force Image mode (preference when in Gallery)
+- Back/Up action on main toolbar; updateUp after enabling in Image
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2739.1-doubleview-toolbar-zoom-persist-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2740.1-doubleview-prev-center-toolbar-636e70e.bundle HEAD
 ```

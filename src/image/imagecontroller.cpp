@@ -399,6 +399,34 @@ void ImageController::applySpreadLayout(const QStringList &paths,
     if (!m_view || !m_view->isImageMode() || paths.size() < 2) {
         return;
     }
+
+    // Drop underlays that are no longer members (Prev/Next would otherwise
+    // leave stale pages on the scene while the filmstrip moves).
+    {
+        QSet<QString> keep;
+        for (const QString &p : paths) {
+            if (!p.isEmpty()) {
+                keep.insert(p);
+            }
+        }
+        QList<ImageItem *> doomed;
+        for (ImageItem *item : m_view->liveItems()) {
+            if (!item) {
+                continue;
+            }
+            if (!keep.contains(item->path())) {
+                doomed.append(item);
+            }
+        }
+        for (ImageItem *item : doomed) {
+            if (QGraphicsScene *sc = item->scene()) {
+                sc->removeItem(item);
+            }
+            m_view->liveItems().removeOne(item);
+            delete item;
+        }
+    }
+
     QVector<QSizeF> sizes;
     QList<ImageItem *> items;
     sizes.reserve(paths.size());
@@ -444,6 +472,10 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         return;
     }
 
+    if (!paths.isEmpty() && !paths.first().isEmpty()) {
+        m_classicPath = paths.first();
+    }
+
     const SpreadLayoutResult layout =
         layoutSpread(sizes, /*gutter=*/12.0, /*heightMatch=*/true, direction);
     for (int i = 0; i < items.size() && i < layout.memberSlots.size(); ++i) {
@@ -464,16 +496,17 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         item->applyPlacement(pl);
     }
 
-    // Scene rect must contain the union so scroll bars and centerOn work.
-    // Use items' scene bounds after placement (more reliable than pure layout
-    // rect when placement scale adjusts item local sizes).
     QRectF contentUnion = layout.unionRect;
     for (ImageItem *item : items) {
         if (item) {
-            contentUnion = contentUnion.united(item->sceneBoundingRect());
+            contentUnion = contentUnion.united(
+                item->mapRectToScene(item->displayContentRect()));
         }
     }
-    const QRectF padded = contentUnion.adjusted(-24, -24, 24, 24);
+    if (!contentUnion.isValid() || contentUnion.isEmpty()) {
+        contentUnion = layout.unionRect;
+    }
+    const QRectF padded = contentUnion.adjusted(-16, -16, 16, 16);
     if (QGraphicsScene *scene = m_view->canvasScene()) {
         scene->setSceneRect(padded);
     }
@@ -487,13 +520,10 @@ void ImageController::applySpreadLayout(const QStringList &paths,
     m_spreadLayoutPaths = paths;
     m_spreadLastUnion = contentUnion;
 
-    // Only fit when forced, membership changed, or first meaningful geometry —
-    // never on every soft-tile status tick (that killed user zoom).
     if (forceFit || membershipChanged || unionGrew) {
+        m_view->setAlignment(Qt::AlignCenter);
         m_view->resetTransform();
         m_view->fitInView(contentUnion, Qt::KeepAspectRatio);
-        // Center the spread in the viewport after fit.
-        m_view->centerOn(contentUnion.center());
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();
