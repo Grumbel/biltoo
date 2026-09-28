@@ -1598,6 +1598,7 @@ void AnnotationController::selectAtPagePoint(const QPointF &pagePt,
     const bool additive = mods.testFlag(Qt::ShiftModifier);
     const bool toggle = mods.testFlag(Qt::ControlModifier);
     if (!additive && !toggle) {
+        // Replace selection (empty click clears).
         m_selectedIds.clear();
         if (id != 0) {
             m_selectedIds.append(id);
@@ -1609,14 +1610,13 @@ void AnnotationController::selectAtPagePoint(const QPointF &pagePt,
             } else {
                 m_selectedIds.append(id);
             }
-        } else if (additive) {
+        } else { // additive (Shift)
             if (!m_selectedIds.contains(id)) {
                 m_selectedIds.append(id);
             }
         }
-    } else if (!additive && !toggle) {
-        m_selectedIds.clear();
     }
+    // Shift/Ctrl + miss: keep existing selection.
     if (m_view && m_view->viewport()) {
         m_view->viewport()->update();
     }

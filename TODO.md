@@ -2,27 +2,25 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2788.1-annot-endpoint-sourcekey` (base `a989daf`).
+**Tip:** `biltoo-2789.1-fix-select-dup-cond` (base `a989daf`).
 
-### 2788.1 — Line endpoints + page sourceKey
-- ShapeLine: endpoint handles when singly selected; drag moves that point (undo)
-- Page.sourceKey (path) recorded on commit; persisted in formatVersion 2 JSON
-  for later remap / size-change detection
+### 2789.1
+- Fix -Wduplicated-cond in selectAtPagePoint (dead else branch)
 
 ### Prior
+- 2788.1 line endpoints + sourceKey
 - 2787.1 corner resize
-- 2786.1 select drag-move
-- 2785.1 multi-select / visibility / prefs
-- 2784.1 format v2
-- 2783.1 compile fix
+- 2786–2785 select move / multi-select / prefs
+- 2784 format v2
+- 2783 compile fix
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2788.1-annot-endpoint-sourcekey-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2789.1-fix-select-dup-cond-a989daf.bundle HEAD
 ```
 
 ### Still open
-- Validate sourceKey vs current path on project load (warn / scale)
-- AnnotationPainter split from controller
+- Validate sourceKey vs current path on project load
+- AnnotationPainter split
 - PDF /Annot export
 - Multi-quad uniform scale
