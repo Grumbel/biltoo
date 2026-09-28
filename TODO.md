@@ -2,22 +2,15 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2759.1-kddockwidgets` (base `9395b3e`).
+**Tip:** `biltoo-2760.1-kddock-on-0.2.3-dev` (on origin `7a2bd7b` / 0.2.3-dev).
 
-### 2759.1 — KDDockWidgets panel shell (first cut)
-- Required dep: `kddockwidgets` (Nix) + `find_package(KDDockWidgets-qt6)`
-- `MainWindow` : `KDDockWidgets::QtWidgets::MainWindow`
-- All tool docks → `QtWidgets::DockWidget` (`open`/`close`/`isOpen`/`toggleAction`)
-- Layout: `LayoutSaver` serialize/restore; `dockLayoutVersion` = 2
-- `initFrontend(QtWidgets)` in `main`
-- docs/KDDOCK.md mapping notes
-- Filmstrip edge uses KD `Location_*`; no Qt `resizeDocks`
-
-**Expect compile feedback** on exact include paths / signal names
-(`isOpenChanged` vs KD version) under your Nix Qt6 tree.
+### Stack on origin
+- origin: Release 0.2.2 + bump 0.2.3-dev (`7a2bd7b`)
+- + KDDockWidgets panel shell
+- + LayoutSaver include
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2759.1-kddockwidgets-9395b3e.bundle HEAD
-# nix develop / biltoo-configure — needs pkgs.kddockwidgets on PATH
+git pull --ff-only origin master   # at 7a2bd7b
+git pull --ff-only …/biltoo-2760.1-kddock-on-0.2.3-dev-7a2bd7b.bundle HEAD
 ```
