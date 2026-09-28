@@ -361,8 +361,20 @@ void ImageController::clearSceneKeepingStashes()
 void ImageController::onViewResized()
 {
     m_view->hostDisplayPipeline().maybeClimbImageModePixelsForView();
-    if (m_framing.isFitMode() && m_view->liveItems().size() == 1) {
-        fitItem(m_view->liveItems().first(), framing().aspectMode());
+    if (m_view->liveItems().size() != 1 || !m_view->isImageMode()) {
+        return;
+    }
+    ImageItem *item = m_view->liveItems().first();
+    // Sticky Fit/Fill/1:1 is a *policy*, not only the current fitMode flag.
+    // Fullscreen / chrome hide changes the viewport; re-apply the pinned kind
+    // so framing matches the new size (fitMode alone misses sticky Actual and
+    // any path that cleared fit flags while sticky stayed on).
+    if (m_framing.isStickyZoomEnabled()) {
+        applyImageModeFraming(item);
+        return;
+    }
+    if (m_framing.isFitMode()) {
+        fitItem(item, framing().aspectMode());
     }
 }
 
