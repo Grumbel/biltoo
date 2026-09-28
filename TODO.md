@@ -2,20 +2,20 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2782.2-sticky-edit-verify` (base `b8a0cf3`).
+**Tip:** `biltoo-2783.1-fix-annotation-compile` (base `a989daf`).
 
-### Verified
-- Annotation tools: freehand/text highlight, pen, eraser, select, rect/ellipse/line, sticky
-- Software-raster viewport + Multiply
-- Project JSON annotations save/load
-- Export Page with Annotations (PNG)
-- Icons in qrc; exclusive tool group; CMake sources
+### 2783.1
+- Fix annotationcontroller.cpp: remove duplicate `painter.restore()` / `}` that
+  broke the draft-tool paint block (brace imbalance → “expected declaration
+  before '}'”).
+- Fix mainwindow_print.cpp: include `imageitem.h` so `ImageItem::path()` is
+  complete in `exportAnnotatedPng()`; rename inner `image` → `imageMode` to
+  clear -Wshadow.
 
-### 2782.2
-- Double-click sticky (Select tool) → edit text (undo macro)
-- Double-click routed via ViewShellChrome::handleMouseDoubleClick
+### Prior tip
+`biltoo-2782.2-sticky-edit-verify` (base `b8a0cf3`) — sticky double-click edit.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2782.2-sticky-edit-verify-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2783.1-fix-annotation-compile-a989daf.bundle HEAD
 ```

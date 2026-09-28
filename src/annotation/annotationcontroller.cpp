@@ -424,8 +424,6 @@ void AnnotationController::paintOverlay(QPainter &painter)
             }
             painter.restore();
         }
-            painter.restore();
-        }
     }
 }
 

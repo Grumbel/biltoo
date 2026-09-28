@@ -4,6 +4,7 @@
 #include "content/contentxform.h"
 #include "shell/mainwindow.h"
 #include "imageview.h"
+#include "imageitem.h"
 #include "shell/thumbnailbar.h"
 #include "session/sessionexport.h"
 
@@ -482,9 +483,9 @@ void MainWindow::updateFileExportActions()
         m_exportPngAct->setVisible(workspace);
     }
     if (m_exportAnnotatedPngAct) {
-        const bool image = m_imageView && m_imageView->isImageMode();
-        m_exportAnnotatedPngAct->setEnabled(image);
-        m_exportAnnotatedPngAct->setVisible(image || workspace);
+        const bool imageMode = m_imageView && m_imageView->isImageMode();
+        m_exportAnnotatedPngAct->setEnabled(imageMode);
+        m_exportAnnotatedPngAct->setVisible(imageMode || workspace);
     }
     if (m_exportPdfAct) {
         m_exportPdfAct->setEnabled(workspace);
