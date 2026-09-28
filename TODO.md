@@ -2,16 +2,16 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2773.2-annot-paint-overlay-ref` (base `b8a0cf3`).
+**Tip:** `biltoo-2774.1-annot-tool-icons` (base `b8a0cf3`).
 
-### Stack
-… 2773.1 text highlight + undo → **2773.2** fix paintOverlay(QPainter*) call
-
-### 2773.2
-- `ViewShellChrome::paintForeground`: pass `*painter` to `paintOverlay(QPainter&)`
-  after null check (compile fix)
+### 2774.1
+SVG icons for annotation tools:
+- `annot-highlighter-freehand`
+- `annot-highlighter-text`
+- `annot-clear`
+- `annot-highlight-colour` (Image → Highlight Colour menu)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2773.2-annot-paint-overlay-ref-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2774.1-annot-tool-icons-b8a0cf3.bundle HEAD
 ```

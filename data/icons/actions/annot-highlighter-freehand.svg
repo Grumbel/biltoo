@@ -1,0 +1,16 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <!-- Marker body -->
+  <path d="M14.2 3.5l6.3 6.3-2.1 2.1-6.3-6.3z" fill="#f6d32d"/>
+  <path d="M12.5 5.2l6.3 6.3-1.2 1.2-6.3-6.3z" fill="#e5a50a"/>
+  <!-- Tip -->
+  <path d="M18.8 11.5l1.7 1.7-3.2 5.2-3.7-3.7z" fill="#c64600"/>
+  <!-- Yellow highlight stroke on page -->
+  <path d="M3.5 18.5c2.2-0.3 4.5-0.2 6.5 0.6 1.5 0.6 2.8 0.7 4.2 0.4"
+        fill="none" stroke="#f6d32d" stroke-width="3.2" stroke-linecap="round" opacity="0.85"/>
+  <path d="M3.5 18.5c2.2-0.3 4.5-0.2 6.5 0.6 1.5 0.6 2.8 0.7 4.2 0.4"
+        fill="none" stroke="#e5a50a" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

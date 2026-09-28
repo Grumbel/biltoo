@@ -56,5 +56,9 @@
     <file alias="actions/text-speak.svg">../../data/icons/actions/text-speak.svg</file>
     <file alias="actions/ocr-page.svg">../../data/icons/actions/ocr-page.svg</file>
     <file alias="actions/show-text-regions.svg">../../data/icons/actions/show-text-regions.svg</file>
+    <file alias="actions/annot-highlighter-freehand.svg">../../data/icons/actions/annot-highlighter-freehand.svg</file>
+    <file alias="actions/annot-highlighter-text.svg">../../data/icons/actions/annot-highlighter-text.svg</file>
+    <file alias="actions/annot-clear.svg">../../data/icons/actions/annot-clear.svg</file>
+    <file alias="actions/annot-highlight-colour.svg">../../data/icons/actions/annot-highlight-colour.svg</file>
   </qresource>
 </RCC>

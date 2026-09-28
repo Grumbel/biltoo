@@ -372,6 +372,7 @@ void MainWindow::createActions()
     connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
 
     m_annotHighlightAct = new QAction(tr("Freehand &Highlighter"), this);
+    m_annotHighlightAct->setIcon(resourceIcon(QStringLiteral("annot-highlighter-freehand")));
     m_annotHighlightAct->setCheckable(true);
     m_annotHighlightAct->setStatusTip(
         tr("Draw translucent highlighter strokes (Multiply blend; mouse)"));
@@ -395,6 +396,7 @@ void MainWindow::createActions()
         }
     });
     m_annotTextHighlightAct = new QAction(tr("&Text Highlighter"), this);
+    m_annotTextHighlightAct->setIcon(resourceIcon(QStringLiteral("annot-highlighter-text")));
     m_annotTextHighlightAct->setCheckable(true);
     m_annotTextHighlightAct->setStatusTip(
         tr("Drag over text regions to highlight (Multiply; needs text/OCR layer)"));
@@ -418,6 +420,7 @@ void MainWindow::createActions()
         }
     });
     m_annotClearAct = new QAction(tr("Clear Page &Annotations"), this);
+    m_annotClearAct->setIcon(resourceIcon(QStringLiteral("annot-clear")));
     m_annotClearAct->setStatusTip(tr("Remove all annotation strokes on the current page"));
     connect(m_annotClearAct, &QAction::triggered, this, [this]() {
         if (m_imageView) {
@@ -1226,6 +1229,7 @@ void MainWindow::createMenus()
     }
     {
         auto *colorMenu = m_imageMenu->addMenu(tr("Highlight &Colour"));
+        colorMenu->setIcon(resourceIcon(QStringLiteral("annot-highlight-colour")));
         const struct {
             const char *name;
             int r, g, b;
