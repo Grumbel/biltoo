@@ -325,6 +325,9 @@ void AnnotationController::paintObject(QPainter &painter, ImageItem *item,
     }
     if (obj.kind == Annotation::Kind::HighlightQuad) {
         paintQuads(painter, item, obj, pageBounds, pageYUp, sourceSize);
+    } else if (obj.kind == Annotation::Kind::ShapeRect
+               || obj.kind == Annotation::Kind::ShapeEllipse) {
+        paintShape(painter, item, obj, pageBounds, pageYUp, sourceSize);
     } else {
         paintStroke(painter, item, obj, pageBounds, pageYUp, sourceSize);
     }
@@ -376,18 +379,33 @@ void AnnotationController::paintOverlay(QPainter &painter)
             paintObject(painter, item, draft,
                         m_draftBounds.isValid() ? m_draftBounds : bounds, m_draftYUp,
                         m_draftSourceSize.isValid() ? m_draftSourceSize : sourceSize);
-        } else if (m_tool == Annotation::Tool::TextHighlighter && !m_rubberView.isEmpty()) {
-            // Rubber is view-space; map to scene for the scene-space painter.
+        } else if ((m_tool == Annotation::Tool::TextHighlighter
+                    || m_tool == Annotation::Tool::Rect
+                    || m_tool == Annotation::Tool::Ellipse)
+                   && !m_rubberView.isEmpty()) {
             const QRectF sceneRubber =
                 m_view->mapToScene(m_rubberView).boundingRect();
             painter.save();
             painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            QColor c = m_color;
-            c.setAlpha(80);
-            painter.fillRect(sceneRubber, c);
-            painter.setPen(QPen(m_color, 0 /* cosmetic */, Qt::DashLine));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRect(sceneRubber);
+            if (m_tool == Annotation::Tool::TextHighlighter) {
+                QColor c = m_color;
+                c.setAlpha(80);
+                painter.fillRect(sceneRubber, c);
+                painter.setPen(QPen(m_color, 0, Qt::DashLine));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRect(sceneRubber);
+            } else {
+                QPen pen(m_color);
+                pen.setWidthF(0); // cosmetic preview
+                pen.setCosmetic(true);
+                painter.setPen(pen);
+                painter.setBrush(Qt::NoBrush);
+                if (m_tool == Annotation::Tool::Ellipse) {
+                    painter.drawEllipse(sceneRubber);
+                } else {
+                    painter.drawRect(sceneRubber);
+                }
+            }
             painter.restore();
         }
     }
@@ -557,7 +575,9 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
     if (m_tool == Annotation::Tool::FreehandHighlighter
         || m_tool == Annotation::Tool::Pen) {
         m_draftPoints.append(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
-    } else if (m_tool == Annotation::Tool::TextHighlighter) {
+    } else if (m_tool == Annotation::Tool::TextHighlighter
+               || m_tool == Annotation::Tool::Rect
+               || m_tool == Annotation::Tool::Ellipse) {
         m_rubberOriginView = event->pos();
         m_rubberView = QRect(m_rubberOriginView, QSize(1, 1));
     } else if (m_tool == Annotation::Tool::Eraser) {
@@ -595,7 +615,9 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
             }
         }
         m_draftPoints.append(pagePt);
-    } else if (m_tool == Annotation::Tool::TextHighlighter) {
+    } else if (m_tool == Annotation::Tool::TextHighlighter
+               || m_tool == Annotation::Tool::Rect
+               || m_tool == Annotation::Tool::Ellipse) {
         m_rubberView = QRect(m_rubberOriginView, event->pos()).normalized();
     } else if (m_tool == Annotation::Tool::Eraser) {
         eraseAtPagePoint(
@@ -623,6 +645,9 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
         finishFreehand();
     } else if (m_tool == Annotation::Tool::TextHighlighter) {
         finishTextHighlight();
+    } else if (m_tool == Annotation::Tool::Rect
+               || m_tool == Annotation::Tool::Ellipse) {
+        finishShape();
     }
     m_draftPoints.clear();
     m_rubberView = {};
@@ -657,7 +682,9 @@ static qreal dist2PointSeg(const QPointF &p, const QPointF &a, const QPointF &b)
 static bool objectHitsPagePoint(const Annotation::Object &o, const QPointF &pagePt,
                                 qreal radius)
 {
-    if (o.kind == Annotation::Kind::HighlightQuad) {
+    if (o.kind == Annotation::Kind::HighlightQuad
+        || o.kind == Annotation::Kind::ShapeRect
+        || o.kind == Annotation::Kind::ShapeEllipse) {
         for (const QRectF &q : o.quads) {
             if (q.adjusted(-radius, -radius, radius, radius).contains(pagePt)) {
                 return true;
@@ -744,6 +771,74 @@ void AnnotationController::clearCurrentPage()
             m_view->viewport()->update();
         }
     }
+}
+
+
+void AnnotationController::paintShape(QPainter &painter, ImageItem *item,
+                                      const Annotation::Object &obj,
+                                      const QRectF &pageBounds, bool pageYUp,
+                                      const QSize &sourceSize) const
+{
+    if (!item || obj.quads.isEmpty()) {
+        return;
+    }
+    const QRectF pageR = obj.quads.first();
+    const QRectF scene = pageRectToScene(item, pageR, pageBounds, pageYUp, sourceSize);
+    if (scene.isEmpty()) {
+        return;
+    }
+    qreal pageUnit = 1.0;
+    if (pageBounds.width() > 1 && sourceSize.width() > 0) {
+        pageUnit = qreal(sourceSize.width()) / pageBounds.width();
+    }
+    QPen pen(obj.color);
+    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
+    pen.setCapStyle(Qt::SquareCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter.setPen(pen);
+    // Light fill so the shape reads on busy pages without covering ink fully.
+    QColor fill = obj.color;
+    fill.setAlpha(40);
+    painter.setBrush(fill);
+    if (obj.kind == Annotation::Kind::ShapeEllipse) {
+        painter.drawEllipse(scene);
+    } else {
+        painter.drawRect(scene);
+    }
+}
+
+void AnnotationController::finishShape()
+{
+    if (!m_view || m_draftSid == kInvalidSessionImageId || m_rubberView.isEmpty()) {
+        return;
+    }
+    if (m_rubberView.width() < 3 && m_rubberView.height() < 3) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        return;
+    }
+    // Map rubber corners to page space.
+    const QPoint topLeft = m_rubberView.topLeft();
+    const QPoint bottomRight = m_rubberView.bottomRight();
+    const QPointF p0 = viewToPage(item, topLeft, m_draftBounds, m_draftYUp, m_draftSourceSize);
+    const QPointF p1 = viewToPage(item, bottomRight, m_draftBounds, m_draftYUp, m_draftSourceSize);
+    QRectF pageR = QRectF(p0, p1).normalized();
+    if (pageR.width() < 1e-3 || pageR.height() < 1e-3) {
+        return;
+    }
+    Annotation::Object obj;
+    obj.id = m_session.nextId();
+    obj.kind = (m_tool == Annotation::Tool::Ellipse) ? Annotation::Kind::ShapeEllipse
+                                                     : Annotation::Kind::ShapeRect;
+    obj.blend = Annotation::Blend::SourceOver;
+    obj.color = m_color;
+    obj.width = m_width;
+    obj.quads.append(pageR);
+    commitObject(m_draftSid, obj, m_draftBounds, m_draftYUp,
+                 obj.kind == Annotation::Kind::ShapeEllipse ? QObject::tr("Ellipse")
+                                                            : QObject::tr("Rectangle"));
 }
 
 void AnnotationController::clearSelection()
@@ -853,11 +948,17 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
         if (!m_selectedIds.contains(o.id)) {
             continue;
         }
-        if (o.kind == Annotation::Kind::HighlightQuad) {
+        if (o.kind == Annotation::Kind::HighlightQuad
+            || o.kind == Annotation::Kind::ShapeRect
+            || o.kind == Annotation::Kind::ShapeEllipse) {
             for (const QRectF &q : o.quads) {
                 const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
                 if (!scene.isEmpty()) {
-                    painter.drawRect(scene);
+                    if (o.kind == Annotation::Kind::ShapeEllipse) {
+                        painter.drawEllipse(scene);
+                    } else {
+                        painter.drawRect(scene);
+                    }
                 }
             }
         } else if (!o.points.isEmpty()) {

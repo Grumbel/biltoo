@@ -88,6 +88,10 @@ private:
                      const QRectF &pageBounds, bool pageYUp, const QSize &sourceSize) const;
     void finishFreehand();
     void finishTextHighlight();
+    void finishShape();
+    void paintShape(QPainter &painter, ImageItem *item,
+                    const Annotation::Object &obj, const QRectF &pageBounds,
+                    bool pageYUp, const QSize &sourceSize) const;
     void eraseAtPagePoint(const QPointF &pagePt, const QRectF &pageBounds,
                           bool pageYUp);
     quint64 hitTestTopObject(SessionImageId sid, const QPointF &pagePt,

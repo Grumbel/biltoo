@@ -26,6 +26,8 @@ enum class Kind : std::uint8_t {
     HighlighterStroke = 1,
     HighlightQuad = 2,
     InkStroke = 3,
+    ShapeRect = 4,
+    ShapeEllipse = 5,
 };
 
 enum class Blend : std::uint8_t {
@@ -40,6 +42,8 @@ enum class Tool : std::uint8_t {
     Pen = 3,
     Eraser = 4,
     Select = 5,
+    Rect = 6,
+    Ellipse = 7,
 };
 
 struct Object {
@@ -49,7 +53,7 @@ struct Object {
     QColor color = QColor(246, 211, 45);
     qreal width = 18.0;
     QVector<QPointF> points; // freehand
-    QVector<QRectF> quads;   // text-snapped page-space boxes
+    QVector<QRectF> quads;   // text-snapped boxes, or single shape bounds
     QString textSnippet;     // optional, from regions at create
 };
 

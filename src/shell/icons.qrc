@@ -63,5 +63,7 @@
     <file alias="actions/annot-pen.svg">../../data/icons/actions/annot-pen.svg</file>
     <file alias="actions/annot-eraser.svg">../../data/icons/actions/annot-eraser.svg</file>
     <file alias="actions/annot-select.svg">../../data/icons/actions/annot-select.svg</file>
+    <file alias="actions/annot-rect.svg">../../data/icons/actions/annot-rect.svg</file>
+    <file alias="actions/annot-ellipse.svg">../../data/icons/actions/annot-ellipse.svg</file>
   </qresource>
 </RCC>

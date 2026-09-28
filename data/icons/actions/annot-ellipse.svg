@@ -1,0 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+  <ellipse cx="12" cy="12" rx="9" ry="7" fill="none" stroke="#3584e4" stroke-width="1.8"/>
+  <circle cx="12" cy="12" r="1.8" fill="#1a5fb4"/>
+</svg>

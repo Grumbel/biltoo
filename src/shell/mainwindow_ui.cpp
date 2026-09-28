@@ -408,12 +408,22 @@ void MainWindow::createActions()
     m_annotSelectAct->setCheckable(true);
     m_annotSelectAct->setStatusTip(tr("Select annotations (Delete removes selection)"));
     m_annotSelectAct->setToolTip(tr("Select annotation"));
+    m_annotRectAct = new QAction(tr("&Rectangle"), this);
+    m_annotRectAct->setIcon(resourceIcon(QStringLiteral("annot-rect")));
+    m_annotRectAct->setCheckable(true);
+    m_annotRectAct->setStatusTip(tr("Draw a rectangle annotation"));
+    m_annotRectAct->setToolTip(tr("Rectangle"));
+    m_annotEllipseAct = new QAction(tr("Elli&pse"), this);
+    m_annotEllipseAct->setIcon(resourceIcon(QStringLiteral("annot-ellipse")));
+    m_annotEllipseAct->setCheckable(true);
+    m_annotEllipseAct->setStatusTip(tr("Draw an ellipse annotation"));
+    m_annotEllipseAct->setToolTip(tr("Ellipse"));
 
     {
         auto *annotGroup = new QActionGroup(this);
         annotGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
         for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                           m_annotEraserAct, m_annotSelectAct}) {
+                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct, m_annotEllipseAct}) {
             if (a) {
                 annotGroup->addAction(a);
             }
@@ -446,6 +456,14 @@ void MainWindow::createActions()
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Eraser);
             } else if (act == m_annotSelectAct) {
                 m_imageView->hostAnnot().setTool(Annotation::Tool::Select);
+            } else if (act == m_annotRectAct) {
+                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
+                m_imageView->hostAnnot().setWidth(2.5);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Rect);
+            } else if (act == m_annotEllipseAct) {
+                m_imageView->hostAnnot().setColor(QColor(53, 132, 228));
+                m_imageView->hostAnnot().setWidth(2.5);
+                m_imageView->hostAnnot().setTool(Annotation::Tool::Ellipse);
             }
         });
     }
@@ -1255,6 +1273,12 @@ void MainWindow::createMenus()
     if (m_annotSelectAct) {
         m_imageMenu->addAction(m_annotSelectAct);
     }
+    if (m_annotRectAct) {
+        m_imageMenu->addAction(m_annotRectAct);
+    }
+    if (m_annotEllipseAct) {
+        m_imageMenu->addAction(m_annotEllipseAct);
+    }
     if (m_annotClearAct) {
         m_imageMenu->addAction(m_annotClearAct);
     }
@@ -1808,6 +1832,12 @@ void MainWindow::createToolBar()
     }
     if (m_annotSelectAct) {
         m_workspaceToolBar->addAction(m_annotSelectAct);
+    }
+    if (m_annotRectAct) {
+        m_workspaceToolBar->addAction(m_annotRectAct);
+    }
+    if (m_annotEllipseAct) {
+        m_workspaceToolBar->addAction(m_annotEllipseAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

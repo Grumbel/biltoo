@@ -2,16 +2,16 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2778.1-annot-select` (base `b8a0cf3`).
+**Tip:** `biltoo-2779.1-annot-shapes` (base `b8a0cf3`).
 
-### 2778.1
-- Annotation **Select** tool: click object, dashed chrome, Delete/Backspace removes (undoable), Esc clears
-- Tools strip + Image menu + exclusive group
+### 2779.1
+- Rectangle and ellipse shape tools (page-space bounds, SourceOver stroke + light fill)
+- Select / eraser / undo / project JSON work via existing quad storage
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2778.1-annot-select-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2779.1-annot-shapes-b8a0cf3.bundle HEAD
 ```
 
 ### Next
-Rect/ellipse shapes, export flatten, sticky (Phase C)
+Line tool, export flatten, sticky notes
