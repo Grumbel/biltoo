@@ -466,13 +466,12 @@ void AnnotationController::paintOverlay(QPainter &painter)
         return;
     }
 
-    // Gallery / Workspace: committed annotations on every live tile that has data.
+    // Gallery / Workspace: committed annotations on every live tile.
+    // paintItemAnnotations hydrates path-keyed durable marks first — do not
+    // skip on missing in-memory page (that deferred load until Image mode).
     // Tools stay Image-mode only; this is presentation only.
     for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->sessionId() == kInvalidSessionImageId) {
-            continue;
-        }
-        if (!m_session.page(item->sessionId())) {
             continue;
         }
         paintItemAnnotations(painter, item, false);
