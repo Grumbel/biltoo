@@ -335,47 +335,37 @@ void MainWindow::rebuildBookshelfMenu()
         empty->setWhatsThis(tr(
             "<p>The Bookshelf is a permanent, user-controlled list of sessions.</p>"
             "<p>Open images or a document, then choose <b>Add Current Session to "
-            "Bookshelf</b>. Unlike <b>Recent Sessions</b>, entries are not "
-            "dropped when the list grows.</p>"));
-        m_bookshelfMenu->addSeparator();
-        if (m_clearBookshelfAct) {
-            m_bookshelfMenu->addAction(m_clearBookshelfAct);
-            m_clearBookshelfAct->setEnabled(false);
-        }
+            "Bookshelf</b>. Click an entry to open it; press <b>Delete</b> while "
+            "an entry is highlighted to remove it. Unlike <b>Recent Sessions</b>, "
+            "entries are not dropped when the list grows.</p>"));
         return;
     }
 
     for (int i = 0; i < m_bookshelf.size(); ++i) {
         const QStringList &entry = m_bookshelf.at(i);
-        QMenu *sub = m_bookshelfMenu->addMenu(historyEntryLabel(entry));
-        sub->setToolTipsVisible(true);
+        QAction *act = m_bookshelfMenu->addAction(historyEntryLabel(entry));
+        act->setData(i);
         if (entry.size() <= 2) {
             QStringList names;
             for (const QString &p : entry) {
                 names.append(PagePath::displayName(p));
             }
-            sub->setToolTip(names.join(QStringLiteral(", ")));
+            act->setStatusTip(names.join(QStringLiteral(" · ")));
         } else {
-            sub->setToolTip(tr("%1 items").arg(entry.size()));
+            act->setStatusTip(
+                tr("%1 — %n item(s); Delete removes this pin", nullptr, entry.size())
+                    .arg(PagePath::displayName(entry.first())));
         }
-        sub->setWhatsThis(historyEntryHelpHtml(entry));
-        QAction *openAct = sub->addAction(tr("&Open"));
-        openAct->setData(i);
-        connect(openAct, &QAction::triggered, this, &MainWindow::openBookshelfEntry);
-        QAction *remAct = sub->addAction(tr("&Remove from Bookshelf"));
-        remAct->setData(i);
-        connect(remAct, &QAction::triggered, this, &MainWindow::removeBookshelfEntry);
+        act->setToolTip(act->statusTip());
+        act->setWhatsThis(historyEntryHelpHtml(entry)
+                          + tr("<p>Press <b>Delete</b> while this entry is highlighted "
+                               "to remove it from the Bookshelf (does not delete files).</p>"));
+        connect(act, &QAction::triggered, this, &MainWindow::openBookshelfEntry);
         if (m_helpPanel) {
-            connect(sub->menuAction(), &QAction::hovered, this, [this, sub]() {
-                m_helpPanel->showAction(sub->menuAction());
+            connect(act, &QAction::hovered, this, [this, act]() {
+                m_helpPanel->showAction(act);
             });
         }
-    }
-
-    m_bookshelfMenu->addSeparator();
-    if (m_clearBookshelfAct) {
-        m_bookshelfMenu->addAction(m_clearBookshelfAct);
-        m_clearBookshelfAct->setEnabled(true);
     }
 }
 
@@ -392,23 +382,12 @@ void MainWindow::openBookshelfEntry()
     loadFiles(m_bookshelf.at(index));
 }
 
-void MainWindow::removeBookshelfEntry()
+void MainWindow::removeBookshelfEntryAt(int index)
 {
-    auto *act = qobject_cast<QAction *>(sender());
-    if (!act) {
-        return;
-    }
-    const int index = act->data().toInt();
     if (index < 0 || index >= m_bookshelf.size()) {
         return;
     }
     m_bookshelf.removeAt(index);
-    rebuildBookshelfMenu();
-}
-
-void MainWindow::clearBookshelf()
-{
-    m_bookshelf.clear();
     rebuildBookshelfMenu();
 }
 

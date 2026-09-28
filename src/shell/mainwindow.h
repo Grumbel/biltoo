@@ -501,8 +501,7 @@ private:
     void addCurrentSessionToBookshelf();
     void rebuildBookshelfMenu();
     void openBookshelfEntry();
-    void removeBookshelfEntry();
-    void clearBookshelf();
+    void removeBookshelfEntryAt(int index);
     void rememberRecentProject(const QString &path);
     void rebuildRecentProjectsMenu();
     void openRecentProject();
@@ -668,7 +667,6 @@ private:
     QAction *m_clearHistoryAct = nullptr;
     QMenu *m_bookshelfMenu = nullptr;
     QAction *m_addToBookshelfAct = nullptr;
-    QAction *m_clearBookshelfAct = nullptr;
     QMenu *m_recentProjectsMenu = nullptr;
     QAction *m_clearRecentProjectsAct = nullptr;
     QMenu *m_editMenu = nullptr;

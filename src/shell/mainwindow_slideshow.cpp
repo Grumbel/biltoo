@@ -674,6 +674,24 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             break;
         }
     }
+    // Bookshelf: Delete removes the highlighted pin (menu stays open, list rebuilds).
+    if (m_bookshelfMenu && watched == m_bookshelfMenu
+        && (event->type() == QEvent::KeyPress || event->type() == QEvent::ShortcutOverride)) {
+        const auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->key() == Qt::Key_Delete || ke->key() == Qt::Key_Backspace) {
+            if (event->type() == QEvent::ShortcutOverride) {
+                event->accept();
+                return true;
+            }
+            if (QAction *act = m_bookshelfMenu->activeAction()) {
+                const QVariant d = act->data();
+                if (d.isValid()) {
+                    removeBookshelfEntryAt(d.toInt());
+                    return true;
+                }
+            }
+        }
+    }
     return QMainWindow::eventFilter(watched, event);
 }
 
