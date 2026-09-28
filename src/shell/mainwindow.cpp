@@ -360,6 +360,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_imageView->setMinimumHeight(120);
     m_dualShell = new DualImageShell(m_imageView, this);
     setPersistentCentralWidget(m_dualShell);
+    // KDDW default center margins are {1,5,1,1} — the 5px top gap shows as a thin
+    // grey strip under the main toolbar (canvas/docks only; left Tools bar is outside).
+    setCenterWidgetMargins(QMargins(0, 0, 0, 0));
     connect(m_dualShell, &DualImageShell::activeViewChanged, this, [this](ImageView *view) {
         Q_UNUSED(view);
         // PreferCache / tile ticks already follow setActiveHost inside the shell.

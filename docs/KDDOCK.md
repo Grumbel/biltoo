@@ -64,3 +64,13 @@ extent from `ThumbnailBar::extentForThumbSize`.
 
 Reset Panel Layout re-applies these locations (tabs re-form on next cold start
 from construction order if the user has not saved a layout yet).
+
+
+## Central margins
+
+KDDockWidgets defaults `centerWidgetMargins` to `{1, 5, 1, 1}` (top = 5px). That
+appears as a thin strip between the main toolbar and the canvas/side docks; the
+left Tools `QToolBar` is outside the central host so it is unaffected.
+
+Biltoo sets `setCenterWidgetMargins(QMargins(0, 0, 0, 0))` after
+`setPersistentCentralWidget`.
