@@ -603,43 +603,7 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         eraseAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize),
                          bounds, yUp);
     } else if (m_tool == Annotation::Tool::Select) {
-        const QPointF pagePt = viewToPage(item, event->pos(), bounds, yUp, sourceSize);
-        if (event->type() == QEvent::MouseButtonDblClick) {
-            const quint64 hitId =
-                hitTestTopObject(m_draftSid, pagePt, qMax(6.0, m_width * 0.35));
-            Annotation::Object hitObj;
-            if (hitId != 0 && m_session.findObject(m_draftSid, hitId, &hitObj)
-                && hitObj.kind == Annotation::Kind::StickyNote) {
-                bool ok = false;
-                const QString text = QInputDialog::getMultiLineText(
-                    m_view, QObject::tr("Edit sticky note"), QObject::tr("Note text:"),
-                    hitObj.textSnippet, &ok);
-                if (ok) {
-                    Annotation::Object updated = hitObj;
-                    updated.textSnippet = text;
-                    if (QUndoStack *stack = m_view->hostUndoStack()) {
-                        stack->beginMacro(QObject::tr("Edit sticky note"));
-                        stack->push(new AnnotationRemoveCommand(
-                            m_view, m_draftSid, QVector<Annotation::Object>{hitObj},
-                            bounds, yUp, QString()));
-                        stack->push(new AnnotationAddCommand(
-                            m_view, m_draftSid, updated, bounds, yUp, QString()));
-                        stack->endMacro();
-                    } else {
-                        m_session.removeObject(m_draftSid, hitId);
-                        m_session.addObject(m_draftSid, updated, bounds, yUp);
-                    }
-                    m_selectedIds = {hitId};
-                    if (m_view->viewport()) {
-                        m_view->viewport()->update();
-                    }
-                }
-                m_drawing = false;
-                event->accept();
-                return true;
-            }
-        }
-        selectAtPagePoint(pagePt);
+        selectAtPagePoint(viewToPage(item, event->pos(), bounds, yUp, sourceSize));
     } else if (m_tool == Annotation::Tool::Sticky) {
         placeStickyAt(viewToPage(item, event->pos(), bounds, yUp, sourceSize), bounds, yUp);
         m_drawing = false;
@@ -648,6 +612,57 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+    return true;
+}
+
+bool AnnotationController::tryMouseDoubleClick(QMouseEvent *event)
+{
+    if (!isToolActive() || !m_view || !event || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_tool != Annotation::Tool::Select || !m_view->isImageMode()) {
+        return false;
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        return false;
+    }
+    QRectF bounds;
+    bool yUp = false;
+    QSize sourceSize;
+    if (!pageSpaceForItem(item, &bounds, &yUp, &sourceSize)) {
+        return false;
+    }
+    const SessionImageId sid = targetSid(item);
+    const QPointF pagePt = viewToPage(item, event->pos(), bounds, yUp, sourceSize);
+    const quint64 hitId = hitTestTopObject(sid, pagePt, qMax(6.0, m_width * 0.35));
+    Annotation::Object hitObj;
+    if (hitId == 0 || !m_session.findObject(sid, hitId, &hitObj)
+        || hitObj.kind != Annotation::Kind::StickyNote) {
+        return false;
+    }
+    const QString prior = !hitObj.text.isEmpty() ? hitObj.text : hitObj.textSnippet;
+    bool ok = false;
+    const QString text = QInputDialog::getMultiLineText(
+        m_view, QObject::tr("Edit sticky note"), QObject::tr("Note text:"), prior, &ok);
+    if (!ok) {
+        event->accept();
+        return true;
+    }
+    Annotation::Object updated = hitObj;
+    updated.text = text;
+    updated.textSnippet.clear();
+    if (QUndoStack *stack = m_view->hostUndoStack()) {
+        stack->push(new AnnotationReplaceCommand(
+            m_view, sid, hitObj, updated, QObject::tr("Edit sticky note")));
+    } else {
+        m_session.updateObject(sid, updated);
+    }
+    m_selectedIds = {hitId};
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    event->accept();
     return true;
 }
 
@@ -898,7 +913,10 @@ void AnnotationController::paintSticky(QPainter &painter, ImageItem *item,
     painter.setPen(Qt::NoPen);
     painter.drawPolygon(dogear);
 
-    const QString text = obj.textSnippet.isEmpty() ? QObject::tr("(note)") : obj.textSnippet;
+    const QString text = !obj.text.isEmpty()
+                             ? obj.text
+                             : (!obj.textSnippet.isEmpty() ? obj.textSnippet
+                                                          : QObject::tr("(note)"));
     painter.setPen(QColor(40, 40, 40));
     QFont font = painter.font();
     font.setPointSizeF(qBound(8.0, scene.height() * 0.11, 18.0));
@@ -939,7 +957,7 @@ void AnnotationController::placeStickyAt(const QPointF &pagePt, const QRectF &pa
     }
     obj.width = 1.0;
     obj.quads.append(box);
-    obj.textSnippet = text;
+    obj.text = text;
     commitObject(m_draftSid, obj, pageBounds, pageYUp, QObject::tr("Sticky note"));
 }
 
@@ -1066,7 +1084,7 @@ QImage AnnotationController::renderFlattenedDisplay() const
                 font.setPointSizeF(qBound(8.0, disp.height() * 0.11, 18.0));
                 painter.setFont(font);
                 const QString text =
-                    obj.textSnippet.isEmpty() ? QObject::tr("(note)") : obj.textSnippet;
+                    !obj.text.isEmpty() ? obj.text : (!obj.textSnippet.isEmpty() ? obj.textSnippet : QObject::tr("(note)"));
                 painter.drawText(disp.adjusted(6, 6, -6, -6),
                                  Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
             }

@@ -336,7 +336,9 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         root.insert(QStringLiteral("workspaceBackground"), wb);
     }
 
-    if (!doc.annotations.isEmpty()) {
+    if (!doc.annotations.isUndefined() && !doc.annotations.isNull()
+        && !(doc.annotations.isArray() && doc.annotations.toArray().isEmpty())
+        && !(doc.annotations.isObject() && doc.annotations.toObject().isEmpty())) {
         root.insert(QStringLiteral("annotations"), doc.annotations);
     }
 
@@ -458,7 +460,7 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
     }
 
     if (root.contains(QStringLiteral("annotations"))) {
-        doc->annotations = root.value(QStringLiteral("annotations")).toArray();
+        doc->annotations = root.value(QStringLiteral("annotations"));
     }
 
     return true;

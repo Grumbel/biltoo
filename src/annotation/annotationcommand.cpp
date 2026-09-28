@@ -86,3 +86,45 @@ void AnnotationRemoveCommand::redo()
         m_view->viewport()->update();
     }
 }
+
+AnnotationReplaceCommand::AnnotationReplaceCommand(ImageView *view, SessionImageId sid,
+                                                   const Annotation::Object &before,
+                                                   const Annotation::Object &after,
+                                                   const QString &text)
+    : QUndoCommand(text)
+    , m_view(view)
+    , m_sid(sid)
+    , m_before(before)
+    , m_after(after)
+{
+}
+
+void AnnotationReplaceCommand::undo()
+{
+    if (!m_view || !m_applied) {
+        return;
+    }
+    m_view->hostAnnot().session().updateObject(m_sid, m_before);
+    m_applied = false;
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
+void AnnotationReplaceCommand::redo()
+{
+    if (!m_view) {
+        return;
+    }
+    if (!m_view->hostAnnot().session().updateObject(m_sid, m_after)) {
+        // Object missing (e.g. erased under us) — re-add after.
+        Annotation::Page *pg = m_view->hostAnnot().session().page(m_sid);
+        const QRectF bounds = pg ? pg->pageBounds : QRectF();
+        const bool yUp = pg ? pg->pageYUp : false;
+        m_view->hostAnnot().session().addObject(m_sid, m_after, bounds, yUp);
+    }
+    m_applied = true;
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}

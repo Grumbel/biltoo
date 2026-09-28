@@ -30,7 +30,7 @@ private:
     bool m_applied = false;
 };
 
-/** Remove one or more annotation objects (eraser / clear). */
+/** Remove one or more annotation objects (eraser / clear / select-delete). */
 class AnnotationRemoveCommand : public QUndoCommand
 {
 public:
@@ -47,6 +47,25 @@ private:
     QVector<Annotation::Object> m_removed;
     QRectF m_pageBounds;
     bool m_pageYUp = false;
+    bool m_applied = false;
+};
+
+/** In-place replace of one object (edit sticky text, future property edits). */
+class AnnotationReplaceCommand : public QUndoCommand
+{
+public:
+    AnnotationReplaceCommand(ImageView *view, SessionImageId sid,
+                             const Annotation::Object &before, const Annotation::Object &after,
+                             const QString &text);
+
+    void undo() override;
+    void redo() override;
+
+private:
+    ImageView *m_view = nullptr;
+    SessionImageId m_sid = kInvalidSessionImageId;
+    Annotation::Object m_before;
+    Annotation::Object m_after;
     bool m_applied = false;
 };
 

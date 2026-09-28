@@ -947,8 +947,8 @@ bool ViewShellChrome::handleMouseDoubleClick(QMouseEvent *event)
     if (!m_view || !event) {
         return false;
     }
-    // Annotation select: double-click edits sticky notes.
-    if (m_view->hostAnnot().tryMousePress(event)) {
+    // Annotation select: double-click edits sticky notes (not tryMousePress).
+    if (m_view->hostAnnot().tryMouseDoubleClick(event)) {
         return true;
     }
     return m_view->hostImage().tryMouseDoubleClick(event)

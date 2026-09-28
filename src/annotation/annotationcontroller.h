@@ -53,6 +53,8 @@ public:
     bool tryMousePress(QMouseEvent *event);
     bool tryMouseMove(QMouseEvent *event);
     bool tryMouseRelease(QMouseEvent *event);
+    /** Select tool: double-click sticky → edit text (routed from ViewShellChrome). */
+    bool tryMouseDoubleClick(QMouseEvent *event);
 
     void clearCurrentPage();
     /** Page pixels + annotations (display space of primary item). Null if none. */

@@ -340,7 +340,7 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
 
     attachWorkspaceBackgroundToDocument(&doc, projDir);
     if (m_imageView) {
-        doc.annotations = m_imageView->hostAnnot().session().toJson();
+        doc.annotations = m_imageView->hostAnnot().session().toJsonValue();
     }
     return ProjectFile::save(projectPath, doc, error);
 }
@@ -664,8 +664,9 @@ bool MainWindow::loadProjectFromPath(const QString &projectPath, QString *error)
     stopSlideshow();
     installProjectSession(paths, ids, appearanceByRow, rowHasAppearance, rowHasPose,
                           doc, projectPath, missing);
-    if (m_imageView && !doc.annotations.isEmpty()) {
-        m_imageView->hostAnnot().session().fromJson(doc.annotations);
+    if (m_imageView) {
+        // Always replace session annotations (empty project must clear prior markup).
+        m_imageView->hostAnnot().session().fromJsonValue(doc.annotations);
         if (m_imageView->viewport()) {
             m_imageView->viewport()->update();
         }

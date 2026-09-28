@@ -5,9 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Annotation overlay — research and design
 
-Status: **Phase A/B** — freehand + text highlight; page-space coords aligned with text overlays. Research for a graphics overlay with
-paint tools, blend modes that keep dark text readable, and text-section
-highlighting. Implements nothing yet.
+Status: **Phase C (in tree)** — freehand/text highlight, pen, eraser, select, shapes, sticky notes, project save/load, flattened PNG export.
+Page-space coords aligned with text overlays. formatVersion 2 envelope (string kinds, decimal ids).
 
 Related: [CONTENT_COORDINATES.md](CONTENT_COORDINATES.md),
 [OCR_COORDINATES.md](OCR_COORDINATES.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md)
