@@ -510,6 +510,8 @@ protected:
     void dropEvent(QDropEvent *event) override;
     /** Forward drag/drop from the OpenGL viewport to the view handlers. */
     bool viewportEvent(QEvent *event) override;
+    /** After blit-scroll, force full viewport paint so HUD/chrome stay fixed. */
+    void scrollContentsBy(int dx, int dy) override;
 
 private:
     void flushAppliedContentToItemWorld();

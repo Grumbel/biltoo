@@ -47,6 +47,25 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     m_shell.paintForeground(painter, rect);
 }
 
+void ImageView::scrollContentsBy(int dx, int dy)
+{
+    const auto mode = viewportUpdateMode();
+    // BoundingRect / Smart / Minimal use QWidget::scroll to blit the viewport.
+    // drawForeground chrome (HUD, selection frames, annotations) is not a
+    // QGraphicsItem — the blit drags those pixels with the tiles. Force a full
+    // viewport repaint after the scroll so HUD stays fixed in device pixels and
+    // scene-space overlays rebind to the new view.
+    const bool blitScroll = mode == QGraphicsView::BoundingRectViewportUpdate
+        || mode == QGraphicsView::SmartViewportUpdate
+        || mode == QGraphicsView::MinimalViewportUpdate;
+    QGraphicsView::scrollContentsBy(dx, dy);
+    if (blitScroll) {
+        if (QWidget *vp = viewport()) {
+            vp->update();
+        }
+    }
+}
+
 // --- Background settings: ViewShellChrome owns material mutators ---
 
 // --- from src/imageview_input.cpp ---

@@ -322,9 +322,10 @@ ImageView::ImageView(QWidget *parent)
         viewport()->setMouseTracking(true);
     }
     setAlignment(Qt::AlignCenter);
-    // Full updates: HUD, edge affordances and workspace chrome are painted in
-    // paintEvent on top of the scene. SmartViewportUpdate scrolls/blits the
-    // viewport and leaves overlay trails (e.g. Vertical gallery scroll).
+    // Full updates by default: HUD / edges / workspace chrome live in
+    // drawForeground (not QGraphicsItems). Blit modes drag those pixels on
+    // scroll; ImageView::scrollContentsBy forces a full viewport repaint when
+    // Gallery switches to BoundingRect for tile thrash reduction.
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
     // Scrolling moves tiles under a stationary cursor — refresh gallery HUD path.
