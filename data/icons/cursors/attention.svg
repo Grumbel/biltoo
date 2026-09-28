@@ -1,0 +1,13 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <path d="M16 5v8M16 19v8M5 16h8M19 16h8" fill="none" stroke="#f6f5f4" stroke-width="2.75" stroke-linecap="round"/>
+  <path d="M16 5v8M16 19v8M5 16h8M19 16h8" fill="none" stroke="#241f31" stroke-width="1.15" stroke-linecap="round"/>
+  <circle cx="16" cy="16" r="1.1" fill="#241f31"/>
+  <!-- Focus ring badge -->
+  <circle cx="25.5" cy="25.5" r="5" fill="none" stroke="#f6f5f4" stroke-width="2.2"/>
+  <circle cx="25.5" cy="25.5" r="5" fill="none" stroke="#e5a50a" stroke-width="1.3"/>
+  <circle cx="25.5" cy="25.5" r="1.5" fill="#e5a50a"/>
+</svg>

@@ -67,5 +67,21 @@
     <file alias="actions/annot-ellipse.svg">../../data/icons/actions/annot-ellipse.svg</file>
     <file alias="actions/annot-line.svg">../../data/icons/actions/annot-line.svg</file>
     <file alias="actions/annot-sticky.svg">../../data/icons/actions/annot-sticky.svg</file>
+    <file alias="cursors/annot-ellipse.svg">../../data/icons/cursors/annot-ellipse.svg</file>
+    <file alias="cursors/annot-eraser.svg">../../data/icons/cursors/annot-eraser.svg</file>
+    <file alias="cursors/annot-highlighter.svg">../../data/icons/cursors/annot-highlighter.svg</file>
+    <file alias="cursors/annot-line.svg">../../data/icons/cursors/annot-line.svg</file>
+    <file alias="cursors/annot-pen.svg">../../data/icons/cursors/annot-pen.svg</file>
+    <file alias="cursors/annot-rect.svg">../../data/icons/cursors/annot-rect.svg</file>
+    <file alias="cursors/annot-sticky.svg">../../data/icons/cursors/annot-sticky.svg</file>
+    <file alias="cursors/annot-text-hl.svg">../../data/icons/cursors/annot-text-hl.svg</file>
+    <file alias="cursors/attention.svg">../../data/icons/cursors/attention.svg</file>
+    <file alias="cursors/crop.svg">../../data/icons/cursors/crop.svg</file>
+    <file alias="cursors/crosshair.svg">../../data/icons/cursors/crosshair.svg</file>
+    <file alias="cursors/pan-closed.svg">../../data/icons/cursors/pan-closed.svg</file>
+    <file alias="cursors/pan-open.svg">../../data/icons/cursors/pan-open.svg</file>
+    <file alias="cursors/select.svg">../../data/icons/cursors/select.svg</file>
+    <file alias="cursors/text-select.svg">../../data/icons/cursors/text-select.svg</file>
+    <file alias="cursors/zoom.svg">../../data/icons/cursors/zoom.svg</file>
   </qresource>
 </RCC>

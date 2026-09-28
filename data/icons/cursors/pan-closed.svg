@@ -1,0 +1,21 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Closed / grabbing hand -->
+  <path d="M10.5 16.5V13c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v2.8
+           M13.7 15.8V11.5c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v4.2
+           M16.9 15.5V12c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v4.8
+           M20.1 16.2v-1.5c0-0.8 0.6-1.4 1.4-1.4s1.4 0.6 1.4 1.4v4.5
+           c0 2.8-2.1 4.8-4.9 4.8h-2.8c-1.9 0-3.6-1-4.5-2.5L9.2 18.2
+           c-0.5-0.8-0.3-1.8 0.4-2.3 0.8-0.5 1.8-0.3 2.3 0.4l1.1 1.7"
+        fill="#f6f5f4" stroke="#241f31" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10.5 16.5V13c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v2.8
+           M13.7 15.8V11.5c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v4.2
+           M16.9 15.5V12c0-0.9 0.7-1.6 1.6-1.6s1.6 0.7 1.6 1.6v4.8
+           M20.1 16.2v-1.5c0-0.8 0.6-1.4 1.4-1.4s1.4 0.6 1.4 1.4v4.5
+           c0 2.8-2.1 4.8-4.9 4.8h-2.8c-1.9 0-3.6-1-4.5-2.5L9.2 18.2
+           c-0.5-0.8-0.3-1.8 0.4-2.3 0.8-0.5 1.8-0.3 2.3 0.4l1.1 1.7"
+        fill="none" stroke="#1a5fb4" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</svg>

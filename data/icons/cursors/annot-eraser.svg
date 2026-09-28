@@ -1,0 +1,13 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <path d="M16 5v8M16 19v8M5 16h8M19 16h8" fill="none" stroke="#f6f5f4" stroke-width="2.75" stroke-linecap="round"/>
+  <path d="M16 5v8M16 19v8M5 16h8M19 16h8" fill="none" stroke="#241f31" stroke-width="1.15" stroke-linecap="round"/>
+  <circle cx="16" cy="16" r="1.1" fill="#241f31"/>
+  <!-- Eraser badge -->
+  <path d="M20.5 25.5l4.5-4.5 4 4-3.5 3.5h-3.2z" fill="#e5a50a" stroke="#241f31" stroke-width="0.9" stroke-linejoin="round"/>
+  <path d="M25 21l4 4 1.5-1.5c0.5-0.5 0.5-1.3 0-1.8l-1.7-1.7c-0.5-0.5-1.3-0.5-1.8 0z" fill="#f6d32d"/>
+  <path d="M20 29.5h7.5" fill="none" stroke="#5e5c64" stroke-width="1.1" stroke-linecap="round"/>
+</svg>
