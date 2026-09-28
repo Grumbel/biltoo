@@ -472,15 +472,55 @@ void MainWindow::updatePasteActionEnabled()
     m_pasteWorkspaceAct->setEnabled(clipboardHasWorkspaceItems());
 }
 
+void MainWindow::copySelectedPageText()
+{
+    if (!m_imageView || !m_imageView->isImageMode()) {
+        return;
+    }
+    if (!m_imageView->hostText().session().hasSelection()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("No text selected"), 2000);
+        }
+        return;
+    }
+    if (m_imageView->hostText().copySelectedText()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Copied text"), 3000);
+        }
+    }
+}
+
+void MainWindow::updateCopyTextAction()
+{
+    if (!m_copyTextAct) {
+        return;
+    }
+    const bool hasText = m_imageView && m_imageView->isImageMode()
+        && m_imageView->hostText().session().hasSelection();
+    m_copyTextAct->setEnabled(hasText);
+    // Keep the generic Copy action label honest about what Ctrl+C will do.
+    if (m_copyWorkspaceAct) {
+        if (hasText) {
+            m_copyWorkspaceAct->setText(tr("Copy &text"));
+            m_copyWorkspaceAct->setStatusTip(
+                tr("Copy the selected text regions to the clipboard"));
+        } else {
+            m_copyWorkspaceAct->setText(tr("&Copy"));
+            m_copyWorkspaceAct->setStatusTip(
+                tr("Copy selected text regions, or selected Workspace tiles"));
+        }
+    }
+}
+
 void MainWindow::copyWorkspaceItems()
 {
-    // Prefer page text selection in Image mode (Shift+drag regions).
+    // Prefer page / spread text selection in Image mode (region or multi bag).
     if (m_imageView && m_imageView->isImageMode()
-        && m_imageView->hostTextLayer().selectionCount() > 0) {
+        && m_imageView->hostText().session().hasSelection()) {
         if (m_imageView->hostText().copySelectedText()) {
-            statusBar()->showMessage(
-                tr("Copied %n text region(s)", "", m_imageView->hostTextLayer().selectionCount()),
-                3000);
+            if (statusBar()) {
+                statusBar()->showMessage(tr("Copied text"), 3000);
+            }
             return;
         }
     }

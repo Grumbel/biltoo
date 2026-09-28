@@ -266,6 +266,9 @@ private slots:
     void duplicateSelected();
     /** Workspace: copy/cut selected tiles; paste creates new session images. */
     void copyWorkspaceItems();
+    /** Copy selected page/spread text regions to the clipboard. */
+    void copySelectedPageText();
+    void updateCopyTextAction();
     void cutWorkspaceItems();
     void pasteWorkspaceItems();
     void editWorkspaceBackground();
@@ -769,6 +772,7 @@ private:
     QAction *m_resetShearAct = nullptr;
     QAction *m_duplicateAct = nullptr;
     QAction *m_copyWorkspaceAct = nullptr;
+    QAction *m_copyTextAct = nullptr;
     QAction *m_cutWorkspaceAct = nullptr;
     QAction *m_pasteWorkspaceAct = nullptr;
     QAction *m_workspaceBackgroundAct = nullptr;

@@ -754,8 +754,15 @@ void MainWindow::createActions()
 
     m_copyWorkspaceAct = new QAction(tr("&Copy"), this);
     m_copyWorkspaceAct->setShortcuts(QKeySequence::Copy);
-    m_copyWorkspaceAct->setStatusTip(tr("Copy selected Workspace tiles, or selected page text (Shift+drag regions)"));
+    m_copyWorkspaceAct->setStatusTip(
+        tr("Copy selected text regions, or selected Workspace tiles"));
     connect(m_copyWorkspaceAct, &QAction::triggered, this, &MainWindow::copyWorkspaceItems);
+
+    m_copyTextAct = new QAction(tr("Copy &text"), this);
+    m_copyTextAct->setStatusTip(
+        tr("Copy the selected text regions to the clipboard"));
+    m_copyTextAct->setEnabled(false);
+    connect(m_copyTextAct, &QAction::triggered, this, &MainWindow::copySelectedPageText);
 
     m_speakAct = new QAction(tr("Spea&k"), this);
     m_speakAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+S")));
@@ -1124,6 +1131,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_selectAllAct);
     m_editMenu->addAction(m_findOnPageAct);
     m_editMenu->addSeparator();
+    m_editMenu->addAction(m_copyTextAct);
     m_editMenu->addAction(m_copyWorkspaceAct);
     m_editMenu->addAction(m_speakAct);
     m_editMenu->addAction(m_stopSpeechAct);
@@ -2325,9 +2333,12 @@ void MainWindow::populateActionHelpTexts()
         "the original, even when the path is the same.</p>"
         "<p>In Gallery the session list grows; in Workspace a new tile is placed with "
         "an offset.</p>"));
+    setHelp(m_copyTextAct, tr(
+        "<p>Copy the currently selected text regions (page or spread) to the "
+        "system clipboard as plain text.</p>"));
     setHelp(m_copyWorkspaceAct, tr(
-        "<p>Copy selected Workspace tiles to the clipboard as Biltoo workspace data, "
-        "or copy selected page text when text regions were selected with Shift+drag.</p>"
+        "<p>Copy selected Workspace tiles to the clipboard as Biltoo workspace data. "
+        "In Image mode with a text selection, copies text (same as <b>Copy text</b>).</p>"
         "<p>Does not copy the underlying image files.</p>"));
     setHelp(m_cutWorkspaceAct, tr(
         "<p>Remove selected tiles from the Workspace canvas and place them on the "

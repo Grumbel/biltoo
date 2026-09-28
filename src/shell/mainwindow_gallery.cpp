@@ -719,6 +719,7 @@ void MainWindow::updateUpToGalleryAction()
 void MainWindow::updateWorkspaceActionVisibility()
 {
     updateUpToGalleryAction();
+    updateCopyTextAction();
     const bool workspace = m_imageView && m_imageView->isWorkspaceMode();
     // Gallery layout actions: visible once a session exists. Enabled in Image
     // mode on purpose — activating one enters Gallery with that pack. Grid Crop

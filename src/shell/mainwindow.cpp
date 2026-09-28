@@ -3523,6 +3523,10 @@ void MainWindow::showContextMenu(const QPoint &pos)
     if (isImageMode()) {
         menu.addAction(m_previousAct);
         menu.addAction(m_nextAct);
+        if (m_copyTextAct && m_imageView
+            && m_imageView->hostText().session().hasSelection()) {
+            menu.addAction(m_copyTextAct);
+        }
         menu.addSeparator();
     }
     if (isGalleryMode() && m_viewSelectionSpreadAct) {
@@ -4968,6 +4972,8 @@ void MainWindow::connectTextPanel()
                 }
                 m_imageView->hostText().setSelectedRegions(ids);
             });
+    connect(&m_imageView->hostText(), &TextLayerController::selectionChanged, this,
+            &MainWindow::updateCopyTextAction);
     connect(m_textPanel, &TextPanel::selectionMultiChanged, this,
             [this](const TextSelection &bag) {
                 if (!m_imageView) {
