@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Spread — multi-page reading surface (design)
 
-**Status:** P0+P1 done in tree. Text cross-page is P2; TTS is P3.  
+**Status:** P0–P2 partial in tree. Cross-page select/copy/paint done; panel flatten + TTS P3.  
 **Related:** [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md), [DOMAIN.md](../DOMAIN.md) (world vs viewpoint),
 `DualImageShell` (compare — **not** spread).
@@ -297,7 +297,7 @@ class SpreadTextCoordinator {
 |-------|------|-----------|
 | **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Done:** state/book/layout, Double view, nav stride, multi-underlay install, text paint deferred. |
 | **P1** | Gallery View Selection; status range | **Done:** View Selection + Gallery menu; status range; event-driven sync; FixedN filmstrip; leave/dual mutual exclusion; N≤8. |
-| **P2** | Text coordinator + cross-page rubber-band/copy | One selection across gutter |
+| **P2** | Text coordinator + cross-page rubber-band/copy | **Partial:** per-member layers; multi-item rubber-band/hit; selection paint; copy via TextSelection. Panel flatten still single-page. |
 | **P3** | Speak plan + highlights over members | TTS spans carry sid |
 | **P4** | N>2, binding hints, RTL, heightMatch prefs | Foldout / polish |
 

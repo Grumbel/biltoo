@@ -2,29 +2,23 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2731.2-spread-docs-status` (base `636e70e`).
+**Tip:** `biltoo-2732.1-spread-p2-cross-page-text` (base `636e70e`).
 
-### Spread P0+P1 — complete
+### Spread P0–P1 complete; P2 started
 
-| Item | Status |
-|------|--------|
-| SpreadState / SpreadBook / layoutSpread | done |
-| Double view (Ctrl+2), nav stride | done |
-| Multi-underlay install (no wipe on soft/full) | done (2729.1) |
-| View Selection + Gallery context menu | done |
-| Status `Spread a–b/N` + prev/next tips | done (2730.1) |
-| Event-driven layout sync | done (2730.1) |
-| FixedN filmstrip moves window | done (2730.1) |
-| Single Gallery open / Dual compare clear spread | done (2731.1) |
-| Spread clears Dual; N≤8 cap | done (2731.1) |
-| Text overlay deferred while N>1 | done (2731.1) |
+#### 2732.1 — cross-page text (P2 core)
+- `ensureMemberLayers` / `layerForItem` / `regionImageRectFor`
+- Rubber-band classifies hits per underlay; `TextSelection` bag by sid
+- Paint region outlines + selection on every spread member
+- Glyphs/search/hover/TTS remain primary-only this slice
+- Removed N>1 text paint/select gates from P1 deferral
 
-### Next (P2+)
-- Cross-page text selection / copy (SpreadTextCoordinator)
-- TTS spans across members
-- Binding hints UI, RTL, N>2 polish
+### Still open
+- Text panel rows flattened across members
+- Search hits on secondary pages
+- P3 TTS spans across members
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2731.2-spread-docs-status-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2732.1-spread-p2-cross-page-text-636e70e.bundle HEAD
 ```

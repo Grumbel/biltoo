@@ -47,10 +47,6 @@ TextLayerController::TextLayerController(ImageView *view)
 
 void TextLayerController::paintRubberBandOverlay(QPainter &painter)
 {
-    // Spread multi-underlay: text selection deferred to P2 (docs/SPREAD.md).
-    if (m_view && m_view->isImageMode() && m_view->itemCount() > 1) {
-        return;
-    }
     if (m_session.isRubberbanding() && m_session.hasRubberRect()) {
         painter.save();
         QPen pen(QColor(40, 120, 220, 220));
@@ -83,6 +79,8 @@ void TextLayerController::refresh()
 {
     m_session.resetLayerContent();
     m_session.clearSearchMatches();
+    m_memberLayers.clear();
+    m_memberPaths.clear();
     const QString path = m_view->hostImage().classicPath();
     if (path.isEmpty()) {
         emit layerChanged();
@@ -92,6 +90,7 @@ void TextLayerController::refresh()
     const ThumtooCache::PageTextLayer layer =
         TextLayerResolve::load(path, m_session.layerPreferValue());
     m_session.setLayerContent(layer, path);
+    ensureMemberLayers();
     restoreCurrentPageSelectionFromMulti();
     if (m_session.hasSearchQuery()) {
         recomputeSearchMatches();
@@ -361,30 +360,110 @@ bool TextLayerController::pageYUp() const
     return ThumtooCache::pageSpaceYUpForPath(m_view->hostImage().classicPath());
 }
 
-QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &region) const
+bool TextLayerController::isMultiUnderlay() const
 {
-    // region.bbox is document page space (see docs/OCR_COORDINATES.md).
-    // Live crop/orient/grade are applied here only — never baked into bbox.
-    ImageItem *item = m_view->primaryItem();
-    if (!item || !m_session.pageBoundsValid()) {
+    return m_view && m_view->isImageMode() && m_view->itemCount() > 1;
+}
+
+QString TextLayerController::pathForItem(ImageItem *item) const
+{
+    if (!item) {
         return {};
     }
+    if (!item->path().isEmpty()) {
+        return item->path();
+    }
+    return m_view ? m_view->hostImage().classicPath() : QString();
+}
 
-    const QString path = m_view->hostImage().classicPath();
+const ThumtooCache::PageTextLayer *TextLayerController::layerForItem(ImageItem *item) const
+{
+    if (!item || !m_view) {
+        return nullptr;
+    }
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && m_view->isImageMode()) {
         sid = m_view->hostSessionId().currentIdValue();
     }
+    if (sid != kInvalidSessionImageId) {
+        auto it = m_memberLayers.constFind(sid);
+        if (it != m_memberLayers.constEnd() && it->pageBounds.isValid()) {
+            return &(*it);
+        }
+    }
+    if (m_session.pageBoundsValid()
+        && (item == m_view->primaryItem()
+            || pathForItem(item) == m_session.layerPathRef())) {
+        return &m_session.layerRef();
+    }
+    return m_session.pageBoundsValid() ? &m_session.layerRef() : nullptr;
+}
 
-    // Same orient/crop authority as display install (contentBake + applied + session).
-    // Session-only missed ItemWorld contentBake turns when the item had no
-    // applied fingerprint — boxes stayed unrotated on a rotated page.
+void TextLayerController::ensureMemberLayers()
+{
+    if (!m_view || !m_view->isImageMode()) {
+        return;
+    }
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QString path = pathForItem(item);
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (path == m_session.layerPathRef() && m_session.pageBoundsValid()) {
+            m_memberLayers.insert(sid, m_session.layerRef());
+            m_memberPaths.insert(sid, path);
+            continue;
+        }
+        if (m_memberPaths.value(sid) == path && m_memberLayers.contains(sid)
+            && m_memberLayers.value(sid).pageBounds.isValid()) {
+            continue;
+        }
+        const ThumtooCache::PageTextLayer layer =
+            TextLayerResolve::load(path, m_session.layerPreferValue());
+        m_memberLayers.insert(sid, layer);
+        m_memberPaths.insert(sid, path);
+    }
+}
+
+QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &region) const
+{
+    ImageItem *item = m_view ? m_view->primaryItem() : nullptr;
+    if (!item || !m_session.pageBoundsValid()) {
+        return {};
+    }
+    return regionImageRectFor(item, m_view->hostImage().classicPath(),
+                              m_session.layerRef(), region);
+}
+
+QRectF TextLayerController::regionImageRectFor(ImageItem *item, const QString &path,
+                                               const ThumtooCache::PageTextLayer &layer,
+                                               const ThumtooCache::TextRegion &region) const
+{
+    // region.bbox is document page space (see docs/OCR_COORDINATES.md).
+    // Live crop/orient/grade are applied here only — never baked into bbox.
+    if (!item || !layer.pageBounds.isValid() || path.isEmpty()) {
+        return {};
+    }
+
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && m_view && m_view->isImageMode()) {
+        sid = m_view->hostSessionId().currentIdValue();
+    }
+
     const WorkspaceItemState want =
         m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
     const ContentXform::Value x = ContentXform::Value::fromState(want);
 
-    // Unoriented full-page raster size (page → source). Never use oriented
-    // intrinsic as-if-native without un-swapping odd quarter turns.
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         const QSize known = m_view->hostSizeBook().known(path);
@@ -402,9 +481,9 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
         return {};
     }
 
-    const bool pageYUpFlag = pageYUp();
+    const bool pageYUpFlag = ThumtooCache::pageSpaceYUpForPath(path);
     const QRectF inSource = ThumtooCache::pageRectToImageRect(
-        region.bbox, m_session.pageBounds(), sourceSize, pageYUpFlag);
+        region.bbox, layer.pageBounds, sourceSize, pageYUpFlag);
     if (inSource.isEmpty()) {
         return {};
     }
@@ -414,9 +493,6 @@ QRectF TextLayerController::regionImageRect(const ThumtooCache::TextRegion &regi
         return {};
     }
 
-    // mapSourceRectToDisplay is in native layout pixels (layoutSize). The item
-    // box may lag or differ (provisional / soft); stretch so boxes track the
-    // painted contentRect after crop apply/reset.
     const QSize logical = ContentXform::layoutSize(sourceSize, x);
     const QSize itemSz = item->imageSize();
     if (logical.width() > 0 && logical.height() > 0
@@ -446,7 +522,11 @@ QRectF TextLayerController::rubberBandImageRect() const
 
 int TextLayerController::regionIndexAtViewPos(const QPoint &viewPos) const
 {
-    if (!m_view->isImageMode() || !hasLayer() || !m_session.pageBoundsValid()) {
+    if (!m_view->isImageMode()) {
+        return -1;
+    }
+    // Primary-page hit for panel / single-page; multi uses selectRegionAtViewPos.
+    if (!hasLayer() || !m_session.pageBoundsValid()) {
         return -1;
     }
     ImageItem *item = m_view->primaryItem();
@@ -471,7 +551,6 @@ int TextLayerController::regionIndexAtViewPos(const QPoint &viewPos) const
             continue;
         }
         const qreal area = img.width() * img.height();
-        // Prefer the smallest containing region (tighter hit).
         if (best < 0 || area < bestArea) {
             best = i;
             bestArea = area;
@@ -482,13 +561,68 @@ int TextLayerController::regionIndexAtViewPos(const QPoint &viewPos) const
 
 void TextLayerController::selectRegionAtViewPos(const QPoint &viewPos)
 {
-    const int idx = regionIndexAtViewPos(viewPos);
-    if (idx < 0) {
-        // Keep multi-page bag for other pages; clear only current page projection.
-        setSelectedRegions({});
+    if (!isMultiUnderlay()) {
+        const int idx = regionIndexAtViewPos(viewPos);
+        if (idx < 0) {
+            setSelectedRegions({});
+            return;
+        }
+        setSelectedRegions(QVector<int>{idx});
         return;
     }
-    setSelectedRegions(QVector<int>{idx});
+    // Spread: hit-test every underlay; replace multi bag with the single hit.
+    ensureMemberLayers();
+    const QPointF scene = m_view->mapToScene(viewPos);
+    m_session.multiSelection.clear();
+    ImageItem *primary = m_view->primaryItem();
+    QVector<int> primarySelected;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || !item->contentRect().contains(item->mapFromScene(scene))) {
+            continue;
+        }
+        const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+        if (!layer || layer->regions.isEmpty()) {
+            continue;
+        }
+        const QString path = pathForItem(item);
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
+        const QPointF imgPt = item->mapFromScene(scene) - item->offset();
+        int best = -1;
+        qreal bestArea = -1.0;
+        for (int i = 0; i < layer->regions.size(); ++i) {
+            const auto &r = layer->regions.at(i);
+            if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+                continue;
+            }
+            const QRectF img = regionImageRectFor(item, path, *layer, r);
+            if (!img.contains(imgPt)) {
+                continue;
+            }
+            const qreal area = img.width() * img.height();
+            if (best < 0 || area < bestArea) {
+                best = i;
+                bestArea = area;
+            }
+        }
+        if (best < 0) {
+            continue;
+        }
+        QVector<int> ids{best};
+        QVector<QString> texts{layer->regions.at(best).text};
+        m_session.multiSelection.setForSession(sid, ids, texts);
+        if (item == primary) {
+            primarySelected = ids;
+        }
+        break; // first hit in liveItems order
+    }
+    m_session.setSelectedRegions(primarySelected);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit selectionChanged();
 }
 
 void TextLayerController::finishRubberBand()
@@ -512,49 +646,73 @@ void TextLayerController::finishRubberBand()
         refresh();
         m_session.setShowRegions(hadShow);
     }
-    ImageItem *item = m_view->primaryItem();
-    if (!item || !m_session.hasRegions() || !m_session.pageBoundsValid()) {
+    ensureMemberLayers();
+
+    const QRectF sceneRubber = m_view->mapToScene(viewRect).boundingRect();
+    if (sceneRubber.isEmpty()) {
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
         return;
     }
-    const QSize sz = item->imageSize();
-    if (sz.width() <= 0 || sz.height() <= 0) {
-        if (m_view->viewport()) {
-            m_view->viewport()->update();
-        }
-        return;
-    }
-    m_session.setRubberRect(viewRect);
-    const QRectF imgRubber = rubberBandImageRect();
-    m_session.clearRubberRect();
-    if (imgRubber.isEmpty()) {
-        if (m_view->viewport()) {
-            m_view->viewport()->update();
-        }
-        return;
-    }
-    QVector<QRectF> regionRects(m_session.regionCount());
-    for (int i = 0; i < m_session.regionCount(); ++i) {
-        const auto &r = m_session.regionAt(i);
-        if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+
+    // Spread: classify hits per underlay; multiSelection keeps reading order by
+    // liveItems order (left→right after layoutSpread).
+    m_session.multiSelection.clear();
+    QVector<int> primarySelected;
+    ImageItem *primary = m_view->primaryItem();
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
             continue;
         }
-        regionRects[i] = regionImageRect(r);
+        const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+        if (!layer || !layer->pageBounds.isValid() || layer->regions.isEmpty()) {
+            continue;
+        }
+        const QString path = pathForItem(item);
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QRectF local = item->mapFromScene(sceneRubber).boundingRect();
+        const QRectF imgRubber = local.translated(-item->offset());
+        if (imgRubber.isEmpty()) {
+            continue;
+        }
+        const int n = layer->regions.size();
+        QVector<QRectF> regionRects(n);
+        QVector<int> selBlocks(n, -1);
+        for (int i = 0; i < n; ++i) {
+            const auto &r = layer->regions.at(i);
+            if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+                continue;
+            }
+            regionRects[i] = regionImageRectFor(item, path, *layer, r);
+            selBlocks[i] = r.blockId;
+        }
+        QVector<int> selected =
+            TextLayerGeometry::indicesIntersecting(regionRects, imgRubber);
+        const bool ocrOrder = layer->source == ThumtooCache::TextLayerSource::Ocr;
+        TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks,
+                                            /*pageYUp=*/false, ocrOrder);
+        QVector<QString> texts;
+        texts.reserve(selected.size());
+        for (int idx : selected) {
+            texts.append((idx >= 0 && idx < n) ? layer->regions.at(idx).text : QString());
+        }
+        m_session.multiSelection.setForSession(sid, selected, texts);
+        if (item == primary) {
+            primarySelected = selected;
+        }
     }
-    QVector<int> selected =
-        TextLayerGeometry::indicesIntersecting(regionRects, imgRubber);
-    QVector<int> selBlocks(m_session.regionCount(), -1);
-    for (int i = 0; i < m_session.regionCount(); ++i) {
-        selBlocks[i] = m_session.regionAt(i).blockId;
+    m_session.setSelectedRegions(primarySelected);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
     }
-    const bool ocrOrder =
-        m_session.layerRef().source == ThumtooCache::TextLayerSource::Ocr;
-    // regionRects are image/display space (Y-down); OCR prefers iterator index order.
-    TextLayerGeometry::sortReadingOrder(&selected, regionRects, 4.0, &selBlocks,
-                                        /*pageYUp=*/false, ocrOrder);
-    setSelectedRegions(selected);
+    emit selectionChanged();
 }
 
 
@@ -852,9 +1010,6 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))) {
         return false;
     }
-    if (m_view->itemCount() > 1) {
-        return false; // Spread text selection is P2
-    }
     // Select tool: left-drag rubber-band. Pan tool: keep Shift+drag as text select.
     const bool selectTool = m_view->currentTool() == Tool::Select;
     const bool shiftSelect = event->modifiers() & Qt::ShiftModifier;
@@ -863,7 +1018,21 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
     }
     // Only when a text/OCR layer is present (avoid eating edge-nav clicks).
     if (!m_session.hasRegions()) {
-        return false;
+        if (isMultiUnderlay()) {
+            ensureMemberLayers();
+            bool any = false;
+            for (const auto &layer : m_memberLayers) {
+                if (!layer.regions.isEmpty()) {
+                    any = true;
+                    break;
+                }
+            }
+            if (!any) {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
     m_session.beginRubber(event->pos());
     m_session.clearSelectedRegions();
@@ -976,171 +1145,185 @@ void TextLayerController::paintSceneOverlays(QPainter *painter) const
     if (!painter || !m_view || !m_view->isImageMode()) {
         return;
     }
-    // Spread: primary-only text would mis-teach the model until P2.
-    if (m_view->itemCount() > 1) {
+    const bool wantPaint = m_session.showsRegions() || m_session.showsGlyphs()
+        || m_session.hasSearchMatches() || m_session.hasSelection()
+        || m_session.hoverRegionIndex() >= 0 || !m_speakingRegions.isEmpty();
+    if (!wantPaint) {
         return;
     }
-    // Paint when any overlay layer is active (not only region outlines / search).
-    if (!m_session.hasRegions()
-        || !(m_session.showsRegions() || m_session.showsGlyphs()
-             || m_session.hasSearchMatches() || m_session.hasSelection()
-             || m_session.hoverRegionIndex() >= 0
-             || !m_speakingRegions.isEmpty())) {
-        return;
-    }
-    ImageItem *item = m_view->primaryItem();
-    if (!item) {
-        return;
-    }
-    const QSize sz = item->imageSize();
-    if (sz.width() <= 0 || sz.height() <= 0 || !m_session.pageBoundsValid()) {
-        return;
-    }
+
+    auto paintItemLayer = [&](ImageItem *item, const ThumtooCache::PageTextLayer &layer,
+                              const QString &path, bool isPrimary) {
+        if (!item || !layer.pageBounds.isValid()) {
+            return;
+        }
+        const QSize sz = item->imageSize();
+        if (sz.width() <= 0 || sz.height() <= 0) {
+            return;
+        }
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
+
+        if (m_session.showsRegions()) {
+            for (const ThumtooCache::TextRegion &r : layer.regions) {
+                if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
+                    continue;
+                }
+                const QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty()) {
+                    continue;
+                }
+                const QRectF local = img.translated(item->offset());
+                const QPolygonF scenePoly = item->mapToScene(local);
+                QPen pen(TextRegionStyle::outlineColor(r));
+                pen.setCosmetic(true);
+                pen.setWidthF(0);
+                painter->setPen(pen);
+                painter->setBrush(Qt::NoBrush);
+                painter->drawPolygon(scenePoly);
+            }
+        }
+
+        // Selection from multi bag (spread) or primary selectedRegions.
+        QVector<int> selIds;
+        if (sid != kInvalidSessionImageId && !m_session.multiSelection.isEmpty()) {
+            selIds = m_session.multiSelection.regionIndicesFor(sid);
+        } else if (isPrimary) {
+            selIds = m_session.selectedRegionsRef();
+        }
+        if (!selIds.isEmpty()) {
+            painter->setPen(QPen(QColor(20, 90, 200, 230), 0));
+            painter->setBrush(QColor(40, 140, 255, 110));
+            for (int idxSel : selIds) {
+                if (idxSel < 0 || idxSel >= layer.regions.size()) {
+                    continue;
+                }
+                const auto &r = layer.regions.at(idxSel);
+                const QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty()) {
+                    continue;
+                }
+                const QRectF local = img.translated(item->offset());
+                painter->drawPolygon(item->mapToScene(local));
+            }
+        }
+
+        // Glyphs / search / hover / TTS: primary underlay only for this slice.
+        if (!isPrimary) {
+            return;
+        }
+        if (m_session.showsGlyphs()) {
+            for (const ThumtooCache::TextRegion &r : layer.regions) {
+                if (r.text.isEmpty()) {
+                    continue;
+                }
+                const QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty() || img.height() < 2.0) {
+                    continue;
+                }
+                const QRectF local = img.translated(item->offset());
+                const QPolygonF scenePoly = item->mapToScene(local);
+                const QRectF sceneBox = scenePoly.boundingRect();
+                if (sceneBox.height() < 1.0 || sceneBox.width() < 1.0) {
+                    continue;
+                }
+                painter->setPen(QPen(TextRegionStyle::outlineColor(r), 0));
+                painter->setBrush(QColor(255, 252, 230, 220));
+                painter->drawPolygon(scenePoly);
+                QFont f = painter->font();
+                f.setPixelSize(48);
+                f.setStyleStrategy(QFont::PreferDefault);
+                const QFontMetricsF fm(f);
+                const QString line = r.text.simplified();
+                qreal advance = fm.horizontalAdvance(line);
+                if (advance < 1.0) {
+                    advance = 1.0;
+                }
+                const qreal textH = qMax(qreal(1.0), fm.height());
+                painter->save();
+                painter->setFont(f);
+                painter->setPen(QColor(20, 20, 20, 235));
+                painter->setBrush(Qt::NoBrush);
+                painter->translate(sceneBox.topLeft());
+                painter->scale(sceneBox.width() / advance, sceneBox.height() / textH);
+                painter->drawText(QPointF(0.0, fm.ascent()), line);
+                painter->restore();
+            }
+        }
+        if (m_session.hasSearchMatches()) {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(255, 220, 40, 110));
+            for (const TextSearchPolicy::SearchHit &hit : m_session.searchMatchesRef()) {
+                if (hit.regionIndex < 0 || hit.regionIndex >= layer.regions.size()) {
+                    continue;
+                }
+                const auto &r = layer.regions.at(hit.regionIndex);
+                QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty()) {
+                    continue;
+                }
+                const qreal a = qBound(0.0, hit.startFrac, 1.0);
+                const qreal b = qBound(0.0, hit.endFrac, 1.0);
+                if (b > a && (a > 0.0 || b < 1.0)) {
+                    img = QRectF(img.left() + img.width() * a, img.top(),
+                                 img.width() * (b - a), img.height());
+                }
+                const QRectF local = img.translated(item->offset());
+                painter->drawPolygon(item->mapToScene(local));
+            }
+        }
+        if (m_session.hoverRegionIndex() >= 0
+            && m_session.hoverRegionIndex() < layer.regions.size()) {
+            const auto &r = layer.regions.at(m_session.hoverRegionIndex());
+            const QRectF img = regionImageRectFor(item, path, layer, r);
+            if (!img.isEmpty()) {
+                painter->setPen(QPen(QColor(255, 140, 0, 230), 0));
+                painter->setBrush(QColor(255, 180, 40, 60));
+                const QRectF local = img.translated(item->offset());
+                painter->drawPolygon(item->mapToScene(local));
+            }
+        }
+        if (!m_speakingRegions.isEmpty()) {
+            for (int i = 0; i < m_speakingRegions.size(); ++i) {
+                const int idx = m_speakingRegions.at(i);
+                if (idx < 0 || idx >= int(layer.regions.size())) {
+                    continue;
+                }
+                const auto &r = layer.regions.at(idx);
+                QRectF img = regionImageRectFor(item, path, layer, r);
+                if (img.isEmpty()) {
+                    continue;
+                }
+                const bool isActive = (i == m_speakingRegions.size() - 1);
+                if (isActive && m_speakingProgress > 0.0 && m_speakingProgress < 1.0) {
+                    const qreal x1 = img.left() + img.width() * m_speakingProgress;
+                    img = QRectF(QPointF(img.left(), img.top()),
+                                 QPointF(x1, img.bottom()));
+                }
+                painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
+                painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
+                const QRectF local = img.translated(item->offset());
+                painter->drawPolygon(item->mapToScene(local));
+            }
+        }
+    };
+
     painter->save();
-    // Search hits: filled yellow first (under outlines / glyphs / selection).
-    if (m_session.hasSearchMatches()) {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(255, 220, 40, 110));
-        for (const TextSearchPolicy::SearchHit &hit : m_session.searchMatchesRef()) {
-            if (hit.regionIndex < 0 || hit.regionIndex >= m_session.regionCount()) {
+    ImageItem *primary = m_view->primaryItem();
+    if (isMultiUnderlay()) {
+        for (ImageItem *item : m_view->liveItems()) {
+            const ThumtooCache::PageTextLayer *layer = layerForItem(item);
+            if (!layer) {
                 continue;
             }
-            const auto &r = m_session.regionAt(hit.regionIndex);
-            QRectF img = regionImageRect(r);
-            if (img.isEmpty()) {
-                continue;
-            }
-            // LTR approximation: highlight the horizontal slice of the box
-            // that likely holds the matched substring (uniform advance).
-            const qreal a = qBound(0.0, hit.startFrac, 1.0);
-            const qreal b = qBound(0.0, hit.endFrac, 1.0);
-            if (b > a && (a > 0.0 || b < 1.0)) {
-                const qreal x0 = img.left() + img.width() * a;
-                const qreal x1 = img.left() + img.width() * b;
-                img = QRectF(QPointF(x0, img.top()), QPointF(x1, img.bottom()));
-            }
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
+            paintItemLayer(item, *layer, pathForItem(item), item == primary);
         }
+    } else if (primary && m_session.hasRegions()) {
+        paintItemLayer(primary, m_session.layerRef(), m_view->hostImage().classicPath(), true);
     }
-    if (m_session.showsRegions()) {
-        painter->setBrush(Qt::NoBrush);
-        for (const ThumtooCache::TextRegion &r : m_session.regions()) {
-            const QRectF img = regionImageRect(r);
-            if (img.isEmpty()) {
-                continue;
-            }
-            const QRectF local = img.translated(item->offset());
-            const QPolygonF scenePoly = item->mapToScene(local);
-            QPen pen(TextRegionStyle::outlineColor(r));
-            pen.setCosmetic(true);
-            pen.setWidthF(0);
-            painter->setPen(pen);
-            painter->drawPolygon(scenePoly);
-        }
-    }
-
-    // Glyphs: recognized text stretched to the OCR/native bbox (readable fill).
-    if (m_session.showsGlyphs()) {
-        for (const ThumtooCache::TextRegion &r : m_session.regions()) {
-            if (r.text.isEmpty()) {
-                continue;
-            }
-            const QRectF img = regionImageRect(r);
-            if (img.isEmpty() || img.height() < 2.0) {
-                continue;
-            }
-            const QRectF local = img.translated(item->offset());
-            const QPolygonF scenePoly = item->mapToScene(local);
-            const QRectF sceneBox = scenePoly.boundingRect();
-            if (sceneBox.height() < 1.0 || sceneBox.width() < 1.0) {
-                continue;
-            }
-            painter->setPen(QPen(TextRegionStyle::outlineColor(r), 0));
-            painter->setBrush(QColor(255, 252, 230, 220));
-            painter->drawPolygon(scenePoly);
-
-            // Measure at a stable pixel size, then non-uniform scale into the box
-            // so long lines fill width and height tracks the region (not Qt wrap).
-            QFont f = painter->font();
-            f.setPixelSize(48); // reference size; scale maps into sceneBox
-            f.setStyleStrategy(QFont::PreferDefault);
-            const QFontMetricsF fm(f);
-            const QString line = r.text.simplified();
-            qreal advance = fm.horizontalAdvance(line);
-            if (advance < 1.0) {
-                advance = 1.0;
-            }
-            const qreal textH = qMax(qreal(1.0), fm.height());
-            const qreal sx = sceneBox.width() / advance;
-            const qreal sy = sceneBox.height() / textH;
-            painter->save();
-            painter->setFont(f);
-            painter->setPen(QColor(20, 20, 20, 235));
-            painter->setBrush(Qt::NoBrush);
-            // Map reference text space → scene box (may shear slightly if poly
-            // is rotated; boundingRect scale is good enough for Image mode).
-            painter->translate(sceneBox.topLeft());
-            painter->scale(sx, sy);
-            painter->drawText(QPointF(0.0, fm.ascent()), line);
-            painter->restore();
-        }
-    }
-
-    // Selection / hover on top of glyphs so cyan stays readable over paper fill.
-    if (m_session.hasSelection()) {
-        painter->setPen(QPen(QColor(20, 90, 200, 230), 0));
-        painter->setBrush(QColor(40, 140, 255, 110));
-        for (int idxSel : m_session.selectedRegionsRef()) {
-            if (idxSel < 0 || idxSel >= m_session.regionCount()) {
-                continue;
-            }
-            const auto &r = m_session.regionAt(idxSel);
-            const QRectF img = regionImageRect(r);
-            if (img.isEmpty()) {
-                continue;
-            }
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
-        }
-    }
-    if (m_session.hoverRegionIndex() >= 0
-        && m_session.hoverRegionIndex() < m_session.regionCount()) {
-        const auto &r = m_session.regionAt(m_session.hoverRegionIndex());
-        const QRectF img = regionImageRect(r);
-        if (!img.isEmpty()) {
-            painter->setPen(QPen(QColor(180, 100, 0, 220), 0));
-            painter->setBrush(QColor(255, 160, 40, 80));
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
-        }
-    }
-
-    // TTS: spoken region(s) — green fill; progress clips the active box LTR.
-    if (!m_speakingRegions.isEmpty()) {
-        for (int i = 0; i < m_speakingRegions.size(); ++i) {
-            const int idx = m_speakingRegions.at(i);
-            if (idx < 0 || idx >= m_session.regionCount()) {
-                continue;
-            }
-            const auto &r = m_session.regionAt(idx);
-            QRectF img = regionImageRect(r);
-            if (img.isEmpty()) {
-                continue;
-            }
-            const bool isActive = (i == m_speakingRegions.size() - 1);
-            if (isActive && m_speakingProgress > 0.0 && m_speakingProgress < 1.0) {
-                const qreal x1 = img.left() + img.width() * m_speakingProgress;
-                img = QRectF(QPointF(img.left(), img.top()),
-                             QPointF(x1, img.bottom()));
-            }
-            painter->setPen(QPen(QColor(20, 140, 70, 230), 0));
-            painter->setBrush(QColor(40, 200, 100, isActive ? 130 : 70));
-            const QRectF local = img.translated(item->offset());
-            painter->drawPolygon(item->mapToScene(local));
-        }
-    }
-
     painter->restore();
 }
+
 

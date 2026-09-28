@@ -9,12 +9,14 @@
 #include "host/thumtoocache.h"
 
 #include <QObject>
+#include <QHash>
 #include <QPoint>
 #include <QRectF>
 #include <QString>
 #include <QVector>
 
 class ImageView;
+class ImageItem;
 class QPainter;
 class QMouseEvent;
 
@@ -109,6 +111,12 @@ public:
     void updateMouseMoveLinkHover(QMouseEvent *event);
     /** Map a page text region bbox into content-display image coords. */
     QRectF regionImageRect(const ThumtooCache::TextRegion &region) const;
+    /** Spread: map using a specific underlay item + layer (docs/SPREAD.md P2). */
+    QRectF regionImageRectFor(ImageItem *item, const QString &path,
+                              const ThumtooCache::PageTextLayer &layer,
+                              const ThumtooCache::TextRegion &region) const;
+    /** Load cached text layers for all live Image underlays (spread members). */
+    void ensureMemberLayers();
 
 signals:
     void layerChanged();
@@ -126,10 +134,17 @@ private:
     int regionIndexAtViewPos(const QPoint &viewPos) const;
     void selectRegionAtViewPos(const QPoint &viewPos);
 
+    bool isMultiUnderlay() const;
+    QString pathForItem(ImageItem *item) const;
+    const ThumtooCache::PageTextLayer *layerForItem(ImageItem *item) const;
+
     ImageView *m_view = nullptr;
     QVector<int> m_speakingRegions;
     double m_speakingProgress = 0.0;
     TextLayerSession m_session;
+    /** Spread member layers keyed by SessionImageId (primary also in m_session). */
+    QHash<SessionImageId, ThumtooCache::PageTextLayer> m_memberLayers;
+    QHash<SessionImageId, QString> m_memberPaths;
 };
 
 #endif // TEXTLAYERCONTROLLER_H
