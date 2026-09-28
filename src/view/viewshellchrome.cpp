@@ -578,7 +578,8 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     if (!painter) {
         return;
     }
-    // Annotations: page→view Multiply strokes/quads (viewport device space).
+    // Annotations: page→source→display→scene (same space as text overlays).
+    // Must run before resetTransform — paintOverlay draws scene coordinates.
     m_view->hostAnnot().paintOverlay(*painter);
     // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
     // is not invalidated on select or scroll (was painted inside ImageItem::paint).

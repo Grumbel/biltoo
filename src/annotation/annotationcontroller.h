@@ -10,6 +10,8 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QRectF>
+#include <QSize>
 #include <QVector>
 
 class ImageView;
@@ -19,7 +21,10 @@ class QMouseEvent;
 
 /**
  * Annotation tools: freehand Multiply highlighter and text-snapped highlight.
- * Mouse-only for Phase A/B; geometry in page/source space.
+ *
+ * Geometry is document page space (docs/OCR_COORDINATES.md). Paint maps
+ * page → source → display → scene like TextLayerController region overlays.
+ * Mouse-only for Phase A/B.
  */
 class AnnotationController
 {
@@ -33,7 +38,6 @@ public:
     void setTool(Annotation::Tool tool);
 
     bool isToolActive() const { return m_tool != Annotation::Tool::None; }
-    /** Back-compat: freehand on/off. Prefer setTool. */
     void setToolActive(bool on);
 
     QColor color() const { return m_color; }
@@ -42,6 +46,7 @@ public:
     qreal width() const { return m_width; }
     void setWidth(qreal w) { m_width = qMax(1.0, w); }
 
+    /** Scene-space paint; call while the view transform is still active. */
     void paintOverlay(QPainter &painter);
     bool tryMousePress(QMouseEvent *event);
     bool tryMouseMove(QMouseEvent *event);
@@ -56,15 +61,18 @@ private:
     SessionImageId targetSid(ImageItem *item) const;
     bool pageSpaceForItem(ImageItem *item, QRectF *boundsOut, bool *yUpOut,
                           QSize *sourceSizeOut) const;
+    QRectF pageRectToDisplay(ImageItem *item, const QRectF &pageRect,
+                             const QRectF &pageBounds, bool pageYUp,
+                             const QSize &sourceSize) const;
     QPointF viewToPage(ImageItem *item, const QPoint &viewPos,
                        const QRectF &pageBounds, bool pageYUp,
                        const QSize &sourceSize) const;
-    QPointF pageToItemLocal(ImageItem *item, const QPointF &pagePt,
-                            const QRectF &pageBounds, bool pageYUp,
-                            const QSize &sourceSize) const;
-    QRectF pageRectToView(ImageItem *item, const QRectF &pageRect,
-                          const QRectF &pageBounds, bool pageYUp,
-                          const QSize &sourceSize) const;
+    QPointF pageToScene(ImageItem *item, const QPointF &pagePt,
+                        const QRectF &pageBounds, bool pageYUp,
+                        const QSize &sourceSize) const;
+    QRectF pageRectToScene(ImageItem *item, const QRectF &pageRect,
+                           const QRectF &pageBounds, bool pageYUp,
+                           const QSize &sourceSize) const;
     void paintStroke(QPainter &painter, ImageItem *item,
                      const Annotation::Object &obj, const QRectF &pageBounds,
                      bool pageYUp, const QSize &sourceSize) const;

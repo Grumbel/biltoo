@@ -17,6 +17,21 @@
 #include <QUndoStack>
 #include <QtMath>
 
+/**
+ * Coordinate contract (docs/OCR_COORDINATES.md, docs/CONTENT_COORDINATES.md):
+ *
+ *   page ──pageRectToImageRect(pageYUp)──► source (unoriented full raster)
+ *   source ──ContentXform──► display (crop-local)
+ *   display + item->offset() ──mapToScene──► scene  (paint path)
+ *
+ * Stored annotation geometry is always page space. Live crop/orient/grade are
+ * applied only when mapping for input or paint — never baked into points/quads.
+ *
+ * Paint runs in scene space (same as TextLayerController::paintSceneOverlays),
+ * while the QPainter still has the view transform. Do not mix mapFromScene
+ * view-pixel results into that painter without resetTransform.
+ */
+
 AnnotationController::AnnotationController(ImageView *view)
     : m_view(view)
 {
@@ -75,19 +90,28 @@ bool AnnotationController::pageSpaceForItem(ImageItem *item, QRectF *boundsOut,
         return false;
     }
     const QString path = item->path();
+    SessionImageId sid = targetSid(item);
+    const WorkspaceItemState want =
+        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
+    const ContentXform::Value x = ContentXform::Value::fromState(want);
+
+    // Unoriented full raster size (CONTENT_COORDINATES.md § recovering source size).
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         sourceSize = m_view->hostSizeBook().known(path);
     }
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         sourceSize = item->imageSize();
+        if (ContentXform::swapsAspect(x) && !x.hasCrop) {
+            sourceSize.transpose();
+        }
     }
     if (sourceSize.width() < 1 || sourceSize.height() < 1) {
         return false;
     }
     *sourceSizeOut = sourceSize;
 
-    // Prefer live text-layer page box when the controller has one for this path.
+    // Prefer live text layer (authoritative pageYUp), then cache, then pixel box.
     if (m_view->hostText().session().hasLayerRegions()
         && m_view->hostText().session().pageBoundsValid()) {
         *boundsOut = m_view->hostText().session().pageBounds();
@@ -107,6 +131,42 @@ bool AnnotationController::pageSpaceForItem(ImageItem *item, QRectF *boundsOut,
     return true;
 }
 
+/** Page → display (crop-local, no item offset). Same pipeline as regionImageRect. */
+QRectF AnnotationController::pageRectToDisplay(ImageItem *item, const QRectF &pageRect,
+                                               const QRectF &pageBounds, bool pageYUp,
+                                               const QSize &sourceSize) const
+{
+    if (!item || !m_view || pageRect.isEmpty()) {
+        return {};
+    }
+    SessionImageId sid = targetSid(item);
+    const WorkspaceItemState st =
+        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
+    const ContentXform::Value x = ContentXform::Value::fromState(st);
+
+    const QRectF inSource =
+        ThumtooCache::pageRectToImageRect(pageRect, pageBounds, sourceSize, pageYUp);
+    if (inSource.isEmpty()) {
+        return {};
+    }
+    QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
+    if (disp.isEmpty()) {
+        return {};
+    }
+    const QSize logical = ContentXform::layoutSize(sourceSize, x);
+    const QSize itemSz = item->imageSize();
+    if (logical.width() > 0 && logical.height() > 0 && itemSz.width() > 0
+        && itemSz.height() > 0
+        && (logical.width() != itemSz.width() || logical.height() != itemSz.height())) {
+        disp = QRectF(
+            disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
+            disp.y() * qreal(itemSz.height()) / qreal(logical.height()),
+            disp.width() * qreal(itemSz.width()) / qreal(logical.width()),
+            disp.height() * qreal(itemSz.height()) / qreal(logical.height()));
+    }
+    return disp;
+}
+
 QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
                                          const QRectF &pageBounds, bool pageYUp,
                                          const QSize &sourceSize) const
@@ -114,6 +174,7 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
     if (!item || !m_view) {
         return {};
     }
+    // View → scene → item local → display (subtract offset) — inverse of paint.
     const QPointF local =
         item->mapFromScene(m_view->mapToScene(viewPos)) - item->offset();
     SessionImageId sid = targetSid(item);
@@ -131,80 +192,38 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
                        local.y() * qreal(logical.height()) / qreal(itemSz.height()));
     }
     const QRectF srcRect = ContentXform::mapDisplayRectToSource(
-        QRectF(disp, QSizeF(1, 1)), sourceSize, x);
+        QRectF(disp.x(), disp.y(), 1.0, 1.0), sourceSize, x);
     if (srcRect.isEmpty()) {
         return {};
     }
-    const QRectF pageRect = ThumtooCache::imageRectToPageRect(
-        srcRect, pageBounds, sourceSize, pageYUp);
+    const QRectF pageRect =
+        ThumtooCache::imageRectToPageRect(srcRect, pageBounds, sourceSize, pageYUp);
     return pageRect.center();
 }
 
-QPointF AnnotationController::pageToItemLocal(ImageItem *item, const QPointF &pagePt,
-                                              const QRectF &pageBounds, bool pageYUp,
-                                              const QSize &sourceSize) const
+QPointF AnnotationController::pageToScene(ImageItem *item, const QPointF &pagePt,
+                                          const QRectF &pageBounds, bool pageYUp,
+                                          const QSize &sourceSize) const
 {
-    if (!item || !m_view) {
+    const QRectF disp = pageRectToDisplay(
+        item, QRectF(pagePt.x(), pagePt.y(), 0.01, 0.01), pageBounds, pageYUp, sourceSize);
+    if (disp.isEmpty()) {
         return {};
     }
-    SessionImageId sid = targetSid(item);
-    const WorkspaceItemState st =
-        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
-    const ContentXform::Value x = ContentXform::Value::fromState(st);
-
-    const QRectF pageRect(pagePt, QSizeF(0.01, 0.01));
-    const QRectF inSource = ThumtooCache::pageRectToImageRect(
-        pageRect, pageBounds, sourceSize, pageYUp);
-    if (inSource.isEmpty()) {
-        return {};
-    }
-    QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
-    const QSize logical = ContentXform::layoutSize(sourceSize, x);
-    const QSize itemSz = item->imageSize();
-    if (logical.width() > 0 && logical.height() > 0 && itemSz.width() > 0
-        && itemSz.height() > 0
-        && (logical.width() != itemSz.width() || logical.height() != itemSz.height())) {
-        disp = QRectF(
-            disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.y() * qreal(itemSz.height()) / qreal(logical.height()),
-            disp.width() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.height() * qreal(itemSz.height()) / qreal(logical.height()));
-    }
-    return disp.center() + item->offset();
+    const QPointF local = disp.center() + item->offset();
+    return item->mapToScene(local);
 }
 
-QRectF AnnotationController::pageRectToView(ImageItem *item, const QRectF &pageRect,
-                                            const QRectF &pageBounds, bool pageYUp,
-                                            const QSize &sourceSize) const
+QRectF AnnotationController::pageRectToScene(ImageItem *item, const QRectF &pageRect,
+                                             const QRectF &pageBounds, bool pageYUp,
+                                             const QSize &sourceSize) const
 {
-    if (!item || !m_view || pageRect.isEmpty()) {
+    const QRectF disp = pageRectToDisplay(item, pageRect, pageBounds, pageYUp, sourceSize);
+    if (disp.isEmpty()) {
         return {};
     }
-    SessionImageId sid = targetSid(item);
-    const WorkspaceItemState st =
-        m_view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
-    const ContentXform::Value x = ContentXform::Value::fromState(st);
-
-    const QRectF inSource =
-        ThumtooCache::pageRectToImageRect(pageRect, pageBounds, sourceSize, pageYUp);
-    if (inSource.isEmpty()) {
-        return {};
-    }
-    QRectF disp = ContentXform::mapSourceRectToDisplay(inSource, sourceSize, x);
-    const QSize logical = ContentXform::layoutSize(sourceSize, x);
-    const QSize itemSz = item->imageSize();
-    if (logical.width() > 0 && logical.height() > 0 && itemSz.width() > 0
-        && itemSz.height() > 0
-        && (logical.width() != itemSz.width() || logical.height() != itemSz.height())) {
-        disp = QRectF(
-            disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.y() * qreal(itemSz.height()) / qreal(logical.height()),
-            disp.width() * qreal(itemSz.width()) / qreal(logical.width()),
-            disp.height() * qreal(itemSz.height()) / qreal(logical.height()));
-    }
-    disp.translate(item->offset());
-    const QRectF scene = item->mapToScene(disp).boundingRect();
-    return m_view->mapFromScene(scene).boundingRect();
+    const QRectF local = disp.translated(item->offset());
+    return item->mapToScene(local).boundingRect();
 }
 
 void AnnotationController::paintStroke(QPainter &painter, ImageItem *item,
@@ -218,33 +237,36 @@ void AnnotationController::paintStroke(QPainter &painter, ImageItem *item,
     QPainterPath path;
     bool first = true;
     for (const QPointF &pp : obj.points) {
-        const QPointF local = pageToItemLocal(item, pp, pageBounds, pageYUp, sourceSize);
-        const QPointF view = m_view->mapFromScene(item->mapToScene(local));
+        const QPointF scene = pageToScene(item, pp, pageBounds, pageYUp, sourceSize);
         if (first) {
-            path.moveTo(view);
+            path.moveTo(scene);
             first = false;
         } else {
-            path.lineTo(view);
+            path.lineTo(scene);
         }
     }
     if (obj.points.size() == 1) {
-        const QPointF local =
-            pageToItemLocal(item, obj.points.first(), pageBounds, pageYUp, sourceSize);
-        const QPointF view = m_view->mapFromScene(item->mapToScene(local));
-        const qreal r = qMax(1.0, obj.width * 0.5 * m_view->transform().m11());
+        const QPointF scene =
+            pageToScene(item, obj.points.first(), pageBounds, pageYUp, sourceSize);
+        // Width in page units → scene via source scale and view transform.
+        qreal pageUnit = 1.0;
+        if (pageBounds.width() > 1 && sourceSize.width() > 0) {
+            pageUnit = qreal(sourceSize.width()) / pageBounds.width();
+        }
+        const qreal r = qMax(0.5, obj.width * 0.5 * pageUnit);
         painter.setPen(Qt::NoPen);
         painter.setBrush(obj.color);
-        painter.drawEllipse(view, r, r);
+        painter.drawEllipse(scene, r, r);
         return;
     }
 
     QPen pen(obj.color);
-    const qreal scale = m_view->transform().m11();
     qreal pageUnit = 1.0;
     if (pageBounds.width() > 1 && sourceSize.width() > 0) {
         pageUnit = qreal(sourceSize.width()) / pageBounds.width();
     }
-    pen.setWidthF(qMax(1.0, obj.width * pageUnit * scale));
+    // Stroke width in scene (source) units; view transform scales it on screen.
+    pen.setWidthF(qMax(0.5, obj.width * pageUnit));
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     painter.setPen(pen);
@@ -263,9 +285,9 @@ void AnnotationController::paintQuads(QPainter &painter, ImageItem *item,
     painter.setPen(Qt::NoPen);
     painter.setBrush(obj.color);
     for (const QRectF &q : obj.quads) {
-        const QRectF view = pageRectToView(item, q, pageBounds, pageYUp, sourceSize);
-        if (!view.isEmpty()) {
-            painter.drawRect(view);
+        const QRectF scene = pageRectToScene(item, q, pageBounds, pageYUp, sourceSize);
+        if (!scene.isEmpty()) {
+            painter.drawRect(scene);
         }
     }
 }
@@ -306,8 +328,7 @@ void AnnotationController::paintOverlay(QPainter &painter)
         return;
     }
 
-    painter.save();
-
+    // Scene-space paint (painter still has view transform) — match text overlays.
     if (const Annotation::Page *pg = m_session.page(sid)) {
         const QRectF pb = pg->pageBounds.isValid() ? pg->pageBounds : bounds;
         const bool py = pg->pageBounds.isValid() ? pg->pageYUp : yUp;
@@ -328,18 +349,20 @@ void AnnotationController::paintOverlay(QPainter &painter)
                         m_draftBounds.isValid() ? m_draftBounds : bounds, m_draftYUp,
                         m_draftSourceSize.isValid() ? m_draftSourceSize : sourceSize);
         } else if (m_tool == Annotation::Tool::TextHighlighter && !m_rubberView.isEmpty()) {
+            // Rubber is view-space; map to scene for the scene-space painter.
+            const QRectF sceneRubber =
+                m_view->mapToScene(m_rubberView).boundingRect();
             painter.save();
             painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
             QColor c = m_color;
             c.setAlpha(80);
-            painter.fillRect(m_rubberView, c);
-            painter.setPen(QPen(m_color, 1, Qt::DashLine));
+            painter.fillRect(sceneRubber, c);
+            painter.setPen(QPen(m_color, 0 /* cosmetic */, Qt::DashLine));
             painter.setBrush(Qt::NoBrush);
-            painter.drawRect(m_rubberView);
+            painter.drawRect(sceneRubber);
             painter.restore();
         }
     }
-    painter.restore();
 }
 
 void AnnotationController::commitObject(SessionImageId sid, const Annotation::Object &obj,
@@ -351,7 +374,7 @@ void AnnotationController::commitObject(SessionImageId sid, const Annotation::Ob
     }
     if (QUndoStack *stack = m_view->hostUndoStack()) {
         auto *cmd = new AnnotationAddCommand(m_view, sid, obj, pageBounds, pageYUp, undoText);
-        stack->push(cmd); // push calls redo()
+        stack->push(cmd);
     } else {
         m_session.addObject(sid, obj, pageBounds, pageYUp);
         if (m_view->viewport()) {
@@ -371,7 +394,6 @@ void AnnotationController::finishFreehand()
     obj.blend = Annotation::Blend::Multiply;
     obj.color = m_color;
     obj.width = m_width;
-    // ~0.5 page unit epsilon; for pixel pages that is half a pixel at 1:1
     const qreal eps = qMax(0.4, m_width * 0.04);
     obj.points = Annotation::simplifyPolyline(m_draftPoints, eps);
     if (obj.points.isEmpty()) {
@@ -390,7 +412,6 @@ void AnnotationController::finishTextHighlight()
     if (!item) {
         return;
     }
-    // Ensure text layer is loaded for hit-test.
     if (!m_view->hostText().session().hasRegions()) {
         m_view->hostText().refresh();
     }
@@ -399,13 +420,11 @@ void AnnotationController::finishTextHighlight()
         return;
     }
 
-    // Build region rects in *image/display* space (same as rubber from text controller).
     QVector<QRectF> regionRects;
     regionRects.reserve(layer.regions.size());
     for (const auto &r : layer.regions) {
         regionRects.append(m_view->hostText().regionImageRect(r));
     }
-    // Rubber in item image coords
     const QRectF sceneRect = m_view->mapToScene(m_rubberView).boundingRect();
     const QRectF local = item->mapFromScene(sceneRect).boundingRect();
     const QRectF imageRubber = local.translated(-item->offset());

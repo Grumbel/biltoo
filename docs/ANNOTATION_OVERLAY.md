@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Annotation overlay — research and design
 
-Status: **Phase A in progress** — freehand Multiply highlighter + project embed. Research for a graphics overlay with
+Status: **Phase A/B** — freehand + text highlight; page-space coords aligned with text overlays. Research for a graphics overlay with
 paint tools, blend modes that keep dark text readable, and text-section
 highlighting. Implements nothing yet.
 
@@ -142,13 +142,32 @@ store as RGBA + blend enum, not only alpha.
 ### Coordinate space
 
 Store annotation geometry in **document page space** (same contract as
-`TextRegion::bbox` / [OCR_COORDINATES.md](OCR_COORDINATES.md)):
+`TextRegion::bbox` / [OCR_COORDINATES.md](OCR_COORDINATES.md) and
+[CONTENT_COORDINATES.md](CONTENT_COORDINATES.md)):
 
-- Independent of live crop, orient, grade
-- Map page → source → display every paint via existing `ContentXform` +
-  `pageRectToImageRect(pageYUp)`
-- Key by **`SessionImageId`** (+ page for multipage), never path alone
-  ([IDENTITY.md](../IDENTITY.md))
+```
+page  ──pageRectToImageRect(pageYUp)──►  source (unoriented full raster)
+source ──ContentXform / SessionAppearance──►  display (crop-local)
+display + item->offset() ──mapToScene──►  scene   (paint with view transform)
+view  ──mapToScene → item local − offset──►  display ──mapDisplayRectToSource──► source
+      ──imageRectToPageRect──► page   (input)
+```
+
+Rules:
+
+- **Storage:** page space only; never bake crop/orient into points or quads.
+- **`pageYUp` / `pageBounds`:** prefer live `PageTextLayer` on the controller;
+  else `ThumtooCache::cachedPageTextLayer`; else pixel box of source size with
+  `pageYUp = false` (plain images).
+- **Source size:** unoriented full raster (`ThumtooCache::cachedSize` first) —
+  never oriented `item->imageSize()` without undoing aspect swap
+  (CONTENT_COORDINATES.md).
+- **Paint:** scene space while `paintForeground` still has the view transform
+  (same as `TextLayerController::paintSceneOverlays`). Do **not** draw
+  `mapFromScene` view-pixel coordinates into that painter.
+- **Input rubber (text tool):** view-space rect for hit-test only; committed
+  geometry is still page-space quads from region bboxes.
+- Key by **`SessionImageId`**, never path alone ([IDENTITY.md](../IDENTITY.md)).
 
 ### Text-snapped highlights
 

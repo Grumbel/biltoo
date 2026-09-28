@@ -19,6 +19,9 @@ Paint maps page → display every frame via `TextLayerController::regionImageRec
 (page → source → orient → crop-local). Changing or resetting the crop does **not**
 require rewriting OCR boxes.
 
+User **annotation** geometry follows the same storage rule — see
+[ANNOTATION_OVERLAY.md](ANNOTATION_OVERLAY.md) §5.
+
 ## Page Y axis (`pageYUp`)
 
 Every `PageTextLayer` carries:

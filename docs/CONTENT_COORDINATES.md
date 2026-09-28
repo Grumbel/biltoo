@@ -68,8 +68,8 @@ Then map, then **scale** the result into the actual `sourceImage()` /
 3. Is `cropRect` post-bake (after `mapCropThrough*`) or raw?  
 4. Does the live item show full or soft pixels (scale magnitude)?
 
-## OCR / text layers
+## OCR / text layers / annotations
 
-Region bboxes and OCR use the **page** space above. See
-[OCR_COORDINATES.md](OCR_COORDINATES.md) for `pageYUp`, engine OCR vs appearance
-OCR, and host↔thumtoo mapping rules.
+Region bboxes, OCR, and **user annotation** strokes/quads use the **page**
+space above. See [OCR_COORDINATES.md](OCR_COORDINATES.md) and
+[ANNOTATION_OVERLAY.md](ANNOTATION_OVERLAY.md) §5.
