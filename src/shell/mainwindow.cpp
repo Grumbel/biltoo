@@ -1390,7 +1390,8 @@ void MainWindow::openSearchBar()
             static_cast<TextLayerResolve::Prefer>(m_searchSourceCombo->currentData().toInt()));
     }
     updateSearchMatchLabel();
-    m_searchBar->setVisible(true);
+    m_searchBarTransient = true;
+    rebuildAuxiliaryTopToolBars();
     m_searchEdit->setFocus(Qt::ShortcutFocusReason);
     m_searchEdit->selectAll();
 }
@@ -1402,7 +1403,8 @@ void MainWindow::cancelSearchBar()
     }
     m_searchEdit->clearFocus();
     if (!m_searchBarPinned) {
-        m_searchBar->setVisible(false);
+        m_searchBarTransient = false;
+        rebuildAuxiliaryTopToolBars();
     }
 }
 
@@ -1418,15 +1420,19 @@ void MainWindow::setSearchBarPinned(bool pinned)
         return;
     }
     if (pinned) {
-        m_searchBar->setVisible(true);
+        m_searchBarTransient = false;
         if (m_searchEdit && m_imageView) {
             QSignalBlocker block(m_searchEdit);
             m_searchEdit->setText(m_imageView->hostTextLayer().searchQueryRef());
             updateSearchMatchLabel();
         }
-    } else if (m_searchEdit && !m_searchEdit->hasFocus()) {
-        m_searchBar->setVisible(false);
+    } else {
+        m_searchBarTransient = false;
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            m_searchEdit->clearFocus();
+        }
     }
+    rebuildAuxiliaryTopToolBars();
 }
 
 void MainWindow::onSearchTextChanged(const QString &text)
@@ -3935,11 +3941,17 @@ void MainWindow::updateFullscreenUi()
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(false);
         }
-        if (m_locationBar) {
-            m_locationBar->setVisible(false);
-        }
-        if (m_searchBar) {
-            m_searchBar->setVisible(false);
+        m_locationBarTransient = false;
+        m_searchBarTransient = false;
+        // Force-hide regardless of pin for fullscreen chrome.
+        {
+            const bool locPin = m_locationBarPinned;
+            const bool searchPin = m_searchBarPinned;
+            m_locationBarPinned = false;
+            m_searchBarPinned = false;
+            rebuildAuxiliaryTopToolBars();
+            m_locationBarPinned = locPin;
+            m_searchBarPinned = searchPin;
         }
         if (m_thumbnailDock) {
             setDockOpen(m_thumbnailDock, false);
@@ -4059,15 +4071,11 @@ void MainWindow::updateFullscreenUi()
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(m_imageView != nullptr);
         }
-        if (m_locationBar) {
-            // Pinned or was open before fullscreen (e.g. Ctrl+L).
-            m_locationBar->setVisible(m_locationBarVisibleBeforeFullscreen
-                                      || m_locationBarPinned);
-        }
-        if (m_searchBar) {
-            m_searchBar->setVisible(m_searchBarVisibleBeforeFullscreen
-                                    || m_searchBarPinned);
-        }
+        m_locationBarTransient = m_locationBarVisibleBeforeFullscreen
+            && !m_locationBarPinned;
+        m_searchBarTransient = m_searchBarVisibleBeforeFullscreen
+            && !m_searchBarPinned;
+        rebuildAuxiliaryTopToolBars();
         menuBar()->setVisible(true);
         statusBar()->setVisible(true);
     }
@@ -4191,19 +4199,10 @@ void MainWindow::readSettings()
         setSearchBarPinned(searchPinned);
     }
 
-    // restoreState can put the location bar back on the same row as the main
-    // toolbar (from sessions saved before the dedicated-row layout). Force a
-    // break so it always sits on its own row under the main toolbar.
-    // Re-apply visibility afterwards — insertToolBarBreak / restoreState can
-    // leave the bar shown even when it is not pinned.
-    if (m_locationBar) {
-        insertToolBarBreak(m_locationBar);
-        m_locationBar->setVisible(m_locationBarPinned);
-    }
-    if (m_searchBar) {
-        insertToolBarBreak(m_searchBar);
-        m_searchBar->setVisible(m_searchBarPinned);
-    }
+    // Location/Search: only attach with toolbar breaks while shown (no empty row).
+    m_locationBarTransient = false;
+    m_searchBarTransient = false;
+    rebuildAuxiliaryTopToolBars();
 
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
     m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);

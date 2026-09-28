@@ -1969,8 +1969,7 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     m_workspaceToolBar->hide();
 
-    // Browser-style location bar on its own row under the main toolbar.
-    addToolBarBreak(Qt::TopToolBarArea);
+    // Browser-style location bar: own row only while visible (see rebuildAuxiliaryTopToolBars).
     m_locationBar = addToolBar(tr("Location"));
     m_locationBar->setObjectName(QStringLiteral("LocationBar"));
     m_locationBar->setMovable(false);
@@ -2000,10 +1999,9 @@ void MainWindow::createToolBar()
     m_locationBar->addWidget(locHost);
     // Transient by default (Ctrl+L shows it); pin via View menu.
     m_locationBar->installEventFilter(this);
-    m_locationBar->setVisible(false);
+    removeToolBar(m_locationBar); // detach until pinned/Ctrl+L
 
     // Search bar (same pattern as Location): Ctrl+F shows; pin via View menu.
-    addToolBarBreak(Qt::TopToolBarArea);
     m_searchBar = addToolBar(tr("Search"));
     m_searchBar->setObjectName(QStringLiteral("SearchBar"));
     m_searchBar->setMovable(false);
@@ -2107,7 +2105,7 @@ void MainWindow::createToolBar()
     searchLay->addWidget(m_searchFuzzyCheck);
     m_searchBar->addWidget(searchHost);
     m_searchBar->installEventFilter(this);
-    m_searchBar->setVisible(false);
+    removeToolBar(m_searchBar); // detach until pinned/Ctrl+F
 
     auto *findNextAct = new QAction(tr("Find &Next"), this);
     findNextAct->setShortcut(Qt::Key_F3);

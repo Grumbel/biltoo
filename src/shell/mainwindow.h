@@ -176,6 +176,8 @@ private slots:
     void cancelOcrBatch();
     void openFiles();
     void openLocation();
+    /** Attach/detach Location+Search toolbars so hidden rows leave no residual strip. */
+    void rebuildAuxiliaryTopToolBars();
     void commitLocationBar();
     void cancelLocationBar();
     void setLocationBarPinned(bool pinned);
@@ -682,6 +684,7 @@ private:
     QToolBar *m_locationBar = nullptr;
     QLineEdit *m_locationEdit = nullptr;
     bool m_locationBarPinned = false;
+    bool m_locationBarTransient = false; // Ctrl+L until cancel/commit
     QToolBar *m_searchBar = nullptr;
     QLineEdit *m_searchEdit = nullptr;
     QLabel *m_searchMatchLabel = nullptr;
@@ -690,6 +693,7 @@ private:
     QToolButton *m_searchPrevBtn = nullptr;
     QToolButton *m_searchNextBtn = nullptr;
     bool m_searchBarPinned = false;
+    bool m_searchBarTransient = false;
     QTimer *m_docSearchDebounce = nullptr;
     std::atomic<quint64> m_docSearchGeneration{0};
     QString m_docSearchQuery;

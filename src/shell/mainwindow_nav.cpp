@@ -309,6 +309,33 @@ void MainWindow::syncLocationBarText()
     m_locationEdit->setText(text);
 }
 
+
+void MainWindow::rebuildAuxiliaryTopToolBars()
+{
+    // Hidden QToolBar rows created with addToolBarBreak still leave a thin strip
+    // under the main toolbar. Detach bars when not needed so no empty row remains.
+    if (m_locationBar) {
+        removeToolBar(m_locationBar);
+    }
+    if (m_searchBar) {
+        removeToolBar(m_searchBar);
+    }
+    const bool showLoc = m_locationBar
+        && (m_locationBarPinned || m_locationBarTransient);
+    const bool showSearch = m_searchBar
+        && (m_searchBarPinned || m_searchBarTransient);
+    if (showLoc) {
+        addToolBarBreak(Qt::TopToolBarArea);
+        addToolBar(m_locationBar);
+        m_locationBar->show();
+    }
+    if (showSearch) {
+        addToolBarBreak(Qt::TopToolBarArea);
+        addToolBar(m_searchBar);
+        m_searchBar->show();
+    }
+}
+
 void MainWindow::setLocationBarPinned(bool pinned)
 {
     m_locationBarPinned = pinned;
@@ -321,19 +348,18 @@ void MainWindow::setLocationBarPinned(bool pinned)
     }
     if (pinned) {
         syncLocationBarText();
-        m_locationBar->setVisible(true);
+        m_locationBarTransient = false;
     } else {
         // Explicit unpin via the menu: always hide and release focus.
-        // (Previously we kept the bar if the line edit had focus, which made
-        // the toggle appear broken and left Escape with nothing to cancel.)
         if (m_locationEdit) {
             m_locationEdit->clearFocus();
         }
-        m_locationBar->setVisible(false);
+        m_locationBarTransient = false;
         if (m_imageView) {
             m_imageView->setFocus(Qt::OtherFocusReason);
         }
     }
+    rebuildAuxiliaryTopToolBars();
 }
 
 void MainWindow::openLocation()
@@ -349,7 +375,8 @@ void MainWindow::openLocation()
     } else if (m_locationEdit->text().isEmpty() && !m_session.paths().isEmpty()) {
         m_locationEdit->setText(m_session.paths().first());
     }
-    m_locationBar->setVisible(true);
+    m_locationBarTransient = true;
+    rebuildAuxiliaryTopToolBars();
     m_locationEdit->setFocus(Qt::ShortcutFocusReason);
     m_locationEdit->selectAll();
 }
@@ -361,7 +388,8 @@ void MainWindow::cancelLocationBar()
     }
     m_locationEdit->clearFocus();
     if (!m_locationBarPinned) {
-        m_locationBar->setVisible(false);
+        m_locationBarTransient = false;
+        rebuildAuxiliaryTopToolBars();
     } else {
         syncLocationBarText();
     }
@@ -417,8 +445,11 @@ void MainWindow::commitLocationBar()
 
     loadFiles(QStringList{path}, startAt);
     if (!m_locationBarPinned && m_locationBar) {
-        m_locationEdit->clearFocus();
-        m_locationBar->setVisible(false);
+        if (m_locationEdit) {
+            m_locationEdit->clearFocus();
+        }
+        m_locationBarTransient = false;
+        rebuildAuxiliaryTopToolBars();
     }
     if (m_imageView) {
         m_imageView->setFocus(Qt::OtherFocusReason);
