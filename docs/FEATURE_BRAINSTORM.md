@@ -3,6 +3,8 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+
+**Annotation overlay (design):** [ANNOTATION_OVERLAY.md](ANNOTATION_OVERLAY.md)
 # Feature brainstorm (containers, codecs, alpha, faces, annotations)
 
 Status: **ideas only** — not a commitment or implementation plan. Capture

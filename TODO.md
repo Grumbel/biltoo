@@ -2,16 +2,22 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2770.1-toolbar-text-panel` (base `b8a0cf3`).
+**Tip:** `biltoo-2771.1-annotation-overlay-design` (base `b8a0cf3`).
 
 ### Stack
-… 2769.1 OCR pageYUp → **2770.1** toolbar text panel + panels spacing
+… 2770.1 toolbar text panel → **2771.1** annotation overlay design doc
 
-### 2770.1
-- Toolbar speaker button toggles Text panel (not Speak); Speak remains Edit menu
-- Extra separators around Panels toolbar button
+### 2771.1
+- Research write-up: `docs/ANNOTATION_OVERLAY.md`
+- Tools, blend modes (Multiply for highlighter), text-snapped vs freehand,
+  page-space model, phased implementation plan
+- **Not implemented yet** — next work is Phase A foundation
+
+### Next (implementation kickoff)
+1. Confirm open questions in §12 of ANNOTATION_OVERLAY.md
+2. Phase A: types + Multiply painter + text-region highlight + freehand highlighter
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2770.1-toolbar-text-panel-b8a0cf3.bundle HEAD
+git pull --ff-only …/biltoo-2771.1-annotation-overlay-design-b8a0cf3.bundle HEAD
 ```
