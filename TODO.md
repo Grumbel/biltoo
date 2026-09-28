@@ -2,18 +2,19 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2756.1-slideshow-tile-wake` (base `9395b3e`).
+**Tip:** `biltoo-2757.1-doubleview-menu-messages-pref` (base `9395b3e`).
 
 ### Done this tip
-- Slideshow stuck on coarse tiles: pure-phase paint preferred hidden
-  ImageItem LOD (no plan / no session wake). Prefer phase-owned tile
-  sessions; always `set_wake` → viewport update when tiles complete.
+- View → **Double view** submenu: toggle, binding, direction, N, dual compare
+- Messages panel: `messageLogVisible` (default false); applied after
+  `restoreState`; persisted on visibility change / writeSettings; no auto-show
+  on TTS errors
 
 ### Prior
-- 2755.1 / 2754.1: pkg-config systemd + leptonica
-- 2753.1: filmstrip chrome dtor disconnect
+- 2756.1: slideshow tile wake
+- 2755.1 / 2754.1: pkg-config noise
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2756.1-slideshow-tile-wake-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2757.1-doubleview-menu-messages-pref-9395b3e.bundle HEAD
 ```

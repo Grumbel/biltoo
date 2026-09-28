@@ -479,7 +479,13 @@ MainWindow::MainWindow(QWidget *parent)
                                   | QDockWidget::DockWidgetMovable
                                   | QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::BottomDockWidgetArea, m_messageLogDock);
+    // Default off. dockLayoutState must not re-open it; preference key
+    // messageLogVisible is applied in readSettings after restoreState.
     m_messageLogDock->hide();
+    connect(m_messageLogDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        QSettings settings;
+        settings.setValue(QStringLiteral("messageLogVisible"), visible);
+    });
     if (m_ocrPanel) {
         // UniqueConnection is not valid with functors/lambdas (Qt asserts).
         connect(m_ocrPanel, &OcrPanel::logLineAppended, this, [this](const QString &line) {
@@ -3927,6 +3933,16 @@ void MainWindow::readSettings()
     m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
     m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
 
+    // Messages: explicit preference wins over dockLayoutState (default hidden).
+    if (m_messageLogDock) {
+        const bool showLog =
+            settings.value(QStringLiteral("messageLogVisible"), false).toBool();
+        m_messageLogDock->setVisible(showLog);
+        if (m_toggleMessageLogAct) {
+            m_toggleMessageLogAct->setChecked(showLog);
+        }
+    }
+
     const QString sort = settings.value(QStringLiteral("sortMode"), QStringLiteral("name")).toString();
     if (sort == QLatin1String("mtime")) {
         m_sortMode = SortMode::MTime;
@@ -4292,6 +4308,9 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("dockLayoutVersion"), kDockLayoutStateVersion);
     settings.setValue(QStringLiteral("dockLayoutState"), saveState());
+    if (m_messageLogDock) {
+        settings.setValue(QStringLiteral("messageLogVisible"), m_messageLogDock->isVisible());
+    }
     settings.remove(QStringLiteral("windowState"));
     settings.remove(QStringLiteral("windowStateVersion"));
     settings.remove(QStringLiteral("windowStateQt"));
@@ -5295,11 +5314,8 @@ void MainWindow::connectTextToSpeech()
         if (m_messageLogPanel) {
             m_messageLogPanel->appendError(tr("TTS"), msg);
         }
-        // Surface the Messages dock on hard TTS failures so the user notices.
-        if (m_messageLogDock && !m_messageLogDock->isVisible()) {
-            m_messageLogDock->show();
-            m_messageLogDock->raise();
-        }
+        // Do not auto-show Messages — visibility is user preference only
+        // (messageLogVisible). Status bar already surfaces the error.
     });
     connect(m_tts, &TextToSpeechController::voicesChanged, this, [this](const QStringList &voices) {
         if (m_textPanel) {

@@ -1176,16 +1176,26 @@ void MainWindow::createMenus()
     m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addAction(m_viewSelectionSpreadAct);
-    m_viewMenu->addAction(m_doubleViewAct);
-    m_viewMenu->addAction(m_spreadBindingStrictAct);
-    m_viewMenu->addAction(m_spreadBindingCoverAct);
-    m_viewMenu->addAction(m_spreadDirLtrAct);
-    m_viewMenu->addAction(m_spreadDirRtlAct);
-    m_viewMenu->addAction(m_spreadDirVertAct);
-    m_viewMenu->addAction(m_spreadN2Act);
-    m_viewMenu->addAction(m_spreadN3Act);
-    m_viewMenu->addAction(m_spreadN4Act);
-    m_viewMenu->addAction(m_dualCompareAct);
+    {
+        // Double / spread options grouped under one submenu (View was too long).
+        auto *doubleViewMenu = m_viewMenu->addMenu(tr("&Double view"));
+        doubleViewMenu->setStatusTip(
+            tr("Fixed-N reading surface: binding, direction, and page count"));
+        doubleViewMenu->addAction(m_doubleViewAct);
+        doubleViewMenu->addSeparator();
+        doubleViewMenu->addAction(m_spreadBindingStrictAct);
+        doubleViewMenu->addAction(m_spreadBindingCoverAct);
+        doubleViewMenu->addSeparator();
+        doubleViewMenu->addAction(m_spreadDirLtrAct);
+        doubleViewMenu->addAction(m_spreadDirRtlAct);
+        doubleViewMenu->addAction(m_spreadDirVertAct);
+        doubleViewMenu->addSeparator();
+        doubleViewMenu->addAction(m_spreadN2Act);
+        doubleViewMenu->addAction(m_spreadN3Act);
+        doubleViewMenu->addAction(m_spreadN4Act);
+        doubleViewMenu->addSeparator();
+        doubleViewMenu->addAction(m_dualCompareAct);
+    }
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
     m_viewMenu->addAction(m_showLocationBarAct);
