@@ -1353,8 +1353,8 @@ void GalleryController::paintSearchHitFrames(QPainter *painter, const QRectF &ex
     }
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    const QColor wash = ChromeColors::viewFill(40);
-    QPen ring(ChromeColors::viewStroke(220));
+    const QColor wash = ChromeColors::searchFill(40);
+    QPen ring(ChromeColors::searchStroke(220));
     ring.setCosmetic(true);
     ring.setWidthF(2.5);
     for (QGraphicsItem *gi : scene->items()) {

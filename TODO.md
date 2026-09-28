@@ -2,15 +2,12 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2764.1-filmstrip-size-orient` (base `7a2bd7b`).
+**Tip:** `biltoo-2765.1-gallery-search-chrome` (base `7a2bd7b`).
 
-### 2764.1
-- Place filmstrip after other docks exist so `InitialOption` preferred extent is honoured (not 50% height)
-- `placeFilmstripDock` + `applyFilmstripExtentConstraints` (min/max/sizeHint)
-- Edge detect vs central widget in global coords; apply orientation + constraints together
-- `showEvent` + longer orientation sync (0/50/200 ms)
+### 2765.1
+- Gallery search hit frames use ChromeColors::search* (was view/amber)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2764.1-filmstrip-size-orient-7a2bd7b.bundle HEAD
+git pull --ff-only …/biltoo-2765.1-gallery-search-chrome-7a2bd7b.bundle HEAD
 ```

@@ -155,7 +155,7 @@ public:
      */
     void paintSelectionFrames(QPainter *painter, const QRectF &exposed) const;
     /**
-     * Yellow wash on tiles tagged by SessionSearchIndex (Find).
+     * Search-role wash on tiles tagged by SessionSearchIndex (Find).
      * Provider: optional; null skips. Called from drawForeground.
      */
     void paintSearchHitFrames(QPainter *painter, const QRectF &exposed) const;
