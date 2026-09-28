@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "annotation/annotationtypes.h"
 #include "imageitem.h"
 #include <memory>
 
@@ -379,10 +380,42 @@ void MainWindow::createActions()
         if (!m_imageView) {
             return;
         }
-        if (on && m_cropAct && m_cropAct->isChecked()) {
-            m_cropAct->setChecked(false);
+        if (on) {
+            if (m_cropAct && m_cropAct->isChecked()) {
+                m_cropAct->setChecked(false);
+            }
+            if (m_annotTextHighlightAct && m_annotTextHighlightAct->isChecked()) {
+                m_annotTextHighlightAct->blockSignals(true);
+                m_annotTextHighlightAct->setChecked(false);
+                m_annotTextHighlightAct->blockSignals(false);
+            }
+            m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
+        } else if (!m_annotTextHighlightAct || !m_annotTextHighlightAct->isChecked()) {
+            m_imageView->hostAnnot().setTool(Annotation::Tool::None);
         }
-        m_imageView->hostAnnot().setToolActive(on);
+    });
+    m_annotTextHighlightAct = new QAction(tr("&Text Highlighter"), this);
+    m_annotTextHighlightAct->setCheckable(true);
+    m_annotTextHighlightAct->setStatusTip(
+        tr("Drag over text regions to highlight (Multiply; needs text/OCR layer)"));
+    m_annotTextHighlightAct->setToolTip(tr("Text highlighter"));
+    connect(m_annotTextHighlightAct, &QAction::toggled, this, [this](bool on) {
+        if (!m_imageView) {
+            return;
+        }
+        if (on) {
+            if (m_cropAct && m_cropAct->isChecked()) {
+                m_cropAct->setChecked(false);
+            }
+            if (m_annotHighlightAct && m_annotHighlightAct->isChecked()) {
+                m_annotHighlightAct->blockSignals(true);
+                m_annotHighlightAct->setChecked(false);
+                m_annotHighlightAct->blockSignals(false);
+            }
+            m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
+        } else if (!m_annotHighlightAct || !m_annotHighlightAct->isChecked()) {
+            m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+        }
     });
     m_annotClearAct = new QAction(tr("Clear Page &Annotations"), this);
     m_annotClearAct->setStatusTip(tr("Remove all annotation strokes on the current page"));
@@ -1182,6 +1215,37 @@ void MainWindow::createMenus()
     m_imageMenu->addAction(m_resetContentAppearanceAct);
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_cropAct);
+    if (m_annotHighlightAct) {
+        m_imageMenu->addAction(m_annotHighlightAct);
+    }
+    if (m_annotTextHighlightAct) {
+        m_imageMenu->addAction(m_annotTextHighlightAct);
+    }
+    if (m_annotClearAct) {
+        m_imageMenu->addAction(m_annotClearAct);
+    }
+    {
+        auto *colorMenu = m_imageMenu->addMenu(tr("Highlight &Colour"));
+        const struct {
+            const char *name;
+            int r, g, b;
+        } presets[] = {
+            {"Yellow", 246, 211, 45},
+            {"Green", 143, 240, 164},
+            {"Cyan", 153, 193, 241},
+            {"Pink", 255, 120, 186},
+            {"Orange", 255, 163, 72},
+        };
+        for (const auto &pr : presets) {
+            const QColor col(pr.r, pr.g, pr.b);
+            QAction *ca = colorMenu->addAction(tr(pr.name));
+            connect(ca, &QAction::triggered, this, [this, col]() {
+                if (m_imageView) {
+                    m_imageView->hostAnnot().setColor(col);
+                }
+            });
+        }
+    }
     m_imageMenu->addAction(m_attentionAct);
     m_imageMenu->addSeparator();
     m_imageMenu->addAction(m_epubLayoutAct);
@@ -1688,6 +1752,9 @@ void MainWindow::createToolBar()
     }
     if (m_annotHighlightAct) {
         m_workspaceToolBar->addAction(m_annotHighlightAct);
+    }
+    if (m_annotTextHighlightAct) {
+        m_workspaceToolBar->addAction(m_annotTextHighlightAct);
     }
     m_workspaceToolBar->addSeparator();
     // Page guide pair, then temporary default toggle, then layout.

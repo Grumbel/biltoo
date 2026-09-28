@@ -718,6 +718,7 @@ private:
     QAction *m_resetContentAppearanceAct = nullptr;
     QAction *m_cropAct = nullptr;
     QAction *m_annotHighlightAct = nullptr;
+    QAction *m_annotTextHighlightAct = nullptr;
     QAction *m_annotClearAct = nullptr;
     QAction *m_attentionAct = nullptr;
     QAction *m_toggleHudAct = nullptr;

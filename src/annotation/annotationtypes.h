@@ -12,7 +12,9 @@
 #include <QPointF>
 #include <QRectF>
 #include <QVector>
+#include <QPair>
 #include <cstdint>
+#include <QtMath>
 
 /**
  * Session annotation overlay (docs/ANNOTATION_OVERLAY.md).
@@ -22,7 +24,7 @@ namespace Annotation {
 
 enum class Kind : std::uint8_t {
     HighlighterStroke = 1,
-    // Phase B+: InkStroke, HighlightQuad, ShapeRect, …
+    HighlightQuad = 2,
 };
 
 enum class Blend : std::uint8_t {
@@ -30,18 +32,26 @@ enum class Blend : std::uint8_t {
     SourceOver = 2,
 };
 
+enum class Tool : std::uint8_t {
+    None = 0,
+    FreehandHighlighter = 1,
+    TextHighlighter = 2,
+};
+
 struct Object {
     quint64 id = 0;
     Kind kind = Kind::HighlighterStroke;
     Blend blend = Blend::Multiply;
-    QColor color = QColor(246, 211, 45); // classic highlighter yellow
-    qreal width = 18.0;                  // page/source units
-    QVector<QPointF> points;             // page space
+    QColor color = QColor(246, 211, 45);
+    qreal width = 18.0;
+    QVector<QPointF> points; // freehand
+    QVector<QRectF> quads;   // text-snapped page-space boxes
+    QString textSnippet;     // optional, from regions at create
 };
 
 struct Page {
     SessionImageId sid = kInvalidSessionImageId;
-    QRectF pageBounds; // axis-aligned page box used when objects were created
+    QRectF pageBounds;
     bool pageYUp = false;
     QVector<Object> objects;
 };
@@ -54,14 +64,23 @@ inline QJsonObject objectToJson(const Object &o)
     j.insert(QStringLiteral("blend"), static_cast<int>(o.blend));
     j.insert(QStringLiteral("color"), o.color.name(QColor::HexArgb));
     j.insert(QStringLiteral("width"), o.width);
+    if (!o.textSnippet.isEmpty()) {
+        j.insert(QStringLiteral("text"), o.textSnippet);
+    }
     QJsonArray pts;
     for (const QPointF &p : o.points) {
-        QJsonArray xy;
-        xy.append(p.x());
-        xy.append(p.y());
-        pts.append(xy);
+        pts.append(QJsonArray{p.x(), p.y()});
     }
-    j.insert(QStringLiteral("points"), pts);
+    if (!pts.isEmpty()) {
+        j.insert(QStringLiteral("points"), pts);
+    }
+    QJsonArray qs;
+    for (const QRectF &r : o.quads) {
+        qs.append(QJsonArray{r.x(), r.y(), r.width(), r.height()});
+    }
+    if (!qs.isEmpty()) {
+        j.insert(QStringLiteral("quads"), qs);
+    }
     return j;
 }
 
@@ -73,10 +92,18 @@ inline Object objectFromJson(const QJsonObject &j)
     o.blend = static_cast<Blend>(j.value(QStringLiteral("blend")).toInt(1));
     o.color = QColor(j.value(QStringLiteral("color")).toString(QStringLiteral("#fff6d32d")));
     o.width = j.value(QStringLiteral("width")).toDouble(18.0);
+    o.textSnippet = j.value(QStringLiteral("text")).toString();
     for (const QJsonValue &v : j.value(QStringLiteral("points")).toArray()) {
         const QJsonArray xy = v.toArray();
         if (xy.size() >= 2) {
             o.points.append(QPointF(xy.at(0).toDouble(), xy.at(1).toDouble()));
+        }
+    }
+    for (const QJsonValue &v : j.value(QStringLiteral("quads")).toArray()) {
+        const QJsonArray r = v.toArray();
+        if (r.size() >= 4) {
+            o.quads.append(QRectF(r.at(0).toDouble(), r.at(1).toDouble(),
+                                  r.at(2).toDouble(), r.at(3).toDouble()));
         }
     }
     return o;
@@ -115,6 +142,62 @@ inline Page pageFromJson(const QJsonObject &j)
         pg.objects.append(objectFromJson(v.toObject()));
     }
     return pg;
+}
+
+/** Ramer–Douglas–Peucker-ish thin for freehand (page units). */
+inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsilon)
+{
+    if (pts.size() < 3 || epsilon <= 0) {
+        return pts;
+    }
+    // iterative stack-based RDP
+    QVector<bool> keep(pts.size(), false);
+    keep[0] = true;
+    keep[pts.size() - 1] = true;
+    QVector<QPair<int, int>> stack;
+    stack.append({0, pts.size() - 1});
+    while (!stack.isEmpty()) {
+        const auto range = stack.takeLast();
+        const int i0 = range.first;
+        const int i1 = range.second;
+        const QPointF a = pts.at(i0);
+        const QPointF b = pts.at(i1);
+        const QPointF ab = b - a;
+        const qreal ab2 = ab.x() * ab.x() + ab.y() * ab.y();
+        qreal maxDist = 0;
+        int maxIdx = i0;
+        for (int i = i0 + 1; i < i1; ++i) {
+            const QPointF p = pts.at(i);
+            qreal dist = 0;
+            if (ab2 < 1e-12) {
+                const QPointF d = p - a;
+                dist = qSqrt(d.x() * d.x() + d.y() * d.y());
+            } else {
+                const qreal t = qBound(0.0, 1.0,
+                    ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2);
+                const QPointF proj(a.x() + t * ab.x(), a.y() + t * ab.y());
+                const QPointF d = p - proj;
+                dist = qSqrt(d.x() * d.x() + d.y() * d.y());
+            }
+            if (dist > maxDist) {
+                maxDist = dist;
+                maxIdx = i;
+            }
+        }
+        if (maxDist > epsilon) {
+            keep[maxIdx] = true;
+            stack.append({i0, maxIdx});
+            stack.append({maxIdx, i1});
+        }
+    }
+    QVector<QPointF> out;
+    out.reserve(pts.size());
+    for (int i = 0; i < pts.size(); ++i) {
+        if (keep.at(i)) {
+            out.append(pts.at(i));
+        }
+    }
+    return out;
 }
 
 } // namespace Annotation

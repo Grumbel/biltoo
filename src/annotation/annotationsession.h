@@ -54,6 +54,42 @@ public:
         pg.objects.append(obj);
     }
 
+    bool removeObject(SessionImageId sid, quint64 id)
+    {
+        auto it = m_pages.find(sid);
+        if (it == m_pages.end()) {
+            return false;
+        }
+        auto &objs = it.value().objects;
+        for (int i = 0; i < objs.size(); ++i) {
+            if (objs.at(i).id == id) {
+                objs.removeAt(i);
+                if (objs.isEmpty()) {
+                    m_pages.erase(it);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool findObject(SessionImageId sid, quint64 id, Annotation::Object *out) const
+    {
+        const Annotation::Page *pg = page(sid);
+        if (!pg) {
+            return false;
+        }
+        for (const Annotation::Object &o : pg->objects) {
+            if (o.id == id) {
+                if (out) {
+                    *out = o;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     void clearPage(SessionImageId sid) { m_pages.remove(sid); }
     void clearAll() { m_pages.clear(); }
 

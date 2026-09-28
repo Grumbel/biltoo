@@ -7,7 +7,9 @@
 #include "annotation/annotationsession.h"
 
 #include <QColor>
+#include <QPoint>
 #include <QPointF>
+#include <QRect>
 #include <QVector>
 
 class ImageView;
@@ -16,8 +18,8 @@ class QPainter;
 class QMouseEvent;
 
 /**
- * Freehand highlighter (Multiply) and annotation paint/input.
- * Mouse-only for Phase A; geometry in page/source space.
+ * Annotation tools: freehand Multiply highlighter and text-snapped highlight.
+ * Mouse-only for Phase A/B; geometry in page/source space.
  */
 class AnnotationController
 {
@@ -27,7 +29,11 @@ public:
     AnnotationSession &session() { return m_session; }
     const AnnotationSession &session() const { return m_session; }
 
-    bool isToolActive() const { return m_toolActive; }
+    Annotation::Tool tool() const { return m_tool; }
+    void setTool(Annotation::Tool tool);
+
+    bool isToolActive() const { return m_tool != Annotation::Tool::None; }
+    /** Back-compat: freehand on/off. Prefer setTool. */
     void setToolActive(bool on);
 
     QColor color() const { return m_color; }
@@ -42,6 +48,8 @@ public:
     bool tryMouseRelease(QMouseEvent *event);
 
     void clearCurrentPage();
+    void commitObject(SessionImageId sid, const Annotation::Object &obj,
+                      const QRectF &pageBounds, bool pageYUp, const QString &undoText);
 
 private:
     ImageItem *targetItem() const;
@@ -54,17 +62,29 @@ private:
     QPointF pageToItemLocal(ImageItem *item, const QPointF &pagePt,
                             const QRectF &pageBounds, bool pageYUp,
                             const QSize &sourceSize) const;
+    QRectF pageRectToView(ImageItem *item, const QRectF &pageRect,
+                          const QRectF &pageBounds, bool pageYUp,
+                          const QSize &sourceSize) const;
     void paintStroke(QPainter &painter, ImageItem *item,
                      const Annotation::Object &obj, const QRectF &pageBounds,
                      bool pageYUp, const QSize &sourceSize) const;
+    void paintQuads(QPainter &painter, ImageItem *item,
+                    const Annotation::Object &obj, const QRectF &pageBounds,
+                    bool pageYUp, const QSize &sourceSize) const;
+    void paintObject(QPainter &painter, ImageItem *item, const Annotation::Object &obj,
+                     const QRectF &pageBounds, bool pageYUp, const QSize &sourceSize) const;
+    void finishFreehand();
+    void finishTextHighlight();
 
     ImageView *m_view = nullptr;
     AnnotationSession m_session;
-    bool m_toolActive = false;
+    Annotation::Tool m_tool = Annotation::Tool::None;
     bool m_drawing = false;
     QColor m_color = QColor(246, 211, 45);
     qreal m_width = 18.0;
-    QVector<QPointF> m_draftPoints; // page space while drawing
+    QVector<QPointF> m_draftPoints;
+    QPoint m_rubberOriginView;
+    QRect m_rubberView;
     SessionImageId m_draftSid = kInvalidSessionImageId;
     QRectF m_draftBounds;
     bool m_draftYUp = false;
