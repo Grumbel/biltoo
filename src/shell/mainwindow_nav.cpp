@@ -802,6 +802,8 @@ void MainWindow::setDoubleViewEnabled(bool on)
     if (anchor == kInvalidSessionImageId && m_currentIndex >= 0) {
         anchor = m_session.idAt(m_currentIndex);
     }
+    m_spreadBook.state().direction = m_spreadDirection;
+    m_spreadBook.state().binding = m_spreadBinding;
     m_spreadBook.setFixedN(m_session, anchor, m_spreadFixedN, m_spreadBinding);
     if (m_dualShell && m_dualShell->isDualEnabled()) {
         setDualCompareEnabled(false);
@@ -983,6 +985,7 @@ void MainWindow::viewSelectionAsSpread()
         updateStatus();
         return;
     }
+    m_spreadBook.state().direction = m_spreadDirection;
     if (!m_spreadBook.setFromSelection(m_session, ids)) {
         return;
     }
