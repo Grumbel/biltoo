@@ -78,9 +78,14 @@ int main(int argc, char *argv[])
     // Before any MainWindow/DockWidget: KDDockWidgets QtWidgets frontend.
     KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtWidgets);
     {
+        // Title-bar chrome: hide title bars when tabs are visible (drag via tab bar);
+        // keep close/float on the tab bar. Do not force AlwaysShowTabs — single
+        // docks stay without a tab strip. Floating single docks keep a title bar.
         using F = KDDockWidgets::Config::Flag;
         auto flags = KDDockWidgets::Config::self().flags();
-        flags |= F::Flag_TitleBarHasMaximizeButton;
+        flags |= F::Flag_HideTitleBarWhenTabsVisible
+              |  F::Flag_ShowButtonsOnTabBarIfTitleBarHidden
+              |  F::Flag_TitleBarHasMaximizeButton;
         KDDockWidgets::Config::self().setFlags(flags);
     }
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the
