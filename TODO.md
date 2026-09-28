@@ -2,17 +2,15 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2738.1-cmake-system-includes` (base `636e70e`).
+**Tip:** `biltoo-2739.1-doubleview-toolbar-zoom-persist` (base `636e70e`).
 
-### Spread P0–P4 done; build hygiene
-
-- **2737.3:** TextSelection metatype outside include guard (build break)
-- **2738.1:** Mark Qt / pkg-config dependency includes as SYSTEM (`-isystem`)
-  so GCC does not emit warnings from third-party headers (e.g. Qt
-  `qarraydataops.h` `-Wstringop-overflow`). **thumtoo is not marked** — still
-  our library diagnostics.
+### 2739.1 Double View UX
+- Toolbar split button (toggle + menu: binding / direction / N)
+- Sticky Double View across Gallery → Image (FixedN kept; selection spreads still clear)
+- Zoom preserved: `applySpreadLayout` only fitInView on membership change / forceFit
+- Scene rect from item scene bounds + centerOn after fit
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2738.1-cmake-system-includes-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2739.1-doubleview-toolbar-zoom-persist-636e70e.bundle HEAD
 ```

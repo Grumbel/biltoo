@@ -249,13 +249,13 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     if (sessionIndex < 0 || sessionIndex >= m_session.size()) {
         return;
     }
-    // Single-tile open leaves spread (docs/SPREAD.md leave table).
-    if (m_spreadBook.isActive()) {
+    // Double view is sticky across Gallery → Image: keep FixedN / preference.
+    // Selection spreads still clear on a single-tile open (explicit one-page intent).
+    const bool wantDouble = m_doubleViewAct && m_doubleViewAct->isChecked();
+    if (m_spreadBook.isActive()
+        && m_spreadBook.state().policy != SpreadMembershipPolicy::FixedN
+        && !wantDouble) {
         m_spreadBook.clear();
-        if (m_doubleViewAct && m_doubleViewAct->isChecked()) {
-            QSignalBlocker b(m_doubleViewAct);
-            m_doubleViewAct->setChecked(false);
-        }
     }
     const QString path = m_session.paths().at(sessionIndex);
     const SessionImageId sid = sessionIdAt(sessionIndex);
@@ -312,6 +312,19 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
         if (needLoad) {
             m_imageView->hostDisplayPipeline().loadImage(path);
         }
+    }
+    // Sticky Double view: rebuild FixedN around the opened page.
+    if (wantDouble && sid != kInvalidSessionImageId) {
+        m_spreadBook.state().direction = m_spreadDirection;
+        m_spreadBook.setFixedN(m_session, sid, m_spreadFixedN, m_spreadBinding);
+        if (m_imageView && m_imageView->isImageMode()) {
+            // Force a fresh fit after mode switch (layout cache cleared on enter).
+            scheduleSpreadSync();
+        }
+    } else if (m_spreadBook.isActive()
+               && m_spreadBook.state().policy == SpreadMembershipPolicy::FixedN
+               && m_imageView && m_imageView->isImageMode()) {
+        scheduleSpreadSync();
     }
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();

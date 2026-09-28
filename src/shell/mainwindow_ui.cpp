@@ -233,6 +233,7 @@ void MainWindow::createActions()
 
     m_doubleViewAct = new QAction(tr("Dou&ble view"), this);
     m_doubleViewAct->setObjectName(QStringLiteral("doubleView"));
+    m_doubleViewAct->setIcon(resourceIcon(QStringLiteral("view-paged")));
     m_doubleViewAct->setCheckable(true);
     m_doubleViewAct->setChecked(false);
     m_doubleViewAct->setStatusTip(
@@ -1511,6 +1512,27 @@ void MainWindow::createToolBar()
     }
     // Workspace mode sits next to the layout group (mode switcher, not a pack).
     m_toolBar->addAction(m_workspaceModeAct);
+
+    // Double view (spread): toggle + menu for binding / direction / N.
+    {
+        auto *dvBtn = new QToolButton(m_toolBar);
+        dvBtn->setPopupMode(QToolButton::MenuButtonPopup);
+        dvBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        auto *dvMenu = new QMenu(dvBtn);
+        dvMenu->addAction(m_spreadBindingStrictAct);
+        dvMenu->addAction(m_spreadBindingCoverAct);
+        dvMenu->addSeparator();
+        dvMenu->addAction(m_spreadDirLtrAct);
+        dvMenu->addAction(m_spreadDirRtlAct);
+        dvMenu->addAction(m_spreadDirVertAct);
+        dvMenu->addSeparator();
+        dvMenu->addAction(m_spreadN2Act);
+        dvMenu->addAction(m_spreadN3Act);
+        dvMenu->addAction(m_spreadN4Act);
+        dvBtn->setMenu(dvMenu);
+        dvBtn->setDefaultAction(m_doubleViewAct);
+        m_toolBar->addWidget(dvBtn);
+    }
 
     // Masonry column/row count — shown while a masonry layout is active
     auto *masonryCountHost = new QWidget(m_toolBar);

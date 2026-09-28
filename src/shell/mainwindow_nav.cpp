@@ -818,7 +818,12 @@ void MainWindow::setDoubleViewEnabled(bool on)
             setCurrentIndex(idx);
         }
     }
-    // Layout after underlay load; further installs re-sync via statusChanged.
+    // Layout after underlay load; force fit once for the new membership.
+    if (m_imageView) {
+        m_imageView->hostImage().applySpreadLayout(
+            m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+            m_spreadBook.state().direction, /*forceFit=*/true);
+    }
     scheduleSpreadSync();
     updateStatus();
 }
@@ -846,6 +851,11 @@ void MainWindow::setSpreadBindingHint(SpreadBindingHint hint)
             anchor = currentSessionId();
         }
         m_spreadBook.setFixedN(m_session, anchor, m_spreadFixedN, m_spreadBinding);
+        if (m_imageView) {
+            m_imageView->hostImage().applySpreadLayout(
+                m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+                m_spreadBook.state().direction, /*forceFit=*/true);
+        }
         scheduleSpreadSync();
         updateStatus();
     }
@@ -870,7 +880,10 @@ void MainWindow::setSpreadDirection(SpreadDirection dir)
         QSignalBlocker b(m_spreadDirVertAct);
         m_spreadDirVertAct->setChecked(dir == SpreadDirection::Vertical);
     }
-    if (m_spreadBook.isActive()) {
+    if (m_spreadBook.isActive() && m_imageView) {
+        m_imageView->hostImage().applySpreadLayout(
+            m_spreadBook.memberPaths(m_session), m_spreadBook.state().members,
+            m_spreadBook.state().direction, /*forceFit=*/true);
         scheduleSpreadSync();
     }
 }

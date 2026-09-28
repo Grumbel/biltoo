@@ -316,6 +316,8 @@ void ImageController::prepareModeCanvas()
         v->setValue(0);
     }
     m_framing.setFitOnly();
+    m_spreadLayoutPaths.clear();
+    m_spreadLastUnion = QRectF();
 }
 
 void ImageController::clearSceneKeepingStashes()
@@ -391,7 +393,8 @@ void ImageController::onContentAppearancePropagated(ImageItem *item)
 
 void ImageController::applySpreadLayout(const QStringList &paths,
                                         const QVector<SessionImageId> &ids,
-                                        SpreadDirection direction)
+                                        SpreadDirection direction,
+                                        bool forceFit)
 {
     if (!m_view || !m_view->isImageMode() || paths.size() < 2) {
         return;
@@ -420,7 +423,6 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         if (sid != kInvalidSessionImageId) {
             item->setSessionId(sid);
         }
-        // Prefer cached pixels when present; otherwise probe + PreferCache climb.
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull() && !item->hasDisplayPixels()) {
             m_view->hostDisplayPipeline().hostSetPreviewImage(item, cached);
@@ -451,7 +453,6 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         pl.scale = 1.0;
         pl.scaleY = 1.0;
         pl.rotation = 0.0;
-        // Match height-matched slot size via scale when intrinsic differs.
         const QRectF local = item->displayContentRect();
         if (local.height() > 1.0 && layout.memberSlots.at(i).rect.height() > 1.0) {
             const qreal s = layout.memberSlots.at(i).rect.height() / local.height();
@@ -463,14 +464,43 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         item->applyPlacement(pl);
     }
 
-    if (QGraphicsScene *scene = m_view->canvasScene()) {
-        const QRectF u = layout.unionRect.adjusted(-8, -8, 8, 8);
-        scene->setSceneRect(u);
-        m_view->setSceneRect(u);
+    // Scene rect must contain the union so scroll bars and centerOn work.
+    // Use items' scene bounds after placement (more reliable than pure layout
+    // rect when placement scale adjusts item local sizes).
+    QRectF contentUnion = layout.unionRect;
+    for (ImageItem *item : items) {
+        if (item) {
+            contentUnion = contentUnion.united(item->sceneBoundingRect());
+        }
     }
-    m_view->resetTransform();
-    m_view->fitInView(layout.unionRect, Qt::KeepAspectRatio);
+    const QRectF padded = contentUnion.adjusted(-24, -24, 24, 24);
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        scene->setSceneRect(padded);
+    }
+    m_view->setSceneRect(padded);
+
+    const bool membershipChanged = (paths != m_spreadLayoutPaths);
+    const bool unionGrew =
+        m_spreadLastUnion.isEmpty()
+        || contentUnion.width() > m_spreadLastUnion.width() * 1.15
+        || contentUnion.height() > m_spreadLastUnion.height() * 1.15;
+    m_spreadLayoutPaths = paths;
+    m_spreadLastUnion = contentUnion;
+
+    // Only fit when forced, membership changed, or first meaningful geometry —
+    // never on every soft-tile status tick (that killed user zoom).
+    if (forceFit || membershipChanged || unionGrew) {
+        m_view->resetTransform();
+        m_view->fitInView(contentUnion, Qt::KeepAspectRatio);
+        // Center the spread in the viewport after fit.
+        if (QGraphicsScene *scene = m_view->canvasScene()) {
+            m_view->centerOn(contentUnion.center());
+        }
+    }
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
+}
+
+
 }

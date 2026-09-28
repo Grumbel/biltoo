@@ -5,6 +5,8 @@
 #define IMAGECONTROLLER_H
 
 #include <QString>
+#include <QStringList>
+#include <QRectF>
 #include "image/edgenavpolicy.h"
 #include "slideshow/zoomregiongesture.h"
 #include "session/sessionchrome.h"
@@ -75,9 +77,15 @@ public:
     /** Hard reload focused classic path — purge Store tiles then re-decode. */
     void hardReloadFromDisk();
     /** Place Image-mode items for spread members (docs/SPREAD.md P0). */
+    /**
+     * Place Image-mode items for spread members.
+     * @p forceFit when true always fitInView; when false, keep the current
+     * view transform if membership (paths) is unchanged (user zoom/pan).
+     */
     void applySpreadLayout(const QStringList &paths,
                            const QVector<SessionImageId> &ids,
-                           SpreadDirection direction = SpreadDirection::Ltr);
+                           SpreadDirection direction = SpreadDirection::Ltr,
+                           bool forceFit = false);
 
     /** Reset undo, view transform, scene rect, framing for Image enter. */
     void prepareModeCanvas();
@@ -210,6 +218,8 @@ private:
 
     ImageView *m_view = nullptr;
     ViewFraming m_framing;
+    QStringList m_spreadLayoutPaths;
+    QRectF m_spreadLastUnion;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
     ZoomRegionGesture m_zoomRegion;
