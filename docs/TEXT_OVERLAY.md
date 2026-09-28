@@ -30,7 +30,8 @@ hover highlight, checkboxes for outlines and “Show text in boxes” (glyphs).
 
 ## Future
 
-- Multi-page range in the panel (session slice).
+- Multi-page range in the panel (session slice) — see [SPREAD.md](SPREAD.md)
+  for the reading-surface model (`(SessionImageId, regionIndex)` selection).
 - Scripting API exposing `TextOverlayState` + region indices.
 - Hit-test hover from the page into the panel (mouse move over bboxes).
 

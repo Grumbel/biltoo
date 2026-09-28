@@ -30,7 +30,7 @@ duplicates) of those rows on a free-form canvas. Placing on Workspace must
 | `WorkspaceController::m_stashedItems` | Left Workspace | Pointer stash of free-form tiles for fast return. **Do not remove** an entry when opening Image — Image mode must not steal Workspace ownership. |
 | `WorkspaceController::m_savedItems` | Durable | `WorkspaceItemState` snapshots (pose + appearance ids). Used by `LoadRestore` when the pointer stash is empty. |
 | `GalleryController::m_stashedItems` | Gallery → Image only | Pointer stash of packed cells for fast return to Gallery. **Not** used when leaving to Workspace (pack is discarded and rebuilt). |
-| Image underlay | Image | Exactly one (or zero) live `ImageItem` for `classicPath` / current session id. Built by load pipeline; **not** by taking a Workspace stash pointer. |
+| Image underlay | Image | Exactly one (or zero) live `ImageItem` for `classicPath` / current session id today. Future multi-page **spread** may place N members — [SPREAD.md](SPREAD.md). Built by load pipeline; **not** by taking a Workspace stash pointer. |
 
 ### Forbidden
 

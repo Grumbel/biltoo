@@ -62,6 +62,7 @@ Checked without a full biltoo GUI build (sandbox lacks Qt6 Multimedia):
 - Full text2sprech feature parity (HTML reader, presentation mode, export UI).
 - In-process Piper linked into biltoo (keep the server process boundary).
 - Automatic multi-page “read the whole book” with page-turn (later optional).
+- Spread-scoped speak (facing pages as one plan) — [SPREAD.md](SPREAD.md).
 - Perfect NLP sentence segmentation (heuristic splitter is enough).
 
 ---
