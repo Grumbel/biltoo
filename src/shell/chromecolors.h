@@ -24,7 +24,7 @@ inline bool isDarkChrome()
     if (!QGuiApplication::instance()) {
         return true;
     }
-    return QGuiApplication::palette().color(QPalette::Window).lightnessF() < 0.5;
+    return QGuiApplication::palette().color(QPalette::Window).lightnessF() < 0.5f;
 }
 
 /** Page selection and text selection (Select role). */
