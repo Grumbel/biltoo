@@ -24,7 +24,6 @@
 TextPanel::TextPanel(QWidget *parent)
     : QWidget(parent)
 {
-    qRegisterMetaType<TextSelection>("TextSelection");
     m_model = new TextPanelModel(this);
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);

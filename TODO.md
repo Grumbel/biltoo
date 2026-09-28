@@ -2,29 +2,15 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2737.2-spread-verify-fixes` (base `636e70e`).
+**Tip:** `biltoo-2737.3-fix-textselection-metatype` (base `636e70e`).
 
-### Spread multi-page reading surface — **DONE + verified**
+### Spread P0–P4 done; build fix
 
-| Phase | Status |
-|-------|--------|
-| P0–P1 surface, install, nav, leave | done |
-| P2 text / panel / search | done |
-| P3 TTS + Gallery rings | done |
-| P4 binding / LTR-RTL-Vertical / N / settings | done |
-
-### 2737.2 verification fixes
-- Apply `m_spreadDirection` when enabling FixedN and Selection spreads
-- `Q_DECLARE_METATYPE(TextSelection)` + register for panel multi-select signal
-
-### Static verification
-- Integration points for install, text, TTS, Gallery, menu, settings: all present
-- `paintSceneOverlays` brace balance OK
-- Unit tests: FixedN, CoverAlone, RTL, vertical registered in CMake
+- **2737.3:** `Q_DECLARE_METATYPE(TextSelection)` was *after* `#endif`, so each
+  include redefined `QMetaTypeId<TextSelection>` and broke the build. Removed;
+  panel signals use direct connections.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2737.2-spread-verify-fixes-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2737.3-fix-textselection-metatype-636e70e.bundle HEAD
 ```
-
-No further spread work planned unless runtime QA finds issues.

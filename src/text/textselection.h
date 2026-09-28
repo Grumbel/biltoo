@@ -9,7 +9,6 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
-#include <QMetaType>
 
 /**
  * One selected text region, optionally spanning many session images.
@@ -95,5 +94,3 @@ private:
 };
 
 #endif // TEXTSELECTION_H
-
-Q_DECLARE_METATYPE(TextSelection)
