@@ -1073,8 +1073,8 @@ QImage AnnotationController::renderFlattenedDisplay() const
             QPainterPath path;
             bool first = true;
             for (const QPointF &pp : obj.points) {
-                const QRectF disp = self->pageRectToDisplay(
-                    item, QRectF(pp.x(), pp.y(), 0.01, 0.01), pb, py, sourceSize);
+                const QRectF disp = AnnotationPainter::pageRectToDisplay(
+                    m_view, item, QRectF(pp.x(), pp.y(), 0.01, 0.01), pb, py, sourceSize);
                 const QPointF pt = disp.center();
                 if (first) {
                     path.moveTo(pt);
@@ -1098,8 +1098,8 @@ QImage AnnotationController::renderFlattenedDisplay() const
                 const qreal r = qMax(0.5, obj.width * 0.5 * pageUnit);
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(obj.color);
-                const QRectF disp = self->pageRectToDisplay(
-                    item, QRectF(obj.points.first().x(), obj.points.first().y(), 0.01, 0.01),
+                const QRectF disp = AnnotationPainter::pageRectToDisplay(
+                    m_view, item, QRectF(obj.points.first().x(), obj.points.first().y(), 0.01, 0.01),
                     pb, py, sourceSize);
                 painter.drawEllipse(disp.center(), r, r);
             }
