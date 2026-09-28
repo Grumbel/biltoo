@@ -20,6 +20,8 @@
 #include <QPainterPath>
 #include <QUndoStack>
 #include <QSettings>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtMath>
 #include "image/toolcursors.h"
 #include <QCursor>
@@ -276,12 +278,88 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
 
 
 
+
+QString AnnotationController::pathForSid(SessionImageId sid) const
+{
+    if (!m_view || sid == kInvalidSessionImageId) {
+        return {};
+    }
+    for (ImageItem *it : m_view->liveItems()) {
+        if (it && it->sessionId() == sid && !it->path().isEmpty()) {
+            return it->path();
+        }
+    }
+    if (ImageItem *primary = m_view->primaryItem()) {
+        if (primary->sessionId() == sid) {
+            return primary->path();
+        }
+    }
+    return {};
+}
+
+void AnnotationController::persistPageForSid(SessionImageId sid)
+{
+    const QString path = pathForSid(sid);
+    if (path.isEmpty()) {
+        return;
+    }
+    const Annotation::Page *pg = m_session.page(sid);
+    if (!pg || pg->objects.isEmpty()) {
+        ThumtooCache::clearLocatorAnnotationJson(path);
+        return;
+    }
+    Annotation::Page copy = *pg;
+    copy.sid = kInvalidSessionImageId;
+    const QByteArray bytes =
+        QJsonDocument(Annotation::pageToJson(copy)).toJson(QJsonDocument::Compact);
+    ThumtooCache::saveLocatorAnnotationJson(path, bytes);
+}
+
+void AnnotationController::ensureHydrated(ImageItem *item)
+{
+    if (!item || !m_view) {
+        return;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    if (m_hydratedSids.contains(sid)) {
+        return;
+    }
+    m_hydratedSids.insert(sid);
+    if (const Annotation::Page *existing = m_session.page(sid)) {
+        if (!existing->objects.isEmpty()) {
+            return;
+        }
+    }
+    const QString path = item->path();
+    if (path.isEmpty()) {
+        return;
+    }
+    QByteArray json;
+    if (!ThumtooCache::loadLocatorAnnotationJson(path, &json) || json.isEmpty()) {
+        return;
+    }
+    const QJsonDocument doc = QJsonDocument::fromJson(json);
+    if (!doc.isObject()) {
+        return;
+    }
+    Annotation::Page pg = Annotation::pageFromJson(doc.object());
+    pg.sid = sid;
+    if (pg.objects.isEmpty()) {
+        return;
+    }
+    m_session.putPage(pg);
+}
+
 void AnnotationController::paintItemAnnotations(QPainter &painter, ImageItem *item,
                                                    bool selectionChrome)
 {
     if (!item || !m_view) {
         return;
     }
+    ensureHydrated(item);
     // Gallery/Workspace tiles must use the item's own sid — never the Image-mode
     // session cursor (targetSid would fall back to current and mis-paint).
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
@@ -431,6 +509,7 @@ void AnnotationController::commitObject(SessionImageId sid, const Annotation::Ob
         stack->push(cmd);
     } else {
         m_session.addObject(sid, obj, pageBounds, pageYUp);
+        persistPageForSid(sid);
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
@@ -903,6 +982,7 @@ void AnnotationController::clearCurrentPage()
         stack->push(cmd);
     } else {
         m_session.clearPage(sid);
+        persistPageForSid(sid);
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }

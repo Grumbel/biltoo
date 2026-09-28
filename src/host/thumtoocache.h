@@ -684,6 +684,16 @@ bool hasContentAppearance(const QString &path);
 /** Remove durable content appearance for @p path (identity). */
 void clearContentAppearance(const QString &path);
 
+/**
+ * Durable page annotations keyed by the same locator id as content appearance
+ * (XDG_STATE_HOME/biltoo/locator_appearance.sqlite3). Path-level, like orient/flip:
+ * duplicates of the same file share marks. JSON is one Annotation::Page object
+ * (sid is session-local and rewritten on load).
+ */
+bool loadLocatorAnnotationJson(const QString &path, QByteArray *jsonOut);
+void saveLocatorAnnotationJson(const QString &path, const QByteArray &json);
+void clearLocatorAnnotationJson(const QString &path);
+
 } // namespace ThumtooCache
 
 #endif

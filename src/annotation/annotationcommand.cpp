@@ -25,6 +25,7 @@ void AnnotationAddCommand::undo()
     }
     m_view->hostAnnot().session().removeObject(m_sid, m_obj.id);
     m_applied = false;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -39,6 +40,7 @@ void AnnotationAddCommand::redo()
         m_view->hostAnnot().session().addObject(m_sid, m_obj, m_pageBounds, m_pageYUp);
     }
     m_applied = true;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -68,6 +70,7 @@ void AnnotationRemoveCommand::undo()
         }
     }
     m_applied = false;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -82,6 +85,7 @@ void AnnotationRemoveCommand::redo()
         m_view->hostAnnot().session().removeObject(m_sid, o.id);
     }
     m_applied = true;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -106,6 +110,7 @@ void AnnotationReplaceCommand::undo()
     }
     m_view->hostAnnot().session().updateObject(m_sid, m_before);
     m_applied = false;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -124,6 +129,7 @@ void AnnotationReplaceCommand::redo()
         m_view->hostAnnot().session().addObject(m_sid, m_after, bounds, yUp);
     }
     m_applied = true;
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -155,6 +161,7 @@ void AnnotationMoveCommand::apply(const QVector<Annotation::Object> &objs)
             m_view->hostAnnot().session().addObject(m_sid, o, bounds, yUp);
         }
     }
+    m_view->hostAnnot().persistPageForSid(m_sid);
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }

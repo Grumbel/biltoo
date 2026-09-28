@@ -13,6 +13,7 @@
 #include <QRectF>
 #include <QSize>
 #include <QVector>
+#include <QSet>
 #include <QImage>
 #include <Qt>
 
@@ -71,9 +72,14 @@ public:
     bool tryKeyPress(QKeyEvent *event);
     void commitObject(SessionImageId sid, const Annotation::Object &obj,
                       const QRectF &pageBounds, bool pageYUp, const QString &undoText);
+    /** Write page for @p sid to locator durable store (path-keyed like orient). */
+    void persistPageForSid(SessionImageId sid);
+    /** Load durable annotations for @p item path into its session id if needed. */
+    void ensureHydrated(ImageItem *item);
 
 private:
     ImageItem *targetItem() const;
+    QString pathForSid(SessionImageId sid) const;
     /** Committed page objects (+ optional select chrome) for one item. */
     void paintItemAnnotations(QPainter &painter, ImageItem *item,
                               bool selectionChrome);
@@ -99,6 +105,7 @@ private:
     ImageView *m_view = nullptr;
     AnnotationSession m_session;
     Annotation::Tool m_tool = Annotation::Tool::None;
+    QSet<SessionImageId> m_hydratedSids;
     bool m_drawing = false;
     QColor m_color = QColor(246, 211, 45);
     qreal m_width = 18.0;

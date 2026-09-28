@@ -307,7 +307,9 @@ undo without a clear boundary.
 
 ## 12. Decisions (locked 2026-09-28)
 
-1. **Persistence:** embed in `.biltoo` project JSON (`annotations` array).
+1. **Persistence:** `.biltoo` project JSON (`annotations`) **and** durable
+   path-keyed store (`locator_annotations` next to content appearance in
+   `XDG_STATE_HOME/biltoo/locator_appearance.sqlite3`), same model as orient/flip.
 2. **Default tool:** freehand highlighter (Multiply).
 3. **Sticky notes:** Phase C only.
 4. **Input:** mouse only for Phase A/B; stylus/pressure later.

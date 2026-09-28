@@ -129,6 +129,25 @@ public:
     }
 
     void clearPage(SessionImageId sid) { m_pages.remove(sid); }
+
+    /** Replace page for @p pg.sid; advances nextId past all object ids. */
+    void putPage(const Annotation::Page &pg)
+    {
+        if (pg.sid == kInvalidSessionImageId) {
+            return;
+        }
+        if (pg.objects.isEmpty()) {
+            m_pages.remove(pg.sid);
+            return;
+        }
+        m_pages.insert(pg.sid, pg);
+        for (const Annotation::Object &o : pg.objects) {
+            if (o.id > m_nextId) {
+                m_nextId = o.id;
+            }
+        }
+    }
+
     void clearAll()
     {
         m_pages.clear();

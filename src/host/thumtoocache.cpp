@@ -3916,6 +3916,16 @@ sqlite3 *appearanceDb()
             sqlite3_close(out);
             return nullptr;
         }
+        const char *ddlAnnot =
+            "CREATE TABLE IF NOT EXISTS locator_annotations ("
+            "  locator_id INTEGER PRIMARY KEY,"
+            "  updated_unix INTEGER NOT NULL,"
+            "  page_json TEXT NOT NULL"
+            ");";
+        if (sqlite3_exec(out, ddlAnnot, nullptr, nullptr, nullptr) != SQLITE_OK) {
+            sqlite3_close(out);
+            return nullptr;
+        }
         if (appearanceDebug()) {
             appearanceLog(QStringLiteral("db open %1").arg(path));
         }
@@ -4190,6 +4200,97 @@ void clearContentAppearance(const QString &path)
     }
 }
 
+bool loadLocatorAnnotationJson(const QString &path, QByteArray *jsonOut)
+{
+    if (!jsonOut) {
+        return false;
+    }
+    jsonOut->clear();
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
+        return false;
+    }
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return false;
+    }
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(db,
+                           "SELECT page_json FROM locator_annotations WHERE locator_id = ?1;",
+                           -1, &st, nullptr)
+        != SQLITE_OK) {
+        return false;
+    }
+    sqlite3_bind_int64(st, 1, *lid);
+    bool ok = false;
+    if (sqlite3_step(st) == SQLITE_ROW) {
+        const unsigned char *txt = sqlite3_column_text(st, 0);
+        const int n = sqlite3_column_bytes(st, 0);
+        if (txt && n > 0) {
+            *jsonOut = QByteArray(reinterpret_cast<const char *>(txt), n);
+            ok = true;
+        }
+    }
+    sqlite3_finalize(st);
+    return ok;
+}
+
+void saveLocatorAnnotationJson(const QString &path, const QByteArray &json)
+{
+    if (json.isEmpty()) {
+        clearLocatorAnnotationJson(path);
+        return;
+    }
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
+        return;
+    }
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return;
+    }
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(
+            db,
+            "INSERT INTO locator_annotations(locator_id, updated_unix, page_json)"
+            " VALUES(?1,?2,?3)"
+            " ON CONFLICT(locator_id) DO UPDATE SET"
+            " updated_unix=excluded.updated_unix,"
+            " page_json=excluded.page_json;",
+            -1, &st, nullptr)
+        != SQLITE_OK) {
+        return;
+    }
+    sqlite3_bind_int64(st, 1, *lid);
+    sqlite3_bind_int64(st, 2, now);
+    sqlite3_bind_text(st, 3, json.constData(), json.size(), SQLITE_TRANSIENT);
+    sqlite3_step(st);
+    sqlite3_finalize(st);
+}
+
+void clearLocatorAnnotationJson(const QString &path)
+{
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
+        return;
+    }
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return;
+    }
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(
+            db, "DELETE FROM locator_annotations WHERE locator_id = ?1;", -1, &st,
+            nullptr)
+        == SQLITE_OK) {
+        sqlite3_bind_int64(st, 1, *lid);
+        sqlite3_step(st);
+        sqlite3_finalize(st);
+    }
+}
+
+
 #else
 
 bool loadContentAppearance(const QString &, StoredContentAppearance *out)
@@ -4210,6 +4311,23 @@ bool hasContentAppearance(const QString &)
 }
 
 void clearContentAppearance(const QString &)
+{
+}
+
+
+bool loadLocatorAnnotationJson(const QString &, QByteArray *jsonOut)
+{
+    if (jsonOut) {
+        jsonOut->clear();
+    }
+    return false;
+}
+
+void saveLocatorAnnotationJson(const QString &, const QByteArray &)
+{
+}
+
+void clearLocatorAnnotationJson(const QString &)
 {
 }
 

@@ -2,16 +2,13 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2807.2-annot-pen-zoom` (base `2085c07`).
+**Tip:** `biltoo-2808.1-annot-durable` (base `2085c07`).
 
-### 2807.2
-- Annotation stroke width: page→scene scale (not sourceSize/pageBounds);
-  non-cosmetic pens so width tracks view zoom
-
-### 2807.1
-- Gallery / Workspace: paint committed annotations on live tiles
+### 2808.1
+- Durable path-keyed annotations (locator_annotations in locator_appearance.sqlite3)
+- Hydrate on paint; persist on undo/redo/commit/clear (like orient/flip)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2807.2-annot-pen-zoom-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2808.1-annot-durable-2085c07.bundle HEAD
 ```
