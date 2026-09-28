@@ -3345,6 +3345,56 @@ void MainWindow::refreshWorkActivityStatusBar()
     }
 }
 
+
+void MainWindow::updateFilmstripChrome()
+{
+    if (!m_thumbnailBar) {
+        return;
+    }
+    if (m_currentIndex >= 0) {
+        m_thumbnailBar->setCursorIndex(m_currentIndex);
+    }
+    QRectF norm;
+    if (m_imageView && m_imageView->isImageMode() && m_imageView->viewport()) {
+        // Prefer underlay matching session cursor; else primary.
+        ImageItem *item = nullptr;
+        if (m_currentIndex >= 0 && m_currentIndex < m_session.size()) {
+            const SessionImageId sid = sessionIdAt(m_currentIndex);
+            const QString path = m_session.paths().at(m_currentIndex);
+            for (ImageItem *ii : m_imageView->liveItems()) {
+                if (!ii) {
+                    continue;
+                }
+                if (sid != kInvalidSessionImageId && ii->sessionId() == sid) {
+                    item = ii;
+                    break;
+                }
+                if (!path.isEmpty() && ii->path() == path) {
+                    item = ii;
+                    break;
+                }
+            }
+        }
+        if (!item) {
+            item = m_imageView->primaryItem();
+        }
+        if (item) {
+            const QRectF content = item->displayContentRect();
+            if (content.width() > 1.0 && content.height() > 1.0) {
+                const QRectF sceneVp = m_imageView->mapViewportToScene();
+                const QRectF local = item->mapFromScene(sceneVp).boundingRect();
+                const qreal nx = (local.left() - content.left()) / content.width();
+                const qreal ny = (local.top() - content.top()) / content.height();
+                const qreal nw = local.width() / content.width();
+                const qreal nh = local.height() / content.height();
+                norm = QRectF(nx, ny, nw, nh).normalized();
+                norm = norm.intersected(QRectF(0, 0, 1, 1));
+            }
+        }
+    }
+    m_thumbnailBar->setCursorViewportNorm(norm);
+}
+
 void MainWindow::updateStatus()
 {
     if (m_inUpdateStatus) {
@@ -3360,6 +3410,7 @@ void MainWindow::updateStatus()
     }
 
     updateNavigationActions();
+    updateFilmstripChrome();
     updateMetadataPanel();
     updateAdjustmentsPanel();
     updateCropPanel();

@@ -147,6 +147,15 @@ public:
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
     int currentIndex() const;
+    /** Session cursor row (may differ from multi-select). */
+    int cursorIndex() const { return m_cursorIndex; }
+    void setCursorIndex(int index);
+    /**
+     * Visible camera rect on the cursor page, normalised to content
+     * [0,1]×[0,1] (empty = no overlay). Filmstrip paints an amber frame.
+     */
+    void setCursorViewportNorm(const QRectF &normInContent);
+    QRectF cursorViewportNorm() const { return m_cursorViewportNorm; }
     /** Multi-selected filmstrip rows as SessionImageIds (skips invalid). */
     QList<SessionImageId> selectedSessionIds() const;
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/thumbnailbar.h"
+#include "shell/chromecolors.h"
 #include "view/viewtransform.h"
 #include "shell/filmstripgeometry.h"
 #include "display/displayquality.h"
@@ -205,13 +206,11 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const bool selected = option.state & QStyle::State_Selected;
     const bool hovered = option.state & QStyle::State_MouseOver;
 
-    // Full-cell chrome (stable; does not shrink to letterboxed image).
+    // Page selection = Select blue; cursor chrome is View amber (after pixmap).
     if (selected) {
-        painter->fillRect(cell, option.palette.brush(QPalette::Highlight));
+        painter->fillRect(cell, ChromeColors::selectFill(80));
     } else if (hovered) {
-        QColor c = option.palette.color(QPalette::Highlight);
-        c.setAlpha(48);
-        painter->fillRect(cell, c);
+        painter->fillRect(cell, ChromeColors::selectFill(36));
     }
 
     const QFontMetrics fm(option.font);
@@ -413,10 +412,35 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         if (bar->searchHitIndex()->hasHit(sid, path)) {
             const int d = qBound(6, contentRect.width() / 8, 12);
             const QRect dot(contentRect.left() + 3, contentRect.top() + 3, d, d);
-            painter->setPen(QPen(QColor(40, 30, 0, 180), 1));
-            painter->setBrush(QColor(255, 210, 40, 230));
+            painter->setPen(QPen(ChromeColors::searchStroke(180), 1));
+            painter->setBrush(QColor(180, 80, 220, 200));
             painter->setRenderHint(QPainter::Antialiasing, true);
             painter->drawEllipse(dot);
+        }
+    }
+
+    // Session cursor (View amber) — distinct from page selection blue.
+    if (bar && bar->cursorIndex() == index.row() && contentRect.isValid()) {
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        QPen edge(ChromeColors::viewStroke(250), 2.5);
+        edge.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(edge);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(contentRect.adjusted(1, 1, -1, -1));
+
+        // Camera viewport on the cursor page (normalised content coords).
+        const QRectF vn = bar->cursorViewportNorm();
+        if (vn.isValid() && !vn.isEmpty()
+            && vn.width() > 0.02 && vn.height() > 0.02
+            && (vn.width() < 0.98 || vn.height() < 0.98)) {
+            const qreal x = contentRect.left() + vn.x() * contentRect.width();
+            const qreal y = contentRect.top() + vn.y() * contentRect.height();
+            const qreal w = vn.width() * contentRect.width();
+            const qreal h = vn.height() * contentRect.height();
+            const QRectF vis(x, y, w, h);
+            painter->fillRect(vis, ChromeColors::viewFill(50));
+            painter->setPen(QPen(ChromeColors::viewStroke(220), 1.5));
+            painter->drawRect(vis);
         }
     }
 
@@ -2639,11 +2663,49 @@ void ThumbnailBar::setVisibleLoadsSuspended(bool on)
     }
 }
 
+
+void ThumbnailBar::setCursorIndex(int index)
+{
+    if (m_cursorIndex == index) {
+        return;
+    }
+    const int prev = m_cursorIndex;
+    m_cursorIndex = index;
+    if (prev >= 0 && prev < count()) {
+        if (QListWidgetItem *it = item(prev)) {
+            update(visualItemRect(it));
+        }
+    }
+    if (m_cursorIndex >= 0 && m_cursorIndex < count()) {
+        if (QListWidgetItem *it = item(m_cursorIndex)) {
+            update(visualItemRect(it));
+        }
+    }
+}
+
+void ThumbnailBar::setCursorViewportNorm(const QRectF &normInContent)
+{
+    QRectF n = normInContent;
+    if (n.isValid()) {
+        n = n.intersected(QRectF(0, 0, 1, 1));
+    }
+    if (m_cursorViewportNorm == n) {
+        return;
+    }
+    m_cursorViewportNorm = n;
+    if (m_cursorIndex >= 0 && m_cursorIndex < count()) {
+        if (QListWidgetItem *it = item(m_cursorIndex)) {
+            update(visualItemRect(it));
+        }
+    }
+}
+
 void ThumbnailBar::setCurrentIndex(int index)
 {
     if (index < 0 || index >= m_files.size()) {
         return;
     }
+    setCursorIndex(index);
     // Progressive fill may not have reached this row yet — catch up (bounded).
     if (index >= count()) {
         m_fileFillPriority = index;

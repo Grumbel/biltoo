@@ -286,21 +286,22 @@ Phased so each step is shippable:
 
 ---
 
-## 8. Open decisions (resolve during P2–P3)
+## 8. Decisions (accepted 2026-09-28)
 
-1. **Cursor on Ctrl+click:** move to clicked page or freeze cursor?
-   - Recommend **move cursor** so status and Image stay aligned with the last
-     clicked thumb.
-2. **Page selection when entering Image from Gallery:** clear, keep, or
-   “selection = {opened page}”?
-   - Recommend **keep** multi-select for return; cursor = opened page.
-3. **Selection policy spread + filmstrip click:** keep Selection members or
-   snap to FixedN?
-   - Already noted in SPREAD.md; recommend **keep Selection until Double View
-     toggled**.
-4. **Fourth colour for search:** violet vs reuse Activity with a different
-   pattern (outline only). Recommend **violet** so speech and search never
-   clash mid-read.
+1. **Cursor on Ctrl+click:** **move cursor** to the clicked page so status and
+   Image stay aligned with the last clicked thumb.
+2. **Page selection when entering Image from Gallery:** **keep** multi-select
+   for return; cursor = opened page.
+3. **Selection policy spread + filmstrip click:** **keep Selection membership**
+   until Double View is toggled (do not snap to FixedN on click).
+4. **Search colour:** **violet** (fourth role), distinct from speech green.
+
+### P2 progress
+
+- Filmstrip: Select blue wash vs View amber cursor edge.
+- Filmstrip: **camera viewport** rectangle on the cursor thumb (normalised
+  content coords), updated from Image camera on status refresh.
+- `ChromeColors` helper (`src/shell/chromecolors.h`).
 
 ---
 

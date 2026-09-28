@@ -381,6 +381,8 @@ private slots:
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
     void updateStatus();
+    /** Filmstrip cursor chrome + camera viewport on cursor thumb. */
+    void updateFilmstripChrome();
     void ensureWorkStatusPoll(bool workBusy);
     void refreshWorkActivityStatusBar();
     /** Refresh metadata dock from selection / session focus (deduped by path). */
