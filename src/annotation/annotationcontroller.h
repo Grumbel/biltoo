@@ -74,6 +74,9 @@ public:
 
 private:
     ImageItem *targetItem() const;
+    /** Committed page objects (+ optional select chrome) for one item. */
+    void paintItemAnnotations(QPainter &painter, ImageItem *item,
+                              bool selectionChrome);
     SessionImageId targetSid(ImageItem *item) const;
     bool pageSpaceForItem(ImageItem *item, QRectF *boundsOut, bool *yUpOut,
                           QSize *sourceSizeOut) const;

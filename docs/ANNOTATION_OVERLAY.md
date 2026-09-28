@@ -289,7 +289,7 @@ undo without a clear boundary.
 | Re-OCR invalidates region ids | Store **quads**, not indices |
 | Multiply blend | Software-raster viewport (default); Multiply via QPainter composition |
 | Crop changes | Page-space storage → paint follows crop (same as OCR boxes) |
-| Gallery mode | Annotations only in Image mode for v1 |
+| Gallery mode | **Paint** committed annotations on tiles; tools remain Image-only |
 
 ---
 

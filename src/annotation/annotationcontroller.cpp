@@ -276,37 +276,61 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
 
 
 
-void AnnotationController::paintOverlay(QPainter &painter)
+void AnnotationController::paintItemAnnotations(QPainter &painter, ImageItem *item,
+                                                   bool selectionChrome)
 {
-    if (!m_view || !m_session.isVisible()) {
+    if (!item || !m_view) {
         return;
     }
-    ImageItem *item = targetItem();
-    if (!item) {
+    // Gallery/Workspace tiles must use the item's own sid — never the Image-mode
+    // session cursor (targetSid would fall back to current and mis-paint).
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+                                   ? item->sessionId()
+                                   : targetSid(item);
+    if (sid == kInvalidSessionImageId) {
         return;
     }
-    SessionImageId sid = targetSid(item);
+    const Annotation::Page *pg = m_session.page(sid);
+    if (!pg || pg->objects.isEmpty()) {
+        return;
+    }
+
     QRectF bounds;
     bool yUp = false;
     QSize sourceSize;
     if (!pageSpaceForItem(item, &bounds, &yUp, &sourceSize)) {
         return;
     }
-
-    // Scene-space paint (painter still has view transform) — match text overlays.
-    if (const Annotation::Page *pg = m_session.page(sid)) {
-        const QRectF pb = pg->pageBounds.isValid() ? pg->pageBounds : bounds;
-        const bool py = pg->pageBounds.isValid() ? pg->pageYUp : yUp;
-        AnnotationPainter::paintPageObjects(painter, m_view, item, *pg, bounds, yUp,
-                                            sourceSize);
+    const QRectF pb = pg->pageBounds.isValid() ? pg->pageBounds : bounds;
+    const bool py = pg->pageBounds.isValid() ? pg->pageYUp : yUp;
+    AnnotationPainter::paintPageObjects(painter, m_view, item, *pg, bounds, yUp,
+                                        sourceSize);
+    if (selectionChrome) {
         AnnotationPainter::paintSelectionChrome(painter, m_view, item, *pg, pb, py,
                                                 sourceSize, m_selectedIds);
     }
+}
 
-    if (m_drawing && m_draftSid == sid) {
+void AnnotationController::paintOverlay(QPainter &painter)
+{
+    if (!m_view || !m_session.isVisible()) {
+        return;
+    }
+
+    // Image mode: primary page + draft/selection chrome (tools are Image-only).
+    if (m_view->isImageMode()) {
+        ImageItem *item = targetItem();
+        if (!item) {
+            return;
+        }
+        const SessionImageId sid = targetSid(item);
+        paintItemAnnotations(painter, item, true);
+
+        if (m_drawing && m_draftSid == sid) {
         if ((m_tool == Annotation::Tool::FreehandHighlighter
              || m_tool == Annotation::Tool::Pen)
-            && !m_draftPoints.isEmpty()) {
+            && !m_draftPoints.isEmpty() && m_draftBounds.isValid()
+            && m_draftSourceSize.isValid()) {
             Annotation::Object draft;
             if (m_tool == Annotation::Tool::Pen) {
                 draft.kind = Annotation::Kind::InkStroke;
@@ -319,8 +343,7 @@ void AnnotationController::paintOverlay(QPainter &painter)
             draft.width = m_width;
             draft.points = m_draftPoints;
             AnnotationPainter::paintObject(painter, m_view, item, draft,
-                        m_draftBounds.isValid() ? m_draftBounds : bounds, m_draftYUp,
-                        m_draftSourceSize.isValid() ? m_draftSourceSize : sourceSize);
+                        m_draftBounds, m_draftYUp, m_draftSourceSize);
         } else if ((m_tool == Annotation::Tool::TextHighlighter
                     || m_tool == Annotation::Tool::Rect
                     || m_tool == Annotation::Tool::Ellipse
@@ -361,6 +384,20 @@ void AnnotationController::paintOverlay(QPainter &painter)
             }
             painter.restore();
         }
+        }
+        return;
+    }
+
+    // Gallery / Workspace: committed annotations on every live tile that has data.
+    // Tools stay Image-mode only; this is presentation only.
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->sessionId() == kInvalidSessionImageId) {
+            continue;
+        }
+        if (!m_session.page(item->sessionId())) {
+            continue;
+        }
+        paintItemAnnotations(painter, item, false);
     }
 }
 

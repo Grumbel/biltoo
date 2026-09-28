@@ -2,23 +2,17 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2806.4-tool-cursor-stick` (base `2085c07`).
+**Tip:** `biltoo-2807.1-gallery-annot-paint` (base `2085c07`).
 
-### 2806.4
-- Cursor: apply to view **and** viewport (sticky viewport cursor was ignoring
-  restoreToolCursor set only on the view)
-- Canvas tool group ExclusiveOptional; annotation activation unchecks all
-  Select/Pan/Zoom so a re-click on Select can dismiss annotation
-- updateWorkspaceActionVisibility no longer re-checks Select under annotation
-- Text/attention/edge/zoom use applyToolCursor / restoreToolCursor
+### 2807.1
+- Gallery / Workspace: paint committed annotations on every live tile that has
+  annotation data (presentation only; tools stay Image-mode)
+- paintItemAnnotations helper; item sid only (no session-cursor fallback)
 
-### 2806.3
-- Mutual exclusion: Select/Pan/Zoom clears annotation tools
-
-### 2806.2 / 2806.1
-- qRound hotspot; custom coloured tool cursors
+### Prior (2806.x)
+- Custom tool cursors + mutual exclusion + viewport cursor stickiness fixes
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2806.4-tool-cursor-stick-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2807.1-gallery-annot-paint-2085c07.bundle HEAD
 ```
