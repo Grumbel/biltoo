@@ -485,6 +485,23 @@ void AnnotationController::paintOverlay(QPainter &painter)
     }
 }
 
+void AnnotationController::recordPageSourceKey(SessionImageId sid, const QRectF &pageBounds,
+                                               bool pageYUp)
+{
+    if (!m_view || sid == kInvalidSessionImageId) {
+        return;
+    }
+    ImageItem *item = targetItem();
+    if (!item) {
+        return;
+    }
+    const QString path = item->path();
+    if (path.isEmpty()) {
+        return;
+    }
+    m_session.setPageSourceKey(sid, path, pageBounds, pageYUp);
+}
+
 void AnnotationController::commitObject(SessionImageId sid, const Annotation::Object &obj,
                                         const QRectF &pageBounds, bool pageYUp,
                                         const QString &undoText)
@@ -492,6 +509,7 @@ void AnnotationController::commitObject(SessionImageId sid, const Annotation::Ob
     if (!m_view || sid == kInvalidSessionImageId) {
         return;
     }
+    recordPageSourceKey(sid, pageBounds, pageYUp);
     if (QUndoStack *stack = m_view->hostUndoStack()) {
         auto *cmd = new AnnotationAddCommand(m_view, sid, obj, pageBounds, pageYUp, undoText);
         stack->push(cmd);
@@ -672,20 +690,37 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
             if (bounds.isValid()) {
                 handleR = qMax(8.0, qMin(bounds.width(), bounds.height()) * 0.02);
             }
-            // Corner resize: single selection with one quad (shapes / sticky / one highlight).
+            // Corner / endpoint resize: single selection only.
             if (m_selectedIds.size() == 1) {
                 Annotation::Object selObj;
-                if (m_session.findObject(m_draftSid, m_selectedIds.first(), &selObj)
-                    && selObj.quads.size() == 1) {
-                    const ResizeCorner corner =
-                        hitTestQuadHandle(selObj.quads.first(), pagePt, handleR);
-                    if (corner != ResizeCorner::None) {
-                        beginResizeSelection(corner, selObj.id, selObj);
-                        event->accept();
-                        if (m_view->viewport()) {
-                            m_view->viewport()->update();
+                if (m_session.findObject(m_draftSid, m_selectedIds.first(), &selObj)) {
+                    if (selObj.quads.size() == 1) {
+                        const ResizeCorner corner =
+                            hitTestQuadHandle(selObj.quads.first(), pagePt, handleR);
+                        if (corner != ResizeCorner::None) {
+                            beginResizeSelection(corner, selObj.id, selObj);
+                            event->accept();
+                            if (m_view->viewport()) {
+                                m_view->viewport()->update();
+                            }
+                            return true;
                         }
-                        return true;
+                    }
+                    // ShapeLine (and short strokes): drag endpoints.
+                    if (selObj.kind == Annotation::Kind::ShapeLine
+                        && selObj.points.size() >= 2) {
+                        const qreal r2 = handleR * handleR;
+                        for (int i = 0; i < selObj.points.size(); ++i) {
+                            const QPointF d = pagePt - selObj.points.at(i);
+                            if (d.x() * d.x() + d.y() * d.y() <= r2) {
+                                beginResizeEndpoint(i, selObj.id, selObj);
+                                event->accept();
+                                if (m_view->viewport()) {
+                                    m_view->viewport()->update();
+                                }
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -1380,6 +1415,20 @@ void AnnotationController::beginResizeSelection(ResizeCorner corner, quint64 id,
 {
     m_resizing = true;
     m_resizeCorner = corner;
+    m_resizeEndpoint = -1;
+    m_resizeId = id;
+    m_resizeBaseline = baseline;
+    m_moving = false;
+    m_moveDidDrag = false;
+    m_moveBaseline.clear();
+}
+
+void AnnotationController::beginResizeEndpoint(int endpointIndex, quint64 id,
+                                               const Annotation::Object &baseline)
+{
+    m_resizing = true;
+    m_resizeCorner = ResizeCorner::None;
+    m_resizeEndpoint = endpointIndex;
     m_resizeId = id;
     m_resizeBaseline = baseline;
     m_moving = false;
@@ -1389,11 +1438,18 @@ void AnnotationController::beginResizeSelection(ResizeCorner corner, quint64 id,
 
 void AnnotationController::applyResizeTo(const QPointF &pagePt)
 {
-    if (!m_resizing || m_resizeCorner == ResizeCorner::None
-        || m_resizeBaseline.quads.isEmpty()) {
+    if (!m_resizing) {
         return;
     }
     Annotation::Object updated = m_resizeBaseline;
+    if (m_resizeEndpoint >= 0 && m_resizeEndpoint < updated.points.size()) {
+        updated.points[m_resizeEndpoint] = pagePt;
+        m_session.updateObject(m_draftSid, updated);
+        return;
+    }
+    if (m_resizeCorner == ResizeCorner::None || m_resizeBaseline.quads.isEmpty()) {
+        return;
+    }
     updated.quads[0] = resizedQuad(m_resizeBaseline.quads.first(), m_resizeCorner, pagePt);
     m_session.updateObject(m_draftSid, updated);
 }
@@ -1405,14 +1461,26 @@ void AnnotationController::finishResizeSelection()
     }
     Annotation::Object after;
     if (m_session.findObject(m_draftSid, m_resizeId, &after) && m_view) {
-        const QRectF a = after.quads.isEmpty() ? QRectF() : after.quads.first();
-        const QRectF b = m_resizeBaseline.quads.isEmpty() ? QRectF()
-                                                         : m_resizeBaseline.quads.first();
-        if (a != b) {
+        bool changed = false;
+        if (m_resizeEndpoint >= 0) {
+            if (m_resizeEndpoint < after.points.size()
+                && m_resizeEndpoint < m_resizeBaseline.points.size()) {
+                changed = after.points.at(m_resizeEndpoint)
+                          != m_resizeBaseline.points.at(m_resizeEndpoint);
+            }
+        } else {
+            const QRectF a = after.quads.isEmpty() ? QRectF() : after.quads.first();
+            const QRectF b = m_resizeBaseline.quads.isEmpty()
+                                ? QRectF()
+                                : m_resizeBaseline.quads.first();
+            changed = a != b;
+        }
+        if (changed) {
             if (QUndoStack *stack = m_view->hostUndoStack()) {
                 stack->push(new AnnotationReplaceCommand(
                     m_view, m_draftSid, m_resizeBaseline, after,
-                    QObject::tr("Resize annotation")));
+                    m_resizeEndpoint >= 0 ? QObject::tr("Move line endpoint")
+                                          : QObject::tr("Resize annotation")));
             }
         } else {
             m_session.updateObject(m_draftSid, m_resizeBaseline);
@@ -1420,6 +1488,7 @@ void AnnotationController::finishResizeSelection()
     }
     m_resizing = false;
     m_resizeCorner = ResizeCorner::None;
+    m_resizeEndpoint = -1;
     m_resizeId = 0;
     m_resizeBaseline = {};
 }
@@ -1432,6 +1501,7 @@ void AnnotationController::cancelResizeSelection()
     m_session.updateObject(m_draftSid, m_resizeBaseline);
     m_resizing = false;
     m_resizeCorner = ResizeCorner::None;
+    m_resizeEndpoint = -1;
     m_resizeId = 0;
     m_resizeBaseline = {};
 }
@@ -1668,8 +1738,11 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
         } else if (!o.points.isEmpty()) {
             QPainterPath path;
             bool first = true;
+            QVector<QPointF> scenePts;
+            scenePts.reserve(o.points.size());
             for (const QPointF &pp : o.points) {
                 const QPointF scene = pageToScene(item, pp, pageBounds, pageYUp, sourceSize);
+                scenePts.append(scene);
                 if (first) {
                     path.moveTo(scene);
                     first = false;
@@ -1678,9 +1751,20 @@ void AnnotationController::paintSelectionChrome(QPainter &painter, ImageItem *it
                 }
             }
             painter.drawPath(path);
-            // Bounding box handles feel
-            const QRectF br = path.boundingRect().adjusted(-3, -3, 3, 3);
-            painter.drawRect(br);
+            if (m_selectedIds.size() == 1 && o.kind == Annotation::Kind::ShapeLine
+                && scenePts.size() >= 2) {
+                const qreal hs = 5.0;
+                painter.save();
+                painter.setBrush(QColor(255, 255, 255));
+                painter.setPen(QPen(QColor(53, 132, 228), 0));
+                for (const QPointF &c : scenePts) {
+                    painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
+                }
+                painter.restore();
+            } else {
+                const QRectF br = path.boundingRect().adjusted(-3, -3, 3, 3);
+                painter.drawRect(br);
+            }
         }
     }
     painter.restore();

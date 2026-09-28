@@ -2,27 +2,27 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2787.1-annot-corner-resize` (base `a989daf`).
+**Tip:** `biltoo-2788.1-annot-endpoint-sourcekey` (base `a989daf`).
 
-### 2787.1 — Corner resize (Select tool)
-- Single selection with one quad (rect, ellipse, sticky, single highlight): corner
-  handles; drag resizes with opposite corner fixed; min size 2×2 page units
-- Undo via AnnotationReplaceCommand; Escape / tool change cancels
-- Multi-select and stroke-only objects still move-only
+### 2788.1 — Line endpoints + page sourceKey
+- ShapeLine: endpoint handles when singly selected; drag moves that point (undo)
+- Page.sourceKey (path) recorded on commit; persisted in formatVersion 2 JSON
+  for later remap / size-change detection
 
 ### Prior
+- 2787.1 corner resize
 - 2786.1 select drag-move
-- 2785.1 multi-select, layer visibility, prefs
-- 2784.1 format v2 / ReplaceCommand
+- 2785.1 multi-select / visibility / prefs
+- 2784.1 format v2
 - 2783.1 compile fix
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2787.1-annot-corner-resize-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2788.1-annot-endpoint-sourcekey-a989daf.bundle HEAD
 ```
 
 ### Still open
-- Content-hash binding of pageBounds
+- Validate sourceKey vs current path on project load (warn / scale)
 - AnnotationPainter split from controller
 - PDF /Annot export
-- Line endpoint resize; multi-quad scale
+- Multi-quad uniform scale

@@ -87,6 +87,11 @@ struct Page {
     SessionImageId sid = kInvalidSessionImageId;
     QRectF pageBounds;
     bool pageYUp = false;
+    /**
+     * Optional durable identity of the page source at last write (file path or
+     * sha256:…). Used to detect remaps / size changes on load; empty = unknown.
+     */
+    QString sourceKey;
     QVector<Object> objects;
 };
 
@@ -251,6 +256,9 @@ inline QJsonObject pageToJson(const Page &pg)
     QJsonObject j;
     j.insert(QStringLiteral("sid"), QString::number(static_cast<qulonglong>(pg.sid)));
     j.insert(QStringLiteral("pageYUp"), pg.pageYUp);
+    if (!pg.sourceKey.isEmpty()) {
+        j.insert(QStringLiteral("sourceKey"), pg.sourceKey);
+    }
     QJsonObject b;
     b.insert(QStringLiteral("x"), pg.pageBounds.x());
     b.insert(QStringLiteral("y"), pg.pageBounds.y());
@@ -275,6 +283,7 @@ inline Page pageFromJson(const QJsonObject &j)
         pg.sid = static_cast<SessionImageId>(sidVal.toDouble());
     }
     pg.pageYUp = j.value(QStringLiteral("pageYUp")).toBool(false);
+    pg.sourceKey = j.value(QStringLiteral("sourceKey")).toString();
     const QJsonObject b = j.value(QStringLiteral("pageBounds")).toObject();
     pg.pageBounds = QRectF(b.value(QStringLiteral("x")).toDouble(),
                            b.value(QStringLiteral("y")).toDouble(),

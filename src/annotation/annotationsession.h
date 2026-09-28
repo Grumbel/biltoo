@@ -113,6 +113,21 @@ public:
         return false;
     }
 
+    /** Record source identity on an existing or new page (non-empty only). */
+    void setPageSourceKey(SessionImageId sid, const QString &sourceKey,
+                          const QRectF &pageBounds, bool pageYUp)
+    {
+        if (sourceKey.isEmpty()) {
+            return;
+        }
+        Annotation::Page &pg = ensurePage(sid, pageBounds, pageYUp);
+        pg.sourceKey = sourceKey;
+        if (pageBounds.isValid()) {
+            pg.pageBounds = pageBounds;
+            pg.pageYUp = pageYUp;
+        }
+    }
+
     void clearPage(SessionImageId sid) { m_pages.remove(sid); }
     void clearAll()
     {

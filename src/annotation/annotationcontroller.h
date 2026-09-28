@@ -157,12 +157,17 @@ private:
                               const QPointF &pagePt);
     void beginResizeSelection(ResizeCorner corner, quint64 id,
                               const Annotation::Object &baseline);
+    /** Endpoint drag for ShapeLine (and 2-point strokes); endpointIndex 0 or 1. */
+    void beginResizeEndpoint(int endpointIndex, quint64 id,
+                             const Annotation::Object &baseline);
     void applyResizeTo(const QPointF &pagePt);
     void finishResizeSelection();
     void cancelResizeSelection();
+    void recordPageSourceKey(SessionImageId sid, const QRectF &pageBounds, bool pageYUp);
 
     bool m_resizing = false;
     ResizeCorner m_resizeCorner = ResizeCorner::None;
+    int m_resizeEndpoint = -1; /**< ≥0 → moving points[index]; -1 → corner quad resize */
     quint64 m_resizeId = 0;
     Annotation::Object m_resizeBaseline;
 };
