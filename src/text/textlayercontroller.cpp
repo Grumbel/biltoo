@@ -254,7 +254,8 @@ void TextLayerController::recomputeSearchMatches()
             blockIds.append(r.blockId);
         }
         const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
-        const bool yUp = path.isEmpty() ? pageYUp() : ThumtooCache::pageSpaceYUpForPath(path);
+        // Layer flag is authoritative; path is only a fallback with no layer.
+        const bool yUp = layer.pageYUp;
         return TextSearchPolicy::findHits(
             texts, bboxes, m_session.searchQueryRef(), m_session.isSearchFuzzy(),
             blockIds, yUp, ocrOrder);
@@ -535,7 +536,9 @@ QRectF TextLayerController::regionImageRectFor(ImageItem *item, const QString &p
         return {};
     }
 
-    const bool pageYUpFlag = ThumtooCache::pageSpaceYUpForPath(path);
+    // Prefer the flag stored on the layer (OCR/native extractors set it).
+    // Path fallback disagrees with older PDF OCR blobs that used page_y_up=true.
+    const bool pageYUpFlag = layer.pageYUp;
     const QRectF inSource = ThumtooCache::pageRectToImageRect(
         region.bbox, layer.pageBounds, sourceSize, pageYUpFlag);
     if (inSource.isEmpty()) {
@@ -974,7 +977,7 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
             blocks.append(layer.regions.at(i).blockId);
         }
         const bool ocrOrder = layer.source == ThumtooCache::TextLayerSource::Ocr;
-        const bool yUp = path.isEmpty() ? layer.pageYUp : ThumtooCache::pageSpaceYUpForPath(path);
+        const bool yUp = layer.pageYUp;
         TextLayerGeometry::sortReadingOrder(&order, rects, 4.0, &blocks, yUp, ocrOrder);
         for (int idx : order) {
             if (idx < 0 || idx >= n) {

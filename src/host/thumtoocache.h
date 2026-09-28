@@ -529,7 +529,7 @@ struct PageTextLayer {
      * When true, region bboxes use bottom-left origin (Y up) inside pageBounds.
      * When false, top-left (Y down). Set by thumtoo (TTL7+); see docs/OCR_COORDINATES.md.
      */
-    bool pageYUp = true;
+    bool pageYUp = false;  // MuPDF/PDF default; DjVu extractors set true
     TextLayerSource source = TextLayerSource::Native;
     QVector<TextRegion> regions;
 };

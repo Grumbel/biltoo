@@ -5999,7 +5999,7 @@ void MainWindow::startOcrCurrentPage()
                         // Image files: page box == full source raster (Y-down).
                         pageBounds = QRectF(0, 0, native.width(), native.height());
                     }
-                    // Target document page space (Y-up for PDF/DjVu/EPUB).
+                    // Target document page space (DjVu Y-up; PDF/EPUB MuPDF Y-down).
                     const bool yUp = ThumtooCache::pageSpaceYUpForPath(pathCopy);
                     remapOcrLayerFromDisplayToPage(
                         &result.layer, native, ocrState, pageBounds, yUp);

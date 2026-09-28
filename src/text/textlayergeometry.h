@@ -27,9 +27,9 @@ QVector<int> indicesIntersecting(const QVector<QRectF> &regionRects, const QRect
  * fights multi-column and Y-up page space.
  *
  * Otherwise: optional @p blockIds primary key, then visual top-to-bottom / LTR.
- * @p pageYUp true (PDF/DjVu/EPUB page space): visual top is the larger Y
+ * @p pageYUp true (DjVu page space): visual top is the larger Y
  * (QRectF::bottom after normalize); sorting by top() ascending would read the
- * page bottom-first.
+ * page bottom-first. PDF/EPUB (MuPDF) are pageYUp false.
  */
 void sortReadingOrder(QVector<int> *indices, const QVector<QRectF> &regionRects,
                       qreal topTolerance = 4.0,
