@@ -378,7 +378,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_adjustmentsDock->setWidget(m_adjustmentsPanel);
     addDockWidget(m_adjustmentsDock, KDDockWidgets::Location_OnRight);
     m_adjustmentsDock->close();
-connect(m_adjustmentsDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
+    connect(m_adjustmentsDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateAdjustmentsPanel();
             updateCropPanel();
@@ -459,7 +459,7 @@ m_ocrPanel = new OcrPanel(this);
     m_textDock->setWidget(m_textPanel);
     addDockWidget(m_textDock, KDDockWidgets::Location_OnRight);
     m_textDock->close();
-connect(m_textDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
+    connect(m_textDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         if (visible) {
             updateTextPanel();
             connectTextPanel();

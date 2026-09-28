@@ -15,6 +15,7 @@
 
 #include <kddockwidgets/qtwidgets/MainWindow.h>
 #include <kddockwidgets/qtwidgets/DockWidget.h>
+#include <kddockwidgets/LayoutSaver.h>
 #include <atomic>
 #include <QLineEdit>
 #include <QToolBar>
