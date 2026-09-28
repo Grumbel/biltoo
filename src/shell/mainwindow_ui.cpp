@@ -1533,7 +1533,6 @@ void MainWindow::createToolBar()
         dvBtn->setDefaultAction(m_doubleViewAct);
         m_toolBar->addWidget(dvBtn);
     }
-    m_toolBar->addAction(m_backToGalleryAct);
 
     // Masonry column/row count — shown while a masonry layout is active
     auto *masonryCountHost = new QWidget(m_toolBar);

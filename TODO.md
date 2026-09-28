@@ -2,17 +2,15 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2741.1-qt-isystem-before` (base `636e70e`).
+**Tip:** `biltoo-2742.1-spread-destroy-center` (base `636e70e`).
 
-### 2741.1
-- Stronger Qt SYSTEM includes: `SYSTEM BEFORE` on `biltoo_lib` so `-isystem`
-  wins over `-I` (GCC only suppresses dep-header warnings then)
-- Avoid `QVector(n, -1)` sized fill ctor in finishRubberBand (triggers the
-  Qt `qarraydataops` `-Wstringop-overflow` false positive)
-
-**Reconfigure required** after pull (`biltoo-configure` / re-run cmake).
+### 2742.1
+- Spread prune uses `destroyCanvasItem` (unregister tile LOD bags) — fixes
+  ASSERT on Prev/Next tickTileLod
+- Scene-only sceneRect (no view override) + deferred centerOn — centering
+- Removed toolbar Back (HUD edge Up remains via setGalleryReturnAvailable)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2741.1-qt-isystem-before-636e70e.bundle HEAD
+git pull --ff-only …/biltoo-2742.1-spread-destroy-center-636e70e.bundle HEAD
 ```

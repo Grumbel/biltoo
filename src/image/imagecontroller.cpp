@@ -10,6 +10,8 @@
 #include "imageview_types.h"
 #include <memory>
 #include <QSet>
+#include <QPointer>
+#include <QTimer>
 #include <QFileInfo>
 #include "host/thumtoocache.h"
 #include "session/spreadstate.h"
@@ -400,8 +402,8 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         return;
     }
 
-    // Drop underlays that are no longer members (Prev/Next would otherwise
-    // leave stale pages on the scene while the filmstrip moves).
+    // Drop underlays that are no longer members. Must use destroyCanvasItem so
+    // tile LOD bags unregister — plain delete leaves tickTileLod asserting.
     {
         QSet<QString> keep;
         for (const QString &p : paths) {
@@ -419,11 +421,7 @@ void ImageController::applySpreadLayout(const QStringList &paths,
             }
         }
         for (ImageItem *item : doomed) {
-            if (QGraphicsScene *sc = item->scene()) {
-                sc->removeItem(item);
-            }
-            m_view->liveItems().removeOne(item);
-            delete item;
+            m_view->destroyCanvasItem(item, /*persistState=*/false);
         }
     }
 
@@ -496,21 +494,28 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         item->applyPlacement(pl);
     }
 
-    QRectF contentUnion = layout.unionRect;
+    QRectF contentUnion;
     for (ImageItem *item : items) {
         if (item) {
-            contentUnion = contentUnion.united(
-                item->mapRectToScene(item->displayContentRect()));
+            contentUnion = contentUnion.united(item->sceneBoundingRect());
         }
     }
     if (!contentUnion.isValid() || contentUnion.isEmpty()) {
         contentUnion = layout.unionRect;
     }
-    const QRectF padded = contentUnion.adjusted(-16, -16, 16, 16);
+    if (!contentUnion.isValid() || contentUnion.isEmpty()) {
+        return;
+    }
+    const QRectF padded = contentUnion.adjusted(-8, -8, 8, 8);
+
+    // Image-mode rule: scene owns sceneRect; never install a view-level
+    // setSceneRect override (that clamps scroll and leaves content top-stuck).
     if (QGraphicsScene *scene = m_view->canvasScene()) {
+        if (!m_view->sceneRect().isNull()) {
+            m_view->setSceneRect(QRectF());
+        }
         scene->setSceneRect(padded);
     }
-    m_view->setSceneRect(padded);
 
     const bool membershipChanged = (paths != m_spreadLayoutPaths);
     const bool unionGrew =
@@ -524,6 +529,19 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         m_view->setAlignment(Qt::AlignCenter);
         m_view->resetTransform();
         m_view->fitInView(contentUnion, Qt::KeepAspectRatio);
+        // Scroll ranges settle after sceneRect/fit — re-center like single-page.
+        m_view->centerOn(contentUnion.center());
+        m_view->refreshScrollBarGeometry();
+        const QPointer<ImageView> guard(m_view);
+        const QRectF centerTarget = contentUnion;
+        QTimer::singleShot(0, m_view, [guard, centerTarget]() {
+            ImageView *const view = guard.data();
+            if (!view || !view->isImageMode() || !view->viewport()) {
+                return;
+            }
+            view->centerOn(centerTarget.center());
+            view->refreshScrollBarGeometry();
+        });
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();
