@@ -29,6 +29,7 @@
     ImageItem *targetItem() const override;
     void hostPushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                   const ItemComponents::Placement &after, const QString &text);
+    void applyToolCursor(const QCursor &cursor);
     void restoreToolCursor();
     /**
      * Remove @p item from the scene and delete it.

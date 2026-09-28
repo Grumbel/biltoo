@@ -4,6 +4,7 @@
 #ifndef VIEWSHELLCHROME_H
 #define VIEWSHELLCHROME_H
 
+#include <QCursor>
 #include "view/viewportchrome.h"
 #include "view/canvasbackground.h"
 
@@ -46,6 +47,7 @@ public:
     /** Pointer left the viewport: clear transient mouse info. */
     void onLeave();
     /** Restore cursor for the current Workspace tool (after pan / chrome drag). */
+    void applyToolCursor(const QCursor &cursor);
     void restoreToolCursor();
 
     /** External / internal path drag-drop (accept + filesDropped emit). */

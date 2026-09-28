@@ -1,3 +1,4 @@
+#include <QCursor>
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -62,7 +63,7 @@ bool ImageController::setHoverEdge(EdgeNavPolicy::Zone zone)
     }
     m_hoverEdge = zone;
     if (isNavEdge(m_hoverEdge) && !m_view->hostAnnot().isToolActive()) {
-        m_view->setCursor(Qt::PointingHandCursor);
+        m_view->applyToolCursor(QCursor(Qt::PointingHandCursor));
     } else if (!m_view->hostChrome().isPanning()
                && !m_view->hostWorkspace().itemInteract().isRotating()) {
         m_view->restoreToolCursor();

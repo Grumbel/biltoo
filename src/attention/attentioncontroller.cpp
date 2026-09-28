@@ -205,12 +205,12 @@ void AttentionController::setAttentionMode(bool on)
         }
         ensureAttentionPoint();
         if (m_view->viewport()) {
-            m_view->viewport()->setCursor(ToolCursors::attentionDraw());
+            m_view->applyToolCursor(ToolCursors::attentionDraw());
         }
     } else {
         session().leaveMode();
         if (m_view->viewport()) {
-            m_view->viewport()->unsetCursor();
+            m_view->restoreToolCursor();
         }
     }
     if (m_view->viewport()) {
@@ -430,9 +430,9 @@ bool AttentionController::tryMouseMoveAttention(QMouseEvent *event)
         event->accept();
         return true;
     }
-    m_view->viewport()->setCursor(attentionHandleAt(event->pos())
-                                         ? QCursor(Qt::SizeAllCursor)
-                                         : ToolCursors::attentionDraw());
+    m_view->applyToolCursor(attentionHandleAt(event->pos())
+                                   ? QCursor(Qt::SizeAllCursor)
+                                   : ToolCursors::attentionDraw());
     return false;
 }
 

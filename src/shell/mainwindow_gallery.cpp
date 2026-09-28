@@ -764,15 +764,26 @@ void MainWindow::updateWorkspaceActionVisibility()
         }
     }
     if (m_imageView) {
-        const Tool t = m_imageView->currentTool();
-        if (m_selectToolAct) {
-            m_selectToolAct->setChecked(t == Tool::Select);
-        }
-        if (m_panToolAct) {
-            m_panToolAct->setChecked(t == Tool::Pan);
-        }
-        if (m_zoomToolAct) {
-            m_zoomToolAct->setChecked(t == Tool::Zoom);
+        // While an annotation tool is active the canvas tool actions stay
+        // unchecked (annotation owns the chrome). Do not re-check Select from
+        // the underlying Interaction tool — that made tools look dual-active.
+        if (m_imageView->hostAnnot().isToolActive()) {
+            for (QAction *a : {m_selectToolAct, m_panToolAct, m_zoomToolAct}) {
+                if (a) {
+                    a->setChecked(false);
+                }
+            }
+        } else {
+            const Tool t = m_imageView->currentTool();
+            if (m_selectToolAct) {
+                m_selectToolAct->setChecked(t == Tool::Select);
+            }
+            if (m_panToolAct) {
+                m_panToolAct->setChecked(t == Tool::Pan);
+            }
+            if (m_zoomToolAct) {
+                m_zoomToolAct->setChecked(t == Tool::Zoom);
+            }
         }
     }
     // Workspace-only chrome: keep menu entries stable; grey out outside Workspace.

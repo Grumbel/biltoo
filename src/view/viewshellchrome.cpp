@@ -74,7 +74,7 @@ bool ViewShellChrome::tryMousePressPan(QMouseEvent *event)
     }
     if (middle || leftPan) {
         m_viewport.beginPan(event->pos());
-        m_view->setCursor(ToolCursors::panClosed());
+        applyToolCursor(ToolCursors::panClosed());
         event->accept();
         return true;
     }
@@ -125,18 +125,30 @@ bool ViewShellChrome::tryMouseReleasePan(QMouseEvent *event)
     return true;
 }
 
+void ViewShellChrome::applyToolCursor(const QCursor &cursor)
+{
+    if (!m_view) {
+        return;
+    }
+    // QGraphicsView delivers mouse events to the viewport. A cursor set only on
+    // the view is ignored once anything has set an explicit viewport cursor
+    // (crop / attention / workspace). Always drive both.
+    m_view->setCursor(cursor);
+    if (QWidget *vp = m_view->viewport()) {
+        vp->setCursor(cursor);
+    }
+}
+
 void ViewShellChrome::restoreToolCursor()
 {
     if (!m_view) {
         return;
     }
-    // Annotation tools are a separate mode from Select/Pan/Zoom; while one is
-    // active they own the cursor (canvas tool may still be Select underneath).
     if (m_view->hostAnnot().isToolActive()) {
-        m_view->setCursor(ToolCursors::forAnnotation(m_view->hostAnnot().tool()));
+        applyToolCursor(ToolCursors::forAnnotation(m_view->hostAnnot().tool()));
         return;
     }
-    m_view->setCursor(ToolPolicy::cursorFor(m_view->currentTool()));
+    applyToolCursor(ToolPolicy::cursorFor(m_view->currentTool()));
 }
 
 void ViewShellChrome::updateMouseInfo(const QPoint &viewPos)
@@ -916,7 +928,7 @@ bool ViewShellChrome::handleKeyPress(QKeyEvent *event)
         && m_view->currentTool() != Tool::Pan) {
         m_viewport.spacePanHeld = true;
         if (!m_viewport.isPanning()) {
-            m_view->setCursor(ToolCursors::panOpen());
+            applyToolCursor(ToolCursors::panOpen());
         }
         event->accept();
         return true;

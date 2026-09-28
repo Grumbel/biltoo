@@ -1177,7 +1177,7 @@ bool TextLayerController::tryMousePressRubber(QMouseEvent *event)
     }
     m_session.beginRubber(event->pos());
     m_session.clearSelectedRegions();
-    m_view->setCursor(ToolCursors::textSelect());
+    m_view->applyToolCursor(ToolCursors::textSelect());
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -1205,7 +1205,7 @@ bool TextLayerController::tryMouseReleaseRubber(QMouseEvent *event)
     }
     m_session.updateRubber(event->pos());
     finishRubberBand();
-    m_view->unsetCursor();
+    m_view->restoreToolCursor();
     event->accept();
     return true;
 }
@@ -1242,7 +1242,8 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
     if (m_view->isImageMode() && !m_view->hostCrop().active()
-        && !m_view->hostAttention().active() && !session().isRubberbanding()
+        && !m_view->hostAttention().active() && !m_view->hostAnnot().isToolActive()
+        && !session().isRubberbanding()
         && !m_view->hostChrome().isPanning() && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(m_view->hostImage().classicPath())) {
         if (!session().hasLayerRegions()
@@ -1257,7 +1258,7 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
         QString uri;
         QString tip;
         if (hitLinkAt(event->pos(), &page, &uri)) {
-            m_view->setCursor(Qt::PointingHandCursor);
+            m_view->applyToolCursor(QCursor(Qt::PointingHandCursor));
             if (page > 0) {
                 tip = m_view->tr("Link → page %1").arg(page);
             }
@@ -1268,9 +1269,7 @@ void TextLayerController::updateMouseMoveLinkHover(QMouseEvent *event)
                 tip = m_view->tr("Link");
             }
         } else if (m_view->hostHoverEdge() == ImageView::EdgeZone::None) {
-            m_view->setCursor(m_view->hostChrome().isImageModeLeftDragPan()
-                                  ? ToolCursors::panOpen()
-                                  : QCursor(Qt::ArrowCursor));
+            m_view->restoreToolCursor();
         }
         if (session().setLinkHoverTip(tip)) {
             emit m_view->statusChanged();

@@ -113,11 +113,8 @@ void AnnotationController::setTool(Annotation::Tool tool)
             // Drop any lingering edge-nav hover so chevrons do not stick under tools.
             m_view->hostImage().clearHoverEdge();
         }
-        if (m_tool == Annotation::Tool::None) {
-            m_view->restoreToolCursor();
-        } else {
-            m_view->setCursor(ToolCursors::forAnnotation(m_tool));
-        }
+        // Always go through restoreToolCursor so view + viewport stay in sync.
+        m_view->restoreToolCursor();
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
@@ -1531,6 +1528,17 @@ bool AnnotationController::tryKeyPress(QKeyEvent *event)
         }
         if (m_moving) {
             cancelMoveSelection();
+            event->accept();
+            return true;
+        }
+        if (m_drawing) {
+            m_drawing = false;
+            m_draftPoints.clear();
+            m_rubberView = {};
+            m_shapeEndView = {};
+            if (m_view && m_view->viewport()) {
+                m_view->viewport()->update();
+            }
             event->accept();
             return true;
         }

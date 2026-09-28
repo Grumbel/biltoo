@@ -108,6 +108,11 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     QGraphicsView::mouseMoveEvent(event);
 }
 
+void ImageView::applyToolCursor(const QCursor &cursor)
+{
+    m_shell.applyToolCursor(cursor);
+}
+
 void ImageView::restoreToolCursor()
 {
     m_shell.restoreToolCursor();
@@ -190,11 +195,7 @@ void ImageView::setTool(Tool tool)
 {
     m_interaction.setTool(tool);
     if (!hostChrome().isPanning()) {
-        if (hostAnnot().isToolActive()) {
-            setCursor(ToolCursors::forAnnotation(hostAnnot().tool()));
-        } else {
-            setCursor(ToolPolicy::cursorFor(m_interaction.tool()));
-        }
+        restoreToolCursor();
     }
     if (isWorkspaceMode()) {
         m_workspace.applyToolDragMode();

@@ -31,7 +31,7 @@ void ImageController::armZoomRegion()
     }
     cancelZoomRegion();
     m_zoomRegion.arm();
-    m_view->setCursor(ToolCursors::crosshair());
+    m_view->applyToolCursor(ToolCursors::crosshair());
     emit m_view->statusChanged();
     if (QWidget *vp = m_view->viewport()) {
         vp->update();
