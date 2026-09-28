@@ -2,22 +2,23 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2792.1-annotation-painter` (base `a989daf`).
+**Tip:** `biltoo-2793.1-pdf-writeback-defer-doc` (base `a989daf`).
 
-### 2792.1 — AnnotationPainter extraction
-- New `AnnotationPainter`: page↔display↔scene mapping + paint of objects/page/chrome
-- Controller keeps tools, input, undo, draft rubber-band; paintOverlay delegates
-- Fix `unionOfQuads` scope (file-level helpers before first use)
+### 2793.1
+- Document deferred PDF source write-back / `/Annot` in `docs/PDF_SOURCE_WRITEBACK.md`
+- Not implementing structural PDF edits this pass (keep Qt raster export + project JSON)
 
-### Prior
-- 2791 multi-quad resize / sourceKey check / panel auto-open
-- 2790 Annotations panel
-- 2789–2783 tools, format, compile
+### Prior tip behaviour
+- 2792.1 AnnotationPainter extraction
+- 2791–2783 annotation tools, panel, format, compile
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2792.1-annotation-painter-a989daf.bundle HEAD
+git pull --ff-only …/biltoo-2793.1-pdf-writeback-defer-doc-a989daf.bundle HEAD
 ```
 
-### Still open
-- PDF /Annot export
+### Still open (annotation-related)
+- (none forced) — optional polish only
+
+### Deferred (see docs/PDF_SOURCE_WRITEBACK.md)
+- PDF `/Annot` and broader non-destructive write-back into source PDFs

@@ -27,7 +27,7 @@ user can:
   highlighter behaviour, not a solid wash)
 
 Annotations are **view chrome on top of content**, not a destructive bake into
-the source file in v1. Export / PDF write-back can come later.
+the source file in v1. Export / PDF write-back can come later (see [PDF_SOURCE_WRITEBACK.md](PDF_SOURCE_WRITEBACK.md)).
 
 ---
 
@@ -129,7 +129,7 @@ store as RGBA + blend enum, not only alpha.
 
 ### Out of scope for early versions
 
-- PDF `/Annot` write-back into source files
+- PDF `/Annot` write-back into source files — **deferred**; see [PDF_SOURCE_WRITEBACK.md](PDF_SOURCE_WRITEBACK.md)
 - Multi-user review threads
 - Stylus pressure curves (can add once ink path exists)
 - Redaction (secure wipe — different product surface)
