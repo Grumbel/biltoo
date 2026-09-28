@@ -394,10 +394,21 @@ void AnnotationController::finishFreehand()
     obj.blend = Annotation::Blend::Multiply;
     obj.color = m_color;
     obj.width = m_width;
+    // Drop non-finite samples before simplify (avoids NaN path in RDP).
+    QVector<QPointF> clean;
+    clean.reserve(m_draftPoints.size());
+    for (const QPointF &p : m_draftPoints) {
+        if (qIsFinite(p.x()) && qIsFinite(p.y())) {
+            clean.append(p);
+        }
+    }
+    if (clean.isEmpty()) {
+        return;
+    }
     const qreal eps = qMax(0.4, m_width * 0.04);
-    obj.points = Annotation::simplifyPolyline(m_draftPoints, eps);
-    if (obj.points.isEmpty()) {
-        obj.points = m_draftPoints;
+    obj.points = Annotation::simplifyPolyline(clean, eps);
+    if (obj.points.size() < 1) {
+        obj.points = clean;
     }
     commitObject(m_draftSid, obj, m_draftBounds, m_draftYUp,
                  QObject::tr("Highlight stroke"));

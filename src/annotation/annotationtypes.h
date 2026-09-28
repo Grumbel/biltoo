@@ -144,13 +144,24 @@ inline Page pageFromJson(const QJsonObject &j)
     return pg;
 }
 
-/** Ramer–Douglas–Peucker-ish thin for freehand (page units). */
+/** Ramer–Douglas–Peucker thin for freehand (page units). */
+inline qreal clamp01(qreal v)
+{
+    // Avoid Qt qBound(min/max assert) and NaN: clamp without Q_ASSERT.
+    if (!(v > 0.0)) {
+        return 0.0; // also maps NaN → 0
+    }
+    if (v > 1.0) {
+        return 1.0;
+    }
+    return v;
+}
+
 inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsilon)
 {
-    if (pts.size() < 3 || epsilon <= 0) {
+    if (pts.size() < 3 || !(epsilon > 0)) {
         return pts;
     }
-    // iterative stack-based RDP
     QVector<bool> keep(pts.size(), false);
     keep[0] = true;
     keep[pts.size() - 1] = true;
@@ -160,6 +171,9 @@ inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsi
         const auto range = stack.takeLast();
         const int i0 = range.first;
         const int i1 = range.second;
+        if (i1 - i0 < 2) {
+            continue;
+        }
         const QPointF a = pts.at(i0);
         const QPointF b = pts.at(i1);
         const QPointF ab = b - a;
@@ -169,14 +183,12 @@ inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsi
         for (int i = i0 + 1; i < i1; ++i) {
             const QPointF p = pts.at(i);
             qreal dist = 0;
-            if (ab2 < 1e-12) {
+            if (!(ab2 > 1e-12)) {
                 const QPointF d = p - a;
                 dist = qSqrt(d.x() * d.x() + d.y() * d.y());
             } else {
-                // Qt: qBound(value, min, max) — not (min, max, value).
-                const qreal t = qBound(
-                    ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2,
-                    0.0, 1.0);
+                const qreal t = clamp01(
+                    ((p.x() - a.x()) * ab.x() + (p.y() - a.y()) * ab.y()) / ab2);
                 const QPointF proj(a.x() + t * ab.x(), a.y() + t * ab.y());
                 const QPointF d = p - proj;
                 dist = qSqrt(d.x() * d.x() + d.y() * d.y());
@@ -186,7 +198,7 @@ inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsi
                 maxIdx = i;
             }
         }
-        if (maxDist > epsilon) {
+        if (maxDist > epsilon && maxIdx > i0 && maxIdx < i1) {
             keep[maxIdx] = true;
             stack.append({i0, maxIdx});
             stack.append({maxIdx, i1});
@@ -199,7 +211,7 @@ inline QVector<QPointF> simplifyPolyline(const QVector<QPointF> &pts, qreal epsi
             out.append(pts.at(i));
         }
     }
-    return out;
+    return out.isEmpty() ? pts : out;
 }
 
 } // namespace Annotation
