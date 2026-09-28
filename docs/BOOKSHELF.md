@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Bookshelf / library (design)
 
-Status: **Not implemented.** Recorded 2026-09-28.
+Status: **Phase 1 in tree** (menu pin list). Recorded 2026-09-28.
 
 Related: Recent Sessions menu, project files (`.biltoo`), [TAGS_AND_BOOKMARKS.md](TAGS_AND_BOOKMARKS.md).
 
@@ -18,7 +18,10 @@ not only the automatic Recent list (time-ordered, capped, easy to lose).
 
 ---
 
-## Phase 1 — Menu only (recommended start)
+## Phase 1 — Menu only (in tree)
+
+Menu bar **Bookshelf**: Add Current Session, per-entry Open / Remove submenus, Clear Bookshelf. Persistence: QSettings array `bookshelf` (path lists).
+
 
 Mirror **Recent Sessions**:
 

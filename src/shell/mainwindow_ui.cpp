@@ -1554,6 +1554,31 @@ void MainWindow::createMenus()
         "current session or delete any image files. Recent Projects are unaffected.</p>"));
     connect(m_clearHistoryAct, &QAction::triggered, this, &MainWindow::clearSessionHistory);
 
+    m_bookshelfMenu = menuBar()->addMenu(tr("&Bookshelf"));
+    m_bookshelfMenu->setToolTipsVisible(true);
+    m_bookshelfMenu->setStatusTip(tr(
+        "Permanent user-pinned sessions (not auto-cleared like Recent Sessions)"));
+    m_bookshelfMenu->setWhatsThis(tr(
+        "<p><b>Bookshelf</b> is a permanent list of sessions you pin yourself.</p>"
+        "<ul>"
+        "<li><b>Add Current Session to Bookshelf</b> stores the current path list.</li>"
+        "<li>Open or remove an entry from its submenu.</li>"
+        "<li>Unlike <b>Recent Sessions</b>, nothing is dropped when the list grows.</li>"
+        "</ul>"));
+    m_addToBookshelfAct = new QAction(tr("&Add Current Session to Bookshelf"), this);
+    m_addToBookshelfAct->setStatusTip(tr("Pin the current session path list on the Bookshelf"));
+    m_addToBookshelfAct->setWhatsThis(tr(
+        "<p>Store the current ordered path list on the <b>Bookshelf</b>. "
+        "The list survives restarts and is not limited like Recent Sessions.</p>"));
+    connect(m_addToBookshelfAct, &QAction::triggered, this, &MainWindow::addCurrentSessionToBookshelf);
+    m_clearBookshelfAct = new QAction(tr("&Clear Bookshelf"), this);
+    m_clearBookshelfAct->setStatusTip(tr("Remove all Bookshelf pins (does not delete files)"));
+    m_clearBookshelfAct->setWhatsThis(tr(
+        "<p>Remove every Bookshelf entry. Does not delete files on disk or "
+        "clear Recent Sessions / Recent Projects.</p>"));
+    connect(m_clearBookshelfAct, &QAction::triggered, this, &MainWindow::clearBookshelf);
+    connect(m_bookshelfMenu, &QMenu::aboutToShow, this, &MainWindow::rebuildBookshelfMenu);
+
     // Runtime toggles for the usual BILTOO_* / THUMTOO_* debug env vars.
     // Initial state comes from the environment; changes apply immediately.
     m_debugMenu = menuBar()->addMenu(tr("&Debug"));

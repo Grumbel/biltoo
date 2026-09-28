@@ -497,6 +497,12 @@ private:
     void rebuildHistoryMenu();
     void openHistoryEntry();
     void clearSessionHistory();
+
+    void addCurrentSessionToBookshelf();
+    void rebuildBookshelfMenu();
+    void openBookshelfEntry();
+    void removeBookshelfEntry();
+    void clearBookshelf();
     void rememberRecentProject(const QString &path);
     void rebuildRecentProjectsMenu();
     void openRecentProject();
@@ -660,6 +666,9 @@ private:
     QMenu *m_fileMenu = nullptr;
     QMenu *m_historyMenu = nullptr;
     QAction *m_clearHistoryAct = nullptr;
+    QMenu *m_bookshelfMenu = nullptr;
+    QAction *m_addToBookshelfAct = nullptr;
+    QAction *m_clearBookshelfAct = nullptr;
     QMenu *m_recentProjectsMenu = nullptr;
     QAction *m_clearRecentProjectsAct = nullptr;
     QMenu *m_editMenu = nullptr;
@@ -859,6 +868,8 @@ private:
     /** Past sessions (full path lists), newest first. */
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;
+    /** User-pinned sessions (path lists); no auto-eviction. */
+    QList<QStringList> m_bookshelf;
     QStringList m_recentProjects;
     static constexpr int kMaxRecentProjects = 12;
     int m_currentIndex = -1;

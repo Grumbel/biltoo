@@ -4486,6 +4486,18 @@ void MainWindow::readSettings()
     settings.endArray();
     rebuildHistoryMenu();
 
+    m_bookshelf.clear();
+    const int shelfCount = settings.beginReadArray(QStringLiteral("bookshelf"));
+    for (int i = 0; i < shelfCount; ++i) {
+        settings.setArrayIndex(i);
+        const QStringList paths = settings.value(QStringLiteral("paths")).toStringList();
+        if (!paths.isEmpty()) {
+            m_bookshelf.append(paths);
+        }
+    }
+    settings.endArray();
+    rebuildBookshelfMenu();
+
     m_recentProjects.clear();
     const QStringList recent = settings.value(QStringLiteral("recentProjects")).toStringList();
     for (const QString &p : recent) {
@@ -4581,6 +4593,12 @@ void MainWindow::writeSettings()
     for (int i = 0; i < m_sessionHistory.size(); ++i) {
         settings.setArrayIndex(i);
         settings.setValue(QStringLiteral("paths"), m_sessionHistory.at(i));
+    }
+    settings.endArray();
+    settings.beginWriteArray(QStringLiteral("bookshelf"), m_bookshelf.size());
+    for (int i = 0; i < m_bookshelf.size(); ++i) {
+        settings.setArrayIndex(i);
+        settings.setValue(QStringLiteral("paths"), m_bookshelf.at(i));
     }
     settings.endArray();
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);

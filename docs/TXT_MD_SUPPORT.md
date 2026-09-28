@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Plain text and Markdown support (deferred design)
 
-Status: **Not implemented.** Recorded 2026-09-28.
+Status: **Not implemented — waiting on MuPDF ≥ 1.28 in the stack.** Recorded 2026-09-28.
 
 Related: thumtoo `PathKind` / `EPUB.md`, biltoo session expand.
 
@@ -48,3 +48,17 @@ encoding (UTF-8), and reflow/layout tests.
 - Full CommonMark / GFM fidelity  
 - Live editing of `.md` in biltoo  
 - PDF write-back of text notes (see [PDF_SOURCE_WRITEBACK.md](PDF_SOURCE_WRITEBACK.md))
+
+
+---
+
+## MuPDF 1.28 Markdown (wait)
+
+MuPDF **1.28.0-rc1** (2026-06-19) adds Markdown document support. That is likely
+the right long-term path (open `.md` like other MuPDF docs, similar to ePub).
+
+NixOS / our flake currently ship **MuPDF 1.27.2**, which does not include that.
+**Do not** implement a parallel `.md` pipeline in biltoo/thumtoo until the
+packaged MuPDF is ≥ 1.28 (or we deliberately vendor a newer MuPDF).
+
+`.txt` may still need a separate decision (synthetic HTML vs future MuPDF).

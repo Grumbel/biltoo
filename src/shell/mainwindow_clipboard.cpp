@@ -280,6 +280,139 @@ void MainWindow::clearSessionHistory()
     rebuildHistoryMenu();
 }
 
+void MainWindow::addCurrentSessionToBookshelf()
+{
+    if (m_session.paths().isEmpty()) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Nothing to add — open a session first."), 4000);
+        }
+        return;
+    }
+    QStringList normalized;
+    normalized.reserve(m_session.paths().size());
+    for (const QString &p : m_session.paths()) {
+        const QString abs = PagePath::canonicalSessionPath(p);
+        if (!abs.isEmpty()) {
+            normalized.append(abs);
+        }
+    }
+    if (normalized.isEmpty()) {
+        return;
+    }
+    for (int i = 0; i < m_bookshelf.size(); ++i) {
+        if (m_bookshelf.at(i) == normalized) {
+            // Already pinned — move to front so it is easy to find.
+            m_bookshelf.move(i, 0);
+            rebuildBookshelfMenu();
+            if (statusBar()) {
+                statusBar()->showMessage(tr("Already on the Bookshelf."), 3000);
+            }
+            return;
+        }
+    }
+    m_bookshelf.prepend(normalized);
+    rebuildBookshelfMenu();
+    if (statusBar()) {
+        statusBar()->showMessage(tr("Added to Bookshelf (%1 item(s)).").arg(normalized.size()), 4000);
+    }
+}
+
+void MainWindow::rebuildBookshelfMenu()
+{
+    if (!m_bookshelfMenu) {
+        return;
+    }
+    m_bookshelfMenu->clear();
+    if (m_addToBookshelfAct) {
+        m_bookshelfMenu->addAction(m_addToBookshelfAct);
+        m_addToBookshelfAct->setEnabled(!m_session.paths().isEmpty());
+    }
+    m_bookshelfMenu->addSeparator();
+
+    if (m_bookshelf.isEmpty()) {
+        auto *empty = m_bookshelfMenu->addAction(tr("(Bookshelf empty)"));
+        empty->setEnabled(false);
+        empty->setWhatsThis(tr(
+            "<p>The Bookshelf is a permanent, user-controlled list of sessions.</p>"
+            "<p>Open images or a document, then choose <b>Add Current Session to "
+            "Bookshelf</b>. Unlike <b>Recent Sessions</b>, entries are not "
+            "dropped when the list grows.</p>"));
+        m_bookshelfMenu->addSeparator();
+        if (m_clearBookshelfAct) {
+            m_bookshelfMenu->addAction(m_clearBookshelfAct);
+            m_clearBookshelfAct->setEnabled(false);
+        }
+        return;
+    }
+
+    for (int i = 0; i < m_bookshelf.size(); ++i) {
+        const QStringList &entry = m_bookshelf.at(i);
+        QMenu *sub = m_bookshelfMenu->addMenu(historyEntryLabel(entry));
+        sub->setToolTipsVisible(true);
+        if (entry.size() <= 2) {
+            QStringList names;
+            for (const QString &p : entry) {
+                names.append(PagePath::displayName(p));
+            }
+            sub->setToolTip(names.join(QStringLiteral(", ")));
+        } else {
+            sub->setToolTip(tr("%1 items").arg(entry.size()));
+        }
+        sub->setWhatsThis(historyEntryHelpHtml(entry));
+        QAction *openAct = sub->addAction(tr("&Open"));
+        openAct->setData(i);
+        connect(openAct, &QAction::triggered, this, &MainWindow::openBookshelfEntry);
+        QAction *remAct = sub->addAction(tr("&Remove from Bookshelf"));
+        remAct->setData(i);
+        connect(remAct, &QAction::triggered, this, &MainWindow::removeBookshelfEntry);
+        if (m_helpPanel) {
+            connect(sub->menuAction(), &QAction::hovered, this, [this, sub]() {
+                m_helpPanel->showAction(sub->menuAction());
+            });
+        }
+    }
+
+    m_bookshelfMenu->addSeparator();
+    if (m_clearBookshelfAct) {
+        m_bookshelfMenu->addAction(m_clearBookshelfAct);
+        m_clearBookshelfAct->setEnabled(true);
+    }
+}
+
+void MainWindow::openBookshelfEntry()
+{
+    auto *act = qobject_cast<QAction *>(sender());
+    if (!act) {
+        return;
+    }
+    const int index = act->data().toInt();
+    if (index < 0 || index >= m_bookshelf.size()) {
+        return;
+    }
+    loadFiles(m_bookshelf.at(index));
+}
+
+void MainWindow::removeBookshelfEntry()
+{
+    auto *act = qobject_cast<QAction *>(sender());
+    if (!act) {
+        return;
+    }
+    const int index = act->data().toInt();
+    if (index < 0 || index >= m_bookshelf.size()) {
+        return;
+    }
+    m_bookshelf.removeAt(index);
+    rebuildBookshelfMenu();
+}
+
+void MainWindow::clearBookshelf()
+{
+    m_bookshelf.clear();
+    rebuildBookshelfMenu();
+}
+
+
 void MainWindow::duplicateSelected()
 {
     if (!m_imageView) {
