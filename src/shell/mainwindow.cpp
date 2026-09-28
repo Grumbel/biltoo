@@ -60,6 +60,19 @@ static bool dockIsOpen(const DockWidget *dock)
     return dock && dock->isOpen();
 }
 
+static void tabDockOnto(DockWidget *host, DockWidget *guest)
+{
+    if (!host || !guest) {
+        return;
+    }
+    if (auto *hc = host->dockWidget()) {
+        if (auto *gc = guest->dockWidget()) {
+            hc->addDockWidgetAsTab(gc);
+        }
+    }
+}
+
+
 
 } // namespace
 
@@ -355,6 +368,13 @@ MainWindow::MainWindow(QWidget *parent)
             m_thumbnailBarVisibleBeforeFullscreen = visible;
         }
         onThumbnailDockLocationChanged();
+    });
+    connect(m_thumbnailDock, &DockWidget::isFloatingChanged, this, [this](bool floating) {
+        if (!floating) {
+            // User finished a drag-redock; re-apply orientation for the last edge
+            // (View → filmstrip edge still owns the semantic edge).
+            onThumbnailDockLocationChanged();
+        }
     });
 
     m_metadataPanel = new MetadataPanel(this);
@@ -718,6 +738,14 @@ connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocume
     m_helpDock->setWidget(m_helpPanel);
     addDockWidget(m_helpDock, KDDockWidgets::Location_OnRight);
     m_helpDock->close();
+
+    // Group tool panels as tabs on the right / left (less chrome than stacked docks).
+    tabDockOnto(m_metadataDock, m_adjustmentsDock);
+    tabDockOnto(m_metadataDock, m_cropDock);
+    tabDockOnto(m_metadataDock, m_ocrDock);
+    tabDockOnto(m_metadataDock, m_textDock);
+    tabDockOnto(m_metadataDock, m_helpDock);
+    tabDockOnto(m_layoutDock, m_tocDock);
 connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
             this, &MainWindow::showKeyboardShortcuts);
 
@@ -4487,6 +4515,12 @@ void MainWindow::resetDockLayout()
     if (m_toggleLayoutPanelAct) {
         m_toggleLayoutPanelAct->setChecked(false);
     }
+    tabDockOnto(m_metadataDock, m_adjustmentsDock);
+    tabDockOnto(m_metadataDock, m_cropDock);
+    tabDockOnto(m_metadataDock, m_ocrDock);
+    tabDockOnto(m_metadataDock, m_textDock);
+    tabDockOnto(m_metadataDock, m_helpDock);
+    tabDockOnto(m_layoutDock, m_tocDock);
 
     if (m_thumbnailBar) {
         m_thumbnailEdge = ThumbnailEdge::Bottom;

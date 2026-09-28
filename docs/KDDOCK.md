@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # KDDockWidgets panel shell
 
-**Status:** first migration cut (required dependency).
+**Status:** required dependency; persistent central, tabbed tool docks, LayoutSaver.
 
 ## Why
 
@@ -44,3 +44,15 @@ revisit if KD exposes a stable location signal we can bind.
 
 - Dual compare (separate `ImageView`s), not a dock concern
 - Content of panels (metadata, OCR, …) unchanged
+
+
+## Default layout
+
+- **Central:** `DualImageShell` via `setPersistentCentralWidget`
+- **Bottom:** Filmstrip
+- **Right (tabs):** Metadata, Adjustments, Crop, OCR, Text, Help
+- **Left (tabs):** Layout, Contents (TOC)
+- **Bottom (separate):** Messages
+
+Reset Panel Layout re-applies these locations (tabs re-form on next cold start
+from construction order if the user has not saved a layout yet).

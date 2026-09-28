@@ -77,6 +77,12 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     // Before any MainWindow/DockWidget: KDDockWidgets QtWidgets frontend.
     KDDockWidgets::initFrontend(KDDockWidgets::FrontendType::QtWidgets);
+    {
+        using F = KDDockWidgets::Config::Flag;
+        auto flags = KDDockWidgets::Config::self().flags();
+        flags |= F::Flag_TitleBarHasMaximizeButton;
+        KDDockWidgets::Config::self().setFlags(flags);
+    }
     // icons.qrc is compiled into static biltoo_lib; without an explicit init the
     // linker may drop the RCC object and :/icons/* is empty at runtime.
     Q_INIT_RESOURCE(icons);
