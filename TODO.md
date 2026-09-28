@@ -2,17 +2,27 @@
 
 ## Status (2026-09-28)
 
-**Tip:** `biltoo-2749.1-fix-cursor-members` (base `9395b3e`).
+**Tip:** `biltoo-2750.1-theme-chrome-status-terms` (base `9395b3e`).
 
-### Done
-- Fix: declare `m_cursorIndex` / `m_cursorViewportNorm` on ThumbnailBar
-  (omitted by filmstrip cursor chrome commit; broke the build)
+### Done this tip
+- Theme-aware `ChromeColors` (dark/light Window palette → stroke/fill lightness)
+- Filmstrip search dot + drop guide use Select/Search roles (no hard-coded /
+  Qt Highlight leftovers)
+- Nav menu: Previous/Next/First/Last **Page**; tips name **cursor**
+- OCR / crop empty state: **no page under cursor** (not “selected”)
+- Select tool tip: page selection vs text-region selection
+- docs/VIEW_AND_SELECTION.md status + §8 progress notes
 
-### View/selection language track
-- P0–P5 design + filmstrip + chrome unification largely complete
-- Remaining polish: theme-aware mapping, more status-string terminology
+### Prior
+- 2749.1: declare ThumbnailBar `m_cursorIndex` / `m_cursorViewportNorm`
+- P0–P5 view/selection language + filmstrip chrome
+
+### Remaining (low priority)
+- Further UI copy that still says “image” where “page” is clearer
+- Optional: palette-change event → force filmstrip/canvas repaint (roles
+  recompute on next paint already)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2749.1-fix-cursor-members-9395b3e.bundle HEAD
+git pull --ff-only …/biltoo-2750.1-theme-chrome-status-terms-9395b3e.bundle HEAD
 ```

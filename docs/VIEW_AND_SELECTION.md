@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # View, focus, and selection language
 
-**Status:** design / cleanup plan. Not fully implemented.  
+**Status:** P0–P5 shipped; theme-aware ChromeColors + status terminology polish.  
 **Related:** [DOMAIN.md](../DOMAIN.md), [SPREAD.md](SPREAD.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md),
 [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md), [ACTIVITY.md](ACTIVITY.md).
 
@@ -304,9 +304,12 @@ Phased so each step is shippable:
 - Filmstrip: **spread members** get a left amber bar (cursor keeps full frame).
 - Filmstrip tooltips describe click / Ctrl / Shift by multi-select mode.
 - Prev/Next status tips name **cursor** vs **spread** motion.
-- `ChromeColors` helper (`src/shell/chromecolors.h`).
+- `ChromeColors` helper (`src/shell/chromecolors.h`) — theme-aware (dark/light
+  Window palette picks stroke/fill lightness; hues fixed per §4).
 - P5: text rubber-band/selection/speech/search + Gallery focus/speech/select
   rings use the same `ChromeColors` roles.
+- Status/menu: Prev/Next/First/Last say **page** + **cursor**; OCR/crop empty
+  state says **no page under cursor** (not “no image selected”).
 
 ---
 

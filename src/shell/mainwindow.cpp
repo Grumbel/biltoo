@@ -3162,7 +3162,7 @@ void MainWindow::updateCropPanel()
         || m_cropPanel->targetMode() == BatchTargets::Mode::OddIndices);
     if (!item) {
         m_cropPanel->setPageSize(QSize());
-        m_cropPanel->setStatusText(tr("No page selected"));
+        m_cropPanel->setStatusText(tr("No page under cursor"));
         return;
     }
     const QString path = item->path();
@@ -5569,7 +5569,7 @@ void MainWindow::updateOcrPanel()
     }
     const QString path = m_imageView->hostImage().classicPath();
     if (path.isEmpty()) {
-        m_ocrPanel->setLayerInfo(tr("No image selected"));
+        m_ocrPanel->setLayerInfo(tr("No page under cursor"));
         return;
     }
     const int page = PagePath::pageNumber(path);
@@ -5658,10 +5658,10 @@ void MainWindow::startOcrCurrentPage()
     }
     const QString path = m_imageView->hostImage().classicPath();
     if (path.isEmpty()) {
-        statusBar()->showMessage(tr("No image selected for OCR"), 4000);
+        statusBar()->showMessage(tr("No page under cursor for OCR"), 4000);
         if (m_ocrPanel) {
-            m_ocrPanel->appendLog(tr("Error: no current image path"));
-            m_ocrPanel->setSummary(tr("No image selected"));
+            m_ocrPanel->appendLog(tr("Error: no page under cursor"));
+            m_ocrPanel->setSummary(tr("No page under cursor"));
         }
         return;
     }

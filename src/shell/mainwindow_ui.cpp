@@ -67,7 +67,7 @@ void MainWindow::createActions()
     m_reloadAct = new QAction(tr("&Reload"), this);
     m_reloadAct->setShortcut(Qt::Key_F5);
     m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
-    m_reloadAct->setToolTip(tr("Reload current image(s) from disk when changed (F5)"));
+    m_reloadAct->setToolTip(tr("Reload page(s) under the cursor / selection from disk when changed (F5)"));
     m_reloadAct->setStatusTip(
         tr("Reload from disk (F5): check source mtime; regenerate only if changed — "
            "current image in Image mode; selection (or focused) in Gallery/Workspace. No relayout."));
@@ -87,7 +87,7 @@ void MainWindow::createActions()
     m_printAct = new QAction(tr("&Print…"), this);
     m_printAct->setShortcut(QKeySequence::Print);
     m_printAct->setIcon(themeIcon(QStringLiteral("document-print"), QStyle::SP_FileDialogDetailedView));
-    m_printAct->setStatusTip(tr("Print the current image or Workspace page"));
+    m_printAct->setStatusTip(tr("Print the page under the cursor, or the Workspace page"));
     connect(m_printAct, &QAction::triggered, this, &MainWindow::printDocument);
 
     m_printPreviewAct = new QAction(tr("Print Pre&view…"), this);
@@ -476,28 +476,28 @@ void MainWindow::createActions()
         tr("When checked, thumbnails are center-cropped to a square; uncheck to show full aspect ratio"));
     connect(m_cropThumbnailsAct, &QAction::triggered, this, &MainWindow::toggleThumbnailCrop);
 
-    m_previousAct = new QAction(tr("&Previous Image"), this);
+    m_previousAct = new QAction(tr("&Previous Page"), this);
     m_previousAct->setShortcuts({Qt::Key_Left, Qt::Key_Backspace, Qt::Key_PageUp});
     m_previousAct->setIcon(themeIcon(QStringLiteral("go-previous"), QStyle::SP_ArrowBack));
-    m_previousAct->setStatusTip(tr("Show previous image"));
+    m_previousAct->setStatusTip(tr("Previous page (moves session cursor)"));
     connect(m_previousAct, &QAction::triggered, this, &MainWindow::goPrevious);
 
-    m_nextAct = new QAction(tr("&Next Image"), this);
+    m_nextAct = new QAction(tr("&Next Page"), this);
     m_nextAct->setShortcuts({Qt::Key_Right, Qt::Key_PageDown});
     m_nextAct->setIcon(themeIcon(QStringLiteral("go-next"), QStyle::SP_ArrowForward));
-    m_nextAct->setStatusTip(tr("Show next image"));
+    m_nextAct->setStatusTip(tr("Next page (moves session cursor)"));
     connect(m_nextAct, &QAction::triggered, this, &MainWindow::goNext);
 
-    m_firstAct = new QAction(tr("&First Image"), this);
+    m_firstAct = new QAction(tr("&First Page"), this);
     m_firstAct->setShortcut(Qt::Key_Home);
     m_firstAct->setIcon(themeIcon(QStringLiteral("go-first"), QStyle::SP_MediaSkipBackward));
-    m_firstAct->setStatusTip(tr("Show the first image in the session"));
+    m_firstAct->setStatusTip(tr("First page in the session (moves session cursor)"));
     connect(m_firstAct, &QAction::triggered, this, &MainWindow::goFirst);
 
-    m_lastAct = new QAction(tr("&Last Image"), this);
+    m_lastAct = new QAction(tr("&Last Page"), this);
     m_lastAct->setShortcut(Qt::Key_End);
     m_lastAct->setIcon(themeIcon(QStringLiteral("go-last"), QStyle::SP_MediaSkipForward));
-    m_lastAct->setStatusTip(tr("Show the last image in the session"));
+    m_lastAct->setStatusTip(tr("Last page in the session (moves session cursor)"));
     connect(m_lastAct, &QAction::triggered, this, &MainWindow::goLast);
 
     m_slideshowAct = new QAction(tr("Play &Slideshow"), this);
@@ -544,7 +544,7 @@ void MainWindow::createActions()
     m_selectToolAct->setShortcut(Qt::Key_V);
     m_selectToolAct->setIcon(resourceIcon(QStringLiteral("edit-select")));
     m_selectToolAct->setStatusTip(
-        tr("Select items (Gallery/Workspace) or prepare for content selection (Image)"));
+        tr("Page selection (Gallery/Workspace) or text-region selection (Image)"));
     connect(m_selectToolAct, &QAction::triggered, this, &MainWindow::setSelectTool);
 
     m_panToolAct = new QAction(tr("&Pan"), this);

@@ -158,7 +158,7 @@ void CropPanel::buildUi()
     addExtra(tr("Bottom"), &m_extraB);
     layout->addWidget(extraBox);
 
-    m_status = new QLabel(tr("No page selected"), inner);
+    m_status = new QLabel(tr("No page under cursor"), inner);
     m_status->setWordWrap(true);
     m_status->setStyleSheet(QStringLiteral("color: palette(mid);"));
     layout->addWidget(m_status);
