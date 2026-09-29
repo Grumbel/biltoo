@@ -465,6 +465,8 @@ QStringList expandArchiveToImageRefs(const QString &archivePath,
 /** Expand a PDF into one session path per page (…//page:N, 1-based).
  * Page count is cache-first via thumtoo document_index (≥ 202). */
 QStringList expandPdfToPageRefs(const QString &pdfPath);
+/** Markdown file → //page:N (MuPDF ≥ 1.28; same pipeline as PDF). */
+QStringList expandMarkdownToPageRefs(const QString &mdPath);
 
 /** Expand a PDF into embedded Image XObjects (…//pdfimage:N, native resolution). */
 QStringList expandPdfToImageRefs(const QString &pdfPath);

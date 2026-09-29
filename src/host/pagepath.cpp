@@ -135,6 +135,18 @@ bool isPdfFile(const QString &path)
     return name.endsWith(QLatin1String(".pdf"));
 }
 
+bool isMarkdownFile(const QString &path)
+{
+    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+        return false;
+    }
+    const QString name = QFileInfo(path).fileName().toLower();
+    return name.endsWith(QLatin1String(".md"))
+        || name.endsWith(QLatin1String(".markdown"))
+        || name.endsWith(QLatin1String(".mdown"))
+        || name.endsWith(QLatin1String(".mkd"));
+}
+
 bool isEpubFile(const QString &path)
 {
     if (isPageRef(path) || ArchivePath::isArchiveRef(path) || isEpubLayoutOnly(path)) {
@@ -205,6 +217,12 @@ QString epubLayoutParamsOf(const QString &path)
 QStringList pdfSuffixes()
 {
     return {QStringLiteral("pdf")};
+}
+
+QStringList markdownSuffixes()
+{
+    return {QStringLiteral("md"), QStringLiteral("markdown"), QStringLiteral("mdown"),
+            QStringLiteral("mkd")};
 }
 
 QStringList epubSuffixes()

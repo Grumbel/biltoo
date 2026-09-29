@@ -14,6 +14,9 @@
  *   /home/user/doc.pdf//page:12
  *   file:///home/user/doc.pdf//page:12
  *
+ * Markdown (MuPDF ≥ 1.28; same //page:N form as PDF):
+ *   /home/user/notes.md//page:1
+ *
  * EPUB (layout profile required by thumtoo; default w/h/em when expanding):
  *   /home/user/book.epub//epub:w=1200,h=1800,fs=12//page:3
  *
@@ -47,6 +50,7 @@ int pageNumber(const QString &path);
 QString displayName(const QString &path);
 QString canonicalSessionPath(const QString &path);
 bool isPdfFile(const QString &path);
+bool isMarkdownFile(const QString &path);
 bool isEpubFile(const QString &path);
 bool isDjvuFile(const QString &path);
 /** True when path has //epub:… but no //page: (layout profile, full book). */
@@ -65,6 +69,7 @@ QString makePdfImageRef(const QString &pdfPath, int image_1based);
 QString makePdfImagesCollection(const QString &pdfPath);
 int pdfImageNumber(const QString &path);
 QStringList pdfSuffixes();
+QStringList markdownSuffixes();
 QStringList epubSuffixes();
 QStringList djvuSuffixes();
 

@@ -3429,7 +3429,8 @@ void MainWindow::updateTocPanel()
         }
         if (sessionPath.isEmpty()
             || (!PagePath::isPageRef(sessionPath) && !PagePath::isEpubLayoutOnly(sessionPath)
-                && !PagePath::isPdfFile(sessionPath) && !PagePath::isDjvuFile(sessionPath)
+                && !PagePath::isPdfFile(sessionPath) && !PagePath::isMarkdownFile(sessionPath)
+                && !PagePath::isDjvuFile(sessionPath)
                 && !PagePath::isEpubFile(sessionPath))) {
             m_tocPanel->clear();
             return;

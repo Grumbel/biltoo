@@ -73,6 +73,10 @@
 #include "thumtoo/expand.hpp"
 #define BILTOO_HAVE_THUMTOO_EXPAND 1
 #endif
+#if __has_include("thumtoo/format.hpp")
+#include "thumtoo/format.hpp"
+#define BILTOO_HAVE_THUMTOO_FORMAT 1
+#endif
 #if __has_include("thumtoo/appearance.hpp")
 #include "thumtoo/appearance.hpp"
 #define BILTOO_HAVE_THUMTOO_APPEARANCE 1
@@ -2940,6 +2944,57 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
     }
 #else
     Q_UNUSED(pdfPath);
+#endif
+    return out;
+}
+
+QStringList expandMarkdownToPageRefs(const QString &mdPath)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (mdPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(mdPath);
+#if defined(BILTOO_HAVE_THUMTOO_FORMAT)
+    if (!thumtoo::is_markdown_path(abs)) {
+        return out;
+    }
+#else
+    // Older thumtoo: extension heuristic only (no PathKind::Markdown).
+    {
+        const QString name = QFileInfo(mdPath).fileName().toLower();
+        if (!name.endsWith(QLatin1String(".md")) && !name.endsWith(QLatin1String(".markdown"))
+            && !name.endsWith(QLatin1String(".mdown")) && !name.endsWith(QLatin1String(".mkd"))) {
+            return out;
+        }
+    }
+#endif
+    init();
+    std::optional<int> count;
+    {
+        std::lock_guard lock(g_mu);
+        thumtoo::Client *c = clientUnlocked();
+        if (c) {
+            count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Pdf);
+        }
+        if (!count) {
+            count = thumtoo::pdf_page_count(abs);
+        }
+    }
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString mdAbs = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int page = 1; page <= *count; ++page) {
+        const QString ref = PagePath::makeRef(mdAbs, page);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    Q_UNUSED(mdPath);
 #endif
     return out;
 }
