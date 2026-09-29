@@ -5,8 +5,11 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tool unification (draft)
 
-Status: **partial** — coordinate path cleaned; Gallery annotation input enabled;
-full toolbar/mode merge still open.
+Status: **partial** — coordinate path cleaned; Gallery annotation input + draft
+chrome; full toolbar/mode merge still open.
+
+Verified: mouse event order (annot before gallery open), itemAtViewPos,
+itemForDraftSid finish/chrome, point maps for orient.
 
 ## Problem
 

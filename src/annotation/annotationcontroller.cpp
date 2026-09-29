@@ -1025,8 +1025,10 @@ void AnnotationController::eraseAtPagePoint(const QPointF &pagePt, const QRectF 
 
 void AnnotationController::clearCurrentPage()
 {
-    ImageItem *item = targetItem();
-    const SessionImageId sid = targetSid(item);
+    SessionImageId sid = m_draftSid;
+    if (sid == kInvalidSessionImageId) {
+        sid = targetSid(targetItem());
+    }
     if (sid == kInvalidSessionImageId || !m_view) {
         return;
     }
