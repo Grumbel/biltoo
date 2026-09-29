@@ -439,98 +439,117 @@ bool ImageController::fitLiveItemsUnion(Qt::AspectRatioMode mode, bool withScrol
 void ImageController::zoomFit()
 {
     m_framing.setFitOnly();
-    if (m_view->isGalleryMode()) {
-        // Fit the packed gallery into the viewport (whole pack). Sticky zoom
-        // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
-        if (!m_view->liveItems().isEmpty()) {
-            QGraphicsScene *scene = m_view->canvasScene();
-            const QRectF bounds = ViewTransform::padded(
-                scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
-            if (bounds.isValid() && !bounds.isEmpty()) {
-                scene->setSceneRect(bounds);
-                m_view->fitInView(bounds, Qt::KeepAspectRatio);
-            }
-            m_view->hostGallery().updateDecodeWindow();
-            m_view->refreshScrollBarGeometry();
-            emit m_view->statusChanged();
-        }
-        return;
-    }
-    if (m_view->isWorkspaceMode()) {
-        if (!m_view->liveItems().isEmpty()) {
-            m_view->fitInView(
-                ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), 32),
-                Qt::KeepAspectRatio);
-            m_view->refreshScrollBarGeometry();
-            emit m_view->statusChanged();
-        }
-        return;
-    }
-    // Spread / multi-underlay Image: fit the whole surface, not only primary.
-    if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
-        if (fitLiveItemsUnion(Qt::KeepAspectRatio, /*withScrollBarRefresh=*/true)) {
-            emit m_view->statusChanged();
-        }
-        return;
-    }
-    if (ImageItem *item = m_view->targetItem()) {
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        fitItem(item, Qt::KeepAspectRatio);
-        m_view->refreshScrollBarGeometry();
-        emit m_view->statusChanged();
-    }
+    applyExplicitZoomFraming(Qt::KeepAspectRatio);
 }
 
 void ImageController::zoomFill()
 {
     m_framing.setFillMode();
-    if (m_view->isGalleryMode()) {
-        if (!m_view->liveItems().isEmpty()) {
-            QGraphicsScene *scene = m_view->canvasScene();
-            const QRectF bounds = ViewTransform::padded(
-                scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
-            if (bounds.isValid() && !bounds.isEmpty()) {
-                scene->setSceneRect(bounds);
-                m_view->fitInView(bounds, Qt::KeepAspectRatioByExpanding);
-            }
-            m_view->hostGallery().updateDecodeWindow();
-            m_view->refreshScrollBarGeometry();
-            emit m_view->statusChanged();
+    applyExplicitZoomFraming(Qt::KeepAspectRatioByExpanding);
+}
+
+void ImageController::applyExplicitZoomFraming(Qt::AspectRatioMode mode)
+{
+    // fitInView uses the current viewport size. Showing/hiding scroll bars
+    // then changes that size — without a second fit the first toolbar press
+    // looks like a no-op until the next interaction (second press).
+    auto paint = [this]() {
+        if (m_view && m_view->viewport()) {
+            m_view->viewport()->update();
         }
+        emit m_view->statusChanged();
+    };
+
+    if (m_view->isGalleryMode()) {
+        if (m_view->liveItems().isEmpty()) {
+            return;
+        }
+        QGraphicsScene *scene = m_view->canvasScene();
+        const QRectF bounds = ViewTransform::padded(
+            scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
+        if (!bounds.isValid() || bounds.isEmpty()) {
+            return;
+        }
+        scene->setSceneRect(bounds);
+        m_view->fitInView(bounds, mode);
+        m_view->hostGallery().updateDecodeWindow();
+        m_view->refreshScrollBarGeometry();
+        m_view->fitInView(bounds, mode);
+        const QPointer<ImageView> guard(m_view);
+        const QRectF target = bounds;
+        const Qt::AspectRatioMode modeCopy = mode;
+        QTimer::singleShot(0, m_view, [guard, target, modeCopy]() {
+            ImageView *const view = guard.data();
+            if (!view || !view->isGalleryMode() || !view->viewport()) {
+                return;
+            }
+            view->fitInView(target, modeCopy);
+            view->viewport()->update();
+        });
+        paint();
         return;
     }
     if (m_view->isWorkspaceMode()) {
-        if (!m_view->liveItems().isEmpty()) {
-            m_view->fitInView(
-                ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), 32),
-                Qt::KeepAspectRatioByExpanding);
-            m_view->refreshScrollBarGeometry();
-            emit m_view->statusChanged();
+        if (m_view->liveItems().isEmpty()) {
+            return;
         }
-        return;
-    }
-    if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
-        if (fitLiveItemsUnion(Qt::KeepAspectRatioByExpanding, /*withScrollBarRefresh=*/true)) {
-            emit m_view->statusChanged();
-        }
-        return;
-    }
-        if (ImageItem *item = m_view->targetItem()) {
-        {
-            ItemComponents::Placement pl = item->placement();
-            pl.scale = 1.0;
-            pl.scaleY = 1.0;
-            item->applyPlacement(pl);
-        }
-        fitItem(item, Qt::KeepAspectRatioByExpanding);
+        const QRectF bounds =
+            ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), 32);
+        m_view->fitInView(bounds, mode);
         m_view->refreshScrollBarGeometry();
-        emit m_view->statusChanged();
+        m_view->fitInView(bounds, mode);
+        const QPointer<ImageView> guard(m_view);
+        const QRectF target = bounds;
+        const Qt::AspectRatioMode modeCopy = mode;
+        QTimer::singleShot(0, m_view, [guard, target, modeCopy]() {
+            ImageView *const view = guard.data();
+            if (!view || !view->isWorkspaceMode() || !view->viewport()) {
+                return;
+            }
+            view->fitInView(target, modeCopy);
+            view->viewport()->update();
+        });
+        paint();
+        return;
     }
+    // Spread / multi-underlay Image: fit the whole surface, not only primary.
+    if (m_view->isImageMode() && m_view->liveItems().size() > 1) {
+        if (fitLiveItemsUnion(mode, /*withScrollBarRefresh=*/true)) {
+            paint();
+        }
+        return;
+    }
+    ImageItem *item = m_view->targetItem();
+    if (!item) {
+        return;
+    }
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        item->applyPlacement(pl);
+    }
+    fitItem(item, mode);
+    m_view->refreshScrollBarGeometry();
+    // Second fit after bars may have claimed viewport pixels.
+    m_view->fitInView(item, mode);
+    m_view->syncImageModeSceneRect(item);
+    const QPointer<ImageView> guard(m_view);
+    const Qt::AspectRatioMode modeCopy = mode;
+    QTimer::singleShot(0, m_view, [guard, modeCopy]() {
+        ImageView *const view = guard.data();
+        if (!view || !view->isImageMode() || !view->viewport()) {
+            return;
+        }
+        ImageItem *cur = view->targetItem();
+        if (!cur) {
+            return;
+        }
+        view->fitInView(cur, modeCopy);
+        view->syncImageModeSceneRect(cur);
+        view->viewport()->update();
+    });
+    paint();
 }
 
 void ImageController::zoomReset()

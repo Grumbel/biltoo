@@ -215,6 +215,8 @@ public:
     void flushColorAdjustCommit();
 
 private:
+    /** User Fit/Fill: fit + refit after scroll-bar geometry settles. */
+    void applyExplicitZoomFraming(Qt::AspectRatioMode mode);
     void ensureColorAdjustCommitTimer();
     void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
     void installColorAdjustmentsOnItem(ImageItem *item, const ColorAdjustments &adj);

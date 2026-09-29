@@ -2,14 +2,13 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2825.1-performance-recent-work on 2824.1 stack.
+**Tip:** biltoo-2826.1-fit-fill-refit-scrollbars on 2825.1 stack.
 
-### 2825.1 Performance panel / Recent work
-- Schedule notes carry path, cell count, scale, edge (not bare "tile")
-- Ring coalesces identical events within 80ms (`×N`)
-- Δ card shows pixels; intent explains tile batches + PreferCache
-- Log is monospace columns: time · kind · detail
+### 2826.1 Fit / Fill first press
+- Explicit Fit/Fill refits after `refreshScrollBarGeometry` (viewport shrinks when bars appear)
+- Deferred `singleShot(0)` third fit + `viewport()->update()` so first toolbar press paints
 
+### 2825.1 Performance Recent work
 ### 2824.1 Attention Exclusive radio
 
 ### Required thumtoo
