@@ -372,17 +372,15 @@ void ImageItem::prepareTileLodPlan()
         }
     }
     if (galleryLayout) {
-        minScale = ThumtooCache::durableTileMinScale(m_path);
+        // Density (screen dpc) is the request floor — overview stays coarse;
+        // inspection zoom lowers dens so interactive encode-on-miss can climb.
+        // Do not floor on durableTileMinScale: Store is a speed cache, not a
+        // request limit (Image/Workspace use min_scale 0 for the same reason).
         const qreal dpc0 = tileDevicePerContent();
         const int maxS = tilelod::max_scale_for_size(native.width(), native.height());
-        // Density already includes view zoom (scene × view × dpr / native).
-        // Floor requests at dens so overview cells stay coarse; when the user
-        // zooms in, dens drops and min_scale must follow or climb is stuck.
         const int dens = tilelod::target_scale_for_density(
             static_cast<double>(dpc0), 0, maxS);
-        if (dens > minScale) {
-            minScale = dens;
-        }
+        minScale = dens;
         // Hard floor uses *screen* long edge (not scene). Scene-only floor kept
         // min_scale elevated after Ctrl+wheel zoom — dens asked for finer tiles
         // but the floor still thought the packed cell was tiny.

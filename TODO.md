@@ -2,13 +2,15 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2823.1-gallery-zoom-tile-minscale on 2822.2 stack.
+**Tip:** biltoo-2823.2-gallery-minscale-density on 2823.1 stack.
 
-### 2823.1 Gallery zoom tiles
-- min_scale hard floor used **scene** cell size → stayed coarse after view zoom
-- Floor now uses **screen** long edge (scene × view × dpr) so dens can lower
+### 2823.2 Gallery min_scale = density
+- Gallery no longer floors requests on `durableTileMinScale` (Store is cache, not limit)
+- `min_scale` = dens from screen dpc + screen-edge hard floor
+- Inspection zoom can interactive encode-on-miss below stored finest
 
-### 2822.x PathRaster filmstrip + unused gen
+### 2823.1
+- Hard floor uses screen long edge (not scene)
 
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle
