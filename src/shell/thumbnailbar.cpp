@@ -1981,21 +1981,18 @@ void ThumbnailBar::filmstripSurfaceTick()
         if (path.isEmpty()) {
             continue;
         }
+        visiblePaths.insert(path);
         const int shown = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
         const bool climbPending =
             m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i);
 
-        // Already meets filmstrip display edge — settled. Do not re-prepare
-        // from host every 1.5s (that spammed setThumbnailIcon forever whenever
-        // hostEdge > shown, even at target).
+        // Always issue tiles for visible cells (shared cover paint). Underlay
+        // pixmap edge is not a stop condition for tile work.
         if (shown >= decodeSize) {
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
-            continue;
-        }
-        // Underlay short of strip edge is not terminal — issue tiles each tick.
-        if (climbPending
-            && DisplayQuality::hostLongEdge(path) < decodeSize) {
+        } else if (climbPending
+                   && DisplayQuality::hostLongEdge(path) < decodeSize) {
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
         }
