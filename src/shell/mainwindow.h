@@ -205,6 +205,8 @@ private slots:
     void flipVertical();
     void resetContentAppearance();
     void toggleCropMode();
+    /** Enter crop from the canvas tool radio (Gallery may defer until Image pixels). */
+    bool enterCropFromCanvasTool();
     void toggleAttentionMode();
     void openSearchBar();
     void cancelSearchBar();
@@ -376,7 +378,7 @@ private slots:
     bool isGalleryMode() const;
     bool isImageMode() const;
     void clearAnnotationToolSelection();
-    /** Select/Pan/Zoom + annotation tool actions (one Exclusive radio). */
+    /** Select/Pan/Zoom/Crop + annotation tool actions (one Exclusive radio). */
     QList<QAction *> canvasToolActions() const;
     /** Match action checks to ViewInteraction + AnnotationController (no side effects). */
     void syncCanvasToolChrome();

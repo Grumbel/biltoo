@@ -1256,8 +1256,26 @@ void MainWindow::resetContentAppearance()
 
 void MainWindow::toggleCropMode()
 {
+    // Menu / legacy entry: toggle. Canvas radio uses onCanvasToolTriggered.
     if (!m_imageView) {
         return;
+    }
+    if (m_imageView->hostCrop().active()) {
+        setSelectTool();
+        return;
+    }
+    if (m_cropAct) {
+        if (!m_cropAct->isChecked()) {
+            m_cropAct->setChecked(true);
+        }
+        onCanvasToolTriggered(m_cropAct);
+    }
+}
+
+bool MainWindow::enterCropFromCanvasTool()
+{
+    if (!m_imageView) {
+        return false;
     }
     if (m_imageView->hostAttention().active()) {
         m_imageView->hostAttention().setAttentionMode(false);
@@ -1265,27 +1283,25 @@ void MainWindow::toggleCropMode()
             m_attentionAct->setChecked(false);
         }
     }
-    const bool want = m_cropAct && m_cropAct->isChecked();
+    if (m_imageView->hostAnnot().isToolActive()) {
+        m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+        updateAnnotationPanel();
+    }
+
     // Gallery: crop on the packed grid is unusable — open the subject in Image
     // mode, then enter crop once pixels are ready.
-    if (want && m_imageView->isGalleryMode()) {
+    if (m_imageView->isGalleryMode()) {
         ImageItem *item = m_imageView->targetItem();
         if (!item || !m_imageView->hostWorkspace().hasSingleCropTarget()) {
-            if (m_cropAct) {
-                m_cropAct->setChecked(false);
-            }
-            return;
+            return false;
         }
         const int idx = m_imageView->sessionListIndex(item);
         if (idx < 0) {
-            if (m_cropAct) {
-                m_cropAct->setChecked(false);
-            }
-            return;
+            return false;
         }
         m_pendingGalleryCrop = true;
         openSessionIndexInImageMode(idx);
-        // LoadReplace is async; one-shot when Image mode has decoded pixels.
+        // LoadReplace is async; one-shot when Image mode has display pixels.
         auto *conn = new QMetaObject::Connection;
         *conn = QObject::connect(
             m_imageView, &ImageView::statusChanged, this,
@@ -1298,9 +1314,6 @@ void MainWindow::toggleCropMode()
                 if (!primary && !m_imageView->liveItems().isEmpty()) {
                     primary = m_imageView->liveItems().first();
                 }
-                // Soft-only is enough to enter crop (prepareCrop loads host).
-                // Waiting for hasDecodedPixels left Gallery→Image crop stuck on
-                // soft tiles, or entered only after a crop bake arrived.
                 if (!primary || !primary->hasDisplayPixels()) {
                     return;
                 }
@@ -1308,23 +1321,25 @@ void MainWindow::toggleCropMode()
                 QObject::disconnect(*conn);
                 delete conn;
                 m_imageView->hostCrop().setCropMode(true);
-                if (m_cropAct) {
-                    m_cropAct->setChecked(m_imageView->hostCrop().active());
-                }
+                syncCanvasToolChrome();
             });
+        // Exclusive radio: hold Select until crop actually opens.
+        if (m_selectToolAct) {
+            const QSignalBlocker b(m_selectToolAct);
+            m_selectToolAct->setChecked(true);
+        }
         if (m_cropAct) {
-            // Stay unchecked until crop actually opens.
+            const QSignalBlocker b(m_cropAct);
             m_cropAct->setChecked(false);
         }
-        return;
+        return true; // pending; not active yet
     }
-    m_pendingGalleryCrop = false;
-    m_imageView->hostCrop().setCropMode(want);
-    if (m_cropAct) {
-        m_cropAct->setChecked(m_imageView->hostCrop().active());
-    }
-}
 
+    m_pendingGalleryCrop = false;
+    m_imageView->hostCrop().setCropMode(true);
+    syncCanvasToolChrome();
+    return m_imageView->hostCrop().active();
+}
 
 
 void MainWindow::exportDocumentText()
@@ -2302,7 +2317,7 @@ void MainWindow::toggleWorkspaceMode()
 QList<QAction *> MainWindow::canvasToolActions() const
 {
     return {
-        m_selectToolAct, m_panToolAct, m_zoomToolAct,
+        m_selectToolAct, m_panToolAct, m_zoomToolAct, m_cropAct,
         m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
         m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
         m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
@@ -2340,12 +2355,30 @@ void MainWindow::syncCanvasToolChrome()
         const QSignalBlocker block(a);
         a->setChecked(on);
     };
-
-    if (m_imageView->hostAnnot().isToolActive()) {
-        const Annotation::Tool at = m_imageView->hostAnnot().tool();
+    const auto clearAnnotChecks = [&]() {
+        for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+                           m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
+            setCheckedBlocked(a, false);
+        }
+    };
+    const auto clearViewChecks = [&]() {
         setCheckedBlocked(m_selectToolAct, false);
         setCheckedBlocked(m_panToolAct, false);
         setCheckedBlocked(m_zoomToolAct, false);
+        setCheckedBlocked(m_cropAct, false);
+    };
+
+    // Priority: crop mode > annotation tool > view tool.
+    if (m_imageView->hostCrop().active()) {
+        clearViewChecks();
+        clearAnnotChecks();
+        setCheckedBlocked(m_cropAct, true);
+        return;
+    }
+    if (m_imageView->hostAnnot().isToolActive()) {
+        const Annotation::Tool at = m_imageView->hostAnnot().tool();
+        clearViewChecks();
         setCheckedBlocked(m_annotHighlightAct, at == Annotation::Tool::FreehandHighlighter);
         setCheckedBlocked(m_annotTextHighlightAct, at == Annotation::Tool::TextHighlighter);
         setCheckedBlocked(m_annotPenAct, at == Annotation::Tool::Pen);
@@ -2362,11 +2395,8 @@ void MainWindow::syncCanvasToolChrome()
     setCheckedBlocked(m_selectToolAct, t == Tool::Select);
     setCheckedBlocked(m_panToolAct, t == Tool::Pan);
     setCheckedBlocked(m_zoomToolAct, t == Tool::Zoom);
-    for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                       m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
-                       m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
-        setCheckedBlocked(a, false);
-    }
+    setCheckedBlocked(m_cropAct, false);
+    clearAnnotChecks();
 }
 
 void MainWindow::onCanvasToolTriggered(QAction *act)
@@ -2389,12 +2419,47 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         a->setChecked(on);
     }
 
+    // Crop tool: enter mode, or re-activate while already cropping → Select (toggle-off).
+    if (act == m_cropAct) {
+        if (m_imageView->hostCrop().active()) {
+            if (m_selectToolAct) {
+                for (QAction *a : canvasToolActions()) {
+                    if (!a) {
+                        continue;
+                    }
+                    const QSignalBlocker block(a);
+                    a->setChecked(a == m_selectToolAct);
+                }
+                m_imageView->hostCrop().setCropMode(false);
+                if (m_imageView->hostAnnot().isToolActive()) {
+                    m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+                    updateAnnotationPanel();
+                }
+                m_imageView->setTool(ImageView::Tool::Select);
+                m_imageView->restoreToolCursor();
+            }
+            return;
+        }
+        if (!enterCropFromCanvasTool()) {
+            // Failed entry (e.g. no Gallery target) → fall back to Select.
+            if (m_selectToolAct) {
+                for (QAction *a : canvasToolActions()) {
+                    if (!a) {
+                        continue;
+                    }
+                    const QSignalBlocker block(a);
+                    a->setChecked(a == m_selectToolAct);
+                }
+                m_imageView->setTool(ImageView::Tool::Select);
+                m_imageView->restoreToolCursor();
+            }
+        }
+        return;
+    }
+
     // Leaving crop via any other canvas tool commits the draft.
     if (m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().setCropMode(false);
-        if (m_cropAct) {
-            m_cropAct->setChecked(false);
-        }
     }
 
     const bool isViewTool = (act == m_selectToolAct || act == m_panToolAct

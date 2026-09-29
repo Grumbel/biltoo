@@ -2,25 +2,24 @@
 
 ## Status (2026-09-29)
 
-**Tip:** `biltoo-2811.3-canvas-tool-sync` (base `2085c07`).
+**Tip:** `biltoo-2811.4-crop-in-tool-radio` (base `2085c07`).
 
-### 2811.3
-- Verify/harden tool path: `syncCanvasToolChrome()` shared by mode UI
-- set*Tool uses setChecked + onCanvasToolTriggered (not trigger toggle)
-- Docs: activation path + why Exclusive not Optional
+### 2811.4
+- Crop joins Exclusive canvas tool radio (`enterCropFromCanvasTool`)
+- Re-select Crop / C while cropping → Select (toggle-off)
+- Gallery→Image deferred crop holds Select until pixels ready; syncCanvasToolChrome priority crop > annot > view
 
-### 2811.2
-- Exclusive unified group; force single checked action
-
-### 2811.1
-- Tool palette unification
+### Prior
+- 2811.3 harden set*Tool + syncCanvasToolChrome
+- 2811.2 Exclusive radio (not Optional)
+- 2811.1 unified palette
 
 ### Next
-- Manual GUI: Select → Pan → Zoom → Select; Pen → Select; V/H/Z shortcuts
+- Manual: Crop ↔ Select/Pan; C toggle; Gallery crop → Image
+- Optional: fold Attention into the canvas radio
 - Run contentxform_test locally
-- Optional: fold Crop/Attention into the canvas radio
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2811.3-canvas-tool-sync-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2811.4-crop-in-tool-radio-2085c07.bundle HEAD
 ```

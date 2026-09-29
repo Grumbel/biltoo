@@ -377,7 +377,7 @@ void MainWindow::createActions()
     m_cropAct->setStatusTip(
         tr("Crop mode (C when the view has focus); in Gallery opens the selection in Image mode"));
     m_cropAct->setToolTip(tr("Crop mode"));
-    connect(m_cropAct, &QAction::triggered, this, &MainWindow::toggleCropMode);
+    // Crop joins the Exclusive canvas tool group (onCanvasToolTriggered).
 
     m_annotHighlightAct = new QAction(tr("Freehand &Highlighter"), this);
     m_annotHighlightAct->setIcon(resourceIcon(QStringLiteral("annot-highlighter-freehand")));
@@ -643,10 +643,9 @@ void MainWindow::createActions()
     m_zoomToolAct->setStatusTip(
         tr("Drag a rectangle to zoom the view to that region"));
 
-    // Single Exclusive radio for all canvas tools (view + annotation).
-    // Exactly one is always checked — re-click does not uncheck (avoids stuck
-    // chrome under ExclusiveOptional). Crop / Attention stay outside: modes
-    // with entry side-effects. Leave annotation by choosing Select/Pan/Zoom.
+    // Single Exclusive radio: Select/Pan/Zoom/Crop + annotation tools.
+    // Exactly one is always checked. Re-selecting Crop while cropping exits to
+    // Select (toggle-off). Attention stays outside (Image-only mode entry).
     {
         auto *canvasToolGroup = new QActionGroup(this);
         canvasToolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);

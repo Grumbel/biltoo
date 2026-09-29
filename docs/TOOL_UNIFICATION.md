@@ -6,42 +6,40 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Tool unification
 
 Status: **palette unified** — one **Exclusive** `QActionGroup` for Select /
-Pan / Zoom + all annotation tools; coordinate path cleaned; Gallery annotation
-input + draft chrome.
+Pan / Zoom / **Crop** + all annotation tools; coordinate path cleaned; Gallery
+annotation input + draft chrome.
 
 ## Canvas tool contract
 
 **One** radio across Image / Gallery / Workspace. Exactly **one** action is
 checked at all times (`ExclusionPolicy::Exclusive`).
 
-| Action | ViewInteraction | Annotation::Tool | Notes |
-|--------|-----------------|------------------|-------|
-| Select | `Tool::Select` | `None` | Items / gallery cells |
-| Pan | `Tool::Pan` | `None` | |
-| Zoom | `Tool::Zoom` | `None` | Workspace rubber-band zoom |
-| Annotation Select | `Tool::Select` | `Select` | Markup objects only |
-| Pen / Highlighter / … | `Tool::Select` | matching | View tool stays Select underneath |
+| Action | ViewInteraction | Annotation::Tool | Crop mode | Notes |
+|--------|-----------------|------------------|-----------|-------|
+| Select | `Tool::Select` | `None` | off | Items / gallery cells |
+| Pan | `Tool::Pan` | `None` | off | |
+| Zoom | `Tool::Zoom` | `None` | off | Workspace rubber-band zoom |
+| Crop | (unchanged) | `None` | **on** | Gallery may open Image first |
+| Annotation Select | `Tool::Select` | `Select` | off | Markup objects only |
+| Pen / Highlighter / … | `Tool::Select` | matching | off | View tool stays Select underneath |
 
 ### Activation path
 
 1. Toolbar / shortcut → `QAction::triggered` → `QActionGroup` → `onCanvasToolTriggered`
-2. Programmatic → `setSelectTool` / `setPanTool` / `setZoomTool` → `setChecked(true)` + `onCanvasToolTriggered` (not `trigger()`, which toggles a checked Exclusive action)
-3. Mode chrome → `syncCanvasToolChrome()` from `updateWorkspaceActionVisibility` (mirrors controller state; signal-blocked so it does not re-enter the handler)
+2. Programmatic → `setSelectTool` / `setPanTool` / `setZoomTool` / `toggleCropMode` → checked + handler
+3. Mode chrome → `syncCanvasToolChrome()` (priority: crop > annot > view tool)
 
-`onCanvasToolTriggered` forces a single checked action, exits crop, sets
-`ViewInteraction` and/or `Annotation::Tool`, restores cursor.
+**Crop specifics**
 
-Leave annotation by choosing Select / Pan / Zoom.
+- Enter: `enterCropFromCanvasTool()` (clears attention + annot; Gallery defers until Image has display pixels, holding Select in the radio until then).
+- Exit: choose Select / Pan / Zoom / annot tool, **or** re-select Crop / press `C` while cropping (toggle-off → Select).
+- Attention stays **outside** the radio (Image-only mode entry).
 
-Crop and Attention remain **modes** outside the radio (Gallery→Image entry,
-async load).
+### Why Exclusive (not Optional)
 
-### Why not ExclusiveOptional
-
-Optional allowed the active tool to uncheck on re-click. Combined with a
-fallback that re-checked Select, Select/Pan/Zoom chrome could stick or show
-multiple pressed buttons when switching quickly. Exclusive matches a normal
-tool radio (Photoshop, Okular).
+Optional allowed the active tool to uncheck on re-click and left Select/Pan/Zoom
+chrome stuck. Exclusive matches a normal tool radio. Crop “toggle off” is
+implemented explicitly when Crop is re-selected while already active.
 
 ## Coordinate contract (central)
 
@@ -56,18 +54,8 @@ view pos
   → page           (ThumtooCache::imageRectToPageRect)
 ```
 
-Inverse for paint: `mapSourcePointToDisplay` then item→scene.
-
-## Modes
-
-| Mode | Annotation paint | Annotation tools |
-|------|------------------|------------------|
-| Image | yes | yes |
-| Gallery | yes | yes (item under cursor) |
-| Workspace | yes (tiles) | optional; free pose is harder |
-
 ## Still open
 
 - Workspace free rotation/shear of items vs content orient — needs testing.
 - Rubber-band shapes in Gallery still use view rects (OK for ortho tiles).
-- Optional: fold Crop / Attention into the same radio.
+- Optional: fold Attention into the same radio.
