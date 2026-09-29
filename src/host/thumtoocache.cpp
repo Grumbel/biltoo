@@ -2855,19 +2855,10 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     for (const TileCoord &t : coords) {
         tc.push_back({t.scale, t.x, t.y});
     }
-    // Completions arrive on the Qt executor (GUI). JPEG→rgba8 must not run
-    // there — a warm prepare --tiles album floods the GUI with decode work and
-    // TileLoadCoordinator::tick reports multi-second budgets. Decode on the
-    // pool, then deliver rgba8 on the GUI.
-    // JPEG→rgba decode is off-GUI, but must not fan out one global-pool job
-    // per cell (Gallery viewport can be 100+ cells). A small dedicated pool
-    // caps concurrent tile JPEG decodes while thumtoo workers stay free.
-    static QThreadPool *tileJpegPool = []() {
-        auto *p = new QThreadPool;
-        p->setMaxThreadCount(2);
-        p->setObjectName(QStringLiteral("biltoo-tile-jpeg"));
-        return p;
-    }();
+    // Completions arrive on the Qt executor (GUI). Interactive tiles are
+    // delivered as rgb888 (thumtoo decodes durable JPEG on the worker in
+    // materialize_tile_cell / decode_tile_blob_to_rgb888). Expanding rgb→rgba
+    // here is linear in cell size and stays off the worker pool.
     c->request_tiles(
         uri, std::move(tc),
         [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
@@ -2875,26 +2866,9 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                 on_cell(index, std::nullopt);
                 return;
             }
-            // rgb888/rgba8: cheap expand — keep on this thread (already GUI).
-            const std::string &codec = tile->codec;
-            if (codec == "rgb888" || codec == "rgba8" || codec.empty()) {
-                on_cell(index, tilelod::decode_tile_payload(
-                                   tile->width, tile->height, tile->codec,
-                                   tile->bytes));
-                return;
-            }
-            auto blob = std::make_shared<thumtoo::TileBlob>(std::move(*tile));
-            tileJpegPool->start(
-                [on_cell, index, blob]() {
-                    auto bm = tilelod::decode_tile_payload(
-                        blob->width, blob->height, blob->codec, blob->bytes);
-                    QMetaObject::invokeMethod(
-                        QCoreApplication::instance(),
-                        [on_cell, index, bm = std::move(bm)]() mutable {
-                            on_cell(index, std::move(bm));
-                        },
-                        Qt::QueuedConnection);
-                });
+            on_cell(index, tilelod::decode_tile_payload(
+                               tile->width, tile->height, tile->codec,
+                               tile->bytes));
         });
 }
 

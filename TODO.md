@@ -2,20 +2,15 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2818.1-tile-jpeg-decode-pool on 2817.1 / origin+attention.
+**Tip:** biltoo-2819.1-tile-rgb-from-worker on 2818 stack.
 
-### 2818.1 Tile decode batching (host)
-- JPEG→rgba for grid tiles uses a dedicated QThreadPool (max 2), not the
-  global pool — Gallery multi-cell completions no longer spawn one thread each
-- Requires **thumtoo-006** (`request_tiles` one batch job)
+### 2819.1 Tile delivery
+- requestTiles: no per-cell JPEG thread pool — host receives rgb888 from
+  thumtoo workers (decode_tile_blob_to_rgb888) and only expands to rgba8
+- Requires **thumtoo-007** (materialize_tile_cell + worker-side rgb)
 
-### 2817.1 Tool unification (Attention)
-- Canvas tool trigger exits Attention; enter clears annot tool
-
-### Still open (tile unification)
-- PathRaster / PreferCache vs TileLoadCoordinator ownership polish
-- Filmstrip cold path still uses makeThumbnail pool (warm is PreferCache)
-- DjVu/EPUB multi-cell batch encode still miss→retry in thumtoo-006
+### 2818 / 2817
+- Attention exits on canvas tool; prior pool attempt removed in 2819
 
 ### Required thumtoo
-thumtoo-006.1-request-tiles-batch-job-3e6987f.bundle
+thumtoo-007.1-materialize-tile-cell-3e6987f.bundle
