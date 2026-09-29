@@ -2913,20 +2913,14 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
 
 
 
-QString formatLoadErrorMessage(const QString &sessionPathOrError, bool allowFilesystemStat)
+QString formatLoadErrorMessage(const QString &sessionPathOrError)
 {
     const QString name = PagePath::displayName(sessionPathOrError);
     QString detail;
-    // Never QFileInfo::exists on the GUI for network paths — that can stall for
-    // seconds on NFS and freeze filmstrip / Gallery while lastLoadError is set.
-    if (allowFilesystemStat) {
-        const QString file = PagePath::documentFilePath(sessionPathOrError);
-        if (!file.isEmpty() && !QFileInfo::exists(file)) {
-            detail = QCoreApplication::translate("ThumtooCache", "file not found");
-        }
-    }
+    // No QFileInfo::exists — NFS can block the event loop for seconds.
+    // Prefer the error already captured by thumtoo/MuPDF on the failing open.
 #if defined(BILTOO_HAVE_THUMTOO_MUPDF_ERR)
-    if (detail.isEmpty()) {
+    {
         const std::string merr = thumtoo::mupdf_last_error();
         if (!merr.empty()) {
             detail = QString::fromStdString(merr);

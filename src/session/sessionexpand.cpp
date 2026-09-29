@@ -433,7 +433,7 @@ QString emptyResultMessage(const QStringList &paths, bool append)
     }
     // Concrete open error after expand (missing file / MuPDF last error).
     if (!firstDoc.isEmpty()) {
-        return ThumtooCache::formatLoadErrorMessage(firstDoc, true);
+        return ThumtooCache::formatLoadErrorMessage(firstDoc);
     }
     if (anyArchive) {
         return QObject::tr(

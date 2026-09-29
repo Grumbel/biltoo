@@ -4058,8 +4058,8 @@ void MainWindow::updateStatus()
         const QString err = m_imageView->hostSessionId().lastLoadErrorRef();
         if (!err.isEmpty() && err != m_lastReportedLoadError) {
             m_lastReportedLoadError = err;
-            // GUI: no filesystem stat (NFS can block for seconds per updateStatus).
-            const QString msg = ThumtooCache::formatLoadErrorMessage(err, false);
+            // formatLoadErrorMessage never stats; uses mupdf_last_error only.
+            const QString msg = ThumtooCache::formatLoadErrorMessage(err);
             if (statusBar()) {
                 statusBar()->showMessage(msg, 8000);
             }
