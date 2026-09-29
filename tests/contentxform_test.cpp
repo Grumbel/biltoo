@@ -57,6 +57,8 @@ private slots:
     void mapDisplayRect_freeRotExpands();
     void sourceToDisplayTransform_matchesMapCorners();
     void sourceToDisplayTransform_hFlipMovesAndOrients();
+    void mapDisplayPointToSource_roundTrip_turnsAndFlips();
+    void mapDisplayPointToSource_roundTrip_withCrop();
     void layoutSize_freeCropRotationDoesNotChangeSize();
     void mapCropThrough_freeRotationAngleTracksContentTurn();
     void layoutSize_freeRotThenContentTurn();
@@ -1091,6 +1093,65 @@ void ContentXformTest::sourceToDisplayTransform_hFlipMovesAndOrients()
     QVERIFY(qAbs(leftD.x() - (200.0 - 10.0)) < 1e-4);
     QVERIFY(qAbs(rightD.x() - (200.0 - 190.0)) < 1e-4);
 }
+
+
+void ContentXformTest::mapDisplayPointToSource_roundTrip_turnsAndFlips()
+{
+    // Annotation input uses mapDisplayPointToSource; paint uses the inverse.
+    // Points must round-trip under all quarter turns × flips (rotate bug).
+    const QSize n(80, 60);
+    const QPointF samples[] = {
+        QPointF(0, 0),
+        QPointF(40, 30),
+        QPointF(79, 59),
+        QPointF(12.5, 7.25),
+    };
+    for (int turns = 0; turns < 4; ++turns) {
+        for (int hf = 0; hf < 2; ++hf) {
+            for (int vf = 0; vf < 2; ++vf) {
+                ContentXform::Value x;
+                x.quarterTurns = turns;
+                x.hFlip = hf != 0;
+                x.vFlip = vf != 0;
+                for (const QPointF &src : samples) {
+                    const QPointF disp = ContentXform::mapSourcePointToDisplay(src, n, x);
+                    const QPointF back = ContentXform::mapDisplayPointToSource(disp, n, x);
+                    QVERIFY2(qAbs(back.x() - src.x()) < 1e-4 && qAbs(back.y() - src.y()) < 1e-4,
+                             qPrintable(QStringLiteral("turns=%1 hf=%2 vf=%3 src=(%4,%5) back=(%6,%7)")
+                                            .arg(turns)
+                                            .arg(hf)
+                                            .arg(vf)
+                                            .arg(src.x())
+                                            .arg(src.y())
+                                            .arg(back.x())
+                                            .arg(back.y())));
+                }
+            }
+        }
+    }
+}
+
+void ContentXformTest::mapDisplayPointToSource_roundTrip_withCrop()
+{
+    const QSize n(100, 80);
+    ContentXform::Value x;
+    x.quarterTurns = 1;
+    x.hFlip = true;
+    x.hasCrop = true;
+    x.cropRect = QRect(10, 15, 40, 50); // post-orient crop
+    x.cropSourceSize = QSize(80, 100); // after 90° from 100×80
+    const QPointF src(30, 40);
+    const QPointF disp = ContentXform::mapSourcePointToDisplay(src, n, x);
+    // May land outside crop window → still invertible through transform
+    const QPointF back = ContentXform::mapDisplayPointToSource(disp, n, x);
+    QVERIFY2(qAbs(back.x() - src.x()) < 1e-3 && qAbs(back.y() - src.y()) < 1e-3,
+             qPrintable(QStringLiteral("crop roundtrip src=(%1,%2) back=(%3,%4)")
+                            .arg(src.x())
+                            .arg(src.y())
+                            .arg(back.x())
+                            .arg(back.y())));
+}
+
 
 #include "contentxform_test.moc"
 

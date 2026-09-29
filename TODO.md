@@ -2,18 +2,22 @@
 
 ## Status (2026-09-29)
 
-**Tip:** `biltoo-2810.4-annot-clear-draft-sid` (base `2085c07`).
+**Tip:** `biltoo-2810.5-annot-point-map-tests` (base `2085c07`).
 
-### Verified stack (2810.1–2810.4)
-- Central ContentXform point maps (rotate-correct)
-- Gallery tools: hit tile, finish*, draft chrome, delete/selectAll/clear by draft sid
-- Annot mouse still before gallery open-click
+### 2810.5
+- Unit tests: mapDisplayPointToSource ↔ mapSourcePointToDisplay round-trip
+  for all turns × flips (+ crop sample). Run: contentxform_test
 
-### Next (product)
-- Unified tool palette across modes
-- Workspace free-pose annotation testing
+### Verified (code review, no Qt in sandbox to execute)
+- Annot before gallery click; draft sid finish/chrome/clear/delete
+- Point maps used by viewToPage / pageToScene
+
+### Next
+- Run contentxform_test locally
+- Manual: rotate 90° + pen; Gallery non-primary tile
+- Tool palette unification (docs/TOOL_UNIFICATION.md)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2810.4-annot-clear-draft-sid-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2810.5-annot-point-map-tests-2085c07.bundle HEAD
 ```
