@@ -467,6 +467,8 @@ QStringList expandArchiveToImageRefs(const QString &archivePath,
 QStringList expandPdfToPageRefs(const QString &pdfPath);
 /** Markdown file → //page:N (MuPDF ≥ 1.28; same pipeline as PDF). */
 QStringList expandMarkdownToPageRefs(const QString &mdPath);
+/** Plain text (.txt) → //page:N (MuPDF). */
+QStringList expandPlainTextToPageRefs(const QString &txtPath);
 
 /** Expand a PDF into embedded Image XObjects (…//pdfimage:N, native resolution). */
 QStringList expandPdfToImageRefs(const QString &pdfPath);

@@ -168,6 +168,17 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
         images.append(pages);
         return;
     }
+    if (PagePath::isPlainTextFile(path) && ThumtooCache::isAvailable()) {
+        const QString name = QFileInfo(path).fileName();
+        expandReport(report, QObject::tr("Indexing text “%1”…").arg(name));
+        const QStringList pages = ThumtooCache::expandPlainTextToPageRefs(path);
+        if (!pages.isEmpty()) {
+            expandReport(report,
+                         QObject::tr("Text “%1”: %n page(s)", "", pages.size()).arg(name));
+        }
+        images.append(pages);
+        return;
+    }
     if (PagePath::isEpubFile(path) && ThumtooCache::isAvailable()) {
         const QString name = QFileInfo(path).fileName();
         expandReport(report, QObject::tr("Indexing EPUB “%1”…").arg(name));
@@ -321,6 +332,7 @@ bool expandOneInputPath(QStringList &images, const QString &pathIn, bool recursi
     // Suffix-known containers/images: expand without isFile()/isDir() first so
     // a single cold USB stat is not required before "Indexing…".
     if (PagePath::isPdfFile(path) || PagePath::isMarkdownFile(path)
+        || PagePath::isPlainTextFile(path)
         || PagePath::isEpubFile(path) || PagePath::isDjvuFile(path)
         || ArchivePath::isArchiveFile(path) || ImageLoader::isImageFile(path)) {
         appendFileContainerOrImage(images, path, report);
@@ -371,7 +383,8 @@ QString emptyResultMessage(const QStringList &paths, bool append)
         if (SessionInputPath::isHttpUrl(p)) {
             anyRemote = true;
         }
-        if (PagePath::isPdfFile(p) || PagePath::isMarkdownFile(p)) {
+        if (PagePath::isPdfFile(p) || PagePath::isMarkdownFile(p)
+            || PagePath::isPlainTextFile(p)) {
             anyPdf = true;
         }
         if (PagePath::isEpubFile(p)) {

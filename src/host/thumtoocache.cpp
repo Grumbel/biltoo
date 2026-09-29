@@ -2999,6 +2999,56 @@ QStringList expandMarkdownToPageRefs(const QString &mdPath)
     return out;
 }
 
+QStringList expandPlainTextToPageRefs(const QString &txtPath)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (txtPath.isEmpty()) {
+        return out;
+    }
+    const std::filesystem::path abs = absPathStd(txtPath);
+#if defined(BILTOO_HAVE_THUMTOO_FORMAT)
+    if (!thumtoo::is_plain_text_path(abs)) {
+        return out;
+    }
+#else
+    {
+        const QString name = QFileInfo(txtPath).fileName().toLower();
+        if (!name.endsWith(QLatin1String(".txt")) && !name.endsWith(QLatin1String(".text"))) {
+            return out;
+        }
+    }
+#endif
+    init();
+    std::optional<int> count;
+    {
+        std::lock_guard lock(g_mu);
+        thumtoo::Client *c = clientUnlocked();
+        if (c) {
+            count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Pdf);
+        }
+        if (!count) {
+            count = thumtoo::pdf_page_count(abs);
+        }
+    }
+    if (!count || *count <= 0) {
+        return out;
+    }
+    const QString txtAbs = QString::fromStdString(abs.string());
+    out.reserve(*count);
+    for (int page = 1; page <= *count; ++page) {
+        const QString ref = PagePath::makeRef(txtAbs, page);
+        if (!ref.isEmpty()) {
+            out.append(ref);
+        }
+    }
+#else
+    Q_UNUSED(txtPath);
+#endif
+    return out;
+}
+
+
 QStringList expandPdfToImageRefs(const QString &pdfPath)
 {
     QStringList out;

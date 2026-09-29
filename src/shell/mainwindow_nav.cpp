@@ -59,9 +59,10 @@ QString imageFileDialogFilter()
     const QString archives = archivePatterns.join(QLatin1Char(' '));
     // First filter is the dialog default — include archives/PDFs/EPUBs so containers are visible.
     return QObject::tr(
-               "Images, archives, PDF, Markdown, EPUB and DjVu "
-               "(%1 %2 *.pdf *.md *.markdown *.epub *.djvu *.djv);;"
+               "Images, archives, PDF, text, Markdown, EPUB and DjVu "
+               "(%1 %2 *.pdf *.txt *.md *.markdown *.epub *.djvu *.djv);;"
                "Images only (%1);;Archives only (%2);;PDF documents (*.pdf);;"
+               "Plain text (*.txt *.text);;"
                "Markdown (*.md *.markdown *.mdown *.mkd);;"
                "EPUB books (*.epub);;DjVu documents (*.djvu *.djv);;All Files (*)")
         .arg(images, archives);

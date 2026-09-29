@@ -147,6 +147,16 @@ bool isMarkdownFile(const QString &path)
         || name.endsWith(QLatin1String(".mkd"));
 }
 
+bool isPlainTextFile(const QString &path)
+{
+    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+        return false;
+    }
+    const QString name = QFileInfo(path).fileName().toLower();
+    return name.endsWith(QLatin1String(".txt"))
+        || name.endsWith(QLatin1String(".text"));
+}
+
 bool isEpubFile(const QString &path)
 {
     if (isPageRef(path) || ArchivePath::isArchiveRef(path) || isEpubLayoutOnly(path)) {
@@ -223,6 +233,11 @@ QStringList markdownSuffixes()
 {
     return {QStringLiteral("md"), QStringLiteral("markdown"), QStringLiteral("mdown"),
             QStringLiteral("mkd")};
+}
+
+QStringList plainTextSuffixes()
+{
+    return {QStringLiteral("txt"), QStringLiteral("text")};
 }
 
 QStringList epubSuffixes()

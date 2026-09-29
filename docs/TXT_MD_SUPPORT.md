@@ -5,31 +5,29 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Plain text and Markdown support
 
-Status: **Markdown open/expand in biltoo** (2026-09-29). Requires thumtoo with
-`PathKind::Markdown` and MuPDF ≥ 1.28 (`pinMupdf`).
+Status: **Markdown + plain text open/expand in biltoo** (2026-09-29). Requires
+thumtoo `PathKind::Markdown` / `PlainText` and MuPDF ≥ 1.28 (`pinMupdf`).
 
-Related: thumtoo `docs/MARKDOWN.md`, `PathKind` / expand.
-
----
-
-## Markdown (shipped path)
-
-1. thumtoo classifies `.md` / `.markdown` / `.mdown` / `.mkd` → MuPDF `//page:N`
-2. biltoo: `PagePath::isMarkdownFile`, session expand via
-   `ThumtooCache::expandMarkdownToPageRefs`, open dialog filters
-
-Same page-ref form as PDF (`notes.md//page:1`).
+Related: thumtoo `docs/MARKDOWN.md`.
 
 ---
 
-## Plain `.txt`
+## Markdown
 
-Still open: synthetic HTML vs future MuPDF text docs. **Not** implemented.
+- Extensions: `.md`, `.markdown`, `.mdown`, `.mkd`
+- `PagePath::isMarkdownFile` → `expandMarkdownToPageRefs` → `file.md//page:N`
+
+## Plain text
+
+- Extensions: `.txt`, `.text`
+- `PagePath::isPlainTextFile` → `expandPlainTextToPageRefs` → `file.txt//page:N`
+
+Both use MuPDF’s native document handlers (reflowable page layout at defaults).
 
 ---
 
-## Non-goals (still)
+## Non-goals
 
-- Live editing of `.md` in biltoo  
-- Full GFM fidelity beyond MuPDF’s engine  
-- PDF write-back of text notes
+- Live editing  
+- Opening arbitrary source files (`.py`, …) without a text extension  
+- Full GFM beyond MuPDF
