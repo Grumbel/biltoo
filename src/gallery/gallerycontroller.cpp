@@ -2390,11 +2390,13 @@ void GalleryController::decodeWatchdogTick()
         return;
     }
     // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
-    // on-screen cells and keeps the tile coordinator awake.
+    // on-screen cells, and only ticks tile LOD when visible coverage is still
+    // incomplete — not every second after settle (that woke the coordinator).
     // Viewport hit-test only — full liveItems walks were O(n) every second.
     const QRectF sceneVisible =
         m_view->mapToScene(m_view->viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
     bool needWindow = false;
+    bool needTileLod = false;
     const QList<QGraphicsItem *> hit =
         sceneVisible.isNull()
             ? QList<QGraphicsItem *>()
@@ -2410,14 +2412,19 @@ void GalleryController::decodeWatchdogTick()
             if (m_view->hostDisplayPipeline().scheduleGalleryDecode(item->path())) {
                 needWindow = true;
             }
+        } else if (item->tileLodWanted() && !item->tileLodViewportCovered()) {
+            needTileLod = true;
         }
     }
     if (needWindow) {
         updateDecodeWindow();
-    } else {
+    } else if (needTileLod) {
         m_view->hostDisplayPipeline().tickPrimaryTileLod(48);
     }
-    updateSoftProgressHud();
+    // HUD only when something is still incomplete (cheap early-out inside).
+    if (needWindow || needTileLod) {
+        updateSoftProgressHud();
+    }
 }
 
 void GalleryController::updateSoftProgressHud()

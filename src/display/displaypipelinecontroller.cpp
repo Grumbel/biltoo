@@ -1688,21 +1688,15 @@ void DisplayPipelineController::dropAllTileLodSessions()
 void DisplayPipelineController::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();
-    BackgroundWorkLog::noteTileLodTick();
     // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
     if (m_host->hostSlideshow().hud().isNavHot()) {
         return;
     }
-    if (!tileCoordinator()) {
-        tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
-    }
-    tileCoordinator()->tick(budget);
 
-    // Keep issuing until visible coverage is done.
-    // Gallery: only on-screen cells. Off-screen items stay tileLodWanted but
-    // are never issued by the coordinator — checking them kept this timer at
-    // 16 ms forever (GUI spin + worker wake) after the decode-window fix.
-    // Image/Workspace: few items; climb every tileLodWanted until covered.
+    // Decide first whether any visible (Gallery) / live (Image/Workspace) item
+    // still needs tiles. Gallery watchdog used to call this every 1s even when
+    // coverage was done — that ran TileLoadCoordinator::tick and could re-arm
+    // the 16 ms timer forever (GUI + worker churn after settle).
     bool needMore = false;
     if (m_host->isGalleryMode()) {
         QRectF sceneVis;
@@ -1737,6 +1731,13 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
     if (!needMore) {
         return;
     }
+
+    BackgroundWorkLog::noteTileLodTick();
+    if (!tileCoordinator()) {
+        tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
+    }
+    tileCoordinator()->tick(budget);
+
     if (!tileLodTimer()) {
         tileLodTimer() = new QTimer(m_host->hostObject());
         tileLodTimer()->setSingleShot(true);
