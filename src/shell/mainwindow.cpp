@@ -4,6 +4,7 @@
 #include "shell/mainwindow_includes.h"
 #include <kddockwidgets/core/DockWidget.h>
 #include "shell/messagelogpanel.h"
+#include "shell/performancepanel.h"
 #include "shell/chromecolors.h"
 #include <QScrollBar>
 #include "text/textsearchpolicy.h"
@@ -571,6 +572,19 @@ m_ocrPanel = new OcrPanel(this);
     connect(m_messageLogDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
         QSettings settings;
         settings.setValue(QStringLiteral("messageLogVisible"), visible);
+    });
+
+    m_performancePanel = new PerformancePanel(this);
+    m_performancePanel->setImageView(m_imageView);
+    m_performanceDock = new DockWidget(QStringLiteral("PerformanceDock"));
+    m_performanceDock->setTitle(tr("Performance"));
+    m_performanceDock->setWidget(m_performancePanel);
+    addDockWidget(m_performanceDock, KDDockWidgets::Location_OnBottom);
+    m_performanceDock->close();
+    connect(m_performanceDock, &DockWidget::isOpenChanged, this, [this](bool visible) {
+        if (visible && m_performancePanel) {
+            m_performancePanel->refresh();
+        }
     });
     if (m_ocrPanel) {
         // UniqueConnection is not valid with functors/lambdas (Qt asserts).

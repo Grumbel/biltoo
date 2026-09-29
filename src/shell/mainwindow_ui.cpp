@@ -1403,6 +1403,12 @@ void MainWindow::createMenus()
     if (m_toggleMessageLogAct) {
         m_panelsMenu->addAction(m_toggleMessageLogAct);
     }
+    if (m_performanceDock) {
+        QAction *perfAct = m_performanceDock->toggleAction();
+        perfAct->setText(tr("Show &Performance"));
+        perfAct->setStatusTip(tr("Background pool and schedule activity (debug)"));
+        m_panelsMenu->addAction(perfAct);
+    }
     m_panelsMenu->addAction(m_toggleLayoutPanelAct);
     m_panelsMenu->addSeparator();
     m_panelsMenu->addAction(m_resetDockLayoutAct);

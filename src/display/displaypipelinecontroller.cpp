@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/displaypipelinecontroller.h"
+#include "util/backgroundworklog.h"
 #include "display/displaypipeline_jobs.h"
 
 #include "display/tile_load_coordinator.h"
@@ -1687,6 +1688,7 @@ void DisplayPipelineController::dropAllTileLodSessions()
 void DisplayPipelineController::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();
+    BackgroundWorkLog::noteTileLodTick();
     // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
     if (m_host->hostSlideshow().hud().isNavHot()) {
         return;

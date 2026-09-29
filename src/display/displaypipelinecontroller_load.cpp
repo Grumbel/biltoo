@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "util/backgroundworklog.h"
 #include "display/displaypipelinecontroller.h"
 #include "item/itemcomponents.h"
 #include "display/displaypipeline_jobs.h"
@@ -656,6 +657,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("scheduleGalleryDecode");
+    BackgroundWorkLog::noteGalleryDecode();
     if (!m_host->isGalleryMode() || path.isEmpty()) {
         return false;
     }

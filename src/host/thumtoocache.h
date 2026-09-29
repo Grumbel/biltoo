@@ -234,6 +234,16 @@ struct WorkActivity {
 WorkActivity workActivity();
 /** True if any size/archive/soft/tile work is queued or running. */
 bool workActivityBusy();
+
+/** thumtoo Client::queue_stats snapshot (zeros when client unavailable). */
+struct HostQueuePressure {
+    quint64 pending = 0;
+    int inflight = 0;
+    int focusFullInflight = 0;
+    quint64 sizeProbeQueued = 0;
+    quint64 sizeProbeRunning = 0;
+};
+HostQueuePressure hostQueuePressure();
 /** @deprecated name — prefer workActivity(). */
 using SizeProbeActivity = WorkActivity;
 SizeProbeActivity sizeProbeActivity();

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "host/thumtoocache.h"
+#include "util/backgroundworklog.h"
 #include "host/thumtoo_process_memos.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"
@@ -196,6 +197,7 @@ void scheduleProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
+    BackgroundWorkLog::noteProbe();
     // Warm only when size memo and ImageCache underlay are both present.
     // Size-only memo still needs request_size so stored EMB/LQIP can seed the
     // cache with the size row (no separate get_lqip / generation).

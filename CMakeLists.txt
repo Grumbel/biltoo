@@ -438,6 +438,10 @@ set(BILTOO_LIB_SOURCES
   src/shell/messagelogwidget.h
   src/shell/messagelogpanel.cpp
   src/shell/messagelogpanel.h
+  src/shell/performancepanel.cpp
+  src/shell/performancepanel.h
+  src/util/backgroundworklog.cpp
+  src/util/backgroundworklog.h
   src/shell/textpanel.cpp
   src/shell/textpanel.h
   src/text/textpanelmodel.cpp

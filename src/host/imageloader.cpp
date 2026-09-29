@@ -526,9 +526,7 @@ void init(const char *argv0)
     }
     // Cap internal libvips workers immediately. ImageLoader::init runs before
     // ThumtooCache/image_library_init; default concurrency is hardware_concurrency
-    // and multiplies with QThreadPool jobs (each soft/tile decode) into dozens of
-    // "libvips worker" threads that keep CPU busy after the GUI has settled.
-    // thumtoo sets the same limit; set it here so the first biltoo vips call is safe.
+    // and multiplies with QThreadPool jobs into many "libvips worker" threads.
     vips_concurrency_set(1);
 #else
     Q_UNUSED(argv0);

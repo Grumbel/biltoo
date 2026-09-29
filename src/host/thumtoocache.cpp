@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "host/thumtoocache.h"
+#include "util/backgroundworklog.h"
 #include "host/thumtoo_process_memos.h"
 #include "tilelod/thumtoo_tile_source.hpp"
 #include "tilelod/tile_painter.hpp"
@@ -489,6 +490,7 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
     if (path.isEmpty() || uri.empty()) {
         return;
     }
+    BackgroundWorkLog::noteRevalidate();
     const auto now = std::chrono::steady_clock::now();
     {
         std::lock_guard lock(g_revalMu);
@@ -1676,6 +1678,32 @@ bool workActivityBusy()
 }
 
 
+HostQueuePressure hostQueuePressure()
+{
+    HostQueuePressure out;
+    init();
+    thumtoo::Client *cl = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        cl = clientUnlocked();
+    }
+    if (!cl) {
+        return out;
+    }
+    try {
+        const auto qs = cl->queue_stats();
+        out.pending = static_cast<quint64>(qs.pending);
+        out.inflight = qs.inflight;
+        out.focusFullInflight = qs.focus_full_inflight;
+        out.sizeProbeQueued = static_cast<quint64>(qs.size_probe_queued);
+        out.sizeProbeRunning = static_cast<quint64>(qs.size_probe_running);
+    } catch (...) {
+    }
+    return out;
+}
+
+
+
 QString loadingBreakdownLabel()
 {
     init();
@@ -1756,6 +1784,7 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge);
 
 bool schedulePixels(const QString &path, int maxEdge)
 {
+    BackgroundWorkLog::notePixels();
     return scheduleDisplayPixels(path, maxEdge);
 }
 
@@ -2149,6 +2178,7 @@ quint64 setPrimaryInterest(const QString &path, int edge)
 
 bool scheduleTilePyramid(const QString &path)
 {
+    BackgroundWorkLog::noteTile();
     if (path.isEmpty()) {
         return false;
     }
@@ -2353,6 +2383,7 @@ int durableTileMinScale(const QString &path)
 
 bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
 {
+    BackgroundWorkLog::noteTile();
     if (path.isEmpty() || maxEdge <= 0) {
         return false;
     }
@@ -2782,6 +2813,7 @@ void warmUris(const QStringList &paths)
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                   TileBitmapCellCallback on_cell)
 {
+    BackgroundWorkLog::noteTile();
     if (!on_cell || coords.isEmpty()) {
         return;
     }
