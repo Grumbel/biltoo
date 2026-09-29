@@ -471,7 +471,7 @@ void MainWindow::createActions()
     m_attentionAct->setStatusTip(
         tr("Edit attention points (slideshow pan & zoom focus); Ctrl+click to add"));
     m_attentionAct->setToolTip(tr("Attention points"));
-    connect(m_attentionAct, &QAction::triggered, this, &MainWindow::toggleAttentionMode);
+    // canvasToolGroup membership → onCanvasToolTriggered (Exclusive radio).
 
 
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
@@ -642,9 +642,9 @@ void MainWindow::createActions()
     m_zoomToolAct->setStatusTip(
         tr("Drag a rectangle to zoom the view to that region"));
 
-    // Single Exclusive radio: Select/Pan/Zoom/Crop + annotation tools.
-    // Exactly one is always checked. Re-selecting Crop while cropping exits to
-    // Select (toggle-off). Attention stays outside (Image-only mode entry).
+    // Single Exclusive radio: Select/Pan/Zoom/Crop/Attention + annotation tools.
+    // Exactly one is always checked. Re-selecting Crop/Attention while active
+    // exits to the mode default tool (toggle-off).
     {
         auto *canvasToolGroup = new QActionGroup(this);
         canvasToolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);

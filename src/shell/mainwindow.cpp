@@ -156,10 +156,9 @@ MainWindow::MainWindow(QWidget *parent)
         Q_UNUSED(on);
         syncCanvasToolChrome();
     });
-    connect(m_imageView, &ImageView::attentionModeChanged, this, [this](bool on) {
-        if (m_attentionAct) {
-            m_attentionAct->setChecked(on);
-        }
+    connect(m_imageView, &ImageView::attentionModeChanged, this, [this](bool) {
+        // Exclusive radio: one checked tool — mirror via sync (not only Attention).
+        syncCanvasToolChrome();
     });
     connect(m_imageView,
             QOverload<SessionImageId, const QString &, const QImage &>::of(
@@ -1997,40 +1996,14 @@ void MainWindow::toggleThumbnailLabels()
 
 void MainWindow::toggleAttentionMode()
 {
-    if (!m_imageView || !m_attentionAct) {
+    // Menu / Shift+A — same path as the Exclusive canvas-tool radio.
+    if (!m_attentionAct) {
         return;
     }
-    const bool want = m_attentionAct->isChecked();
-    if (want && m_imageView->hostCrop().active()) {
-        m_imageView->hostCrop().cancelCrop();
-        // Exclusive radio: crop off; leave the current view tool checked.
-        if (m_cropAct) {
-            const QSignalBlocker block(m_cropAct);
-            m_cropAct->setChecked(false);
-        }
-        syncCanvasToolChrome();
+    if (!m_attentionAct->isChecked()) {
+        m_attentionAct->setChecked(true);
     }
-    if (want && m_imageView->hostAnnot().isToolActive()) {
-        // Attention is outside the radio; drop annotation tool so input is not
-        // split between markup and attention handles.
-        m_imageView->hostAnnot().setTool(Annotation::Tool::None);
-        updateAnnotationPanel();
-        syncCanvasToolChrome();
-    }
-    if (want && !m_imageView->isImageMode()) {
-        // Attention edit is Image-mode only for now.
-        if (m_session.paths().isEmpty()) {
-            m_attentionAct->setChecked(false);
-            return;
-        }
-        int idx = m_currentIndex;
-        if (idx < 0 || idx >= m_session.paths().size()) {
-            idx = 0;
-        }
-        openSessionIndexInImageMode(idx);
-    }
-    m_imageView->hostAttention().setAttentionMode(want);
-    m_attentionAct->setChecked(m_imageView->hostAttention().active());
+    onCanvasToolTriggered(m_attentionAct);
 }
 
 void MainWindow::toggleThumbnailCrop()
@@ -2396,7 +2369,7 @@ void MainWindow::toggleWorkspaceMode()
 QList<QAction *> MainWindow::canvasToolActions() const
 {
     return {
-        m_selectToolAct, m_panToolAct, m_zoomToolAct, m_cropAct,
+        m_selectToolAct, m_panToolAct, m_zoomToolAct, m_cropAct, m_attentionAct,
         m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
         m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
         m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
@@ -2448,13 +2421,22 @@ void MainWindow::syncCanvasToolChrome()
         setCheckedBlocked(m_cropAct, false);
     };
 
-    // Priority: crop mode > annotation tool > view tool.
+    // Priority: crop > attention > annotation tool > view tool.
     if (m_imageView->hostCrop().active()) {
         clearViewChecks();
         clearAnnotChecks();
+        setCheckedBlocked(m_attentionAct, false);
         setCheckedBlocked(m_cropAct, true);
         return;
     }
+    if (m_imageView->hostAttention().active()) {
+        clearViewChecks();
+        clearAnnotChecks();
+        setCheckedBlocked(m_cropAct, false);
+        setCheckedBlocked(m_attentionAct, true);
+        return;
+    }
+    setCheckedBlocked(m_attentionAct, false);
     if (m_imageView->hostAnnot().isToolActive()) {
         const Annotation::Tool at = m_imageView->hostAnnot().tool();
         clearViewChecks();
@@ -2498,8 +2480,40 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         a->setChecked(on);
     }
 
-    // Attention stays outside the Exclusive radio but is still a canvas edit
-    // mode: any explicit canvas-tool choice ends it (parity with crop enter).
+    // Attention is a member of the Exclusive radio (same as Crop).
+    // Re-select while active → exit to mode default. Other tools clear it below.
+    if (act == m_attentionAct) {
+        if (m_imageView->hostAttention().active()) {
+            m_imageView->hostAttention().setAttentionMode(false);
+            activateDefaultViewTool();
+            return;
+        }
+        // Attention edit is Image-mode only; open current session index if needed.
+        if (!m_imageView->isImageMode()) {
+            if (m_session.paths().isEmpty()) {
+                activateDefaultViewTool();
+                return;
+            }
+            int idx = m_currentIndex;
+            if (idx < 0 || idx >= m_session.paths().size()) {
+                idx = 0;
+            }
+            openSessionIndexInImageMode(idx);
+        }
+        if (m_imageView->hostCrop().active()) {
+            m_imageView->hostCrop().cancelCrop();
+        }
+        clearAnnotationToolSelection();
+        m_imageView->setCurrentTool(Tool::Select);
+        m_imageView->hostAttention().setAttentionMode(true);
+        if (m_attentionAct) {
+            const QSignalBlocker block(m_attentionAct);
+            m_attentionAct->setChecked(m_imageView->hostAttention().active());
+        }
+        return;
+    }
+
+    // Leaving Attention for any other canvas tool.
     if (m_imageView->hostAttention().active()) {
         m_imageView->hostAttention().setAttentionMode(false);
         if (m_attentionAct) {

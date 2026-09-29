@@ -34,15 +34,15 @@ checked at all times (`ExclusionPolicy::Exclusive`).
 - Enter: `enterCropFromCanvasTool()` (clears attention + annot; Gallery defers until Image has display pixels, holding Select in the radio until then).
 - Exit: choose Select / Pan / Zoom / annot tool, **or** re-select Crop / press `C` while cropping (toggle-off → **mode default**: Pan in Image, Select in Gallery/Workspace via `activateDefaultViewTool`).
 
-**Attention (outside the radio)**
+**Attention (in the Exclusive radio)**
 
-- Image-only mode entry (`Shift+A` / Attention action). Not a member of the
-  Exclusive group so the last view tool can remain checked as the underlay.
-- Enter: cancels crop, clears any active annotation tool, then
-  `hostAttention().setAttentionMode(true)`.
-- Exit: Escape, mode switch, **or any canvas-tool trigger**
-  (`onCanvasToolTriggered` — Select / Pan / Zoom / Crop / annot). Parity with
-  crop: picking another canvas edit mode ends Attention.
+- Image-only mode entry (`Shift+A` / Attention action). Member of the same
+  Exclusive group as Select / Pan / Zoom / Crop / annotation tools.
+- Enter: cancels crop, clears annotation tool, `setCurrentTool(Select)`, then
+  `hostAttention().setAttentionMode(true)`. From Gallery/Workspace, opens the
+  current session index in Image mode first.
+- Exit: re-select Attention (toggle-off → mode default), Escape, mode switch,
+  or any other canvas-tool choice.
 
 ### Why Exclusive (not Optional)
 
@@ -69,7 +69,4 @@ view pos
   [ANNOTATION_OVERLAY.md §14](ANNOTATION_OVERLAY.md); do not remove the tool yet.
 - Workspace free rotation/shear of items vs content orient — needs testing.
 - Rubber-band shapes in Gallery still use view rects (OK for ortho tiles).
-- Optional: fold Attention **into** the same Exclusive radio (today it only
-  exits when another canvas tool is chosen; chrome can show Select/Pan *and*
-  Attention checked).
 - Shortcut clash: Pan and HUD both claim `H` (GIMP-style hand vs HUD toggle).

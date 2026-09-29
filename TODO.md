@@ -2,14 +2,15 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2823.3-filmstrip-raster-connect on 2823.2 stack.
+**Tip:** biltoo-2824.1-attention-exclusive-radio on 2823.3 stack.
 
-### 2823.3
-- ThumbnailBar::setPathRasterService owns rasterImproved → scheduleVisible
-  (MainWindow no longer calls private scheduleVisibleThumbnailLoads)
+### 2824.1 Attention in Exclusive canvas-tool radio
+- `m_attentionAct` member of same QActionGroup as Select/Pan/Zoom/Crop/annot
+- Enter/re-toggle via `onCanvasToolTriggered` (parity with Crop)
+- `syncCanvasToolChrome` priority: crop > attention > annot > view
+- From Gallery/Workspace: open Image mode then enable Attention
 
-### 2823.2 Gallery min_scale = density
-### 2823.1 Screen-edge hard floor
+### 2823.x Gallery zoom min_scale, filmstrip PathRaster connect
 
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle
