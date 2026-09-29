@@ -32,6 +32,10 @@
 #include <cmath>
 #include <algorithm>
 #include <QShowEvent>
+#include <QAbstractSpinBox>
+#include <QTextEdit>
+#include <QPlainTextEdit>
+#include <QKeyEvent>
 #include <QtMath>
 
 namespace {
@@ -95,6 +99,8 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowIcon(QApplication::windowIcon());
     resize(1024, 768);
     setAcceptDrops(true);
+    // App-wide so -/+/ = hold-zoom works even when ImageView has focus.
+    qApp->installEventFilter(this);
 
     m_imageView = new ImageView(this);
     // Phase 6 Tier 4b: single appearance store on SessionDocument.
@@ -1104,6 +1110,49 @@ void MainWindow::tickToolbarZoomHold()
     const qreal step = 1.03;
     m_imageView->hostImage().zoomViewBy(m_toolbarZoomHoldDir > 0 ? step : (1.0 / step));
     syncZoomModeChecks();
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    // Smooth hold-zoom for -/+/ = when not typing in a line edit / spin box.
+    if (event && (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->isAutoRepeat()) {
+            return QMainWindow::eventFilter(obj, event);
+        }
+        QWidget *fw = QApplication::focusWidget();
+        if (fw && (qobject_cast<QLineEdit *>(fw) || qobject_cast<QAbstractSpinBox *>(fw)
+                   || qobject_cast<QTextEdit *>(fw) || qobject_cast<QPlainTextEdit *>(fw))) {
+            return QMainWindow::eventFilter(obj, event);
+        }
+        // Ignore when a menu is open (menu uses its own shortcuts).
+        if (QApplication::activePopupWidget()) {
+            return QMainWindow::eventFilter(obj, event);
+        }
+        const int key = ke->key();
+        const bool zoomInKey = (key == Qt::Key_Plus || key == Qt::Key_Equal);
+        const bool zoomOutKey = (key == Qt::Key_Minus);
+        // Bare keys only — Ctrl++ stays on QAction step zoom.
+        if (ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
+            return QMainWindow::eventFilter(obj, event);
+        }
+        if (event->type() == QEvent::KeyPress) {
+            if (zoomInKey) {
+                startToolbarZoomHold(+1);
+                return true;
+            }
+            if (zoomOutKey) {
+                startToolbarZoomHold(-1);
+                return true;
+            }
+        } else if (event->type() == QEvent::KeyRelease) {
+            if (zoomInKey || zoomOutKey) {
+                stopToolbarZoomHold();
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::zoomReset()

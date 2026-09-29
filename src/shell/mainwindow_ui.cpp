@@ -187,13 +187,13 @@ void MainWindow::createActions()
     m_zoomInAct = new QAction(tr("Zoom &In"), this);
     m_zoomInAct->setShortcut(QKeySequence::ZoomIn);
     m_zoomInAct->setIcon(themeIcon(QStringLiteral("zoom-in"), QStyle::SP_ArrowUp));
-    m_zoomInAct->setStatusTip(tr("Zoom in"));
+    m_zoomInAct->setStatusTip(tr("Zoom in one step (Ctrl++ / menu)"));
     connect(m_zoomInAct, &QAction::triggered, this, &MainWindow::zoomIn);
 
     m_zoomOutAct = new QAction(tr("Zoom &Out"), this);
     m_zoomOutAct->setShortcut(QKeySequence::ZoomOut);
     m_zoomOutAct->setIcon(themeIcon(QStringLiteral("zoom-out"), QStyle::SP_ArrowDown));
-    m_zoomOutAct->setStatusTip(tr("Zoom out"));
+    m_zoomOutAct->setStatusTip(tr("Zoom out one step (Ctrl+- / menu)"));
     connect(m_zoomOutAct, &QAction::triggered, this, &MainWindow::zoomOut);
 
     m_zoom1to1Act = new QAction(tr("Zoom &1:1"), this);
@@ -1946,8 +1946,23 @@ void MainWindow::createToolBar()
             connect(btn, &QToolButton::released, this, &MainWindow::stopToolbarZoomHold);
             return btn;
         };
-        m_toolBar->addWidget(makeHoldZoomBtn(m_zoomInAct, +1));
-        m_toolBar->addWidget(makeHoldZoomBtn(m_zoomOutAct, -1));
+        auto *holdIn = makeHoldZoomBtn(m_zoomInAct, +1);
+        holdIn->setToolTip(tr("Zoom in (hold for continuous)"));
+        holdIn->setStatusTip(tr("Zoom in continuously while held; +/- keys do the same"));
+        auto *holdOut = makeHoldZoomBtn(m_zoomOutAct, -1);
+        holdOut->setToolTip(tr("Zoom out (hold for continuous)"));
+        holdOut->setStatusTip(tr("Zoom out continuously while held"));
+        m_toolBar->addWidget(holdIn);
+        m_toolBar->addWidget(holdOut);
+        // Stepwise buttons (menu action) kept for comparison / testing.
+        m_toolBar->addAction(m_zoomInAct);
+        m_toolBar->addAction(m_zoomOutAct);
+        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomInAct))) {
+            b->setToolTip(tr("Zoom in one step"));
+        }
+        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomOutAct))) {
+            b->setToolTip(tr("Zoom out one step"));
+        }
     }
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);

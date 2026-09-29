@@ -570,9 +570,20 @@ void ImageController::zoomViewBy(qreal factor)
     // (AUDIT M4 — one policy: zoom works until next pack).
     releaseStickyZoom();
     m_framing.clearFitFill();
-    // Keep the viewport centre stable when zooming via toolbar/shortcuts
-    m_view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    // Zoom about the viewport centre. AnchorViewCenter alone can drift to the
+    // top-left in Gallery (large scene + scroll); pin the scene point under
+    // the centre before/after scale.
+    QPointF keepCenter;
+    bool haveCenter = false;
+    if (m_view->viewport()) {
+        keepCenter = m_view->mapToScene(m_view->viewport()->rect().center());
+        haveCenter = true;
+    }
+    m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
     m_view->scale(factor, factor);
+    if (haveCenter) {
+        m_view->centerOn(keepCenter);
+    }
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     // Viewport-space chrome only — no selected-item prepareGeometryChange.
     if (QWidget *vp = m_view->viewport()) {
