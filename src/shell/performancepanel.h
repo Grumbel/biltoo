@@ -7,8 +7,8 @@
 
 class QShowEvent;
 class QHideEvent;
-
 class QLabel;
+class QFrame;
 class QPlainTextEdit;
 class QTimer;
 class ImageView;
@@ -34,8 +34,17 @@ protected:
     void hideEvent(QHideEvent *event) override;
 
 private:
+    QFrame *makeMetricCard(const QString &title, QLabel **valueOut);
+    void setCardValue(QLabel *value, const QString &text, const QString &state);
+
     ImageView *m_view = nullptr;
-    QLabel *m_summary = nullptr;
+    QLabel *m_statusBadge = nullptr;
+    QLabel *m_poolValue = nullptr;
+    QLabel *m_queueValue = nullptr;
+    QLabel *m_focusValue = nullptr;
+    QLabel *m_activityValue = nullptr;
+    QLabel *m_deltaValue = nullptr;
+    QLabel *m_detail = nullptr;
     QPlainTextEdit *m_log = nullptr;
     QTimer *m_timer = nullptr;
 };

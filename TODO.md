@@ -2,21 +2,23 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2815.8-gallery-open-paint-freeze (base 2085c07).
+**Tip:** biltoo-2815.9-performance-panel-ui (base 2085c07).
 
-### 2815.8
-- Gallery→Image: freeze viewport updates during leaveForImageMode (stash + enter)
-- Defer finishCurrentIndexChromeUpdate (filmstrip/title) to next event-loop tick
-- Cuts the noticeable ~100ms empty-scene paint lag before first Image frame
+### 2815.9
+- Performance panel: metric cards, status badge (Settled/Working/Hot/Idle tick)
+- FocusFull card flags >1 (needs thumtoo focus-full-no-busy-wait)
+- Cleaner deltas + recent schedule log
+
+### thumtoo (required for settle CPU)
+- thumtoo-focus-full-no-busy-wait-551a360.bundle — FocusFull wait, no archive pyramid coalesce
 
 ### Prior
+- 2815.8 Gallery→Image paint freeze
 - 2815.7 tile LOD settle
 - 2815.6 Performance panel
 - 2815.5 vips concurrency 1
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2815.8-gallery-open-paint-freeze-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2815.9-performance-panel-ui-2085c07.bundle HEAD
 ```
-
-Fast-forward from 104158c1 (2815.7).
