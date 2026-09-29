@@ -490,7 +490,7 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
     if (path.isEmpty() || uri.empty()) {
         return;
     }
-    BackgroundWorkLog::noteRevalidate();
+    BackgroundWorkLog::noteRevalidate(QFileInfo(path).fileName());
     const auto now = std::chrono::steady_clock::now();
     {
         std::lock_guard lock(g_revalMu);
@@ -1784,7 +1784,6 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge);
 
 bool schedulePixels(const QString &path, int maxEdge)
 {
-    BackgroundWorkLog::notePixels();
     return scheduleDisplayPixels(path, maxEdge);
 }
 
@@ -1854,6 +1853,10 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d attempts=%d",
                    qPrintable(path), maxEdge, g_pixelsActive, attempts);
     }
+    BackgroundWorkLog::notePixels(
+        QStringLiteral("PreferCache edge=%1  %2")
+            .arg(maxEdge)
+            .arg(QFileInfo(path).fileName()));
     const QString pathCopy = path;
     const int edge = maxEdge;
     // URI + request_raster off GUI (archive URI conversion is not free).
@@ -2178,10 +2181,11 @@ quint64 setPrimaryInterest(const QString &path, int edge)
 
 bool scheduleTilePyramid(const QString &path)
 {
-    BackgroundWorkLog::noteTile();
     if (path.isEmpty()) {
         return false;
     }
+    BackgroundWorkLog::noteTile(
+        QStringLiteral("FocusFull %1").arg(QFileInfo(path).fileName()));
     // FocusFull fully decodes archive members at scale 0. Gallery overview
     // and filmstrip must not start it — interactive request_tiles at density
     // scale is enough. Explicit Cache→Prepare still uses prepareTiles →
@@ -2391,10 +2395,13 @@ int durableTileMinScale(const QString &path)
 
 bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
 {
-    BackgroundWorkLog::noteTile();
     if (path.isEmpty() || maxEdge <= 0) {
         return false;
     }
+    BackgroundWorkLog::noteTile(
+        QStringLiteral("synth edge=%1  %2")
+            .arg(maxEdge)
+            .arg(QFileInfo(path).fileName()));
     if (!cachedSize(path).isValid()) {
         scheduleProbe(path);
     }
@@ -2827,9 +2834,24 @@ void warmUris(const QStringList &paths)
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                   TileBitmapCellCallback on_cell)
 {
-    BackgroundWorkLog::noteTile();
     if (!on_cell || coords.isEmpty()) {
         return;
+    }
+    {
+        int minS = coords.front().scale;
+        int maxS = minS;
+        for (const TileCoord &c : coords) {
+            minS = qMin(minS, c.scale);
+            maxS = qMax(maxS, c.scale);
+        }
+        const QString name = QFileInfo(path).fileName();
+        BackgroundWorkLog::noteTile(
+            QStringLiteral("%1  cells=%2  scale=%3%4")
+                .arg(name)
+                .arg(coords.size())
+                .arg(minS)
+                .arg(minS == maxS ? QString()
+                                  : QStringLiteral("..%1").arg(maxS)));
     }
     init();
     const std::string uri = toThumtooUri(path);

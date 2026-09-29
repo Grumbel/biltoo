@@ -14,6 +14,9 @@
 /**
  * Lightweight process-wide counters + recent event ring for diagnosing
  * post-settle CPU (Qt pool jobs, thumtoo schedules). Safe from any thread.
+ *
+ * Prefer note*(detail) with a short path/edge/cell summary so the Performance
+ * panel "Recent work" log is readable; empty detail is allowed but unhelpful.
  */
 namespace BackgroundWorkLog {
 
@@ -42,11 +45,11 @@ struct Snapshot {
 };
 
 void note(const char *kind, const QString &detail = QString());
-void noteProbe();
-void noteRevalidate();
-void notePixels();
-void noteTile();
-void noteGalleryDecode();
+void noteProbe(const QString &detail = QString());
+void noteRevalidate(const QString &detail = QString());
+void notePixels(const QString &detail = QString());
+void noteTile(const QString &detail = QString());
+void noteGalleryDecode(const QString &detail = QString());
 void noteTileLodTick();
 void notePoolStart(const char *kind, const QString &detail = QString());
 

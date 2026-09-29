@@ -657,7 +657,7 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("scheduleGalleryDecode");
-    BackgroundWorkLog::noteGalleryDecode();
+    BackgroundWorkLog::noteGalleryDecode(QFileInfo(path).fileName());
     if (!m_host->isGalleryMode() || path.isEmpty()) {
         return false;
     }

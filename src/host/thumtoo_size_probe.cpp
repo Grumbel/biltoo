@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "host/thumtoocache.h"
+#include <QFileInfo>
 #include "util/backgroundworklog.h"
 #include "host/thumtoo_process_memos.h"
 #include "display/imagecache.h"
@@ -192,7 +193,7 @@ void scheduleProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    BackgroundWorkLog::noteProbe();
+    BackgroundWorkLog::noteProbe(QFileInfo(path).fileName());
     // Size memo alone is enough to skip Store request_size. Requiring
     // ImageCache underlay forced a full-session re-probe after every restart
     // (hot SQLite, cold process underlay) — looked like "probing the whole

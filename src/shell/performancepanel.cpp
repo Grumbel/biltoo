@@ -113,7 +113,7 @@ PerformancePanel::PerformancePanel(QWidget *parent)
     btnRow->addWidget(hint);
     root->addLayout(btnRow);
 
-    auto *logTitle = new QLabel(tr("Recent schedules"), this);
+    auto *logTitle = new QLabel(tr("Recent work"), this);
     {
         QFont f = logTitle->font();
         f.setBold(true);
@@ -124,7 +124,7 @@ PerformancePanel::PerformancePanel(QWidget *parent)
     m_log = new QPlainTextEdit(this);
     m_log->setReadOnly(true);
     m_log->setMaximumBlockCount(250);
-    m_log->setPlaceholderText(tr("Schedule events appear here while sampling…"));
+    m_log->setPlaceholderText(tr("Work events appear here while sampling…"));
     {
         QFont mono = m_log->font();
         mono.setFamily(QStringLiteral("Monospace"));
@@ -288,9 +288,9 @@ void PerformancePanel::refresh()
                      .arg(act.tileQueued).arg(act.tileRunning),
                  actTotal > 0 ? QStringLiteral("busy") : QStringLiteral("ok"));
     setCardValue(m_deltaValue,
-                 tr("probe %1 · reval %2 · tile %3 · gallery %4 · tileLod %5")
+                 tr("probe %1 · pix %2 · tile %3 · gal %4 · lod %5")
                      .arg(snap.delta.scheduleProbe)
-                     .arg(snap.delta.scheduleRevalidate)
+                     .arg(snap.delta.schedulePixels)
                      .arg(snap.delta.scheduleTile)
                      .arg(snap.delta.scheduleGalleryDecode)
                      .arg(snap.delta.tileLodTicks),
@@ -314,14 +314,23 @@ void PerformancePanel::refresh()
     } else {
         goals << tr("• FocusFull: none (good for overview).");
     }
-    if (act.tileQueued + act.tileRunning > 0) {
-        goals << tr("• Interactive tiles: filling on-screen cells (or filmstrip). "
-                    "Archive members at scale>0 use JPEG DCT shrink; scale 0 is full decode.");
+    if (act.tileQueued + act.tileRunning > 0 || snap.delta.scheduleTile > 0) {
+        goals << tr("• Interactive tiles: one batch job per path (cells share a worker). "
+                    "Workers deliver rgb888; host expands to rgba. scale>0 = DCT shrink.");
+        if (snap.delta.scheduleTile > 0) {
+            goals << tr("  Scheduled this interval: %1 path batch(es).")
+                          .arg(snap.delta.scheduleTile);
+        }
         if (!act.tileRunningLabels.isEmpty()) {
             goals << tr("  Running: %1").arg(act.tileRunningLabels.mid(0, 4).join(QLatin1String("; ")));
         }
     } else {
         goals << tr("• Interactive tiles: idle.");
+    }
+    if (snap.delta.schedulePixels > 0) {
+        goals << tr("• PreferCache / TileSynth: %1 schedule(s) this interval "
+                    "(whole-frame from durable tiles or overview).")
+                      .arg(snap.delta.schedulePixels);
     }
     if (snap.delta.scheduleRevalidate > 0) {
         goals << tr("• Background revalidate: comparing source mtime/size to Store locator "
@@ -336,13 +345,14 @@ void PerformancePanel::refresh()
     m_intent->setText(goals.join(QLatin1Char('\n')));
 
     QStringList detail;
-    detail << tr("Totals  probe %1  reval %2  tile %3  gallery %4  tileLod %5  poolStarts %6")
-                  .arg(snap.totals.scheduleProbe)
-                  .arg(snap.totals.scheduleRevalidate)
-                  .arg(snap.totals.scheduleTile)
-                  .arg(snap.totals.scheduleGalleryDecode)
-                  .arg(snap.totals.tileLodTicks)
-                  .arg(snap.totals.poolStarts);
+    detail << tr("Totals  probe %1  reval %2  pixels %3  tile %4  gallery %5  tileLod %6  pool %7")
+                 .arg(snap.totals.scheduleProbe)
+                 .arg(snap.totals.scheduleRevalidate)
+                 .arg(snap.totals.schedulePixels)
+                 .arg(snap.totals.scheduleTile)
+                 .arg(snap.totals.scheduleGalleryDecode)
+                 .arg(snap.totals.tileLodTicks)
+                 .arg(snap.totals.poolStarts);
     const QString breakdown = ThumtooCache::loadingBreakdownLabel();
     if (!breakdown.isEmpty()) {
         detail << tr("Loading: %1").arg(breakdown);
@@ -367,14 +377,16 @@ void PerformancePanel::refresh()
                   .arg(act.softQueued).arg(act.softRunning)
                   .arg(act.tileQueued).arg(act.tileRunning)
                   .arg(act.archiveReadRunning);
-    report << QStringLiteral("delta probe=%1 reval=%2 tile=%3 gallery=%4 tileLod=%5 pool=%6")
+    report << QStringLiteral("delta probe=%1 reval=%2 pixels=%3 tile=%4 gallery=%5 tileLod=%6 pool=%7")
                   .arg(snap.delta.scheduleProbe).arg(snap.delta.scheduleRevalidate)
-                  .arg(snap.delta.scheduleTile).arg(snap.delta.scheduleGalleryDecode)
-                  .arg(snap.delta.tileLodTicks).arg(snap.delta.poolStarts);
-    report << QStringLiteral("totals probe=%1 reval=%2 tile=%3 gallery=%4 tileLod=%5 poolStarts=%6")
+                  .arg(snap.delta.schedulePixels).arg(snap.delta.scheduleTile)
+                  .arg(snap.delta.scheduleGalleryDecode).arg(snap.delta.tileLodTicks)
+                  .arg(snap.delta.poolStarts);
+    report << QStringLiteral("totals probe=%1 reval=%2 pixels=%3 tile=%4 gallery=%5 tileLod=%6 poolStarts=%7")
                   .arg(snap.totals.scheduleProbe).arg(snap.totals.scheduleRevalidate)
-                  .arg(snap.totals.scheduleTile).arg(snap.totals.scheduleGalleryDecode)
-                  .arg(snap.totals.tileLodTicks).arg(snap.totals.poolStarts);
+                  .arg(snap.totals.schedulePixels).arg(snap.totals.scheduleTile)
+                  .arg(snap.totals.scheduleGalleryDecode).arg(snap.totals.tileLodTicks)
+                  .arg(snap.totals.poolStarts);
     report << QStringLiteral("--- intent ---");
     report << goals;
     if (!act.tileRunningLabels.isEmpty()) {
@@ -388,12 +400,20 @@ void PerformancePanel::refresh()
             continue;
         }
         s_lastMs = e.msEpoch;
-        const QString t = QDateTime::fromMSecsSinceEpoch(e.msEpoch).toString(
+        const QString ts = QDateTime::fromMSecsSinceEpoch(e.msEpoch).toString(
             QStringLiteral("hh:mm:ss.zzz"));
-        QString line = t + QLatin1Char(' ') + e.kind;
-        if (!e.detail.isEmpty()) {
-            line += QLatin1Char(' ') + e.detail;
+        // Fixed kind width so the eye can scan the detail column.
+        QString kind = e.kind;
+        if (kind == QLatin1String("galleryDecode")) {
+            kind = QStringLiteral("gallery");
+        } else if (kind == QLatin1String("revalidate")) {
+            kind = QStringLiteral("reval");
         }
+        const QString line =
+            QStringLiteral("%1  %2  %3")
+                .arg(ts, -12)
+                .arg(kind, -10)
+                .arg(e.detail.isEmpty() ? QStringLiteral("—") : e.detail);
         m_log->appendPlainText(line);
     }
 }

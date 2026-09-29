@@ -7,11 +7,15 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QThreadPool>
+#include <QVector>
 
 namespace BackgroundWorkLog {
 namespace {
 
-constexpr int kRing = 96;
+constexpr int kRing = 80;
+
+QMutex g_mu;
+QVector<Event> g_ring;
 
 std::atomic<std::uint64_t> g_poolStarts{0};
 std::atomic<std::uint64_t> g_probe{0};
@@ -21,21 +25,19 @@ std::atomic<std::uint64_t> g_tile{0};
 std::atomic<std::uint64_t> g_gallery{0};
 std::atomic<std::uint64_t> g_tileLod{0};
 
-QMutex g_mu;
-QVector<Event> g_ring;
-Counters g_lastSnapshot{};
+Counters g_lastSnapshot;
 
 Counters readTotals()
 {
-    Counters c;
-    c.poolStarts = g_poolStarts.load(std::memory_order_relaxed);
-    c.scheduleProbe = g_probe.load(std::memory_order_relaxed);
-    c.scheduleRevalidate = g_reval.load(std::memory_order_relaxed);
-    c.schedulePixels = g_pixels.load(std::memory_order_relaxed);
-    c.scheduleTile = g_tile.load(std::memory_order_relaxed);
-    c.scheduleGalleryDecode = g_gallery.load(std::memory_order_relaxed);
-    c.tileLodTicks = g_tileLod.load(std::memory_order_relaxed);
-    return c;
+    Counters t;
+    t.poolStarts = g_poolStarts.load(std::memory_order_relaxed);
+    t.scheduleProbe = g_probe.load(std::memory_order_relaxed);
+    t.scheduleRevalidate = g_reval.load(std::memory_order_relaxed);
+    t.schedulePixels = g_pixels.load(std::memory_order_relaxed);
+    t.scheduleTile = g_tile.load(std::memory_order_relaxed);
+    t.scheduleGalleryDecode = g_gallery.load(std::memory_order_relaxed);
+    t.tileLodTicks = g_tileLod.load(std::memory_order_relaxed);
+    return t;
 }
 
 void pushEvent(const char *kind, const QString &detail)
@@ -45,6 +47,41 @@ void pushEvent(const char *kind, const QString &detail)
     e.kind = QString::fromUtf8(kind);
     e.detail = detail;
     QMutexLocker lock(&g_mu);
+    // Coalesce consecutive identical kind+base-detail within 80ms so a viewport
+    // of many cells does not fill the ring with the same line.
+    if (!g_ring.isEmpty()) {
+        Event &last = g_ring.last();
+        auto baseDetail = [](QString d) -> QString {
+            const int x = d.lastIndexOf(QStringLiteral(" ×"));
+            if (x >= 0) {
+                bool ok = false;
+                d.mid(x + 2).toInt(&ok);
+                if (ok) {
+                    return d.left(x).trimmed();
+                }
+            }
+            return d;
+        };
+        const QString baseNew = baseDetail(e.detail);
+        const QString baseOld = baseDetail(last.detail);
+        if (last.kind == e.kind && baseOld == baseNew
+            && (e.msEpoch - last.msEpoch) < 80) {
+            int times = 2;
+            const int x = last.detail.lastIndexOf(QStringLiteral(" ×"));
+            if (x >= 0) {
+                bool ok = false;
+                const int n = last.detail.mid(x + 2).toInt(&ok);
+                if (ok && n >= 1) {
+                    times = n + 1;
+                }
+            }
+            last.detail = baseNew.isEmpty()
+                ? QStringLiteral("×%1").arg(times)
+                : (baseNew + QStringLiteral(" ×%1").arg(times));
+            last.msEpoch = e.msEpoch;
+            return;
+        }
+    }
     if (g_ring.size() >= kRing) {
         g_ring.remove(0, g_ring.size() - kRing + 1);
     }
@@ -61,40 +98,39 @@ void note(const char *kind, const QString &detail)
     pushEvent(kind, detail);
 }
 
-void noteProbe()
+void noteProbe(const QString &detail)
 {
     g_probe.fetch_add(1, std::memory_order_relaxed);
-    pushEvent("probe", QString());
+    pushEvent("probe", detail);
 }
 
-void noteRevalidate()
+void noteRevalidate(const QString &detail)
 {
     g_reval.fetch_add(1, std::memory_order_relaxed);
-    pushEvent("revalidate", QString());
+    pushEvent("revalidate", detail);
 }
 
-void notePixels()
+void notePixels(const QString &detail)
 {
     g_pixels.fetch_add(1, std::memory_order_relaxed);
-    pushEvent("pixels", QString());
+    pushEvent("pixels", detail);
 }
 
-void noteTile()
+void noteTile(const QString &detail)
 {
     g_tile.fetch_add(1, std::memory_order_relaxed);
-    pushEvent("tile", QString());
+    pushEvent("tile", detail);
 }
 
-void noteGalleryDecode()
+void noteGalleryDecode(const QString &detail)
 {
     g_gallery.fetch_add(1, std::memory_order_relaxed);
-    pushEvent("galleryDecode", QString());
+    pushEvent("galleryDecode", detail);
 }
 
 void noteTileLodTick()
 {
     g_tileLod.fetch_add(1, std::memory_order_relaxed);
-    // High rate — do not flood the ring; counter only.
 }
 
 void notePoolStart(const char *kind, const QString &detail)
