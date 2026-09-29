@@ -2,12 +2,13 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2827.1-filmstrip-shrink-rebake on 2826.2 stack.
+**Tip:** biltoo-2828.1-annot-screen-handles on 2827.1 stack.
 
-### 2827.1 Filmstrip shrink
-- Rebake icons at `filmstripDecodeEdge` when strip shrinks (no large→small paint downsample)
-- `setThumbnailIcon` allows smaller install when haveEdge > need
-- Docs: strip is QPixmap/TileSynth, not TileSession — no tile plan overlay
+### 2828.1 Annotation chrome resolution
+- Selection handles sized in device px (scene via view scale × DPR)
+- Sticky note text drawn in device-pixel space (readable in Gallery)
+- Handle hit radius matches screen size (page units from view scale)
+- Rounded corners / dog-ear use device-px sizes
 
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle

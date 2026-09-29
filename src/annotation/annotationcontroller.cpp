@@ -741,10 +741,8 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
         const bool additive = mods.testFlag(Qt::ShiftModifier)
                               || mods.testFlag(Qt::ControlModifier);
         if (!additive) {
-            qreal handleR = 12.0;
-            if (bounds.isValid()) {
-                handleR = qMax(8.0, qMin(bounds.width(), bounds.height()) * 0.02);
-            }
+            const qreal handleR = AnnotationPainter::handleHitRadiusPage(
+                m_view, item, bounds, yUp, sourceSize);
             // Corner / endpoint resize: single selection only.
             if (m_selectedIds.size() == 1) {
                 Annotation::Object selObj;

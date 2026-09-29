@@ -7,6 +7,7 @@
 #include "host/thumtoocache.h"
 #include "imageitem.h"
 #include "imageview.h"
+#include "view/viewtransform.h"
 
 #include <QFont>
 #include <QLineF>
@@ -32,6 +33,33 @@ QRectF unionOfQuads(const QVector<QRectF> &quads)
         u = u.isValid() ? u.united(q) : q;
     }
     return u;
+}
+
+/** Scene units per device pixel (view transform × DPR). */
+qreal scenePerDevicePx(ImageView *view)
+{
+    if (!view) {
+        return 1.0;
+    }
+    const qreal vs = ViewTransform::sanitizeViewScale(
+        ViewTransform::scaleFrom(view->transform()));
+    qreal dpr = 1.0;
+    if (view->viewport()) {
+        dpr = view->viewport()->devicePixelRatioF();
+    }
+    if (!(dpr > 0.0)) {
+        dpr = 1.0;
+    }
+    return 1.0 / (vs * dpr);
+}
+
+/** Selection / resize handle half-size in scene units (~device px). */
+constexpr qreal kHandleHalfDevicePx = 6.0;
+constexpr qreal kHandleHitDevicePx = 12.0;
+
+qreal handleHalfScene(ImageView *view)
+{
+    return kHandleHalfDevicePx * scenePerDevicePx(view);
 }
 
 } // namespace
@@ -242,10 +270,18 @@ void AnnotationPainter::paintSticky(QPainter &painter, ImageView *view, ImageIte
     if (scene.isEmpty()) {
         return;
     }
-    painter.setPen(QPen(obj.color.darker(120), 0));
+    // Chrome sizes in device pixels so Gallery zoom / HiDPI match Image mode.
+    const qreal sp = scenePerDevicePx(view);
+    const qreal rad = 4.0 * sp;
+    const qreal fold = qBound(6.0 * sp, scene.width() * 0.18, 28.0 * sp);
+    // pad reserved for future label chrome
+
+    QPen border(obj.color.darker(120), 0);
+    border.setCosmetic(true);
+    border.setWidthF(1.0);
+    painter.setPen(border);
     painter.setBrush(obj.color);
-    painter.drawRoundedRect(scene, 4, 4);
-    const qreal fold = qMin(12.0, qMax(4.0, scene.width() * 0.18));
+    painter.drawRoundedRect(scene, rad, rad);
     QPolygonF dogear;
     dogear << QPointF(scene.right() - fold, scene.top())
            << QPointF(scene.right(), scene.top())
@@ -258,12 +294,34 @@ void AnnotationPainter::paintSticky(QPainter &painter, ImageView *view, ImageIte
                              ? obj.text
                              : (!obj.textSnippet.isEmpty() ? obj.textSnippet
                                                           : QStringLiteral("(note)"));
-    painter.setPen(QColor(40, 40, 40));
+    // Text: draw in device-pixel space so point size is not double-scaled by the
+    // view matrix and stays readable at Gallery cell size and deep zoom.
+    const qreal vs = ViewTransform::sanitizeViewScale(
+        ViewTransform::scaleFrom(view ? view->transform() : QTransform()));
+    qreal dpr = 1.0;
+    if (view && view->viewport()) {
+        dpr = view->viewport()->devicePixelRatioF();
+    }
+    if (!(dpr > 0.0)) {
+        dpr = 1.0;
+    }
+    const qreal screenH = scene.height() * vs * dpr;
+    const qreal screenW = scene.width() * vs * dpr;
+    const int pixelSize = qBound(9, qRound(screenH * 0.13), 28);
+
+    painter.save();
+    painter.translate(scene.center());
+    painter.scale(1.0 / (vs * dpr), 1.0 / (vs * dpr));
+    const QRectF pixelBox(-screenW * 0.5, -screenH * 0.5, screenW, screenH);
+    const qreal padPx = 6.0 * dpr;
+    const qreal foldPx = fold * vs * dpr;
     QFont font = painter.font();
-    font.setPointSizeF(qBound(8.0, scene.height() * 0.11, 18.0));
+    font.setPixelSize(pixelSize);
     painter.setFont(font);
-    const QRectF textRect = scene.adjusted(6, 6, -6 - fold * 0.25, -6);
-    painter.drawText(textRect, Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
+    painter.setPen(QColor(40, 40, 40));
+    painter.drawText(pixelBox.adjusted(padPx, padPx, -padPx - foldPx * 0.25, -padPx),
+                     Qt::TextWordWrap | Qt::AlignTop | Qt::AlignLeft, text);
+    painter.restore();
 }
 
 void AnnotationPainter::paintObject(QPainter &painter, ImageView *view, ImageItem *item,
@@ -344,10 +402,13 @@ void AnnotationPainter::paintSelectionChrome(QPainter &painter, ImageView *view,
                 const QRectF scene =
                     pageRectToScene(view, item, pageBox, pageBounds, pageYUp, sourceSize);
                 if (!scene.isEmpty()) {
-                    const qreal hs = 5.0;
+                    const qreal hs = handleHalfScene(view);
                     painter.save();
                     painter.setBrush(QColor(255, 255, 255));
-                    painter.setPen(QPen(QColor(53, 132, 228), 0));
+                    QPen hp(QColor(53, 132, 228), 0);
+                    hp.setCosmetic(true);
+                    hp.setWidthF(1.0);
+                    painter.setPen(hp);
                     const QPointF corners[4] = {
                         scene.topLeft(), scene.topRight(), scene.bottomRight(),
                         scene.bottomLeft(),
@@ -377,19 +438,47 @@ void AnnotationPainter::paintSelectionChrome(QPainter &painter, ImageView *view,
             painter.drawPath(path);
             if (selectedIds.size() == 1 && o.kind == Annotation::Kind::ShapeLine
                 && scenePts.size() >= 2) {
-                const qreal hs = 5.0;
+                const qreal hs = handleHalfScene(view);
                 painter.save();
                 painter.setBrush(QColor(255, 255, 255));
-                painter.setPen(QPen(QColor(53, 132, 228), 0));
+                QPen hp(QColor(53, 132, 228), 0);
+                hp.setCosmetic(true);
+                hp.setWidthF(1.0);
+                painter.setPen(hp);
                 for (const QPointF &c : scenePts) {
                     painter.drawRect(QRectF(c.x() - hs, c.y() - hs, hs * 2, hs * 2));
                 }
                 painter.restore();
             } else {
-                const QRectF br = path.boundingRect().adjusted(-3, -3, 3, 3);
+                const qreal pad = 3.0 * scenePerDevicePx(view);
+                const QRectF br = path.boundingRect().adjusted(-pad, -pad, pad, pad);
                 painter.drawRect(br);
             }
         }
     }
     painter.restore();
+}
+
+qreal AnnotationPainter::handleHitRadiusPage(ImageView *view, ImageItem *item,
+                                             const QRectF &pageBounds, bool pageYUp,
+                                             const QSize &sourceSize)
+{
+    const qreal pu = pageUnitInScene(view, item, pageBounds, pageYUp, sourceSize);
+    if (!(pu > 1e-9)) {
+        return 12.0;
+    }
+    qreal vs = 1.0;
+    qreal dpr = 1.0;
+    if (view) {
+        vs = ViewTransform::sanitizeViewScale(ViewTransform::scaleFrom(view->transform()));
+        if (view->viewport()) {
+            dpr = view->viewport()->devicePixelRatioF();
+        }
+    }
+    if (!(dpr > 0.0)) {
+        dpr = 1.0;
+    }
+    constexpr qreal kHitDevicePx = 12.0;
+    const qreal sceneR = kHitDevicePx / (vs * dpr);
+    return sceneR / pu;
 }

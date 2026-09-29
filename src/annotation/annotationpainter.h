@@ -61,6 +61,11 @@ public:
                                      const Annotation::Page &page, const QRectF &pageBounds,
                                      bool pageYUp, const QSize &sourceSize,
                                      const QVector<quint64> &selectedIds);
+
+    /** Page-space hit radius for resize handles (~12 device px). */
+    static qreal handleHitRadiusPage(ImageView *view, ImageItem *item,
+                                     const QRectF &pageBounds, bool pageYUp,
+                                     const QSize &sourceSize);
 };
 
 #endif // ANNOTATIONPAINTER_H
