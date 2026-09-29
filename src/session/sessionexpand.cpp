@@ -431,7 +431,7 @@ QString emptyResultMessage(const QStringList &paths, bool append)
     if ((anyDoc || anyEpub) && !ThumtooCache::isAvailable()) {
         return QObject::tr("Cannot open document: thumtoo is not available.");
     }
-    // Concrete open error after expand (missing file / MuPDF last error).
+    // Concrete open error after expand (MuPDF last error only — no filesystem stat).
     if (!firstDoc.isEmpty()) {
         return ThumtooCache::formatLoadErrorMessage(firstDoc);
     }
