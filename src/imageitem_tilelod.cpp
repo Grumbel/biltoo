@@ -80,14 +80,43 @@ qreal ImageItem::tileDevicePerContent() const
 {
     // Logical view scale × widget devicePixelRatio (Retina / fractional DPI).
     qreal dpr = 1.0;
+    qreal viewScale = 1.0;
     if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
-        QWidget *vp = scene()->views().first()->viewport();
-        if (vp) {
+        QGraphicsView *view = scene()->views().first();
+        if (QWidget *vp = view->viewport()) {
             dpr = vp->devicePixelRatioF();
         }
+        // View transform only (item placement handled below for Gallery).
+        const QTransform vt = view->transform();
+        qreal sMax = 1.0;
+        qreal sMin = 1.0;
+        PlacementLinear::singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(),
+                                           &sMax, &sMin);
+        viewScale = ViewTransform::floorScale(sMax);
     }
     if (!(dpr > 0.0)) {
         dpr = 1.0;
+    }
+
+    // Gallery packed cell: item local size is the *cell*, but the tile grid is
+    // *native* pixels. Using screenScale() here treated cell-local→view (~1) as
+    // device-per-content and forced target_scale=0 (full-res archive decode for
+    // every on-screen thumb). Density must be screen_px / native_px.
+    if (!m_galleryCellSize.isEmpty()) {
+        QSize native = tileNativeSize();
+        if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+            native = imageSize();
+        }
+        const qreal contentLong = qMax(native.width(), native.height());
+        const qreal cellLong =
+            qMax(m_galleryCellSize.width(), m_galleryCellSize.height());
+        if (contentLong > 1.0 && cellLong > 0.0) {
+            const qreal screenLong = cellLong * viewScale * dpr;
+            const qreal dpc = screenLong / contentLong;
+            if (dpc > 0.0 && std::isfinite(dpc)) {
+                return dpc;
+            }
+        }
     }
     return screenScale() * dpr;
 }

@@ -252,9 +252,11 @@ void PathRasterService::pump(const QString &path, Entry &entry)
         }
     }
     if (plan.scheduleTiles) {
-        if (ThumtooCache::scheduleTilePyramid(path)) {
-            accepted.scheduleTiles = true;
-        }
+        // Do not FocusFull here. Full durable pyramids fully decode archive
+        // members at scale 0 and were still scheduled from raster climb while
+        // Gallery overview only needs interactive request_tiles at density
+        // scale. Image-mode primary / explicit prepare call scheduleTilePyramid.
+        (void)path;
     }
     if (plan.scheduleFull) {
         if (ThumtooCache::scheduleFullPixels(path, plan.fullEdge)
