@@ -528,8 +528,15 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
 
     {
         auto *filmstripSurfaceTimer = new QTimer(this);
-        filmstripSurfaceTimer->setInterval(1500);
-        connect(filmstripSurfaceTimer, &QTimer::timeout, this, &ThumbnailBar::filmstripSurfaceTick);
+        // Fast while cells await strip-edge pixels; idle interval is longer.
+        filmstripSurfaceTimer->setInterval(200);
+        connect(filmstripSurfaceTimer, &QTimer::timeout, this, [this, filmstripSurfaceTimer]() {
+            filmstripSurfaceTick();
+            const int nextMs = m_thumbAwaitLadder.isEmpty() ? 1500 : 200;
+            if (filmstripSurfaceTimer->interval() != nextMs) {
+                filmstripSurfaceTimer->setInterval(nextMs);
+            }
+        });
         filmstripSurfaceTimer->start();
     }
 
@@ -1357,33 +1364,24 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
     }
-    // Warm host already covers strip edge — zero schedule work (surface tick
-    // installs into the cell icon). Early-out must not skip that install path.
+    // Shared with Gallery/Image: ImageCache is the process pixel cache. PreferCache
+    // TileSynth reuses durable Store tiles the Gallery already paid for — do not
+    // spawn a QThreadPool job just to call hasDurableTiles (that was one thread
+    // per row and re-walked Store off the memo).
     if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
         return;
     }
+    ThumtooCache::forgetPixelsSettled(path, edge);
     if (ThumtooCache::hasDurableTilesKnown(path)) {
-        // PreferCache may have settled a short soft while Gallery already holds
-        // tiles; clear settle so TileSynth can run for the strip edge again.
-        ThumtooCache::forgetPixelsSettled(path, edge);
         (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
     }
-    // Cold / memo stale: discover coverage on a worker (hasDurableTiles updates
-    // the process memo). Pyramid completion does not emit ladderReady — without
-    // rediscovery filmstrip stayed on LQIP forever after scheduleTilePyramid.
-    const QString pathCopy = path;
-    const int edgeCopy = edge;
-    QThreadPool::globalInstance()->start([pathCopy, edgeCopy]() {
-        if (ThumtooCache::hasDurableTiles(pathCopy)) {
-            (void)ThumtooCache::scheduleTileSynthOrPyramid(pathCopy, edgeCopy);
-            return;
-        }
-        // Cold filmstrip: probe + LQIP path only. FocusFull here decoded every
-        // archive JPEG at full res and kept cores at 100% after Gallery settle.
-        (void)edgeCopy;
-        ThumtooCache::scheduleProbe(pathCopy);
-    });
+    // Memo unknown or negative: PreferCache still tries TileSynth/soft; size
+    // probe fills aspect. Never FocusFull from the strip.
+    (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+    if (!ThumtooCache::cachedSize(path).isValid()) {
+        ThumtooCache::scheduleProbe(path);
+    }
 }
 
 
@@ -2075,7 +2073,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     // Filmstrip: LQIP underlay + tiles (TileSynth when pyramid known). Soft
     // PreferCache encode is removed. Cap concurrent cache reads / tile drives.
     static const int kMaxConcurrentThumbLoads = []() {
-        int v = 6;
+        int v = 12;
         if (const char *e = std::getenv("BILTOO_FILMSTRIP_THUMB_LOADS")) {
             const int parsed = QString::fromLocal8Bit(e).toInt();
             if (parsed >= 1 && parsed <= 64) {
@@ -2174,9 +2172,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     if (haveAfter >= decodeSize) {
                         continue;
                     }
-                    // Drive tiles now — do not wait for a pool job to discover
-                    // that LQIP is weak (that left the strip pixelated for seconds).
+                    // Drive tiles via shared PreferCache/TileSynth (ImageCache).
+                    // Do not also spawn makeThumbnail — that re-decoded the file
+                    // on a pool thread while Gallery already held durable tiles.
                     scheduleFilmstripTilePixels(path, decodeSize);
+                    m_thumbAwaitLadder.insert(i);
+                    continue;
                 }
             }
         }
