@@ -2301,9 +2301,8 @@ void MainWindow::toggleWorkspaceMode()
 
 void MainWindow::clearAnnotationToolSelection()
 {
-    // ExclusiveOptional annot group: unchecking the active tool emits triggered
-    // and AnnotationController goes to Tool::None. Block signals on actions so
-    // we only setTool once.
+    // Unified canvas group: unchecking emits triggered → onCanvasToolTriggered.
+    // Block signals so we only clear AnnotationController once.
     const QList<QAction *> acts = {
         m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct, m_annotEraserAct,
         m_annotSelectAct, m_annotRectAct, m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
@@ -2321,47 +2320,116 @@ void MainWindow::clearAnnotationToolSelection()
     updateAnnotationPanel();
 }
 
-void MainWindow::setSelectTool()
+void MainWindow::onCanvasToolTriggered(QAction *act)
 {
-    clearAnnotationToolSelection();
-    if (m_imageView && m_imageView->hostCrop().active()) {
-        // Leaving crop via another tool commits the draft (same as toolbar off).
+    if (!m_imageView || !act) {
+        return;
+    }
+
+    // Re-click on the active tool (ExclusiveOptional → unchecked): fall back to Select.
+    if (!act->isChecked()) {
+        clearAnnotationToolSelection();
+        if (m_imageView->hostCrop().active()) {
+            m_imageView->hostCrop().setCropMode(false);
+            if (m_cropAct) {
+                m_cropAct->setChecked(false);
+            }
+        }
+        m_imageView->setTool(ImageView::Tool::Select);
+        if (m_selectToolAct) {
+            const QSignalBlocker block(m_selectToolAct);
+            m_selectToolAct->setChecked(true);
+        }
+        m_imageView->restoreToolCursor();
+        return;
+    }
+
+    // Leaving crop via any other canvas tool commits the draft.
+    if (m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().setCropMode(false);
         if (m_cropAct) {
             m_cropAct->setChecked(false);
         }
     }
+
+    const bool isViewTool = (act == m_selectToolAct || act == m_panToolAct
+                             || act == m_zoomToolAct);
+
+    if (isViewTool) {
+        clearAnnotationToolSelection();
+        if (act == m_selectToolAct) {
+            m_imageView->setTool(ImageView::Tool::Select);
+        } else if (act == m_panToolAct) {
+            m_imageView->setTool(ImageView::Tool::Pan);
+        } else {
+            m_imageView->setTool(ImageView::Tool::Zoom);
+        }
+        m_imageView->restoreToolCursor();
+        return;
+    }
+
+    // Annotation tool: owns input/cursor. View interaction stays Select underneath
+    // (no pan/zoom region). Group already exclusive-unchecked view tools.
     m_imageView->setTool(ImageView::Tool::Select);
-    m_selectToolAct->setChecked(true);
+    m_imageView->hostImage().cancelZoomRegion();
+
+    // Width is tool-appropriate; colour stays from user prefs / Colour menu.
+    if (act == m_annotHighlightAct) {
+        m_imageView->hostAnnot().setWidth(18.0);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
+    } else if (act == m_annotTextHighlightAct) {
+        m_imageView->hostAnnot().setWidth(18.0);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
+    } else if (act == m_annotPenAct) {
+        m_imageView->hostAnnot().setWidth(2.5);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Pen);
+    } else if (act == m_annotEraserAct) {
+        m_imageView->hostAnnot().setWidth(18.0);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Eraser);
+    } else if (act == m_annotSelectAct) {
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Select);
+    } else if (act == m_annotRectAct) {
+        m_imageView->hostAnnot().setWidth(2.5);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Rect);
+    } else if (act == m_annotEllipseAct) {
+        m_imageView->hostAnnot().setWidth(2.5);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Ellipse);
+    } else if (act == m_annotLineAct) {
+        m_imageView->hostAnnot().setWidth(2.5);
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Line);
+    } else if (act == m_annotStickyAct) {
+        m_imageView->hostAnnot().setTool(Annotation::Tool::Sticky);
+    }
+    updateAnnotationPanel();
+    if (m_annotationDock) {
+        m_annotationDock->open();
+    }
+}
+
+void MainWindow::setSelectTool()
+{
+    if (m_selectToolAct) {
+        m_selectToolAct->setChecked(true);
+        onCanvasToolTriggered(m_selectToolAct);
+    }
 }
 
 void MainWindow::setPanTool()
 {
-    clearAnnotationToolSelection();
-    if (m_imageView && m_imageView->hostCrop().active()) {
-        m_imageView->hostCrop().setCropMode(false);
-        if (m_cropAct) {
-            m_cropAct->setChecked(false);
-        }
+    if (m_panToolAct) {
+        m_panToolAct->setChecked(true);
+        onCanvasToolTriggered(m_panToolAct);
     }
-    m_imageView->setTool(ImageView::Tool::Pan);
-    m_panToolAct->setChecked(true);
 }
 
 void MainWindow::setZoomTool()
 {
-    clearAnnotationToolSelection();
-    if (m_imageView && m_imageView->hostCrop().active()) {
-        m_imageView->hostCrop().setCropMode(false);
-        if (m_cropAct) {
-            m_cropAct->setChecked(false);
-        }
-    }
-    m_imageView->setTool(ImageView::Tool::Zoom);
     if (m_zoomToolAct) {
         m_zoomToolAct->setChecked(true);
+        onCanvasToolTriggered(m_zoomToolAct);
     }
 }
+
 
 
 void MainWindow::showSlideshowSettings()

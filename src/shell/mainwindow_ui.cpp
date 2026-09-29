@@ -448,82 +448,8 @@ void MainWindow::createActions()
     m_annotStickyAct->setStatusTip(tr("Place a sticky note (click, then enter text)"));
     m_annotStickyAct->setToolTip(tr("Sticky note"));
 
-    {
-        auto *annotGroup = new QActionGroup(this);
-        annotGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
-        for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct, m_annotEllipseAct,
-                           m_annotLineAct, m_annotStickyAct}) {
-            if (a) {
-                annotGroup->addAction(a);
-            }
-        }
-        connect(annotGroup, &QActionGroup::triggered, this, [this](QAction *act) {
-            if (!m_imageView || !act) {
-                return;
-            }
-            if (m_cropAct && m_cropAct->isChecked() && act->isChecked()) {
-                m_cropAct->setChecked(false);
-            }
-            if (!act->isChecked()) {
-                m_imageView->hostAnnot().setTool(Annotation::Tool::None);
-                // Default back to Select so the canvas always has a tool.
-                if (m_selectToolAct) {
-                    const QSignalBlocker block(m_selectToolAct);
-                    m_selectToolAct->setChecked(true);
-                }
-                m_imageView->setTool(ImageView::Tool::Select);
-                m_imageView->restoreToolCursor();
-                return;
-            }
-            // Annotation owns input and cursor. Uncheck Select/Pan/Zoom so the
-            // chrome shows a single active tool family and a re-click on Select
-            // can dismiss annotation (Exclusive would leave Select stuck on).
-            for (QAction *a : {m_selectToolAct, m_panToolAct, m_zoomToolAct}) {
-                if (!a) {
-                    continue;
-                }
-                const QSignalBlocker block(a);
-                a->setChecked(false);
-            }
-            // Keep Interaction tool as Select (no pan/zoom region) underneath.
-            m_imageView->setTool(ImageView::Tool::Select);
-            m_imageView->hostImage().cancelZoomRegion();
-            // Colour comes from user prefs / Colour menu (persisted). Width is
-            // still tool-appropriate so switching Pen ↔ Highlighter feels right;
-            // Stroke Width menu persists the last explicit choice via setWidth.
-            if (act == m_annotHighlightAct) {
-                m_imageView->hostAnnot().setWidth(18.0);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
-            } else if (act == m_annotTextHighlightAct) {
-                m_imageView->hostAnnot().setWidth(18.0);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::TextHighlighter);
-            } else if (act == m_annotPenAct) {
-                m_imageView->hostAnnot().setWidth(2.5);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Pen);
-            } else if (act == m_annotEraserAct) {
-                m_imageView->hostAnnot().setWidth(18.0);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Eraser);
-            } else if (act == m_annotSelectAct) {
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Select);
-            } else if (act == m_annotRectAct) {
-                m_imageView->hostAnnot().setWidth(2.5);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Rect);
-            } else if (act == m_annotEllipseAct) {
-                m_imageView->hostAnnot().setWidth(2.5);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Ellipse);
-            } else if (act == m_annotLineAct) {
-                m_imageView->hostAnnot().setWidth(2.5);
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Line);
-            } else if (act == m_annotStickyAct) {
-                m_imageView->hostAnnot().setTool(Annotation::Tool::Sticky);
-            }
-            updateAnnotationPanel();
-            if (m_annotationDock && act && act->isChecked()) {
-                m_annotationDock->open();
-            }
-        });
-    }
+    // Annotation tools join the unified canvas tool group (created with
+    // Select/Pan/Zoom below). See onCanvasToolTriggered / TOOL_UNIFICATION.md.
 
     m_attentionAct = new QAction(tr("&Attention Point"), this);
     m_attentionAct->setCheckable(true);
@@ -703,14 +629,12 @@ void MainWindow::createActions()
     m_selectToolAct->setIcon(resourceIcon(QStringLiteral("edit-select")));
     m_selectToolAct->setStatusTip(
         tr("Page selection (Gallery/Workspace) or text-region selection (Image)"));
-    connect(m_selectToolAct, &QAction::triggered, this, &MainWindow::setSelectTool);
 
     m_panToolAct = new QAction(tr("&Pan"), this);
     m_panToolAct->setCheckable(true);
     m_panToolAct->setShortcut(Qt::Key_H);
     m_panToolAct->setIcon(resourceIcon(QStringLiteral("transform-move")));
     m_panToolAct->setStatusTip(tr("Pan the view; wheel zooms (middle-drag always pans)"));
-    connect(m_panToolAct, &QAction::triggered, this, &MainWindow::setPanTool);
 
     m_zoomToolAct = new QAction(tr("&Zoom"), this);
     m_zoomToolAct->setCheckable(true);
@@ -718,17 +642,24 @@ void MainWindow::createActions()
     m_zoomToolAct->setIcon(resourceIcon(QStringLiteral("zoom-tool")));
     m_zoomToolAct->setStatusTip(
         tr("Drag a rectangle to zoom the view to that region"));
-    connect(m_zoomToolAct, &QAction::triggered, this, &MainWindow::setZoomTool);
 
-    auto *toolGroup = new QActionGroup(this);
-    // ExclusiveOptional: all three may be unchecked while an annotation tool
-    // owns the canvas. Clicking Select again while it is the only canvas tool
-    // must still be able to fire (Exclusive would swallow the re-click).
-    toolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
-    toolGroup->addAction(m_selectToolAct);
-    toolGroup->addAction(m_panToolAct);
-    toolGroup->addAction(m_zoomToolAct);
-    toolGroup->setExclusive(true);
+    // Single ExclusiveOptional radio for all canvas tools (view + annotation).
+    // Crop / Attention stay outside: they are modes with entry side-effects.
+    // ExclusiveOptional allows re-click to dismiss; we fall back to Select.
+    {
+        auto *canvasToolGroup = new QActionGroup(this);
+        canvasToolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
+        for (QAction *a : {m_selectToolAct, m_panToolAct, m_zoomToolAct,
+                           m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+                           m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
+            if (a) {
+                canvasToolGroup->addAction(a);
+            }
+        }
+        connect(canvasToolGroup, &QActionGroup::triggered, this,
+                &MainWindow::onCanvasToolTriggered);
+    }
 
     m_undoAct = m_imageView->hostUndoStack()->createUndoAction(this, tr("&Undo"));
     m_undoAct->setShortcuts(QKeySequence::Undo);

@@ -764,25 +764,39 @@ void MainWindow::updateWorkspaceActionVisibility()
         }
     }
     if (m_imageView) {
-        // While an annotation tool is active the canvas tool actions stay
-        // unchecked (annotation owns the chrome). Do not re-check Select from
-        // the underlying Interaction tool — that made tools look dual-active.
-        if (m_imageView->hostAnnot().isToolActive()) {
-            for (QAction *a : {m_selectToolAct, m_panToolAct, m_zoomToolAct}) {
-                if (a) {
-                    a->setChecked(false);
-                }
+        // One canvas-tool radio: annotation active → only that annot action is
+        // checked; otherwise mirror ViewInteraction tool. Block signals so
+        // ExclusiveOptional does not re-enter onCanvasToolTriggered.
+        const auto setCheckedBlocked = [](QAction *a, bool on) {
+            if (!a) {
+                return;
             }
+            const QSignalBlocker block(a);
+            a->setChecked(on);
+        };
+        if (m_imageView->hostAnnot().isToolActive()) {
+            const Annotation::Tool at = m_imageView->hostAnnot().tool();
+            setCheckedBlocked(m_selectToolAct, false);
+            setCheckedBlocked(m_panToolAct, false);
+            setCheckedBlocked(m_zoomToolAct, false);
+            setCheckedBlocked(m_annotHighlightAct, at == Annotation::Tool::FreehandHighlighter);
+            setCheckedBlocked(m_annotTextHighlightAct, at == Annotation::Tool::TextHighlighter);
+            setCheckedBlocked(m_annotPenAct, at == Annotation::Tool::Pen);
+            setCheckedBlocked(m_annotEraserAct, at == Annotation::Tool::Eraser);
+            setCheckedBlocked(m_annotSelectAct, at == Annotation::Tool::Select);
+            setCheckedBlocked(m_annotRectAct, at == Annotation::Tool::Rect);
+            setCheckedBlocked(m_annotEllipseAct, at == Annotation::Tool::Ellipse);
+            setCheckedBlocked(m_annotLineAct, at == Annotation::Tool::Line);
+            setCheckedBlocked(m_annotStickyAct, at == Annotation::Tool::Sticky);
         } else {
             const Tool t = m_imageView->currentTool();
-            if (m_selectToolAct) {
-                m_selectToolAct->setChecked(t == Tool::Select);
-            }
-            if (m_panToolAct) {
-                m_panToolAct->setChecked(t == Tool::Pan);
-            }
-            if (m_zoomToolAct) {
-                m_zoomToolAct->setChecked(t == Tool::Zoom);
+            setCheckedBlocked(m_selectToolAct, t == Tool::Select);
+            setCheckedBlocked(m_panToolAct, t == Tool::Pan);
+            setCheckedBlocked(m_zoomToolAct, t == Tool::Zoom);
+            for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                               m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+                               m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
+                setCheckedBlocked(a, false);
             }
         }
     }

@@ -2,22 +2,22 @@
 
 ## Status (2026-09-29)
 
-**Tip:** `biltoo-2810.5-annot-point-map-tests` (base `2085c07`).
+**Tip:** `biltoo-2811.1-canvas-tool-palette` (base `2085c07`).
 
-### 2810.5
+### 2811.1
+- Tool palette unification: one ExclusiveOptional QActionGroup for Select/Pan/Zoom
+  + all annotation tools; `onCanvasToolTriggered` owns activation
+- Mode chrome sync mirrors annot tool checks; docs/TOOL_UNIFICATION.md updated
+
+### Prior (2810.5)
 - Unit tests: mapDisplayPointToSource ↔ mapSourcePointToDisplay round-trip
-  for all turns × flips (+ crop sample). Run: contentxform_test
-
-### Verified (code review, no Qt in sandbox to execute)
-- Annot before gallery click; draft sid finish/chrome/clear/delete
-- Point maps used by viewToPage / pageToScene
 
 ### Next
 - Run contentxform_test locally
-- Manual: rotate 90° + pen; Gallery non-primary tile
-- Tool palette unification (docs/TOOL_UNIFICATION.md)
+- Manual: rotate 90° + pen; Gallery non-primary tile; tool radio (Select ↔ Pen ↔ Annot-Select)
+- Optional: fold Crop/Attention into the canvas radio
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2810.5-annot-point-map-tests-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2811.1-canvas-tool-palette-2085c07.bundle HEAD
 ```

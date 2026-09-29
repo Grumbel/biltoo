@@ -376,6 +376,8 @@ private slots:
     bool isGalleryMode() const;
     bool isImageMode() const;
     void clearAnnotationToolSelection();
+    /** Unified canvas tool radio (Select/Pan/Zoom + annotation tools). */
+    void onCanvasToolTriggered(QAction *act);
     void setSelectTool();
     void setPanTool();
     void setZoomTool();
