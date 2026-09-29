@@ -41,7 +41,6 @@
 #include <QResizeEvent>
 #include <QShowEvent>
 #include <QStyle>
-#include <QThreadPool>
 #include <QTimer>
 #include <QScrollBar>
 #include <QCoreApplication>
@@ -654,74 +653,48 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     }
                     m_thumbAwaitLadder.remove(i);
                     m_thumbLoadScheduled.remove(i);
-                    const QPointer<ThumbnailBar> guard(this);
-                    // Prefer the ladder sample just delivered — makeThumbnail may
-                    // still see only LQIP if ImageCache put races this slot.
-                    const QImage delivered = ready;
-                    QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize,
-                                                          delivered]() {
-                        ThumbnailBar *bar = guard.data();
-                        if (!bar || gen != bar->m_generation.load()) {
-                            return;
+                    // PreferCache/TileSynth delivery is host-raw in ImageCache.
+                    // Install on the GUI — same pipeline as filmstripSurfaceTick.
+                    // No QThreadPool: makeThumbnail was only ImageCache/LQIP.
+                    if (i < m_sessionIds.size()) {
+                        const SessionImageId rowId = m_sessionIds.at(i);
+                        if (rowId != kInvalidSessionImageId
+                            && m_sessionIdImageOverrides.contains(rowId)) {
+                            emit loadsChanged();
+                            continue;
                         }
-                        const SessionImageId rowSid =
-                            (i < bar->m_sessionIds.size()) ? bar->m_sessionIds.at(i)
-                                                          : kInvalidSessionImageId;
-                        QImage image = delivered;
-                        if (image.isNull()
-                            || qMax(image.width(), image.height()) < decodeSize) {
-                            image = bar->makeThumbnail(path, decodeSize, rowSid);
-                        } else {
-                            // Ladder samples are unoriented host — apply ItemWorld
-                            // (XDG fallback) content ops like makeThumbnail.
-                            image = bar->applyStoredAppearanceToThumb(path, image, rowSid);
-                            image = bar->prepareThumbnailFromImage(image, decodeSize);
+                    }
+                    if (m_sessionImageOverrides.contains(path)) {
+                        emit loadsChanged();
+                        continue;
+                    }
+                    const SessionImageId rowSid =
+                        (i < m_sessionIds.size()) ? m_sessionIds.at(i)
+                                                  : kInvalidSessionImageId;
+                    QImage image = ready;
+                    if (image.isNull()
+                        || qMax(image.width(), image.height()) < decodeSize) {
+                        // Fall back to process cache (may still be short underlay).
+                        image = makeThumbnail(path, decodeSize, rowSid);
+                    } else {
+                        image = applyStoredAppearanceToThumb(path, image, rowSid);
+                        image = prepareThumbnailFromImage(image, decodeSize);
+                    }
+                    if (image.isNull()) {
+                        m_thumbFailed.insert(i);
+                        if (viewport()) {
+                            viewport()->update();
                         }
-                        bar = guard.data();
-                        if (!bar || gen != bar->m_generation.load()) {
-                            return;
-                        }
-                        QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
-                            ThumbnailBar *const host = guard.data();
-                            if (!host || gen != host->m_generation.load()) {
-                                return;
-                            }
-                            if (i < 0 || i >= host->m_files.size()
-                                || host->m_files.at(i) != path) {
-                                return;
-                            }
-                            // Crop/appearance may have landed while the ladder job ran.
-                            if (i < host->m_sessionIds.size()) {
-                                const SessionImageId rowId = host->m_sessionIds.at(i);
-                                if (rowId != kInvalidSessionImageId
-                                    && host->m_sessionIdImageOverrides.contains(rowId)) {
-                                    host->m_thumbAwaitLadder.remove(i);
-                                    host->m_thumbLoadScheduled.remove(i);
-                                    emit host->loadsChanged();
-                                    return;
-                                }
-                            }
-                            if (host->m_sessionImageOverrides.contains(path)) {
-                                host->m_thumbAwaitLadder.remove(i);
-                                host->m_thumbLoadScheduled.remove(i);
-                                emit host->loadsChanged();
-                                return;
-                            }
-                            if (image.isNull()) {
-                                // Ladder finished but still undecodable — settle so we
-                                // do not re-enter scheduleVisible → pool forever.
-                                host->m_thumbFailed.insert(i);
-                                host->m_thumbAwaitLadder.remove(i);
-                                host->m_thumbLoadScheduled.remove(i);
-                                host->viewport()->update();
-                                emit host->loadsChanged();
-                                return;
-                            }
-                            host->m_thumbFailed.remove(i);
-                            host->setThumbnailIcon(i, image);
-                            emit host->loadsChanged();
-                        }, Qt::QueuedConnection);
-                    }, -1);
+                        emit loadsChanged();
+                        continue;
+                    }
+                    m_thumbFailed.remove(i);
+                    setThumbnailIcon(i, image);
+                    if (ImageCache::longEdge(image) < decodeSize) {
+                        m_thumbAwaitLadder.insert(i);
+                        scheduleFilmstripTilePixels(path, decodeSize);
+                    }
+                    emit loadsChanged();
                 }
             });
 }
@@ -1428,8 +1401,8 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize,
                                    SessionImageId sessionId) const
 {
-    // Process-memory first. Soft / classic loadThumbnail encode is removed for
-    // filmstrip — sharpness is tiles (TileSynth) after LQIP underlay.
+    // Process-memory only (ImageCache + underlay). Filmstrip never file-decodes
+    // here — PreferCache/TileSynth fills ImageCache; this prepares the strip icon.
     QImage image = ImageCache::get(path, maxSize);
     if (image.isNull()) {
         image = ImageCache::get(path);
@@ -2070,23 +2043,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
     }
 
-    // Filmstrip: LQIP underlay + tiles (TileSynth when pyramid known). Soft
-    // PreferCache encode is removed. Cap concurrent cache reads / tile drives.
-    static const int kMaxConcurrentThumbLoads = []() {
-        int v = 12;
-        if (const char *e = std::getenv("BILTOO_FILMSTRIP_THUMB_LOADS")) {
-            const int parsed = QString::fromLocal8Bit(e).toInt();
-            if (parsed >= 1 && parsed <= 64) {
-                v = parsed;
-            }
-        }
-        return v;
-    }();
-    int inFlight = 0;
-    for (int idx : m_thumbLoadScheduled) {
-        Q_UNUSED(idx);
-        ++inFlight;
-    }
+    // Filmstrip: LQIP underlay + PreferCache/TileSynth (same ImageCache as Gallery).
+    // No per-row QThreadPool decode — thumtoo workers own the climb.
     for (int i = lo; i < hi; ++i) {
         if (m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i)
             || m_thumbFailed.contains(i)) {
@@ -2128,9 +2086,6 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 continue;
             }
             // LQIP underlay is not settled — still need soft/overview for strip edge.
-        }
-        if (inFlight >= kMaxConcurrentThumbLoads) {
-            break;
         }
         // Size-first: never decode/paint thumbs until durable aspect is known.
         // LQIP/soft samples before sizeReady forced provisional square cells and
@@ -2181,124 +2136,31 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 }
             }
         }
-        m_thumbLoadScheduled.insert(i);
-        ++inFlight;
-        const QPointer<ThumbnailBar> guard(this);
-        QThreadPool::globalInstance()->start([guard, i, path, gen, decodeSize]() {
-            ThumbnailBar *bar = guard.data();
-            if (!bar || gen != bar->m_generation.load()) {
-                return;
-            }
-            const char *dbg = std::getenv("THUMTOO_DEBUG");
-            if (!dbg || dbg[0] == '\0' || dbg[0] == '0') {
-                dbg = std::getenv("BILTOO_THUMTOO_DEBUG");
-            }
-            if (dbg && dbg[0] != '\0' && dbg[0] != '0') {
-                fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
-                        i, decodeSize, qPrintable(path));
-            }
-            const SessionImageId rowSid =
-                (i < bar->m_sessionIds.size()) ? bar->m_sessionIds.at(i)
-                                              : kInvalidSessionImageId;
-            const QImage image = bar->makeThumbnail(path, decodeSize, rowSid);
-            bar = guard.data();
-            if (!bar || gen != bar->m_generation.load()) {
-                return;
-            }
-            const int gotEdge = image.isNull() ? 0 : qMax(image.width(), image.height());
-            // LQIP / tiny host samples are placeholders only — must not settle the
-            // row or we never schedule soft and the strip stays blurry forever.
-            const bool weakPlaceholder =
-                !image.isNull() && gotEdge < decodeSize;
-            if (image.isNull() || weakPlaceholder) {
-                QMetaObject::invokeMethod(bar, [guard, i, gen, path, decodeSize, image,
-                                                gotEdge, weakPlaceholder]() {
-                    ThumbnailBar *const host = guard.data();
-                    if (!host || gen != host->m_generation.load()) {
-                        return;
-                    }
-                    host->m_thumbLoadScheduled.remove(i);
-                    // Session-id (or path) override already owns this cell — never
-                    // paint a weaker path decode over a crop/appearance override.
-                    if (i < host->m_sessionIds.size()) {
-                        const SessionImageId rowId = host->m_sessionIds.at(i);
-                        if (rowId != kInvalidSessionImageId
-                            && host->m_sessionIdImageOverrides.contains(rowId)) {
-                            emit host->loadsChanged();
-                            return;
-                        }
-                    }
-                    if (host->m_sessionImageOverrides.contains(path)) {
-                        emit host->loadsChanged();
-                        return;
-                    }
-                    // Size-first: do not paint LQIP/soft until native aspect is known.
-                    const QSize known = ThumtooCache::cachedSize(path);
-                    const bool haveSize = known.isValid() && known.width() > 0
-                        && known.height() > 0;
-                    if (weakPlaceholder && !image.isNull() && haveSize) {
-                        if (QListWidgetItem *it = host->item(i)) {
-                            const int have =
-                                it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
-                            if (gotEdge > have) {
-                                host->setThumbnailIcon(i, image);
-                            }
-                        } else {
-                            host->setThumbnailIcon(i, image);
-                        }
-                    }
-                    if (ThumtooCache::isAvailable()) {
-                        host->m_thumbAwaitLadder.insert(i);
-                        if (!haveSize) {
-                            ThumtooCache::scheduleProbe(path);
-                        } else {
-                            // LQIP/cache underlay may already show; drive tiles.
-                            host->scheduleFilmstripTilePixels(path, decodeSize);
-                        }
-                    } else if (image.isNull()) {
-                        host->m_thumbFailed.insert(i);
-                    }
-                    host->viewport()->update();
-                    emit host->loadsChanged();
-                }, Qt::QueuedConnection);
-                return;
-            }
-            // A crop may have landed while this job ran — do not clobber it.
-            // Path override only protects unbound rows; bound rows use id map.
-            // Always clear scheduled on the GUI thread so the row is not stuck.
-            QMetaObject::invokeMethod(bar, [guard, i, path, gen, image, decodeSize]() {
-                ThumbnailBar *const host = guard.data();
-                if (!host || gen != host->m_generation.load()) {
-                    return;
+        // Shared PreferCache / TileSynth only — no per-row pool decode.
+        // makeThumbnail is ImageCache/LQIP; filmstripSurfaceTick installs when
+        // ImageCache improves. scheduleFilmstripTilePixels drives the climb.
+        scheduleFilmstripTilePixels(path, decodeSize);
+        m_thumbAwaitLadder.insert(i);
+        {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                SessionImageId rowSid = kInvalidSessionImageId;
+                if (i < m_sessionIds.size()) {
+                    rowSid = m_sessionIds.at(i);
                 }
-                if (i < 0 || i >= host->m_files.size() || host->m_files.at(i) != path) {
-                    return;
-                }
-                host->m_thumbLoadScheduled.remove(i);
-                host->m_thumbFailed.remove(i);
-                if (i < host->m_sessionIds.size()) {
-                    const SessionImageId rowId = host->m_sessionIds.at(i);
-                    if (rowId != kInvalidSessionImageId
-                        && host->m_sessionIdImageOverrides.contains(rowId)) {
-                        emit host->loadsChanged();
-                        return;
+                QImage oriented = applyStoredAppearanceToThumb(path, host, rowSid);
+                const QImage thumb = prepareThumbnailFromImage(oriented, decodeSize);
+                if (!thumb.isNull()) {
+                    const int have =
+                        item(i) ? item(i)->data(ThumbnailDelegate::ThumbDecodeEdgeRole)
+                                      .toInt()
+                                : 0;
+                    if (ImageCache::longEdge(thumb) > have) {
+                        setThumbnailIcon(i, thumb);
                     }
                 }
-                if (host->m_sessionImageOverrides.contains(path)) {
-                    emit host->loadsChanged();
-                    return;
-                }
-                host->setThumbnailIcon(i, image);
-                const int got = ImageCache::longEdge(image);
-                if (got < decodeSize) {
-                    host->m_thumbAwaitLadder.insert(i);
-                    host->scheduleFilmstripTilePixels(path, decodeSize);
-                }
-                emit host->loadsChanged();
-                // Free slot may allow more visible rows to start.
-                host->scheduleVisibleThumbnailLoads();
-            }, Qt::QueuedConnection);
-        }, -1);
+            }
+        }
     }
     emit loadsChanged();
 }
