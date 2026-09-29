@@ -1413,24 +1413,27 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         return;
     }
     // ImageCache is process authority — covered rows need no climb.
+    // LQIP-sized samples are not "covered" for strip edge (ThumbDecodeEdgeRole
+    // may still be low; host edge alone is not enough if below filmstrip need).
     if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
         return;
     }
-    // Same PathRasterService as Image/Workspace (THUMTOO_HOST_CONTRACT).
+    if (!ThumtooCache::hasDurableTilesKnown(path)) {
+        // Cold or memo unknown: discover Store tiles (warm → durableTilesReady →
+        // TileSynth). Size probe for layout. Never soft PreferCache / LQIP encode.
+        if (!ThumtooCache::cachedSize(path).isValid()) {
+            ThumtooCache::scheduleProbe(path);
+        }
+        ThumtooCache::scheduleDurableTilesDiscovery(path);
+        return;
+    }
+    // Warm: TileSynth whole-frame via PathRaster (or direct fallback).
     if (m_pathRaster) {
         m_pathRaster->ensure(path, edge, ThumtooCache::cachedSize(path),
                              PathRasterService::ClimbPolicy::TileDisplay);
         return;
     }
-    // Fallback: TileSynth when warm; cold → size probe only (EMB/placeholder).
-    // No soft PreferCache; LQIP is not generated on cold (tile side-effect only).
-    if (ThumtooCache::hasDurableTilesKnown(path)) {
-        (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
-        return;
-    }
-    if (!ThumtooCache::cachedSize(path).isValid()) {
-        ThumtooCache::scheduleProbe(path);
-    }
+    (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
 }
 
 

@@ -347,6 +347,11 @@ bool hasDurableTiles(const QString &path);
  */
 bool hasDurableTilesKnown(const QString &path);
 /**
+ * Worker: Store has_tile for @p path (deduped). Emits durableTilesReady on first yes.
+ * GUI-safe. Use when filmstrip/Gallery need warm TileSynth but process memo is unknown.
+ */
+void scheduleDurableTilesDiscovery(const QString &path);
+/**
  * Session open: fill process size memo + durable-tile memo (no LQIP fetch).
  * Underlay is seeded only by request_size replies into ImageCache.
  * from the Store. Safe on the GUI: schedules pool work and returns immediately

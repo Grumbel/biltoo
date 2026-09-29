@@ -1756,8 +1756,10 @@ void GalleryController::updateDecodeWindow()
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
+            // Pass-2 underlay/schedule slice (not tile issue). realWork = probe
+            // or underlay install started; scheduled = blank visible cells visited.
             std::fprintf(stderr,
-                         "biltoo/tile: lqipBusy=%d visibleSched=%d\n",
+                         "biltoo/gallery-decode: underlayWork=%d blankVisible=%d\n",
                          lqipBusy ? 1 : 0, scheduled);
             std::fflush(stderr);
         }

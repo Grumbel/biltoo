@@ -2344,6 +2344,39 @@ bool hasDurableTilesKnown(const QString &path)
     return ProcessMemos::instance().durableYes(path);
 }
 
+void scheduleDurableTilesDiscovery(const QString &path)
+{
+    if (path.isEmpty() || isUnsupported(path)) {
+        return;
+    }
+    // Already known yes — nothing to discover.
+    if (ProcessMemos::instance().durableYes(path)) {
+        return;
+    }
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    // Negative memo still active — do not hammer Store.
+    if (ProcessMemos::instance().durableNoActive(path, nowMs)) {
+        return;
+    }
+    static std::mutex discMu;
+    static QSet<QString> discQueued;
+    {
+        std::lock_guard lock(discMu);
+        if (discQueued.contains(path)) {
+            return;
+        }
+        discQueued.insert(path);
+    }
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        (void)hasDurableTiles(pathCopy);
+        std::lock_guard lock(discMu);
+        discQueued.remove(pathCopy);
+    });
+}
+
 void warmSessionOpenMemos(const QStringList &paths)
 {
     if (paths.isEmpty()) {
