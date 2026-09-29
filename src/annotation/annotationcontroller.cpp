@@ -168,15 +168,9 @@ void AnnotationController::setLayerVisible(bool on)
 
 ImageItem *AnnotationController::targetItem() const
 {
-    if (!m_view) {
-        return nullptr;
-    }
-    // Image mode: session cursor / primary. Gallery/Workspace: still used for
-    // chrome that needs a single item; hit-testing uses itemAtViewPos.
-    if (m_view->isImageMode()) {
-        return m_view->primaryItem();
-    }
-    return m_view->primaryItem();
+    // Session cursor / primary underlay. Hit-testing uses itemAtViewPos;
+    // in-progress tools use itemForDraftSid.
+    return m_view ? m_view->primaryItem() : nullptr;
 }
 
 ImageItem *AnnotationController::itemAtViewPos(const QPoint &viewPos) const
@@ -606,7 +600,7 @@ void AnnotationController::finishTextHighlight()
     if (!m_view || m_draftSid == kInvalidSessionImageId || m_rubberView.isEmpty()) {
         return;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemForDraftSid();
     if (!item) {
         return;
     }
@@ -790,10 +784,10 @@ bool AnnotationController::tryMouseDoubleClick(QMouseEvent *event)
     if (!isToolActive() || !m_view || !event || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_tool != Annotation::Tool::Select || !m_view->isImageMode()) {
+    if (m_tool != Annotation::Tool::Select) {
         return false;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemAtViewPos(event->pos());
     if (!item) {
         return false;
     }
@@ -1082,7 +1076,7 @@ void AnnotationController::finishLine()
     if (!m_view || m_draftSid == kInvalidSessionImageId) {
         return;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemForDraftSid();
     if (!item) {
         return;
     }
@@ -1113,7 +1107,7 @@ void AnnotationController::finishShape()
     if (m_rubberView.width() < 3 && m_rubberView.height() < 3) {
         return;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemForDraftSid();
     if (!item) {
         return;
     }
