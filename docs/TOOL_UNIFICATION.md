@@ -5,23 +5,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tool unification
 
-Status: **palette unified** — one ExclusiveOptional `QActionGroup` for Select /
+Status: **palette unified** — one **Exclusive** `QActionGroup` for Select /
 Pan / Zoom + all annotation tools; coordinate path cleaned; Gallery annotation
 input + draft chrome.
 
-## Problem (historical)
-
-- Different tool families per mode (Select/Pan/Zoom vs annotation vs crop vs
-  attention) with **separate** action groups and mode checks → dual-active
-  chrome, manual mutual exclusion, and a contradictory
-  `ExclusiveOptional` + `setExclusive(true)` on the view-tool group.
-- Annotation input was Image-mode only; paint already reached Gallery.
-- Mouse → page mapping special-cased display rects; **rotates** broke while
-  flips worked.
-
 ## Canvas tool contract
 
-**One** radio across Image / Gallery / Workspace:
+**One** radio across Image / Gallery / Workspace. Exactly **one** action is
+checked at all times (Exclusive, not Optional — Optional let the active tool
+uncheck on re-click and left Select/Pan/Zoom chrome stuck when switching).
 
 | Action | ViewInteraction | Annotation::Tool | Notes |
 |--------|-----------------|------------------|-------|
@@ -31,8 +23,9 @@ input + draft chrome.
 | Annotation Select | `Tool::Select` | `Select` | Markup objects only |
 | Pen / Highlighter / … | `Tool::Select` | matching | View tool stays Select underneath |
 
-Handler: `MainWindow::onCanvasToolTriggered`. Re-click on the active tool
-(ExclusiveOptional → unchecked) falls back to **Select**.
+Handler: `MainWindow::onCanvasToolTriggered`. Forces a single checked action
+(belt-and-suspenders with the Exclusive group). Leave annotation by choosing
+Select / Pan / Zoom.
 
 Crop and Attention remain **modes** outside the radio (Gallery→Image entry,
 async load). Activating any canvas tool exits crop; attention is toggled

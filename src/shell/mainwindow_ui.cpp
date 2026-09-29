@@ -643,16 +643,14 @@ void MainWindow::createActions()
     m_zoomToolAct->setStatusTip(
         tr("Drag a rectangle to zoom the view to that region"));
 
-    // Single ExclusiveOptional radio for all canvas tools (view + annotation).
-    // Crop / Attention stay outside: they are modes with entry side-effects.
-    // ExclusiveOptional allows re-click to dismiss; we fall back to Select.
+    // Single Exclusive radio for all canvas tools (view + annotation).
+    // Exactly one is always checked — re-click does not uncheck (avoids stuck
+    // chrome under ExclusiveOptional). Crop / Attention stay outside: modes
+    // with entry side-effects. Leave annotation by choosing Select/Pan/Zoom.
     {
         auto *canvasToolGroup = new QActionGroup(this);
-        canvasToolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
-        for (QAction *a : {m_selectToolAct, m_panToolAct, m_zoomToolAct,
-                           m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                           m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
-                           m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
+        canvasToolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);
+        for (QAction *a : canvasToolActions()) {
             if (a) {
                 canvasToolGroup->addAction(a);
             }

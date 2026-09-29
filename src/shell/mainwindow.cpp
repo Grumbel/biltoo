@@ -2299,15 +2299,23 @@ void MainWindow::toggleWorkspaceMode()
 }
 
 
+QList<QAction *> MainWindow::canvasToolActions() const
+{
+    return {
+        m_selectToolAct, m_panToolAct, m_zoomToolAct,
+        m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+        m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+        m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
+    };
+}
+
 void MainWindow::clearAnnotationToolSelection()
 {
-    // Unified canvas group: unchecking emits triggered → onCanvasToolTriggered.
-    // Block signals so we only clear AnnotationController once.
-    const QList<QAction *> acts = {
-        m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct, m_annotEraserAct,
-        m_annotSelectAct, m_annotRectAct, m_annotEllipseAct, m_annotLineAct, m_annotStickyAct,
-    };
-    for (QAction *a : acts) {
+    // Block signals: Exclusive group would re-check the last annot tool if we
+    // only uncheck without selecting a view tool in the same step.
+    for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                       m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+                       m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
         if (!a || !a->isChecked()) {
             continue;
         }
@@ -2326,22 +2334,19 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         return;
     }
 
-    // Re-click on the active tool (ExclusiveOptional → unchecked): fall back to Select.
-    if (!act->isChecked()) {
-        clearAnnotationToolSelection();
-        if (m_imageView->hostCrop().active()) {
-            m_imageView->hostCrop().setCropMode(false);
-            if (m_cropAct) {
-                m_cropAct->setChecked(false);
-            }
+    // Belt-and-suspenders: Exclusive group should already leave only `act`
+    // checked, but force a single checked chrome so Select/Pan/Zoom never
+    // appear multi-stuck if a style or signal order glitches.
+    for (QAction *a : canvasToolActions()) {
+        if (!a) {
+            continue;
         }
-        m_imageView->setTool(ImageView::Tool::Select);
-        if (m_selectToolAct) {
-            const QSignalBlocker block(m_selectToolAct);
-            m_selectToolAct->setChecked(true);
+        const bool on = (a == act);
+        if (a->isChecked() == on) {
+            continue;
         }
-        m_imageView->restoreToolCursor();
-        return;
+        const QSignalBlocker block(a);
+        a->setChecked(on);
     }
 
     // Leaving crop via any other canvas tool commits the draft.
@@ -2356,7 +2361,11 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
                              || act == m_zoomToolAct);
 
     if (isViewTool) {
-        clearAnnotationToolSelection();
+        // Clear annot controller without touching action checks (already exclusive).
+        if (m_imageView->hostAnnot().isToolActive()) {
+            m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+            updateAnnotationPanel();
+        }
         if (act == m_selectToolAct) {
             m_imageView->setTool(ImageView::Tool::Select);
         } else if (act == m_panToolAct) {
@@ -2368,12 +2377,10 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         return;
     }
 
-    // Annotation tool: owns input/cursor. View interaction stays Select underneath
-    // (no pan/zoom region). Group already exclusive-unchecked view tools.
+    // Annotation tool: owns input/cursor. View interaction stays Select underneath.
     m_imageView->setTool(ImageView::Tool::Select);
     m_imageView->hostImage().cancelZoomRegion();
 
-    // Width is tool-appropriate; colour stays from user prefs / Colour menu.
     if (act == m_annotHighlightAct) {
         m_imageView->hostAnnot().setWidth(18.0);
         m_imageView->hostAnnot().setTool(Annotation::Tool::FreehandHighlighter);
@@ -2408,27 +2415,29 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
 
 void MainWindow::setSelectTool()
 {
-    if (m_selectToolAct) {
-        m_selectToolAct->setChecked(true);
-        onCanvasToolTriggered(m_selectToolAct);
+    if (!m_selectToolAct) {
+        return;
     }
+    // trigger() runs the Exclusive group path (same as a toolbar click).
+    m_selectToolAct->trigger();
 }
 
 void MainWindow::setPanTool()
 {
-    if (m_panToolAct) {
-        m_panToolAct->setChecked(true);
-        onCanvasToolTriggered(m_panToolAct);
+    if (!m_panToolAct) {
+        return;
     }
+    m_panToolAct->trigger();
 }
 
 void MainWindow::setZoomTool()
 {
-    if (m_zoomToolAct) {
-        m_zoomToolAct->setChecked(true);
-        onCanvasToolTriggered(m_zoomToolAct);
+    if (!m_zoomToolAct) {
+        return;
     }
+    m_zoomToolAct->trigger();
 }
+
 
 
 
