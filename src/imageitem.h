@@ -240,6 +240,8 @@ public:
     bool tileLodHasPathRam() const;
     /** All exact visible tiles present and scale hold settled. */
     bool tileLodViewportCovered() const;
+    /** Visible tile keys Succeeded or Failed — stop zero-tile re-issue. */
+    bool tileLodSettled() const;
     /** One-line BILTOO_TILE_DEBUG sample (empty if no session). */
     QString tileLodDebugLine() const;
 

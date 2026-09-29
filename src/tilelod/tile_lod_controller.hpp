@@ -60,6 +60,8 @@ public:
    */
   bool hasRetainedTiles() const;
   bool viewportFullyCovered() const;
+  /** Visible keys all Succeeded or Failed (no InFlight/missing) — no issue left. */
+  bool viewportSettled() const;
   int targetScale() const;
   TileSession* session() { return m_session.get(); }
   TileSession const* session() const { return m_session.get(); }

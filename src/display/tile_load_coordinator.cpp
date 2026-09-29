@@ -40,13 +40,16 @@ TileLoadCoordinator::makeCand(ImageItem *ii, bool inView, qreal screenLong)
     c.inView = inView;
     c.hasAnyTile = ii && (ii->tileLodActive() || ii->tileLodHasPathRam());
     c.fullyCovered = ii && ii->tileLodViewportCovered();
+    c.settled = ii && ii->tileLodSettled();
     c.screenLong = screenLong;
-    if (!c.hasAnyTile) {
-        c.coveragePriority = kPriorityZeroTile;
-    } else if (!c.fullyCovered) {
-        c.coveragePriority = kPriorityIncomplete;
-    } else {
+    // Settled (all Succeeded or Failed) is not zero-tile work — re-issuing
+    // Failed keys is terminal for the generation and only spins the GUI.
+    if (c.settled || c.fullyCovered) {
         c.coveragePriority = kPriorityCovered;
+    } else if (!c.hasAnyTile) {
+        c.coveragePriority = kPriorityZeroTile;
+    } else {
+        c.coveragePriority = kPriorityIncomplete;
     }
     return c;
 }
@@ -204,7 +207,7 @@ void TileLoadCoordinator::tick(int globalBudget)
         if (wall.elapsed() >= kWallMs) {
             break;
         }
-        if (anyInViewNeedsCoverage && c.fullyCovered) {
+        if (anyInViewNeedsCoverage && (c.fullyCovered || c.settled)) {
             continue;
         }
         ImageItem *item = c.item;
@@ -253,7 +256,7 @@ void TileLoadCoordinator::tick(int globalBudget)
             s_last = now;
             int zero = 0;
             for (const Cand &c : cands) {
-                if (!c.hasAnyTile) {
+                if (!c.hasAnyTile && !c.settled) {
                     ++zero;
                 }
             }

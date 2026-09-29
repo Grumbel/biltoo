@@ -152,6 +152,11 @@ bool TileLodController::viewportFullyCovered() const
          && !m_session->request_scale_holding();
 }
 
+bool TileLodController::viewportSettled() const
+{
+  return m_session && m_session->coverage().settled();
+}
+
 int TileLodController::targetScale() const
 {
   return m_session ? m_session->target_scale() : 0;

@@ -633,6 +633,11 @@ bool ImageItem::tileLodViewportCovered() const
     return tileLodBag().controller && tileLodBag().controller->viewportFullyCovered();
 }
 
+bool ImageItem::tileLodSettled() const
+{
+    return tileLodBag().controller && tileLodBag().controller->viewportSettled();
+}
+
 QString ImageItem::tileLodDebugLine() const
 {
     const QString name = QFileInfo(m_path).fileName();

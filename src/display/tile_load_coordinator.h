@@ -55,6 +55,8 @@ private:
         bool inView = false;
         bool hasAnyTile = false;
         bool fullyCovered = false;
+        /** Visible keys Succeeded or Failed — no further issue this generation. */
+        bool settled = false;
         /** Higher = coarser target still incomplete (prefer first). */
         int coveragePriority = 0;
         qreal screenLong = 0;
