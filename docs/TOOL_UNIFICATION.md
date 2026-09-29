@@ -56,6 +56,8 @@ view pos
 
 ## Still open
 
+- **Text Highlighter tool vs Mark selection** — design note in
+  [ANNOTATION_OVERLAY.md §14](ANNOTATION_OVERLAY.md); do not remove the tool yet.
 - Workspace free rotation/shear of items vs content orient — needs testing.
 - Rubber-band shapes in Gallery still use view rects (OK for ortho tiles).
 - Optional: fold Attention into the same radio.

@@ -13,6 +13,7 @@
 - 2811.4 Crop in Exclusive radio
 
 ### Next
+- Design (no rush): Text Highlighter tool → panel “Mark selection” (see docs/ANNOTATION_OVERLAY.md §14)
 - Manual: Image Pan → Crop → Apply/Cancel → Pan button pressed
 - Optional: fold Attention into the canvas radio
 

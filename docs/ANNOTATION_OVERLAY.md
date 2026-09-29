@@ -316,6 +316,55 @@ undo without a clear boundary.
 
 ---
 
+
+## 14. Open UI: Text Highlighter vs “Mark selection” (2026-09-29)
+
+**Status: design only — do not rush a toolbar change.**
+
+### Today
+
+- **Text Highlighter** is a dedicated annotation *tool* (Exclusive radio): drag
+  over text regions → create Multiply `HighlightQuad` objects from the text layer.
+- **Text select** lives under the view **Select** tool (and related text-panel /
+  TTS paths): build a `TextSelection` bag for copy / speak / search, not
+  necessarily a durable annotation.
+
+Two tools, two products: transient selection vs durable markup.
+
+### Question
+
+Do we need Text Highlighter as a *mode* on the left tool strip?
+
+Xournal++ / Acrobat often separate “select text” from “highlight”, but the
+highlight step can be an **action on the current selection** rather than a
+drag tool: select text first, then **Mark selection** (colour from the
+Annotations panel).
+
+### Lean direction (uncommitted)
+
+1. Keep **text select** on Select (and any future text-first workflows).
+2. Add **Mark selection** (or “Highlight selection”) on the **Annotations panel**
+   (and maybe a shortcut): converts current `TextSelection` → annotation
+   quads with the panel’s colour/width.
+3. **Demote or remove** the Text Highlighter *tool* from the Exclusive radio
+   once (2) exists — freehand highlighter stays for images / no text layer.
+4. Until then, leave the tool in place; it is the only path that creates
+   text-snapped highlights without a separate mark step.
+
+### Why not change now
+
+- Selection → annotation needs clear rules (multi-page bag, empty selection,
+  OCR vs native layer, undo).
+- Panel layout and shortcut discovery are undecided.
+- Tool unification is mid-flight; avoid removing a working path until the
+  replacement is designed.
+
+### Related code
+
+- `Annotation::Tool::TextHighlighter` / `m_annotTextHighlightAct`
+- `TextLayerController` + `TextSelection`
+- Annotations panel: colour / width only today (`AnnotationPanel`)
+
 ## 13. References (apps / specs)
 
 - ISO 32000 text markup and ink annotation families (Highlight, Underline,
