@@ -475,9 +475,10 @@ void MainWindow::createActions()
 
 
     m_toggleHudAct = new QAction(tr("Show &HUD Overlay"), this);
-    m_toggleHudAct->setShortcut(Qt::Key_H);
+    // Pan keeps H (GIMP Hand). HUD uses Shift+H so the Exclusive tool radio is unambiguous.
+    m_toggleHudAct->setShortcut(Qt::SHIFT | Qt::Key_H);
     m_toggleHudAct->setCheckable(true);
-    m_toggleHudAct->setStatusTip(tr("Toggle HUD overlay (H when the view has focus)"));
+    m_toggleHudAct->setStatusTip(tr("Toggle HUD overlay (Shift+H when the view has focus)"));
     connect(m_toggleHudAct, &QAction::triggered, this, &MainWindow::toggleHud);
 
     m_smoothScalingAct = new QAction(tr("&Smooth Scaling"), this);
@@ -1932,7 +1933,7 @@ void MainWindow::createToolBar()
     addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_fullscreenAct);
 
-    // Left vertical tools strip (Select/Pan/Zoom/Crop + Workspace chrome).
+    // Left vertical tools strip (Select/Pan/Zoom/Crop/Attention + annot + Workspace chrome).
     m_workspaceToolBar = new QToolBar(tr("Tools"), this);
     m_workspaceToolBar->setObjectName(QStringLiteral("ToolsToolBar"));
     m_workspaceToolBar->setMovable(false);
@@ -1946,6 +1947,9 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_zoomToolAct);
     if (m_cropAct) {
         m_workspaceToolBar->addAction(m_cropAct);
+    }
+    if (m_attentionAct) {
+        m_workspaceToolBar->addAction(m_attentionAct);
     }
     if (m_annotHighlightAct) {
         m_workspaceToolBar->addAction(m_annotHighlightAct);
@@ -2472,7 +2476,7 @@ void MainWindow::populateActionHelpTexts()
         "slideshow session.</p>"));
     setHelp(m_toggleHudAct, tr(
         "<p>Toggle the on-canvas HUD overlay (filename, zoom, size, and related status). "
-        "Independent of the Help panel.</p>"));
+        "Shortcut: Shift+H (plain H is the Pan tool). Independent of the Help panel.</p>"));
     setHelp(m_toggleScrollBarsAct, tr(
         "<p>Show or hide scroll bars on the image view.</p>"));
     setHelp(m_toggleToolBarAct, tr(
@@ -2619,7 +2623,8 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_selectToolAct, tr(
         "<p>Workspace tool: select and transform tiles (move, handles, multi-select).</p>"));
     setHelp(m_panToolAct, tr(
-        "<p>Workspace tool: pan the view without moving tiles.</p>"));
+        "<p>Pan the view (shortcut H, GIMP-style Hand). Wheel zooms; middle-drag always pans. "
+        "In Workspace, pans the camera without moving tiles.</p>"));
     setHelp(m_zoomToolAct, tr(
         "<p>Workspace tool: drag a region to zoom the view.</p>"));
 
