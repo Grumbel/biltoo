@@ -1076,12 +1076,13 @@ void MainWindow::zoomOut()
     syncZoomModeChecks();
 }
 
-void MainWindow::startToolbarZoomHold(int direction)
+void MainWindow::startToolbarZoomHold(int direction, bool aboutCursor)
 {
     if (!m_imageView || direction == 0) {
         return;
     }
     m_toolbarZoomHoldDir = direction > 0 ? 1 : -1;
+    m_toolbarZoomHoldAboutCursor = aboutCursor;
     if (!m_toolbarZoomHoldTimer) {
         m_toolbarZoomHoldTimer = new QTimer(this);
         m_toolbarZoomHoldTimer->setTimerType(Qt::PreciseTimer);
@@ -1099,6 +1100,7 @@ void MainWindow::stopToolbarZoomHold()
         m_toolbarZoomHoldTimer->stop();
     }
     m_toolbarZoomHoldDir = 0;
+    m_toolbarZoomHoldAboutCursor = false;
 }
 
 void MainWindow::tickToolbarZoomHold()
@@ -1108,7 +1110,8 @@ void MainWindow::tickToolbarZoomHold()
     }
     // ~1.03 per tick for smooth hold; menu/shortcuts still use 1.25 via zoomIn/Out.
     const qreal step = 1.03;
-    m_imageView->hostImage().zoomViewBy(m_toolbarZoomHoldDir > 0 ? step : (1.0 / step));
+    m_imageView->hostImage().zoomViewBy(
+        m_toolbarZoomHoldDir > 0 ? step : (1.0 / step), m_toolbarZoomHoldAboutCursor);
     syncZoomModeChecks();
 }
 

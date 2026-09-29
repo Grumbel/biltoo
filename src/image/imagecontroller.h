@@ -166,7 +166,8 @@ public:
     void zoomFit();
     void zoomFill();
     void zoomReset();
-    void zoomViewBy(qreal factor);
+    /** @p aboutCursor: zoom about mouse (keyboard); else viewport centre (toolbar). */
+    void zoomViewBy(qreal factor, bool aboutCursor = false);
     void zoomIn();
     void zoomOut();
     /** Wheel zoom about cursor (Image / free-form Workspace; after Gallery tries). */

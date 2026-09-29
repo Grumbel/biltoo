@@ -191,7 +191,7 @@ private slots:
     void zoomIn();
     void zoomOut();
     /** Toolbar +/- only: smooth zoom while the tool button is held. */
-    void startToolbarZoomHold(int direction);
+    void startToolbarZoomHold(int direction, bool aboutCursor = false);
     void stopToolbarZoomHold();
     void tickToolbarZoomHold();
     void zoomReset();
@@ -639,6 +639,7 @@ private:
     QAction *m_toggleTextAct = nullptr;
     QTimer *m_toolbarZoomHoldTimer = nullptr;
     int m_toolbarZoomHoldDir = 0; // +1 in, -1 out
+    bool m_toolbarZoomHoldAboutCursor = false;
     QTimer *m_cropPreviewTimer = nullptr;
     /** Debounce histogram/vectorscope rebuild while colour sliders move. */
     QTimer *m_adjustmentsPreviewTimer = nullptr;

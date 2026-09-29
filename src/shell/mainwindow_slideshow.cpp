@@ -606,11 +606,11 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
                 const bool zoomOutKey = (key == Qt::Key_Minus);
                 if (event->type() == QEvent::KeyPress) {
                     if (zoomInKey) {
-                        startToolbarZoomHold(+1);
+                        startToolbarZoomHold(+1, /*aboutCursor=*/true);
                         return true;
                     }
                     if (zoomOutKey) {
-                        startToolbarZoomHold(-1);
+                        startToolbarZoomHold(-1, /*aboutCursor=*/true);
                         return true;
                     }
                 } else if (zoomInKey || zoomOutKey) {

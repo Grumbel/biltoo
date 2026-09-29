@@ -559,7 +559,7 @@ void ImageController::zoomReset()
     }
 }
 
-void ImageController::zoomViewBy(qreal factor)
+void ImageController::zoomViewBy(qreal factor, bool aboutCursor)
 {
     if (factor <= 0.0) {
         return;
@@ -570,19 +570,38 @@ void ImageController::zoomViewBy(qreal factor)
     // (AUDIT M4 — one policy: zoom works until next pack).
     releaseStickyZoom();
     m_framing.clearFitFill();
-    // Zoom about the viewport centre. AnchorViewCenter alone can drift to the
-    // top-left in Gallery (large scene + scroll); pin the scene point under
-    // the centre before/after scale.
-    QPointF keepCenter;
-    bool haveCenter = false;
-    if (m_view->viewport()) {
-        keepCenter = m_view->mapToScene(m_view->viewport()->rect().center());
-        haveCenter = true;
+    // Pin a scene point under a viewport pixel, then scale (NoAnchor). Gallery
+    // drifts top-left if we only rely on AnchorViewCenter.
+    QPoint anchorVp;
+    bool haveAnchor = false;
+    if (QWidget *vp = m_view->viewport()) {
+        if (aboutCursor) {
+            const QPoint local = vp->mapFromGlobal(QCursor::pos());
+            if (vp->rect().contains(local)) {
+                anchorVp = local;
+                haveAnchor = true;
+            }
+        }
+        if (!haveAnchor) {
+            anchorVp = vp->rect().center();
+            haveAnchor = true;
+        }
     }
+    const QPointF keepScene =
+        haveAnchor ? m_view->mapToScene(anchorVp) : QPointF();
     m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
     m_view->scale(factor, factor);
-    if (haveCenter) {
-        m_view->centerOn(keepCenter);
+    if (haveAnchor) {
+        // Keep keepScene under the same viewport pixel (centre or cursor).
+        const QPointF newVp = m_view->mapFromScene(keepScene);
+        const qreal dx = newVp.x() - qreal(anchorVp.x());
+        const qreal dy = newVp.y() - qreal(anchorVp.y());
+        if (QScrollBar *hs = m_view->horizontalScrollBar()) {
+            hs->setValue(hs->value() + int(std::lround(dx)));
+        }
+        if (QScrollBar *vs = m_view->verticalScrollBar()) {
+            vs->setValue(vs->value() + int(std::lround(dy)));
+        }
     }
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     // Viewport-space chrome only — no selected-item prepareGeometryChange.
