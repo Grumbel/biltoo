@@ -2913,20 +2913,23 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
 
 
 
-QString formatLoadErrorMessage(const QString &sessionPathOrError)
+QString formatLoadErrorMessage(const QString &sessionPathOrError, bool allowFilesystemStat)
 {
     const QString name = PagePath::displayName(sessionPathOrError);
-    const QString file = PagePath::documentFilePath(sessionPathOrError);
     QString detail;
-    if (!file.isEmpty() && !QFileInfo::exists(file)) {
-        detail = QCoreApplication::translate("ThumtooCache", "file not found");
+    // Never QFileInfo::exists on the GUI for network paths — that can stall for
+    // seconds on NFS and freeze filmstrip / Gallery while lastLoadError is set.
+    if (allowFilesystemStat) {
+        const QString file = PagePath::documentFilePath(sessionPathOrError);
+        if (!file.isEmpty() && !QFileInfo::exists(file)) {
+            detail = QCoreApplication::translate("ThumtooCache", "file not found");
+        }
     }
 #if defined(BILTOO_HAVE_THUMTOO_MUPDF_ERR)
     if (detail.isEmpty()) {
         const std::string merr = thumtoo::mupdf_last_error();
         if (!merr.empty()) {
             detail = QString::fromStdString(merr);
-            // Drop MuPDF "system error: " / "warning: " prefixes for the UI.
             if (detail.startsWith(QLatin1String("system error: "))) {
                 detail = detail.mid(14);
             }

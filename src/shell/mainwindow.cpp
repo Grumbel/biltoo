@@ -3995,14 +3995,18 @@ void MainWindow::updateStatus()
         }
         m_imageView->setCurrentSessionId(publishId);
         const QString err = m_imageView->hostSessionId().lastLoadErrorRef();
-        if (!err.isEmpty()) {
-            const QString msg = ThumtooCache::formatLoadErrorMessage(err);
+        if (!err.isEmpty() && err != m_lastReportedLoadError) {
+            m_lastReportedLoadError = err;
+            // GUI: no filesystem stat (NFS can block for seconds per updateStatus).
+            const QString msg = ThumtooCache::formatLoadErrorMessage(err, false);
             if (statusBar()) {
                 statusBar()->showMessage(msg, 8000);
             }
             if (m_messageLogPanel) {
                 m_messageLogPanel->appendError(tr("Open"), msg);
             }
+        } else if (err.isEmpty()) {
+            m_lastReportedLoadError.clear();
         }
         // Live work activity from thumtoo ActivityLedger (size/archive/tiles/soft).
         bool sizeProbeStatusShown = false;

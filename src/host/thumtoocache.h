@@ -453,8 +453,11 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();
 
-/** User-facing load failure: "Could not load “name”: reason". */
-QString formatLoadErrorMessage(const QString &sessionPathOrError);
+/** User-facing load failure: "Could not load “name”: reason".
+ *  @param allowFilesystemStat  If true, may call QFileInfo::exists (worker only).
+ *  GUI must pass false — NFS exists() stalls the event loop. */
+QString formatLoadErrorMessage(const QString &sessionPathOrError,
+                               bool allowFilesystemStat = true);
 
 /**
  * Expand an archive container to biltoo //archive: image refs using thumtoo's

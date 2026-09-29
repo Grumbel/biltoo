@@ -634,6 +634,7 @@ private:
     TextPanel *m_textPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_textDock = nullptr;
     MessageLogPanel *m_messageLogPanel = nullptr;
+    QString m_lastReportedLoadError;
     KDDockWidgets::QtWidgets::DockWidget *m_messageLogDock = nullptr;
     QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
