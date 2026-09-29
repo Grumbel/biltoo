@@ -3995,9 +3995,14 @@ void MainWindow::updateStatus()
         }
         m_imageView->setCurrentSessionId(publishId);
         const QString err = m_imageView->hostSessionId().lastLoadErrorRef();
-        if (!err.isEmpty() && statusBar()) {
-            statusBar()->showMessage(
-                tr("Could not load “%1”").arg(PagePath::displayName(err)), 5000);
+        if (!err.isEmpty()) {
+            const QString msg = ThumtooCache::formatLoadErrorMessage(err);
+            if (statusBar()) {
+                statusBar()->showMessage(msg, 8000);
+            }
+            if (m_messageLogPanel) {
+                m_messageLogPanel->appendError(tr("Open"), msg);
+            }
         }
         // Live work activity from thumtoo ActivityLedger (size/archive/tiles/soft).
         bool sizeProbeStatusShown = false;

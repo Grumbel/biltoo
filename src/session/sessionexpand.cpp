@@ -153,6 +153,8 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
         if (!pages.isEmpty()) {
             expandReport(report,
                          QObject::tr("PDF “%1”: %n page(s)", "", pages.size()).arg(name));
+        } else {
+            expandReport(report, ThumtooCache::formatLoadErrorMessage(path));
         }
         images.append(pages);
         return;
@@ -164,6 +166,8 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
         if (!pages.isEmpty()) {
             expandReport(report,
                          QObject::tr("Markdown “%1”: %n page(s)", "", pages.size()).arg(name));
+        } else {
+            expandReport(report, ThumtooCache::formatLoadErrorMessage(path));
         }
         images.append(pages);
         return;
@@ -175,6 +179,8 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
         if (!pages.isEmpty()) {
             expandReport(report,
                          QObject::tr("Text “%1”: %n page(s)", "", pages.size()).arg(name));
+        } else {
+            expandReport(report, ThumtooCache::formatLoadErrorMessage(path));
         }
         images.append(pages);
         return;

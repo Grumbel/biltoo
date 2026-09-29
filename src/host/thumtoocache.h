@@ -453,6 +453,9 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();
 
+/** User-facing load failure: "Could not load “name”: reason". */
+QString formatLoadErrorMessage(const QString &sessionPathOrError);
+
 /**
  * Expand an archive container to biltoo //archive: image refs using thumtoo's
  * durable TOC (cache-first, then refresh_archive_toc). Empty when thumtoo is

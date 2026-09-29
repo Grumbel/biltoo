@@ -61,6 +61,10 @@
 #include "thumtoo/pdf.hpp"
 #define BILTOO_HAVE_THUMTOO_PDF 1
 #endif
+#if __has_include("thumtoo/pdf_mupdf.hpp")
+#include "thumtoo/pdf_mupdf.hpp"
+#define BILTOO_HAVE_THUMTOO_MUPDF_ERR 1
+#endif
 #if __has_include("thumtoo/epub.hpp")
 #include "thumtoo/epub.hpp"
 #define BILTOO_HAVE_THUMTOO_EPUB 1
@@ -2907,6 +2911,38 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
     return out;
 }
 
+
+
+QString formatLoadErrorMessage(const QString &sessionPathOrError)
+{
+    const QString name = PagePath::displayName(sessionPathOrError);
+    const QString file = PagePath::documentFilePath(sessionPathOrError);
+    QString detail;
+    if (!file.isEmpty() && !QFileInfo::exists(file)) {
+        detail = QCoreApplication::translate("ThumtooCache", "file not found");
+    }
+#if defined(BILTOO_HAVE_THUMTOO_MUPDF_ERR)
+    if (detail.isEmpty()) {
+        const std::string merr = thumtoo::mupdf_last_error();
+        if (!merr.empty()) {
+            detail = QString::fromStdString(merr);
+            // Drop MuPDF "system error: " / "warning: " prefixes for the UI.
+            if (detail.startsWith(QLatin1String("system error: "))) {
+                detail = detail.mid(14);
+            }
+            if (detail.startsWith(QLatin1String("warning: "))) {
+                detail = detail.mid(9);
+            }
+        }
+    }
+#endif
+    if (detail.isEmpty()) {
+        return QCoreApplication::translate("ThumtooCache", "Could not load “%1”")
+            .arg(name);
+    }
+    return QCoreApplication::translate("ThumtooCache", "Could not load “%1”: %2")
+        .arg(name, detail);
+}
 
 QStringList expandPdfToPageRefs(const QString &pdfPath)
 {
