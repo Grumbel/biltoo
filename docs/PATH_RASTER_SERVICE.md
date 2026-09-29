@@ -61,7 +61,7 @@ invalidateAll()           — session switch
 | Gallery | *(none — LQIP + tiles)* | `applyGalleryLadderReady` accepts LQIP only |
 | Image mode | EscalateToFull (cold) / tiles when durable | `rasterImproved` / `tryInstall` |
 | Slideshow | TileDisplay (screen-fit) → tiles/TileSynth | phase buffers + optional tile paint |
-| Filmstrip | *(not PathRaster — `scheduleFilmstripTilePixels`)* | LQIP + TileSynth |
+| Filmstrip | TileDisplay via `PathRasterService::ensure` | LQIP + TileSynth / PreferCache |
 
 Gallery does not call `ensure`. Decode window installs LQIP and drives
 TileLoadCoordinator. Historical name `GalleryDecodeState` tracks decode-window

@@ -2,16 +2,16 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2821.1-filmstrip-shared-pixel-path on 2820 stack.
+**Tip:** biltoo-2822.1-filmstrip-pathraster on 2821 stack.
+
+### 2822.1 PathRaster is the filmstrip climb
+- `scheduleFilmstripTilePixels` → `PathRasterService::ensure(TileDisplay)` when wired
+- PathRaster pump: durable → TileSynth; cold → PreferCache overview (`scheduleDisplayPixels`)
+- No silent scheduleTiles no-op that left cold climbs with zero work
+- MainWindow wires ImageView’s PathRaster + rasterImproved → strip reload
 
 ### 2821.1 Filmstrip pixel path
-- Visible loads: PreferCache/TileSynth only (`scheduleFilmstripTilePixels`)
-- Ladder delivery installs on GUI (no per-row QThreadPool)
-- Cold path no longer `makeThumbnail` on the global pool
-- `makeThumbnail` remains ImageCache→icon helper only
-
-### 2820.1
-- Fix raw NUL in BILTOO_FOCUSFULL check
+- No per-row QThreadPool makeThumbnail
 
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle

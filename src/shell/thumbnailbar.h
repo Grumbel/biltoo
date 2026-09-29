@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <functional>
 #include "display/displaysurface.h"
+#include "display/pathrasterservice.h"
 #include <QVector>
 #include <QMimeData>
 #include <QPoint>
@@ -143,6 +144,8 @@ public:
     {
         m_contentAppearanceProvider = std::move(provider);
     }
+    /** Shared host climb (same service as Image/Workspace). */
+    void setPathRasterService(PathRasterService *svc) { m_pathRaster = svc; }
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
@@ -421,6 +424,7 @@ private:
     Qt::KeyboardModifiers m_pressModifiers;
     /** Session rows selected at press (stable drag multi-payload). */
     QList<int> m_pressSelectedRows;
+    PathRasterService *m_pathRaster = nullptr;
 };
 
 

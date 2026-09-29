@@ -228,36 +228,38 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     accepted.displayEdge = plan.displayEdge;
     accepted.fullEdge = plan.fullEdge;
 
+    // Durable tiles → TileSynth via PreferCache. Cold → PreferCache overview
+    // (scheduleDisplayPixels). Never FocusFull / full pyramid from this climb —
+    // Interactive tiles and prepare own those.
+    auto schedulePrefer = [](const QString &path, int edge) -> bool {
+        if (edge <= 0) {
+            return false;
+        }
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            return ThumtooCache::scheduleTileSynthOrPyramid(path, edge)
+                || ThumtooCache::isPixelsPending(path, edge);
+        }
+        ThumtooCache::scheduleProbe(path);
+        return ThumtooCache::scheduleDisplayPixels(path, edge)
+            || ThumtooCache::isPixelsPending(path, edge);
+    };
+
     if (plan.scheduleBand) {
         const int edge = plan.bandEdge > 0 ? plan.bandEdge
                                            : ThumtooCache::kGalleryLadderEdge;
-        if (ThumtooCache::scheduleTileSynthOrPyramid(path, edge)) {
-            if (ThumtooCache::hasDurableTilesKnown(path)) {
-                accepted.scheduleBand = true; // TileSynth via PreferCache
-            } else {
-                accepted.scheduleTiles = true;
-            }
+        if (schedulePrefer(path, edge)) {
+            accepted.scheduleBand = true;
         }
     }
     if (plan.scheduleDisplay) {
-        ThumtooCache::scheduleProbe(path);
         const int edge = plan.displayEdge > 0 ? plan.displayEdge : want;
-        if (ThumtooCache::scheduleTileSynthOrPyramid(path, edge)) {
-            if (ThumtooCache::hasDurableTilesKnown(path)) {
-                accepted.scheduleDisplay = true;
-                accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
-            } else {
-                accepted.scheduleTiles = true;
-            }
+        if (schedulePrefer(path, edge)) {
+            accepted.scheduleDisplay = true;
+            accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
         }
     }
-    if (plan.scheduleTiles) {
-        // Do not FocusFull here. Full durable pyramids fully decode archive
-        // members at scale 0 and were still scheduled from raster climb while
-        // Gallery overview only needs interactive request_tiles at density
-        // scale. Image-mode primary / explicit prepare call scheduleTilePyramid.
-        (void)path;
-    }
+    // plan.scheduleTiles: interactive grid tiles are TileLoadCoordinator's job.
+    (void)plan.scheduleTiles;
     if (plan.scheduleFull) {
         if (ThumtooCache::scheduleFullPixels(path, plan.fullEdge)
             || ThumtooCache::isPixelsPending(path, plan.fullEdge)) {

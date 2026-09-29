@@ -1337,20 +1337,22 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
     }
-    // Shared with Gallery/Image: ImageCache is the process pixel cache. PreferCache
-    // TileSynth reuses durable Store tiles the Gallery already paid for — do not
-    // spawn a QThreadPool job just to call hasDurableTiles (that was one thread
-    // per row and re-walked Store off the memo).
+    // ImageCache is process authority — covered rows need no climb.
     if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
         return;
     }
+    // Same PathRasterService as Image/Workspace (THUMTOO_HOST_CONTRACT).
+    if (m_pathRaster) {
+        m_pathRaster->ensure(path, edge, ThumtooCache::cachedSize(path),
+                             PathRasterService::ClimbPolicy::TileDisplay);
+        return;
+    }
+    // Fallback when no service wired (tests / early init).
     ThumtooCache::forgetPixelsSettled(path, edge);
     if (ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
     }
-    // Memo unknown or negative: PreferCache still tries TileSynth/soft; size
-    // probe fills aspect. Never FocusFull from the strip.
     (void)ThumtooCache::scheduleDisplayPixels(path, edge);
     if (!ThumtooCache::cachedSize(path).isValid()) {
         ThumtooCache::scheduleProbe(path);
