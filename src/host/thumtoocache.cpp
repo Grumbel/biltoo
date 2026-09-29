@@ -2187,7 +2187,7 @@ bool scheduleTilePyramid(const QString &path)
     // scale is enough. Explicit Cache→Prepare still uses prepareTiles →
     // request_tile_pyramid. Opt in with BILTOO_FOCUSFULL=1 for experiments.
     const char *ff = std::getenv("BILTOO_FOCUSFULL");
-    if (!ff || ff[0] == ' ' || ff[0] == '0') {
+    if (!ff || ff[0] == '\0' || ff[0] == '0') {
         return false;
     }
     if (sizeProbesBusy()) {
