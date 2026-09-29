@@ -1869,8 +1869,14 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d attempts=%d",
                    qPrintable(path), maxEdge, g_pixelsActive, attempts);
     }
+    // PreferCache is the thumtoo RasterPolicy name (store soft → tiles → file).
+    // Product path with durable tiles is TileSynth (whole-frame from pyramid);
+    // without tiles it is soft PreferCache / file. Label the work log accordingly.
+    const bool tileSynth = hasDurableTilesKnown(path);
     BackgroundWorkLog::notePixels(
-        QStringLiteral("PreferCache edge=%1  %2")
+        QStringLiteral("%1 edge=%2  %3")
+            .arg(tileSynth ? QStringLiteral("TileSynth")
+                           : QStringLiteral("PreferCache"))
             .arg(maxEdge)
             .arg(QFileInfo(path).fileName()));
     const QString pathCopy = path;
