@@ -148,9 +148,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_imageView, &ImageView::galleryReturnRequested,
             this, &MainWindow::returnFromImageMode);
     connect(m_imageView, &ImageView::cropModeChanged, this, [this](bool on) {
-        if (m_cropAct) {
-            m_cropAct->setChecked(on);
-        }
+        // Apply/Cancel and setCropMode(false) leave crop without going through
+        // onCanvasToolTriggered. Only unchecking Crop under an Exclusive group
+        // leaves zero tools pressed while ViewInteraction (e.g. Pan) stays active.
+        // Mirror controller state: crop > annot > current view tool.
+        Q_UNUSED(on);
+        syncCanvasToolChrome();
     });
     connect(m_imageView, &ImageView::attentionModeChanged, this, [this](bool on) {
         if (m_attentionAct) {
@@ -1363,6 +1366,8 @@ void MainWindow::activateDefaultViewTool()
         act->setChecked(true);
     }
     onCanvasToolTriggered(act);
+    // cropModeChanged(false) from setCropMode may have raced; re-sync exclusive checks.
+    syncCanvasToolChrome();
 }
 
 
