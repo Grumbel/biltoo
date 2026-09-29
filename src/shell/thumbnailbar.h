@@ -362,7 +362,7 @@ private:
                                         SessionImageId sessionId = kInvalidSessionImageId) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /** Issue interactive tiles for a visible strip cell (shared TileLodRegistry). */
-    void scheduleFilmstripTilePixels(const QString &path, int edge) const;
+    void scheduleFilmstripTiles(const QString &path, int edge) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;
     /** Decode ladder edge for sharp icons (≥ thumb×DPR, ≤ gallery soft max). Layout ignores this. */

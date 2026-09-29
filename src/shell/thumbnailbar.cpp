@@ -601,7 +601,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             <= DisplayQuality::kLqipMaxEdge) {
                         setThumbnailIcon(i, lqip);
                     }
-                    // Do NOT scheduleFilmstripTilePixels here. Every sizeReady used
+                    // Do NOT scheduleFilmstripTiles here. Every sizeReady used
                     // to queue pyramid/synth for the whole session in parallel with
                     // the Gallery size gate (felt like "tiles during size query" and
                     // starved Store/CPU). Visible rows load tiles via
@@ -647,7 +647,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     return;
                 }
                 // Tiles are product path — issue interactive cover tiles.
-                scheduleFilmstripTilePixels(path, decodeSize);
+                scheduleFilmstripTiles(path, decodeSize);
                 scheduleVisibleThumbnailLoads();
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
@@ -719,7 +719,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         || !ThumtooCache::hasDurableTilesKnown(path)) {
                         m_thumbAwaitLadder.insert(i);
                     }
-                    scheduleFilmstripTilePixels(path, decodeSize);
+                    scheduleFilmstripTiles(path, decodeSize);
                     emit loadsChanged();
                 }
             });
@@ -1461,7 +1461,7 @@ tilelod::TileLodController *ThumbnailBar::filmstripLodFor(const QString &path) c
     return slot.get();
 }
 
-void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) const
+void ThumbnailBar::scheduleFilmstripTiles(const QString &path, int edge) const
 {
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
@@ -1967,7 +1967,7 @@ void ThumbnailBar::filmstripSurfaceTick()
     }
     const int decodeSize = filmstripDecodeEdge();
     const QRect vis = viewport()->rect().adjusted(-40, -40, 40, 40);
-    bool needSchedule = false;
+    QSet<QString> visiblePaths;
     for (int i = 0; i < m_files.size(); ++i) {
         QListWidgetItem *it = item(i);
         if (!it) {
@@ -1999,7 +1999,7 @@ void ThumbnailBar::filmstripSurfaceTick()
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
         }
-        scheduleFilmstripTilePixels(path, decodeSize);
+        scheduleFilmstripTiles(path, decodeSize);
 
         // Session-id crop/appearance owns the cell — never paint raw host over it.
         // Path-only rows use DisplaySurface::decide below for host upgrades.
@@ -2086,7 +2086,16 @@ void ThumbnailBar::filmstripSurfaceTick()
     if (needSchedule) {
         scheduleVisibleThumbnailLoads();
     }
+    // Drop LOD controllers for paths no longer in the visible strip window.
+    for (auto it = m_filmstripLod.begin(); it != m_filmstripLod.end(); ) {
+        if (!visiblePaths.contains(it.key())) {
+            it = m_filmstripLod.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
+
 
 void ThumbnailBar::scheduleThumbnailLoads()
 {
@@ -2253,7 +2262,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     // Issue interactive tiles for the visible cell.
                     // Do not also spawn makeThumbnail — that re-decoded the file
                     // on a pool thread while Gallery already held durable tiles.
-                    scheduleFilmstripTilePixels(path, decodeSize);
+                    scheduleFilmstripTiles(path, decodeSize);
                     m_thumbAwaitLadder.insert(i);
                     continue;
                 }
@@ -2261,8 +2270,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
         // Shared tile issue only — no per-row pool decode.
         // makeThumbnail is ImageCache/LQIP; filmstripSurfaceTick installs when
-        // ImageCache improves. scheduleFilmstripTilePixels drives the climb.
-        scheduleFilmstripTilePixels(path, decodeSize);
+        // ImageCache improves. scheduleFilmstripTiles drives the climb.
+        scheduleFilmstripTiles(path, decodeSize);
         m_thumbAwaitLadder.insert(i);
         {
             const QImage host = ImageCache::get(path);
