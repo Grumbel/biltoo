@@ -510,6 +510,26 @@ MainWindow::MainWindow(QWidget *parent)
             m_annotVisibleAct->blockSignals(block);
         }
     });
+    connect(m_annotationPanel, &AnnotationPanel::jumpToSessionId, this, [this](SessionImageId sid) {
+        if (sid == kInvalidSessionImageId) {
+            return;
+        }
+        const int idx = m_session.indexOfId(sid);
+        if (idx < 0) {
+            if (statusBar()) {
+                statusBar()->showMessage(tr("Annotated page is no longer in the session."), 4000);
+            }
+            return;
+        }
+        setCurrentIndex(idx);
+    });
+    if (m_imageView && m_imageView->hostUndoStack()) {
+        connect(m_imageView->hostUndoStack(), &QUndoStack::indexChanged, this, [this](int) {
+            if (m_annotationDock && dockIsOpen(m_annotationDock)) {
+                updateAnnotationPanel();
+            }
+        });
+    }
 m_ocrPanel = new OcrPanel(this);
     m_ocrDock = new DockWidget(QStringLiteral("OcrDock"));
     m_ocrDock->setTitle(tr("OCR"));
@@ -3658,6 +3678,47 @@ void MainWindow::updateAnnotationPanel()
     }
     m_annotationPanel->setStatusText(
         tr("%1 — colour and width apply to new strokes.").arg(toolName));
+
+    // Pages that already have annotations (in-memory session store), session order.
+    QVector<AnnotationPageEntry> entries;
+    const auto &pages = annot.session().pages();
+    entries.reserve(pages.size());
+    SessionImageId currentSid = kInvalidSessionImageId;
+    if (m_currentIndex >= 0 && m_currentIndex < m_session.size()) {
+        currentSid = sessionIdAt(m_currentIndex);
+    }
+    for (int i = 0; i < m_session.size(); ++i) {
+        const SessionImageId sid = sessionIdAt(i);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const auto it = pages.constFind(sid);
+        if (it == pages.cend() || it.value().objects.isEmpty()) {
+            continue;
+        }
+        AnnotationPageEntry e;
+        e.sid = sid;
+        e.sessionIndex = i;
+        e.label = PagePath::displayName(m_session.paths().at(i));
+        e.objectCount = it.value().objects.size();
+        entries.append(e);
+    }
+    // Hydrated pages no longer in the session list (rare after Open/replace).
+    for (auto it = pages.cbegin(); it != pages.cend(); ++it) {
+        if (it.value().objects.isEmpty()) {
+            continue;
+        }
+        if (m_session.indexOfId(it.key()) >= 0) {
+            continue;
+        }
+        AnnotationPageEntry e;
+        e.sid = it.key();
+        e.sessionIndex = -1;
+        e.label = tr("Page id %1").arg(it.key());
+        e.objectCount = it.value().objects.size();
+        entries.append(e);
+    }
+    m_annotationPanel->setAnnotatedPages(entries, currentSid);
 }
 
 void MainWindow::updateCropPanel()

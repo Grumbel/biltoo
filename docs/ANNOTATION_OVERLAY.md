@@ -11,7 +11,8 @@ Page-space coords aligned with text overlays. formatVersion 2 envelope (string k
 Related: [CONTENT_COORDINATES.md](CONTENT_COORDINATES.md),
 [OCR_COORDINATES.md](OCR_COORDINATES.md), [TEXT_OVERLAY.md](TEXT_OVERLAY.md)
 (if present), [TAGS_AND_BOOKMARKS.md](TAGS_AND_BOOKMARKS.md),
-[FEATURE_BRAINSTORM.md](FEATURE_BRAINSTORM.md).
+[FEATURE_BRAINSTORM.md](FEATURE_BRAINSTORM.md),
+[ANNOTATION_CUTOUTS.md](ANNOTATION_CUTOUTS.md) (future: region cutouts board).
 
 ---
 

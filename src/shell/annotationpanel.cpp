@@ -13,6 +13,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QIcon>
+#include <QAbstractItemView>
+#include <QListWidget>
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
@@ -40,6 +42,9 @@ const Preset kPresets[] = {
     {"White", 250, 250, 250},
     {"Sticky", 255, 230, 100},
 };
+
+constexpr int kSidRole = Qt::UserRole;
+constexpr int kIndexRole = Qt::UserRole + 1;
 
 } // namespace
 
@@ -129,11 +134,31 @@ AnnotationPanel::AnnotationPanel(QWidget *parent)
     });
     layout->addWidget(m_visibleCheck);
 
-    layout->addStretch(1);
+    auto *pagesBox = new QGroupBox(tr("Annotated pages"), inner);
+    auto *pagesLay = new QVBoxLayout(pagesBox);
+    m_pageListHint = new QLabel(
+        tr("Pages in this session that already have marks. Double-click or press "
+           "Enter to jump."),
+        pagesBox);
+    m_pageListHint->setWordWrap(true);
+    pagesLay->addWidget(m_pageListHint);
+    m_pageList = new QListWidget(pagesBox);
+    m_pageList->setMinimumHeight(120);
+    m_pageList->setAlternatingRowColors(true);
+    m_pageList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_pageList->setToolTip(tr("Jump to a page that has annotations"));
+    connect(m_pageList, &QListWidget::itemActivated, this, [this](QListWidgetItem *) {
+        onPageActivated();
+    });
+    pagesLay->addWidget(m_pageList, 1);
+    layout->addWidget(pagesBox, 1);
+
+    layout->addStretch(0);
     scroll->setWidget(inner);
     root->addWidget(scroll, 1);
 
     rebuildSwatch();
+    setAnnotatedPages({});
 }
 
 void AnnotationPanel::rebuildSwatch()
@@ -193,6 +218,64 @@ void AnnotationPanel::setStatusText(const QString &text)
     if (m_status) {
         m_status->setText(text);
     }
+}
+
+void AnnotationPanel::setAnnotatedPages(const QVector<AnnotationPageEntry> &entries,
+                                        SessionImageId currentSid)
+{
+    if (!m_pageList) {
+        return;
+    }
+    m_block = true;
+    m_pageList->clear();
+    if (entries.isEmpty()) {
+        auto *placeholder = new QListWidgetItem(tr("(No annotated pages yet)"), m_pageList);
+        placeholder->setFlags(Qt::NoItemFlags);
+        placeholder->setForeground(palette().placeholderText());
+        m_block = false;
+        return;
+    }
+    QListWidgetItem *currentItem = nullptr;
+    for (const AnnotationPageEntry &e : entries) {
+        if (e.sid == kInvalidSessionImageId) {
+            continue;
+        }
+        const QString countText = e.objectCount == 1
+            ? tr("1 mark")
+            : tr("%n marks", "", e.objectCount);
+        const QString rowText = e.sessionIndex >= 0
+            ? tr("%1 — %2 (%3)")
+                  .arg(e.sessionIndex + 1)
+                  .arg(e.label, countText)
+            : tr("%1 (%2)").arg(e.label, countText);
+        auto *item = new QListWidgetItem(rowText, m_pageList);
+        item->setData(kSidRole, QVariant::fromValue(e.sid));
+        item->setData(kIndexRole, e.sessionIndex);
+        item->setToolTip(e.label);
+        if (e.sid == currentSid) {
+            currentItem = item;
+        }
+    }
+    if (currentItem) {
+        m_pageList->setCurrentItem(currentItem);
+    }
+    m_block = false;
+}
+
+void AnnotationPanel::onPageActivated()
+{
+    if (m_block || !m_pageList) {
+        return;
+    }
+    QListWidgetItem *item = m_pageList->currentItem();
+    if (!item || !(item->flags() & Qt::ItemIsEnabled)) {
+        return;
+    }
+    const SessionImageId sid = item->data(kSidRole).value<SessionImageId>();
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    emit jumpToSessionId(sid);
 }
 
 void AnnotationPanel::emitColor(const QColor &c)
