@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "shell/messagelogpanel.h"
 #include "util/biltoo_thread.h"
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
