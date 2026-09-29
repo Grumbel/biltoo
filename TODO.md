@@ -2,22 +2,21 @@
 
 ## Status (2026-09-29)
 
-**Tip:** `biltoo-2811.6-crop-leave-chrome-sync` (base `2085c07`).
+**Tip:** `biltoo-2812.1-mupdf-pin-from-thumtoo` (base `2085c07`).
 
-### 2811.6
-- cropModeChanged → syncCanvasToolChrome (Apply/Cancel left Crop unchecked and no view tool pressed under Exclusive)
-- activateDefaultViewTool re-syncs after handler
+### 2812.1
+- Pin MuPDF 1.28.5 in biltoo flake (prefer `thumtoo.lib.pinMupdf`, else local override)
+- Pass pinned mupdf into `default.nix` and `mkBuildInputs` via `pkgsForThumtoo`
+- So `THUMTOO_SOURCE_DIR=… nix develop -c biltoo-test` links 1.28.5, not nixpkgs 1.27.2
 
 ### Prior
-- 2811.5 crop exit → mode-default tool (Pan in Image)
-- 2811.4 Crop in Exclusive radio
+- Tool unification 2811.x; Text Highlighter design note 2811.7
 
 ### Next
-- Design (no rush): Text Highlighter tool → panel “Mark selection” (see docs/ANNOTATION_OVERLAY.md §14)
-- Manual: Image Pan → Crop → Apply/Cancel → Pan button pressed
-- Optional: fold Attention into the canvas radio
+- After rebuild: `pkg-config --modversion mupdf` → 1.28.5 in biltoo shell
+- Optional: `nix flake update thumtoo` once 353.x is on the remote
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2811.6-crop-leave-chrome-sync-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2812.1-mupdf-pin-from-thumtoo-2085c07.bundle HEAD
 ```

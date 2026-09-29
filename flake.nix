@@ -18,6 +18,34 @@
       # require a host shared cache or extra-sandbox-paths.
       pkgs = import nixpkgs { inherit system; };
 
+      # MuPDF ≥ 1.28 for Markdown (nixpkgs still 1.27.2). Prefer thumtoo.lib.pinMupdf
+      # when the flake input has it; otherwise the same override so
+      # THUMTOO_SOURCE_DIR=…/live-tree still links 1.28 even if flake.lock is old.
+      # cmark-gfm: upstream 1.28 source tarball vendors thirdparty/cmark-gfm; we
+      # keep nixpkgs USE_SYSTEM_LIBS and do not strip that tree (see thumtoo pin).
+      pinMupdf =
+        if thumtoo.lib ? pinMupdf then
+          thumtoo.lib.pinMupdf
+        else
+          (
+            pkgs: pkgs.mupdf.overrideAttrs (old: rec {
+              version = "1.28.5";
+              src = pkgs.fetchurl {
+                url = "https://mupdf.com/downloads/archive/mupdf-${version}-source.tar.gz";
+                hash = "sha256-mKXBDNogw5ks33b/ayoRScMr15zHltP3AyMLEYW36TQ=";
+              };
+              patches = [ ];
+              postFixup = (old.postFixup or "") + ''
+                for pc in "$dev/lib/pkgconfig"/mupdf*.pc "$out/lib/pkgconfig"/mupdf*.pc; do
+                  if [ -f "$pc" ]; then
+                    sed -i "s/^Version:.*/Version: ${version}/" "$pc"
+                  fi
+                done
+              '';
+            })
+          );
+
+
       # ccacheStdenv's wrapper must not use $HOME/.ccache: under `nix build` the
       # sandbox sets HOME=/homeless-shelter (not writable) → "ccache: error:
       # Permission denied" on the first compiler probe. Point the wrapper at a
@@ -82,14 +110,21 @@
       piperVoiceDir =
         "${t2sPkgs.piper-voice-en_US-lessac-medium}/share/piper/voices";
 
-      biltooArgs = pkgsSet: {
+      biltooArgs = pkgsSet:
+        let
+          # Force pinned MuPDF into the pkgs view used for thumtoo deps *and*
+          # biltoo's own mupdf argument (default.nix buildInputs).
+          pkgsForThumtoo = pkgsSet // { mupdf = pinMupdf pkgsSet; };
+        in
+        {
         inherit version;
         kimageformats = pkgsSet.kdePackages.kimageformats;
+        mupdf = pkgsForThumtoo.mupdf;
         # Flake source of thumtoo (add_subdirectory in CMake; not a prebuilt package).
         thumtooSrc = thumtoo;
         # Same pkg-config deps as standalone thumtoo (libunarr, mupdf, …). Without
         # these, nested CMake configure silently disables optional backends.
-        thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgsSet;
+        thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgsForThumtoo;
         # TTS: hard-wire piper-server + default voice so Speak works out of the box.
         piperServer = piperServerFull;
         piperModelsDir = piperVoiceDir;
