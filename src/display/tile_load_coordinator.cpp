@@ -155,7 +155,7 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     // Coalesce scroll storms — multiple decode-window refreshes per frame.
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 16) {
+    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
         return;
     }
     m_lastTickMs = nowMs;
@@ -167,7 +167,9 @@ void TileLoadCoordinator::tick(int globalBudget)
     // Hard wall — one tickItemTileLod must not run multi-second (warm PDF
     // pyramid issue used to do SQLite get_tile + JPEG decode on this thread).
     const bool gallery = m_pipeline->host()->isGalleryMode();
-    const qint64 kWallMs = gallery ? 8 : 12;
+    // Gallery was 8ms and coalesced to ≤1 tick/16ms — warm Store hits still
+    // issued too few cells per frame so settle looked single-threaded/slow.
+    const qint64 kWallMs = gallery ? 24 : 16;
 
     QRectF sceneVis;
     if (m_pipeline->host()->canvasScene() && m_pipeline->host()->viewportWidget()) {

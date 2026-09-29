@@ -24,6 +24,8 @@
 #include <QFileInfo>
 #include <QHash>
 #include <QMutex>
+#include <QThread>
+#include <QThreadPool>
 #include <QSize>
 #include <QImageReader>
 
@@ -528,6 +530,13 @@ void init(const char *argv0)
 #else
     Q_UNUSED(argv0);
 #endif
+    // Parallel decode: ensure the global Qt pool is not stuck at 1.
+    if (QThreadPool *pool = QThreadPool::globalInstance()) {
+        const int ideal = QThread::idealThreadCount();
+        if (ideal > 1 && pool->maxThreadCount() < ideal) {
+            pool->setMaxThreadCount(ideal);
+        }
+    }
 }
 
 bool hasVips()
