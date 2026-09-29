@@ -570,8 +570,10 @@ void ImageController::zoomViewBy(qreal factor, bool aboutCursor)
     // (AUDIT M4 — one policy: zoom works until next pack).
     releaseStickyZoom();
     m_framing.clearFitFill();
-    // Pin a scene point under a viewport pixel, then scale (NoAnchor). Gallery
-    // drifts top-left if we only rely on AnchorViewCenter.
+    // Zoom about a viewport pixel (cursor or centre). Use transform translate,
+    // not scrollbars: when the scene fits the view (Gallery overview) scroll
+    // range is 0 and setValue is a no-op — that looked like top-left zoom.
+    // mapToScene takes viewport coordinates (Qt docs).
     QPoint anchorVp;
     bool haveAnchor = false;
     if (QWidget *vp = m_view->viewport()) {
@@ -587,21 +589,18 @@ void ImageController::zoomViewBy(qreal factor, bool aboutCursor)
             haveAnchor = true;
         }
     }
-    const QPointF keepScene =
-        haveAnchor ? m_view->mapToScene(anchorVp) : QPointF();
     m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
+    m_view->setResizeAnchor(QGraphicsView::NoAnchor);
+    const QPointF sceneBefore =
+        haveAnchor ? m_view->mapToScene(anchorVp) : QPointF();
     m_view->scale(factor, factor);
     if (haveAnchor) {
-        // Keep keepScene under the same viewport pixel (centre or cursor).
-        const QPointF newVp = m_view->mapFromScene(keepScene);
-        const qreal dx = newVp.x() - qreal(anchorVp.x());
-        const qreal dy = newVp.y() - qreal(anchorVp.y());
-        if (QScrollBar *hs = m_view->horizontalScrollBar()) {
-            hs->setValue(hs->value() + int(std::lround(dx)));
-        }
-        if (QScrollBar *vs = m_view->verticalScrollBar()) {
-            vs->setValue(vs->value() + int(std::lround(dy)));
-        }
+        // Same viewport pixel now maps to a different scene point; translate
+        // so sceneBefore sits under anchorVp again (same pattern as wheel
+        // AnchorUnderMouse, but explicit for keyboard / no-scroll cases).
+        const QPointF sceneAfter = m_view->mapToScene(anchorVp);
+        const QPointF delta = sceneAfter - sceneBefore;
+        m_view->translate(delta.x(), delta.y());
     }
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     // Viewport-space chrome only — no selected-item prepareGeometryChange.
