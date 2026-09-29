@@ -183,9 +183,10 @@ void TileLoadCoordinator::tick(int globalBudget)
     sortByPolicy(cands);
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    // Cap targets tightly — each item runs prepare+issue; 16× was drowning the
-    // GUI when durable tiles were ready (hit path used to SQLite on this thread).
-    const int kMaxTargets = gallery ? 6 : 1;
+    // Gallery was capped at 6 items/tick → hundreds of tileLod ticks to cover
+    // a 150-image viewport on a hot Store (totals tileLod=1180). Raise the
+    // target count; issue work is async (thumtoo workers), GUI only plans.
+    const int kMaxTargets = gallery ? 32 : 1;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }

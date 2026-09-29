@@ -2,12 +2,11 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2816.2 on origin via 2816.1 (43c14502).
+**Tip:** biltoo-2816.3 on origin via 2816.2.
 
-### 2816.2
-- Gallery tile tick wall 8→24ms, coalesce 16→8ms (issue more cells/frame)
-- Ensure QThreadPool maxThreadCount ≥ idealThreadCount
+### 2816.3
+- Gallery tile targets per tick 6→32 (faster warm settle, fewer tileLod ticks)
 
 ### Required thumtoo
-thumtoo-002-restore-vips-mt-551a360.bundle (includes 001 PreferCache + vips MT)
+thumtoo-003-cap-workers-vips1-551a360.bundle
 
