@@ -205,6 +205,13 @@ void scheduleProbeBatch(const QStringList &paths);
  */
 bool sizeProbesBusy();
 
+struct ProbeQueueSnapshot {
+    int queued = 0;
+    int inflight = 0;
+    bool busy = false;
+};
+ProbeQueueSnapshot probeQueueSnapshot();
+
 /**
  * Session Open / Replace: drop the host size-probe FIFO and bump the probe
  * generation so in-flight Store callbacks do not emit sizeReady or refill

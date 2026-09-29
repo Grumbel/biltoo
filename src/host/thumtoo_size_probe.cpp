@@ -128,15 +128,12 @@ void pumpProbeQueue()
     const quint64 generation = g_probeGeneration.load(std::memory_order_acquire);
     {
         QMutexLocker lock(&g_probeMu);
-        // True warm hit: process size memo AND underlay already in ImageCache.
-        // Size-only memo is not enough — request_size returns size + stored
-        // EMB/LQIP in one Store row (never generate LQIP; never get_lqip alone).
+        // Warm hit: process size memo only. Do not require ImageCache underlay
+        // (that re-probed entire archives after restart with hot SQLite).
         while (!g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
-            // Underlay slot — soft in the main ImageCache slot is not enough.
-            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
-                && ImageCache::hasUnderlay(p)) {
+            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));
@@ -147,9 +144,7 @@ void pumpProbeQueue()
         while (g_probeInflight < kMaxConcurrentSizeProbes && !g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
-            // Underlay slot — soft in the main ImageCache slot is not enough.
-            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
-                && ImageCache::hasUnderlay(p)) {
+            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));
@@ -198,12 +193,14 @@ void scheduleProbe(const QString &path)
         return;
     }
     BackgroundWorkLog::noteProbe();
-    // Warm only when size memo and ImageCache underlay are both present.
-    // Size-only memo still needs request_size so stored EMB/LQIP can seed the
-    // cache with the size row (no separate get_lqip / generation).
+    // Size memo alone is enough to skip Store request_size. Requiring
+    // ImageCache underlay forced a full-session re-probe after every restart
+    // (hot SQLite, cold process underlay) — looked like "probing the whole
+    // archive" on a warm durable cache. Underlay seeds opportunistically on
+    // SizeReply when a probe does run; missing underlay must not block the
+    // size gate or re-walk every member.
     if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
-        memo.isValid() && memo.width() > 0 && memo.height() > 0
-        && ImageCache::has(path)) {
+        memo.isValid() && memo.width() > 0 && memo.height() > 0) {
         emitSizeReadyChunked({{path, memo}},
                              g_probeGeneration.load(std::memory_order_acquire));
         return;
@@ -226,8 +223,7 @@ void scheduleProbeBatch(const QStringList &paths)
             continue;
         }
         if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
-            memo.isValid() && memo.width() > 0 && memo.height() > 0
-            && ImageCache::has(path)) {
+            memo.isValid() && memo.width() > 0 && memo.height() > 0) {
             memoHits.append(qMakePair(path, memo));
             continue;
         }
@@ -245,6 +241,16 @@ bool sizeProbesBusy()
 {
     QMutexLocker lock(&g_probeMu);
     return g_probeInflight > 0 || !g_probeFifo.isEmpty();
+}
+
+ProbeQueueSnapshot probeQueueSnapshot()
+{
+    ProbeQueueSnapshot s;
+    QMutexLocker lock(&g_probeMu);
+    s.queued = g_probeFifo.size();
+    s.inflight = g_probeInflight;
+    s.busy = s.queued > 0 || s.inflight > 0;
+    return s;
 }
 
 quint64 sizeProbeGeneration()
