@@ -1998,9 +1998,19 @@ void MainWindow::toggleAttentionMode()
     const bool want = m_attentionAct->isChecked();
     if (want && m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().cancelCrop();
+        // Exclusive radio: crop off; leave the current view tool checked.
         if (m_cropAct) {
+            const QSignalBlocker block(m_cropAct);
             m_cropAct->setChecked(false);
         }
+        syncCanvasToolChrome();
+    }
+    if (want && m_imageView->hostAnnot().isToolActive()) {
+        // Attention is outside the radio; drop annotation tool so input is not
+        // split between markup and attention handles.
+        m_imageView->hostAnnot().setTool(Annotation::Tool::None);
+        updateAnnotationPanel();
+        syncCanvasToolChrome();
     }
     if (want && !m_imageView->isImageMode()) {
         // Attention edit is Image-mode only for now.
@@ -2481,6 +2491,16 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         }
         const QSignalBlocker block(a);
         a->setChecked(on);
+    }
+
+    // Attention stays outside the Exclusive radio but is still a canvas edit
+    // mode: any explicit canvas-tool choice ends it (parity with crop enter).
+    if (m_imageView->hostAttention().active()) {
+        m_imageView->hostAttention().setAttentionMode(false);
+        if (m_attentionAct) {
+            const QSignalBlocker block(m_attentionAct);
+            m_attentionAct->setChecked(false);
+        }
     }
 
     // Crop tool: enter mode, or re-activate while already cropping → mode default
