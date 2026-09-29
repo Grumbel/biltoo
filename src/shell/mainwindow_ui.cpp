@@ -1924,8 +1924,31 @@ void MainWindow::createToolBar()
     m_toolBar->addWidget(spacerRight);
 
     // Right: zoom group, workspace mode, metadata, fullscreen
-    m_toolBar->addAction(m_zoomInAct);
-    m_toolBar->addAction(m_zoomOutAct);
+    // Toolbar +/- : hold-to-zoom (smooth). Menu / shortcuts keep single-step QActions.
+    {
+        auto makeHoldZoomBtn = [this](QAction *act, int direction) -> QToolButton * {
+            auto *btn = new QToolButton(m_toolBar);
+            btn->setIcon(act->icon());
+            btn->setToolTip(act->toolTip().isEmpty() ? act->text() : act->toolTip());
+            btn->setStatusTip(act->statusTip());
+            btn->setEnabled(act->isEnabled());
+            btn->setAutoRaise(true);
+            btn->setFocusPolicy(Qt::NoFocus);
+            connect(act, &QAction::changed, btn, [btn, act]() {
+                btn->setEnabled(act->isEnabled());
+                btn->setIcon(act->icon());
+                btn->setToolTip(act->toolTip().isEmpty() ? act->text() : act->toolTip());
+                btn->setStatusTip(act->statusTip());
+            });
+            connect(btn, &QToolButton::pressed, this, [this, direction]() {
+                startToolbarZoomHold(direction);
+            });
+            connect(btn, &QToolButton::released, this, &MainWindow::stopToolbarZoomHold);
+            return btn;
+        };
+        m_toolBar->addWidget(makeHoldZoomBtn(m_zoomInAct, +1));
+        m_toolBar->addWidget(makeHoldZoomBtn(m_zoomOutAct, -1));
+    }
     m_toolBar->addAction(m_zoom1to1Act);
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
@@ -2481,8 +2504,8 @@ void MainWindow::populateActionHelpTexts()
         "are remembered between runs.</p>"));
 
     // --- View / zoom ---
-    setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable).</p>"));
-    setHelp(m_zoomOutAct, tr("<p>Zoom the view out.</p>"));
+    setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable). Toolbar button: hold for continuous zoom.</p>"));
+    setHelp(m_zoomOutAct, tr("<p>Zoom the view out. Toolbar button: hold for continuous zoom.</p>"));
     setHelp(m_zoomFitAct, tr(
         "<p>Scale so the content fits inside the viewport (letterboxed if aspects differ). Shortcut: <b>Ctrl+Shift+F</b> (distinct from Fullscreen F / F11).</p>"
         "<p><b>Image mode:</b> sticky Fit stays active across ←/→ until released. "

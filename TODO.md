@@ -1,15 +1,14 @@
 # TODO / agent handoff
 
-## Status (2026-09-28)
+## Status (2026-09-29)
 
-**Tip:** `biltoo-2808.7-doubleview-fit-resize` (base `2085c07`).
+**Tip:** `biltoo-2809.1-toolbar-hold-zoom` (base `2085c07`).
 
-### 2808.7
-- DoubleView/spread: sticky fit on viewport resize via fitLiveItemsUnion
-- Fit/Fill for multi-item: second fit after scrollbar refresh + deferred fit
-  (fixes “need to apply Fit twice”)
+### 2809.1
+- Toolbar +/- zoom: hold for continuous smooth zoom (~1.03 @ 60 Hz)
+- Menu / shortcuts still single-step 1.25 via QAction
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2808.7-doubleview-fit-resize-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2809.1-toolbar-hold-zoom-2085c07.bundle HEAD
 ```

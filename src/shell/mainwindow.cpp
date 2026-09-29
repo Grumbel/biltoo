@@ -1070,6 +1070,42 @@ void MainWindow::zoomOut()
     syncZoomModeChecks();
 }
 
+void MainWindow::startToolbarZoomHold(int direction)
+{
+    if (!m_imageView || direction == 0) {
+        return;
+    }
+    m_toolbarZoomHoldDir = direction > 0 ? 1 : -1;
+    if (!m_toolbarZoomHoldTimer) {
+        m_toolbarZoomHoldTimer = new QTimer(this);
+        m_toolbarZoomHoldTimer->setTimerType(Qt::PreciseTimer);
+        connect(m_toolbarZoomHoldTimer, &QTimer::timeout, this,
+                &MainWindow::tickToolbarZoomHold);
+    }
+    // Immediate first step, then continuous smooth zoom while held.
+    tickToolbarZoomHold();
+    m_toolbarZoomHoldTimer->start(16); // ~60 Hz
+}
+
+void MainWindow::stopToolbarZoomHold()
+{
+    if (m_toolbarZoomHoldTimer) {
+        m_toolbarZoomHoldTimer->stop();
+    }
+    m_toolbarZoomHoldDir = 0;
+}
+
+void MainWindow::tickToolbarZoomHold()
+{
+    if (!m_imageView || m_toolbarZoomHoldDir == 0) {
+        return;
+    }
+    // ~1.03 per tick for smooth hold; menu/shortcuts still use 1.25 via zoomIn/Out.
+    const qreal step = 1.03;
+    m_imageView->hostImage().zoomViewBy(m_toolbarZoomHoldDir > 0 ? step : (1.0 / step));
+    syncZoomModeChecks();
+}
+
 void MainWindow::zoomReset()
 {
     // Sticky 1:1 is Image-mode only. Gallery/Workspace: one-shot view reset.
