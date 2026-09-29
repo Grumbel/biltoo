@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
+#include "tilelod/lod_math.hpp"
 #include "tilelod/tile_lod_registry.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
@@ -78,7 +79,12 @@ void ImageItem::detachTileLodBag()
 
 qreal ImageItem::tileDevicePerContent() const
 {
-    // Logical view scale × widget devicePixelRatio (Retina / fractional DPI).
+    // Tile grid is always *file-native* pixels (setContentSize(native)).
+    // Density must be screen pixels per *native* pixel — not per item-local
+    // unit. Gallery layouts often leave m_galleryCellSize empty (non-GridCrop
+    // pack) while item scene bounds are the cell; using screenScale() alone
+    // then treated local→view (~1) as dpc and forced target_scale=0 (full
+    // archive decode: Performance report s=0 0,0 with 145 tiles queued).
     qreal dpr = 1.0;
     qreal viewScale = 1.0;
     if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
@@ -86,7 +92,6 @@ qreal ImageItem::tileDevicePerContent() const
         if (QWidget *vp = view->viewport()) {
             dpr = vp->devicePixelRatioF();
         }
-        // View transform only (item placement handled below for Gallery).
         const QTransform vt = view->transform();
         qreal sMax = 1.0;
         qreal sMin = 1.0;
@@ -98,25 +103,30 @@ qreal ImageItem::tileDevicePerContent() const
         dpr = 1.0;
     }
 
-    // Gallery packed cell: item local size is the *cell*, but the tile grid is
-    // *native* pixels. Using screenScale() here treated cell-local→view (~1) as
-    // device-per-content and forced target_scale=0 (full-res archive decode for
-    // every on-screen thumb). Density must be screen_px / native_px.
+    QSize native = tileNativeSize();
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        native = imageSize();
+    }
+    const qreal contentLong = qMax(native.width(), native.height());
+    if (!(contentLong > 1.0)) {
+        return screenScale() * dpr;
+    }
+
+    // Scene footprint of this item (cell in Gallery, placed bounds in Image).
+    qreal sceneLong = 0.0;
     if (!m_galleryCellSize.isEmpty()) {
-        QSize native = tileNativeSize();
-        if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-            native = imageSize();
-        }
-        const qreal contentLong = qMax(native.width(), native.height());
-        const qreal cellLong =
-            qMax(m_galleryCellSize.width(), m_galleryCellSize.height());
-        if (contentLong > 1.0 && cellLong > 0.0) {
-            const qreal screenLong = cellLong * viewScale * dpr;
-            const qreal dpc = screenLong / contentLong;
-            if (dpc > 0.0 && std::isfinite(dpc)) {
-                return dpc;
-            }
-        }
+        sceneLong = qMax(m_galleryCellSize.width(), m_galleryCellSize.height());
+    } else {
+        const QRectF br = sceneBoundingRect();
+        sceneLong = qMax(br.width(), br.height());
+    }
+    if (!(sceneLong > 0.0)) {
+        return screenScale() * dpr;
+    }
+    const qreal screenLong = sceneLong * viewScale * dpr;
+    const qreal dpc = screenLong / contentLong;
+    if (dpc > 0.0 && std::isfinite(dpc)) {
+        return dpc;
     }
     return screenScale() * dpr;
 }
@@ -352,13 +362,43 @@ void ImageItem::prepareTileLodPlan()
         tileLodBag().lastVisSource = QRectF();
     }
     // Tile grid is always full native (source) size.
-    // Gallery: durable min_scale floors the plan (no encode-on-miss budget).
-    // Image/Workspace: always min_scale 0 so density can climb to full-res —
-    // durableTileMinScale alone left ImageView stuck on coarse overview tiles
-    // when the pyramid memo only recorded an incomplete fine floor.
-    const int minScale = m_galleryCellSize.isEmpty()
-        ? 0
-        : ThumtooCache::durableTileMinScale(m_path);
+    // Gallery: floor min_scale at density so overview never requests scale 0
+    // (full JPEG decode). Image/Workspace: min_scale 0 so density can climb.
+    int minScale = 0;
+    bool galleryLayout = !m_galleryCellSize.isEmpty();
+    if (!galleryLayout && scene() && !scene()->views().isEmpty()) {
+        if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+            galleryLayout = iv->isGalleryMode();
+        }
+    }
+    if (galleryLayout) {
+        minScale = ThumtooCache::durableTileMinScale(m_path);
+        const qreal dpc0 = tileDevicePerContent();
+        const int maxS = tilelod::max_scale_for_size(native.width(), native.height());
+        const int dens = tilelod::target_scale_for_density(
+            static_cast<double>(dpc0), 0, maxS);
+        if (dens > minScale) {
+            minScale = dens;
+        }
+        // Hard floor: cell much smaller than native must not request full-res.
+        const qreal contentLong = qMax(native.width(), native.height());
+        qreal sceneLong = 0.0;
+        if (!m_galleryCellSize.isEmpty()) {
+            sceneLong = qMax(m_galleryCellSize.width(), m_galleryCellSize.height());
+        } else {
+            const QRectF br = sceneBoundingRect();
+            sceneLong = qMax(br.width(), br.height());
+        }
+        if (contentLong > 512.0 && sceneLong > 0.0) {
+            if (sceneLong * 8.0 < contentLong && minScale < 3) {
+                minScale = 3;
+            } else if (sceneLong * 4.0 < contentLong && minScale < 2) {
+                minScale = 2;
+            } else if (sceneLong * 2.0 < contentLong && minScale < 1) {
+                minScale = 1;
+            }
+        }
+    }
     const quint64 genBefore =
         tileLodBag().controller->session() ? tileLodBag().controller->session()->generation() : 0;
     tileLodBag().controller->setContentSize(native.width(), native.height(), minScale);
