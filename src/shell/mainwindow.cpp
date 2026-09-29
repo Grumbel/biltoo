@@ -2328,15 +2328,55 @@ void MainWindow::clearAnnotationToolSelection()
     updateAnnotationPanel();
 }
 
+void MainWindow::syncCanvasToolChrome()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const auto setCheckedBlocked = [](QAction *a, bool on) {
+        if (!a || a->isChecked() == on) {
+            return;
+        }
+        const QSignalBlocker block(a);
+        a->setChecked(on);
+    };
+
+    if (m_imageView->hostAnnot().isToolActive()) {
+        const Annotation::Tool at = m_imageView->hostAnnot().tool();
+        setCheckedBlocked(m_selectToolAct, false);
+        setCheckedBlocked(m_panToolAct, false);
+        setCheckedBlocked(m_zoomToolAct, false);
+        setCheckedBlocked(m_annotHighlightAct, at == Annotation::Tool::FreehandHighlighter);
+        setCheckedBlocked(m_annotTextHighlightAct, at == Annotation::Tool::TextHighlighter);
+        setCheckedBlocked(m_annotPenAct, at == Annotation::Tool::Pen);
+        setCheckedBlocked(m_annotEraserAct, at == Annotation::Tool::Eraser);
+        setCheckedBlocked(m_annotSelectAct, at == Annotation::Tool::Select);
+        setCheckedBlocked(m_annotRectAct, at == Annotation::Tool::Rect);
+        setCheckedBlocked(m_annotEllipseAct, at == Annotation::Tool::Ellipse);
+        setCheckedBlocked(m_annotLineAct, at == Annotation::Tool::Line);
+        setCheckedBlocked(m_annotStickyAct, at == Annotation::Tool::Sticky);
+        return;
+    }
+
+    const Tool t = m_imageView->currentTool();
+    setCheckedBlocked(m_selectToolAct, t == Tool::Select);
+    setCheckedBlocked(m_panToolAct, t == Tool::Pan);
+    setCheckedBlocked(m_zoomToolAct, t == Tool::Zoom);
+    for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
+                       m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
+                       m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
+        setCheckedBlocked(a, false);
+    }
+}
+
 void MainWindow::onCanvasToolTriggered(QAction *act)
 {
     if (!m_imageView || !act) {
         return;
     }
 
-    // Belt-and-suspenders: Exclusive group should already leave only `act`
-    // checked, but force a single checked chrome so Select/Pan/Zoom never
-    // appear multi-stuck if a style or signal order glitches.
+    // Exclusive group should leave only `act` checked. Force it so a prior
+    // SignalBlocker sync cannot leave zero or multiple checked.
     for (QAction *a : canvasToolActions()) {
         if (!a) {
             continue;
@@ -2361,7 +2401,6 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
                              || act == m_zoomToolAct);
 
     if (isViewTool) {
-        // Clear annot controller without touching action checks (already exclusive).
         if (m_imageView->hostAnnot().isToolActive()) {
             m_imageView->hostAnnot().setTool(Annotation::Tool::None);
             updateAnnotationPanel();
@@ -2418,8 +2457,12 @@ void MainWindow::setSelectTool()
     if (!m_selectToolAct) {
         return;
     }
-    // trigger() runs the Exclusive group path (same as a toolbar click).
-    m_selectToolAct->trigger();
+    // Prefer setChecked over trigger(): trigger() toggles a checked Exclusive
+    // action off then the group forces it back on — noisy and style-dependent.
+    if (!m_selectToolAct->isChecked()) {
+        m_selectToolAct->setChecked(true);
+    }
+    onCanvasToolTriggered(m_selectToolAct);
 }
 
 void MainWindow::setPanTool()
@@ -2427,7 +2470,10 @@ void MainWindow::setPanTool()
     if (!m_panToolAct) {
         return;
     }
-    m_panToolAct->trigger();
+    if (!m_panToolAct->isChecked()) {
+        m_panToolAct->setChecked(true);
+    }
+    onCanvasToolTriggered(m_panToolAct);
 }
 
 void MainWindow::setZoomTool()
@@ -2435,8 +2481,12 @@ void MainWindow::setZoomTool()
     if (!m_zoomToolAct) {
         return;
     }
-    m_zoomToolAct->trigger();
+    if (!m_zoomToolAct->isChecked()) {
+        m_zoomToolAct->setChecked(true);
+    }
+    onCanvasToolTriggered(m_zoomToolAct);
 }
+
 
 
 

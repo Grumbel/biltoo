@@ -378,6 +378,8 @@ private slots:
     void clearAnnotationToolSelection();
     /** Select/Pan/Zoom + annotation tool actions (one Exclusive radio). */
     QList<QAction *> canvasToolActions() const;
+    /** Match action checks to ViewInteraction + AnnotationController (no side effects). */
+    void syncCanvasToolChrome();
     /** Unified canvas tool radio (Select/Pan/Zoom + annotation tools). */
     void onCanvasToolTriggered(QAction *act);
     void setSelectTool();

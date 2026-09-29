@@ -763,43 +763,8 @@ void MainWindow::updateWorkspaceActionVisibility()
             act->setEnabled(m_imageView != nullptr);
         }
     }
-    if (m_imageView) {
-        // One canvas-tool radio: annotation active → only that annot action is
-        // checked; otherwise mirror ViewInteraction tool. Block signals so
-        // ExclusiveOptional does not re-enter onCanvasToolTriggered.
-        const auto setCheckedBlocked = [](QAction *a, bool on) {
-            if (!a) {
-                return;
-            }
-            const QSignalBlocker block(a);
-            a->setChecked(on);
-        };
-        if (m_imageView->hostAnnot().isToolActive()) {
-            const Annotation::Tool at = m_imageView->hostAnnot().tool();
-            setCheckedBlocked(m_selectToolAct, false);
-            setCheckedBlocked(m_panToolAct, false);
-            setCheckedBlocked(m_zoomToolAct, false);
-            setCheckedBlocked(m_annotHighlightAct, at == Annotation::Tool::FreehandHighlighter);
-            setCheckedBlocked(m_annotTextHighlightAct, at == Annotation::Tool::TextHighlighter);
-            setCheckedBlocked(m_annotPenAct, at == Annotation::Tool::Pen);
-            setCheckedBlocked(m_annotEraserAct, at == Annotation::Tool::Eraser);
-            setCheckedBlocked(m_annotSelectAct, at == Annotation::Tool::Select);
-            setCheckedBlocked(m_annotRectAct, at == Annotation::Tool::Rect);
-            setCheckedBlocked(m_annotEllipseAct, at == Annotation::Tool::Ellipse);
-            setCheckedBlocked(m_annotLineAct, at == Annotation::Tool::Line);
-            setCheckedBlocked(m_annotStickyAct, at == Annotation::Tool::Sticky);
-        } else {
-            const Tool t = m_imageView->currentTool();
-            setCheckedBlocked(m_selectToolAct, t == Tool::Select);
-            setCheckedBlocked(m_panToolAct, t == Tool::Pan);
-            setCheckedBlocked(m_zoomToolAct, t == Tool::Zoom);
-            for (QAction *a : {m_annotHighlightAct, m_annotTextHighlightAct, m_annotPenAct,
-                               m_annotEraserAct, m_annotSelectAct, m_annotRectAct,
-                               m_annotEllipseAct, m_annotLineAct, m_annotStickyAct}) {
-                setCheckedBlocked(a, false);
-            }
-        }
-    }
+    // Canvas tool radio chrome tracks ViewInteraction + AnnotationController.
+    syncCanvasToolChrome();
     // Workspace-only chrome: keep menu entries stable; grey out outside Workspace.
     for (QAction *act : {m_raiseAct, m_lowerAct,
                          m_opacityUpAct, m_opacityDownAct, m_opacityResetAct,
