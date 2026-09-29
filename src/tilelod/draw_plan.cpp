@@ -33,29 +33,11 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     if (CacheEntry const* exact = in.lookup(key);
         exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
       cmd.src_key = key;
-      RectI const lr = tile_level_rect(in.content_w, in.content_h, key);
-      int ew = lr.w;
-      int eh = lr.h;
-      if (ew > exact->bitmap.width) {
-        ew = exact->bitmap.width;
-      }
-      if (eh > exact->bitmap.height) {
-        eh = exact->bitmap.height;
-      }
-      if (ew > kTileSize) {
-        ew = kTileSize;
-      }
-      if (eh > kTileSize) {
-        eh = kTileSize;
-      }
-      if (ew < 1) {
-        ew = 1;
-      }
-      if (eh < 1) {
-        eh = 1;
-      }
-      cmd.src_uv = {0, 0, static_cast<double>(ew), static_cast<double>(eh)};
-      // Dest stays the exact content mapping of the level grid cell.
+      // Full bitmap → content-space cell. DCT/floor-half size drift is
+      // stretched here; do not crop to tile_level_rect or the cell shows
+      // a partial sample / falls through to LQIP underlay.
+      cmd.src_uv = {0, 0, static_cast<double>(exact->bitmap.width),
+                    static_cast<double>(exact->bitmap.height)};
       cmd.dst_content = {static_cast<double>(cr.x), static_cast<double>(cr.y),
                          static_cast<double>(cr.w), static_cast<double>(cr.h)};
       cmd.kind = DrawKind::ExactTile;

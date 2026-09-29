@@ -2,29 +2,18 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2833.3-tile-settled-no-reissue (on 2833.2 stack).
+**Tip:** biltoo-2833.4-tile-stretch-full-bitmap (on 2833.3 stack).
+
+### 2833.4
+- DrawPlan ExactTile: `src_uv` = full bitmap; stretch into content-space cell
+  (DCT/floor-half size drift is not a failure)
 
 ### 2833.3
-- TileLoadCoordinator: treat `coverage().settled()` (all Succeeded **or Failed**)
-  as covered — stop infinite zero-tile re-issue when interactive tiles Failed
-  for the generation (archive gallery stuck on LQIP + tile-coord spam).
-- `TileLodController::viewportSettled` / `ImageItem::tileLodSettled`
-
-### 2833.2
-- Fix: `filmstripSurfaceTick` declares `needSchedule`
-- Quiet idle `BILTOO_TILE_DEBUG` gallery-decode (0,0) samples
-
-### 2833.1 Tool unification
-- Attention on left Tools strip; HUD → Shift+H; Pan keeps H
+- TileLoadCoordinator: settled Failed stops zero-tile re-issue
 
 ### Required thumtoo
-thumtoo-008.1-markdown-cmark-mutex-3e6987f.bundle
+thumtoo-009.2-tile-size-stretch (on 008.1; includes 009.1 jpeg rgb path)
 
-### Note on archive tiles Failed
-If cells stay LQIP with `exact=0 cacheOk=0` after this tip, tiles are **failing**
-in thumtoo (not a host re-issue loop). Check `THUMTOO_DEBUG=1` / prepare tiles
-for the archive; host will not poll Failed keys until viewport/generation bumps.
-
-### Possible next
-- Limited Failed-key retry after store encode (generation bump cooldown)
-- Text Highlighter → Mark selection (design only)
+### Note
+`TILE s=N ERROR` means host Failed the cell. With 009.2 + stretch, store hits
+with drifted w/h succeed; paint maps full bitmap → grid dest.
