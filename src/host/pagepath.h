@@ -28,6 +28,7 @@
 namespace PagePath {
 
 inline constexpr const char kPageMarker[] = "//page:";
+inline constexpr const char kTextForceMarker[] = "//text";
 inline constexpr const char kEpubMarker[] = "//epub:";
 inline constexpr const char kPdfImageMarker[] = "//pdfimage:";
 inline constexpr const char kPdfImagesMarker[] = "//pdfimages";
@@ -55,6 +56,8 @@ QString canonicalSessionPath(const QString &path);
 bool isPdfFile(const QString &path);
 bool isMarkdownFile(const QString &path);
 bool isPlainTextFile(const QString &path);
+/** path//text or path//text//page:N — force MuPDF plain-text open. */
+bool isTextForceRef(const QString &path);
 bool isEpubFile(const QString &path);
 bool isDjvuFile(const QString &path);
 /** True when path has //epub:… but no //page: (layout profile, full book). */

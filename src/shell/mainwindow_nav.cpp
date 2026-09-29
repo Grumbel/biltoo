@@ -62,7 +62,7 @@ QString imageFileDialogFilter()
                "Images, archives, PDF, text, Markdown, EPUB and DjVu "
                "(%1 %2 *.pdf *.txt *.md *.markdown *.epub *.djvu *.djv);;"
                "Images only (%1);;Archives only (%2);;PDF documents (*.pdf);;"
-               "Plain text (*.txt *.text);;"
+               "Plain text / sources (*.txt *.c *.h *.cpp *.py *.rs *.js …);;"
                "Markdown (*.md *.markdown *.mdown *.mkd);;"
                "EPUB books (*.epub);;DjVu documents (*.djvu *.djv);;All Files (*)")
         .arg(images, archives);

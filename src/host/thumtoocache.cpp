@@ -3049,6 +3049,43 @@ QStringList expandPlainTextToPageRefs(const QString &txtPath)
 }
 
 
+QStringList expandTextForceToPageRefs(const QString &pathWithTextPipe)
+{
+    QStringList out;
+#if defined(BILTOO_HAVE_THUMTOO_EXPAND)
+    if (pathWithTextPipe.isEmpty()) {
+        return out;
+    }
+    // Prefer expand_media_uris so //text is handled in thumtoo (magic open).
+    const std::filesystem::path raw(pathWithTextPipe.toStdString());
+    auto uris = thumtoo::expand_media_uris(raw, 512);
+    out.reserve(static_cast<int>(uris.size()));
+    for (const auto &u : uris) {
+        // Convert file://…//text//page:N to biltoo session path form when possible.
+        QString q = QString::fromStdString(u);
+        if (q.startsWith(QLatin1String("file://"))) {
+            const QUrl url(q);
+            // Keep pipe suffix: file:///abs//text//page:1 → need local path form
+            // expand_media_uris emits file:// + //text//page:N
+            const int textIdx = q.indexOf(QLatin1String("//text"));
+            if (textIdx > 0) {
+                QString left = q.left(textIdx);
+                if (left.startsWith(QLatin1String("file://"))) {
+                    const QUrl lu(left);
+                    left = lu.isLocalFile() ? lu.toLocalFile() : left;
+                }
+                q = left + q.mid(textIdx);
+            }
+        }
+        out.append(q);
+    }
+#else
+    Q_UNUSED(pathWithTextPipe);
+#endif
+    return out;
+}
+
+
 QStringList expandPdfToImageRefs(const QString &pdfPath)
 {
     QStringList out;

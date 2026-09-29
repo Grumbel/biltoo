@@ -3,31 +3,21 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Plain text and Markdown support
+# Text and Markdown support
 
-Status: **Markdown + plain text open/expand in biltoo** (2026-09-29). Requires
-thumtoo `PathKind::Markdown` / `PlainText` and MuPDF ≥ 1.28 (`pinMupdf`).
+Requires thumtoo ≥ **354.3** and MuPDF ≥ 1.28.
 
-Related: thumtoo `docs/MARKDOWN.md`.
+## Auto open
 
----
+- **Markdown:** `.md`, `.markdown`, …
+- **Plain text:** `.txt`, `.text`, and common sources/data (`.c`, `.h`, `.cpp`,
+  `.py`, `.rs`, `.json`, …)
 
-## Markdown
+## Force type: `//text`
 
-- Extensions: `.md`, `.markdown`, `.mdown`, `.mkd`
-- `PagePath::isMarkdownFile` → `expandMarkdownToPageRefs` → `file.md//page:N`
+| Path | Effect |
+|------|--------|
+| `foo.xyz//text` | Expand as plain text via MuPDF |
+| `foo.xyz//text//page:2` | Page 2 only |
 
-## Plain text
-
-- Extensions: `.txt`, `.text`
-- `PagePath::isPlainTextFile` → `expandPlainTextToPageRefs` → `file.txt//page:N`
-
-Both use MuPDF’s native document handlers (reflowable page layout at defaults).
-
----
-
-## Non-goals
-
-- Live editing  
-- Opening arbitrary source files (`.py`, …) without a text extension  
-- Full GFM beyond MuPDF
+Use when the extension is unknown or wrong.

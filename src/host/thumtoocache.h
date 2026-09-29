@@ -469,6 +469,8 @@ QStringList expandPdfToPageRefs(const QString &pdfPath);
 QStringList expandMarkdownToPageRefs(const QString &mdPath);
 /** Plain text (.txt) → //page:N (MuPDF). */
 QStringList expandPlainTextToPageRefs(const QString &txtPath);
+/** path//text → pages (MuPDF magic txt). */
+QStringList expandTextForceToPageRefs(const QString &pathWithTextPipe);
 
 /** Expand a PDF into embedded Image XObjects (…//pdfimage:N, native resolution). */
 QStringList expandPdfToImageRefs(const QString &pdfPath);

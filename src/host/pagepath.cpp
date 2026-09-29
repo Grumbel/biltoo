@@ -24,6 +24,11 @@ Ref parse(const QString &path)
     }
     QString left = path.left(pageIdx);
     QString right = path.mid(pageIdx + QLatin1String(kPageMarker).size());
+    // path//text//page:N → strip //text from left
+    const int textIdx = left.indexOf(QLatin1String(kTextForceMarker));
+    if (textIdx >= 0) {
+        left = left.left(textIdx);
+    }
 
     QString layoutParams;
     const int epubIdx = left.indexOf(QLatin1String(kEpubMarker));
@@ -147,14 +152,47 @@ bool isMarkdownFile(const QString &path)
         || name.endsWith(QLatin1String(".mkd"));
 }
 
+bool isTextForceRef(const QString &path)
+{
+    // //text as a pipe (not //texture etc.)
+    const int idx = path.indexOf(QLatin1String(kTextForceMarker));
+    if (idx < 0) {
+        return false;
+    }
+    const int after = idx + int(sizeof("//text") - 1);
+    if (after >= path.size()) {
+        return true;
+    }
+    const QChar c = path.at(after);
+    return c == QLatin1Char('/') || c == QLatin1Char('?') || c == QLatin1Char('#');
+}
+
 bool isPlainTextFile(const QString &path)
 {
-    if (isPageRef(path) || ArchivePath::isArchiveRef(path)) {
+    if (isPageRef(path) || isTextForceRef(path) || ArchivePath::isArchiveRef(path)) {
         return false;
     }
     const QString name = QFileInfo(path).fileName().toLower();
-    return name.endsWith(QLatin1String(".txt"))
-        || name.endsWith(QLatin1String(".text"));
+    static const char *const kExts[] = {
+        ".txt", ".text",
+        ".c", ".h", ".cc", ".hh", ".cpp", ".cxx", ".hpp", ".hxx", ".ipp",
+        ".m", ".mm", ".swift", ".go", ".rs", ".java", ".kt", ".kts", ".scala",
+        ".cs", ".fs", ".fsx",
+        ".py", ".pyi", ".pyw", ".rb", ".pl", ".pm", ".php", ".lua", ".r", ".jl",
+        ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".vue",
+        ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
+        ".sql", ".html", ".htm", ".xml", ".svg",
+        ".json", ".jsonc", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+        ".csv", ".tsv", ".log", ".cmake", ".diff", ".patch",
+        ".tex", ".rst", ".adoc", ".org", ".css", ".scss", ".sass", ".less",
+        ".proto", ".env", ".desktop",
+    };
+    for (const char *e : kExts) {
+        if (name.endsWith(QLatin1String(e))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool isEpubFile(const QString &path)
@@ -176,6 +214,15 @@ QString documentFilePath(const QString &path)
     if (isPageRef(path)) {
         const Ref r = parse(path);
         return r.valid ? r.pdfPath : QString();
+    }
+    if (isTextForceRef(path)) {
+        const int textIdx = path.indexOf(QLatin1String(kTextForceMarker));
+        QString left = path.left(textIdx);
+        if (left.startsWith(QLatin1String("file:"))) {
+            const QUrl url(left);
+            left = url.isLocalFile() ? url.toLocalFile() : left;
+        }
+        return left;
     }
     if (isPdfImageRef(path)) {
         const int idx = path.indexOf(QLatin1String(kPdfImageMarker));
