@@ -2,22 +2,20 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2817.1-attention-exits-on-canvas-tool on 021b919 (2816.5 filmstrip).
+**Tip:** biltoo-2818.1-tile-jpeg-decode-pool on 2817.1 / origin+attention.
+
+### 2818.1 Tile decode batching (host)
+- JPEG→rgba for grid tiles uses a dedicated QThreadPool (max 2), not the
+  global pool — Gallery multi-cell completions no longer spawn one thread each
+- Requires **thumtoo-006** (`request_tiles` one batch job)
 
 ### 2817.1 Tool unification (Attention)
-- `onCanvasToolTriggered` exits Attention mode (was only cleared on crop enter / mode switch)
-- Entering Attention clears active annotation tool + cancels crop (chrome resync)
-- Docs: TOOL_UNIFICATION.md Attention contract + open items (fold into radio, H clash)
+- Canvas tool trigger exits Attention; enter clears annot tool
 
-### Prior (2816.5 Filmstrip)
-- Warm visible rows: ImageCache + PreferCache/TileSynth only
-- Surface tick 200ms awaiting / 1500ms idle
-
-### Still open (tool unification)
-- Text Highlighter vs Mark selection (design only — ANNOTATION_OVERLAY §14)
-- Optional: fold Attention into Exclusive radio
-- Shortcut: Pan and HUD both claim `H`
-- Workspace free rotation/shear testing; Gallery rubber-band shapes
+### Still open (tile unification)
+- PathRaster / PreferCache vs TileLoadCoordinator ownership polish
+- Filmstrip cold path still uses makeThumbnail pool (warm is PreferCache)
+- DjVu/EPUB multi-cell batch encode still miss→retry in thumtoo-006
 
 ### Required thumtoo
-thumtoo-005-no-interactive-tile-batch-551a360.bundle
+thumtoo-006.1-request-tiles-batch-job-3e6987f.bundle

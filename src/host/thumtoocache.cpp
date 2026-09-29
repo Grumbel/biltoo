@@ -2859,6 +2859,15 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     // there — a warm prepare --tiles album floods the GUI with decode work and
     // TileLoadCoordinator::tick reports multi-second budgets. Decode on the
     // pool, then deliver rgba8 on the GUI.
+    // JPEG→rgba decode is off-GUI, but must not fan out one global-pool job
+    // per cell (Gallery viewport can be 100+ cells). A small dedicated pool
+    // caps concurrent tile JPEG decodes while thumtoo workers stay free.
+    static QThreadPool *tileJpegPool = []() {
+        auto *p = new QThreadPool;
+        p->setMaxThreadCount(2);
+        p->setObjectName(QStringLiteral("biltoo-tile-jpeg"));
+        return p;
+    }();
     c->request_tiles(
         uri, std::move(tc),
         [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
@@ -2875,7 +2884,7 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                 return;
             }
             auto blob = std::make_shared<thumtoo::TileBlob>(std::move(*tile));
-            QThreadPool::globalInstance()->start(
+            tileJpegPool->start(
                 [on_cell, index, blob]() {
                     auto bm = tilelod::decode_tile_payload(
                         blob->width, blob->height, blob->codec, blob->bytes);
