@@ -84,6 +84,7 @@ private:
     ImageItem *itemForDraftSid() const;
     QString pathForSid(SessionImageId sid) const;
     /** Committed page objects (+ optional select chrome) for one item. */
+    void paintDraftChrome(QPainter &painter, ImageItem *item);
     void paintItemAnnotations(QPainter &painter, ImageItem *item,
                               bool selectionChrome);
     SessionImageId targetSid(ImageItem *item) const;

@@ -433,92 +433,103 @@ void AnnotationController::paintItemAnnotations(QPainter &painter, ImageItem *it
     }
 }
 
+void AnnotationController::paintDraftChrome(QPainter &painter, ImageItem *item)
+{
+    if (!m_drawing || !item || !m_view || m_draftSid == kInvalidSessionImageId) {
+        return;
+    }
+    if (targetSid(item) != m_draftSid) {
+        return;
+    }
+    if ((m_tool == Annotation::Tool::FreehandHighlighter
+         || m_tool == Annotation::Tool::Pen)
+        && !m_draftPoints.isEmpty() && m_draftBounds.isValid()
+        && m_draftSourceSize.isValid()) {
+        Annotation::Object draft;
+        if (m_tool == Annotation::Tool::Pen) {
+            draft.kind = Annotation::Kind::InkStroke;
+            draft.blend = Annotation::Blend::SourceOver;
+        } else {
+            draft.kind = Annotation::Kind::HighlighterStroke;
+            draft.blend = Annotation::Blend::Multiply;
+        }
+        draft.color = m_color;
+        draft.width = m_width;
+        draft.points = m_draftPoints;
+        AnnotationPainter::paintObject(painter, m_view, item, draft, m_draftBounds,
+                                       m_draftYUp, m_draftSourceSize);
+        return;
+    }
+    if ((m_tool == Annotation::Tool::TextHighlighter
+         || m_tool == Annotation::Tool::Rect
+         || m_tool == Annotation::Tool::Ellipse
+         || m_tool == Annotation::Tool::Line)
+        && (m_tool == Annotation::Tool::Line || !m_rubberView.isEmpty())) {
+        painter.save();
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        if (m_tool == Annotation::Tool::Line) {
+            QPen pen(m_color);
+            pen.setWidthF(0);
+            pen.setCosmetic(true);
+            painter.setPen(pen);
+            painter.drawLine(m_view->mapToScene(m_rubberOriginView),
+                             m_view->mapToScene(m_shapeEndView));
+        } else {
+            const QRectF sceneRubber =
+                m_view->mapToScene(m_rubberView).boundingRect();
+            if (m_tool == Annotation::Tool::TextHighlighter) {
+                QColor c = m_color;
+                c.setAlpha(80);
+                painter.fillRect(sceneRubber, c);
+                painter.setPen(QPen(m_color, 0, Qt::DashLine));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRect(sceneRubber);
+            } else {
+                QPen pen(m_color);
+                pen.setWidthF(0);
+                pen.setCosmetic(true);
+                painter.setPen(pen);
+                painter.setBrush(Qt::NoBrush);
+                if (m_tool == Annotation::Tool::Ellipse) {
+                    painter.drawEllipse(sceneRubber);
+                } else {
+                    painter.drawRect(sceneRubber);
+                }
+            }
+        }
+        painter.restore();
+    }
+}
+
 void AnnotationController::paintOverlay(QPainter &painter)
 {
     if (!m_view || !m_session.isVisible()) {
         return;
     }
 
-    // Image mode: primary page + draft/selection chrome (tools are Image-only).
     if (m_view->isImageMode()) {
         ImageItem *item = targetItem();
         if (!item) {
             return;
         }
-        const SessionImageId sid = targetSid(item);
         paintItemAnnotations(painter, item, true);
-
-        if (m_drawing && m_draftSid == sid) {
-        if ((m_tool == Annotation::Tool::FreehandHighlighter
-             || m_tool == Annotation::Tool::Pen)
-            && !m_draftPoints.isEmpty() && m_draftBounds.isValid()
-            && m_draftSourceSize.isValid()) {
-            Annotation::Object draft;
-            if (m_tool == Annotation::Tool::Pen) {
-                draft.kind = Annotation::Kind::InkStroke;
-                draft.blend = Annotation::Blend::SourceOver;
-            } else {
-                draft.kind = Annotation::Kind::HighlighterStroke;
-                draft.blend = Annotation::Blend::Multiply;
-            }
-            draft.color = m_color;
-            draft.width = m_width;
-            draft.points = m_draftPoints;
-            AnnotationPainter::paintObject(painter, m_view, item, draft,
-                        m_draftBounds, m_draftYUp, m_draftSourceSize);
-        } else if ((m_tool == Annotation::Tool::TextHighlighter
-                    || m_tool == Annotation::Tool::Rect
-                    || m_tool == Annotation::Tool::Ellipse
-                    || m_tool == Annotation::Tool::Line)
-                   && (m_tool == Annotation::Tool::Line
-                       || !m_rubberView.isEmpty())) {
-            painter.save();
-            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            if (m_tool == Annotation::Tool::Line) {
-                QPen pen(m_color);
-                pen.setWidthF(0);
-                pen.setCosmetic(true);
-                painter.setPen(pen);
-                painter.drawLine(m_view->mapToScene(m_rubberOriginView),
-                                 m_view->mapToScene(m_shapeEndView));
-            } else {
-                const QRectF sceneRubber =
-                    m_view->mapToScene(m_rubberView).boundingRect();
-                if (m_tool == Annotation::Tool::TextHighlighter) {
-                    QColor c = m_color;
-                    c.setAlpha(80);
-                    painter.fillRect(sceneRubber, c);
-                    painter.setPen(QPen(m_color, 0, Qt::DashLine));
-                    painter.setBrush(Qt::NoBrush);
-                    painter.drawRect(sceneRubber);
-                } else {
-                    QPen pen(m_color);
-                    pen.setWidthF(0);
-                    pen.setCosmetic(true);
-                    painter.setPen(pen);
-                    painter.setBrush(Qt::NoBrush);
-                    if (m_tool == Annotation::Tool::Ellipse) {
-                        painter.drawEllipse(sceneRubber);
-                    } else {
-                        painter.drawRect(sceneRubber);
-                    }
-                }
-            }
-            painter.restore();
-        }
-        }
+        paintDraftChrome(painter, item);
         return;
     }
 
-    // Gallery / Workspace: committed annotations on every live tile.
-    // paintItemAnnotations hydrates path-keyed durable marks first — do not
-    // skip on missing in-memory page (that deferred load until Image mode).
-    // Tools stay Image-mode only; this is presentation only.
+    // Gallery / Workspace: committed marks on every tile; selection + in-progress
+    // draft chrome on the draft sid tile (tools may be active in Gallery).
     for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->sessionId() == kInvalidSessionImageId) {
             continue;
         }
-        paintItemAnnotations(painter, item, false);
+        const bool chrome = (item->sessionId() == m_draftSid);
+        paintItemAnnotations(painter, item, chrome);
+    }
+    if (m_drawing) {
+        if (ImageItem *di = itemForDraftSid()) {
+            paintDraftChrome(painter, di);
+        }
     }
 }
 
@@ -528,7 +539,16 @@ void AnnotationController::recordPageSourceKey(SessionImageId sid, const QRectF 
     if (!m_view || sid == kInvalidSessionImageId) {
         return;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = nullptr;
+    for (ImageItem *it : m_view->liveItems()) {
+        if (it && it->sessionId() == sid) {
+            item = it;
+            break;
+        }
+    }
+    if (!item) {
+        item = targetItem();
+    }
     if (!item) {
         return;
     }
@@ -1607,8 +1627,10 @@ void AnnotationController::selectAtPagePoint(const QPointF &pagePt,
 
 void AnnotationController::selectAllCurrentPage()
 {
-    ImageItem *item = targetItem();
-    const SessionImageId sid = targetSid(item);
+    SessionImageId sid = m_draftSid;
+    if (sid == kInvalidSessionImageId) {
+        sid = targetSid(targetItem());
+    }
     if (sid == kInvalidSessionImageId) {
         return;
     }
@@ -1629,8 +1651,10 @@ void AnnotationController::deleteSelected()
     if (m_selectedIds.isEmpty() || !m_view) {
         return;
     }
-    ImageItem *item = targetItem();
-    const SessionImageId sid = targetSid(item);
+    SessionImageId sid = m_draftSid;
+    if (sid == kInvalidSessionImageId) {
+        sid = targetSid(targetItem());
+    }
     if (sid == kInvalidSessionImageId) {
         return;
     }
