@@ -2,18 +2,19 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2815.4-stack-linear (base 2085c07).
+**Tip:** biltoo-2815.5-vips-concurrency-1 (base 2085c07).
 
-### 2815.4
-- Linear tip on origin stack; supersedes divergent sibling bundle e1ae398
+### 2815.5
+- ImageLoader::init: vips_concurrency_set(1) right after VIPS_INIT
+- Stops default libvips thread-pool explosion before thumtoo image_library_init
 
-### 2815.3
-- formatLoadErrorMessage: never QFileInfo::exists — detail only from mupdf_last_error()
-- Dropped allowFilesystemStat; empty Open / expand reports no longer stat
+### Prior
+- 2815.4 stack linear docs
+- 2815.3 formatLoadErrorMessage never exists
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2815.4-stack-linear-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2815.5-vips-concurrency-1-2085c07.bundle HEAD
 ```
 
-Fast-forward from any ancestor of this tip (including 1149901 / 1cb81855).
+Fast-forward from origin tip 19816557 / 1cb81855 / 1149901.
