@@ -629,7 +629,6 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     return;
                 }
                 const int decodeSize = filmstripDecodeEdge();
-                const quint64 gen = m_generation.load();
                 for (int i = 0; i < m_files.size(); ++i) {
                     if (m_files.at(i) != path) {
                         continue;
@@ -1979,7 +1978,6 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
     if (m_files.isEmpty() || m_visibleLoadsSuspended) {
         return;
     }
-    const quint64 gen = m_generation.load();
     // Decode at (or just above) visual demand. Soft ≤512 is a placeholder;
     // overview covers up to kBatchOverviewEdge via thumtoo.
     const int decodeSize = filmstripDecodeEdge();
