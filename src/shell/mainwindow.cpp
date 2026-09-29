@@ -6211,11 +6211,12 @@ void MainWindow::cancelOcrBatch()
 
 void MainWindow::ocrCurrentPage()
 {
-    if (m_ocrPanel && m_ocrDock && !dockIsOpen(m_ocrDock)) {
-        m_ocrDock->open();
+    // Toolbar / View → OCR This Page: open the panel only. Run is the panel's
+    // "Run OCR" button (runOcrFromPanel → startOcrCurrentPage / document).
+    if (m_ocrDock) {
         m_ocrDock->open();
     }
-    startOcrCurrentPage();
+    updateOcrPanel();
 }
 
 void MainWindow::runOcrFromPanel()

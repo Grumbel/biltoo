@@ -510,12 +510,11 @@ void MainWindow::createActions()
 
     m_ocrPageAct = new QAction(tr("OCR &This Page"), this);
     m_ocrPageAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
-    m_ocrPageAct->setStatusTip(
-        tr("Run OCR on the current document page and use the result for Find/select"));
+    m_ocrPageAct->setStatusTip(tr("Open the OCR panel for the current page"));
     m_ocrPageAct->setWhatsThis(tr(
-        "<p>Rasterize the current page and run Tesseract OCR. The OCR text layer "
-        "is stored separately from native PDF text (dual slot). Opens the OCR "
-        "layer for search and selection on this page.</p>"));
+        "<p>Opens the <b>OCR</b> panel. Use <b>Run OCR</b> in the panel to "
+        "rasterize the page and run Tesseract. The OCR text layer is stored "
+        "separately from native PDF text (dual slot) for Find and selection.</p>"));
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
     m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
