@@ -192,3 +192,14 @@ Crop and orient bakes are keyed by **SessionImageId**, not path.
 
 Override image on crop Apply must be the **crop bake** pixel size, not the full
 frame (see CROP_MODE.md — clear FullSource before SoftPreview attach).
+
+## Pixels vs Gallery tile plan
+
+Filmstrip cells are **QListWidget icons** (`ThumbPixmapRole`): PreferCache /
+TileSynth whole-frame samples prepared to `filmstripDecodeEdge()`, not a
+`TileSession` grid. **Tile plan overlay** therefore never paints on the strip —
+that overlay is ImageItem / Gallery tile-LOD only.
+
+When the strip **grows**, `scheduleDebouncedThumbReload` climbs PreferCache.
+When it **shrinks**, `rebakeIconsForCurrentDecodeEdge` re-prepares icons at the
+new edge so paint does not downsample a large pixmap into a small cell.

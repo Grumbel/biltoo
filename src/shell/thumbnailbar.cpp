@@ -904,8 +904,15 @@ void ThumbnailBar::setThumbSize(int pixels)
     applyThumbMetrics();
     refreshAllItemGeometry();
     restoreScrollAnchor(anchor);
-    if (thumbDecodePixels() > m_decodedSize && !m_files.isEmpty()) {
+    if (m_files.isEmpty()) {
+        return;
+    }
+    // Sharper need → PreferCache climb. Smaller strip → rebake icons at the
+    // new edge (do not keep painting a 512px pixmap into a 48px cell).
+    if (thumbDecodePixels() > m_decodedSize) {
         scheduleDebouncedThumbReload();
+    } else if (filmstripDecodeEdge() < m_decodedSize) {
+        rebakeIconsForCurrentDecodeEdge();
     }
 }
 
@@ -976,6 +983,54 @@ void ThumbnailBar::restoreScrollAnchor(const ScrollAnchor &anchor)
         if (delta != 0) {
             bar->setValue(bar->value() + delta);
         }
+    }
+}
+
+void ThumbnailBar::rebakeIconsForCurrentDecodeEdge()
+{
+    const int edge = filmstripDecodeEdge();
+    m_decodedSize = edge;
+    for (int i = 0; i < m_files.size(); ++i) {
+        QListWidgetItem *it = item(i);
+        if (!it) {
+            continue;
+        }
+        const int have =
+            it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+        if (have <= edge) {
+            continue;
+        }
+        // Prefer host sample (unoriented); fall back to current icon pixels.
+        const QString path = (i < m_files.size()) ? m_files.at(i) : QString();
+        QImage src;
+        if (!path.isEmpty()) {
+            src = ImageCache::get(path, edge);
+            if (src.isNull()) {
+                src = ImageCache::get(path);
+            }
+        }
+        if (src.isNull()) {
+            const QPixmap pm =
+                qvariant_cast<QPixmap>(it->data(ThumbnailDelegate::ThumbPixmapRole));
+            if (!pm.isNull()) {
+                src = pm.toImage();
+            }
+        }
+        if (src.isNull()) {
+            continue;
+        }
+        SessionImageId rowSid = kInvalidSessionImageId;
+        if (i < m_sessionIds.size()) {
+            rowSid = m_sessionIds.at(i);
+        }
+        QImage oriented = applyStoredAppearanceToThumb(path, src, rowSid);
+        const QImage thumb = prepareThumbnailFromImage(oriented, edge);
+        if (!thumb.isNull()) {
+            setThumbnailIcon(i, thumb);
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
     }
 }
 
@@ -1151,9 +1206,12 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     const int incomingEdge = qMax(image.width(), image.height());
     const int haveEdge = it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
     const bool loaded = it->data(ThumbnailDelegate::ThumbLoadedRole).toBool();
-    // No-op if already settled at this edge (stops debug spam + layout thrash).
-    // Override installs always replace — crop changes aspect at the same edge.
+    const int needEdge = filmstripDecodeEdge();
+    // Upward-only while the strip still needs more pixels. Once haveEdge is
+    // above need (user shrank the strip), allow a smaller install so paint
+    // does not downsample a large pixmap every frame.
     if (loaded && haveEdge >= incomingEdge && haveEdge > 0
+        && haveEdge <= needEdge
         && !m_allowOverrideIconInstall) {
         return;
     }

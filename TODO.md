@@ -2,11 +2,12 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2826.2-attention-settool on 2826.1 stack.
+**Tip:** biltoo-2827.1-filmstrip-shrink-rebake on 2826.2 stack.
 
-### 2826.2
-- Attention enter: `setTool(ImageView::Tool::Select)` (not setCurrentTool)
+### 2827.1 Filmstrip shrink
+- Rebake icons at `filmstripDecodeEdge` when strip shrinks (no large→small paint downsample)
+- `setThumbnailIcon` allows smaller install when haveEdge > need
+- Docs: strip is QPixmap/TileSynth, not TileSession — no tile plan overlay
 
-### 2826.1 Fit/Fill first-press refit
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle

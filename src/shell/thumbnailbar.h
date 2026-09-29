@@ -337,6 +337,8 @@ private:
     void restoreScrollAnchor(const ScrollAnchor &anchor);
     /** Debounced soft reload after thumbSize grow (avoid wipe on every drag pixel). */
     void scheduleDebouncedThumbReload();
+    /** Strip shrunk: re-prepare icons at filmstripDecodeEdge from ImageCache. */
+    void rebakeIconsForCurrentDecodeEdge();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
     QPoint dropPosInViewport(const QPoint &widgetPos) const;
