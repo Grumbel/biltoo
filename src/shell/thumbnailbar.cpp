@@ -1379,7 +1379,10 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
             (void)ThumtooCache::scheduleTileSynthOrPyramid(pathCopy, edgeCopy);
             return;
         }
-        (void)ThumtooCache::scheduleTilePyramid(pathCopy);
+        // Cold filmstrip: probe + LQIP path only. FocusFull here decoded every
+        // archive JPEG at full res and kept cores at 100% after Gallery settle.
+        (void)edgeCopy;
+        ThumtooCache::scheduleProbe(pathCopy);
     });
 }
 

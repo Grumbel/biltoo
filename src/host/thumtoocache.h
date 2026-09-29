@@ -317,7 +317,8 @@ bool scheduleTilePyramid(const QString &path);
 
 /**
  * Product underlay climb: PreferCache TileSynth when durable tiles are known;
- * otherwise scheduleTilePyramid only. Never soft PreferCache encode.
+ * otherwise probe only (never FocusFull). Use scheduleTilePyramid for
+ * explicit durable pyramid builds (Image primary / prepare).
  * @return true if TileSynth or pyramid work was queued / already pending.
  */
 bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge);

@@ -2394,7 +2394,13 @@ bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
         return scheduleDisplayPixels(path, maxEdge)
             || isPixelsPending(path, maxEdge);
     }
-    return scheduleTilePyramid(path);
+    // Cold: size probe only — never FocusFull / tile pyramid.
+    // Filmstrip + Gallery overview used to scheduleTilePyramid for every cold
+    // archive member. Each FocusFull fully decodes the JPEG from the zip
+    // (scale-0 base), pegging CPU while the UI looked "settled" (MetArt-style
+    // albums: hundreds of members × full decode). Durable pyramids belong to
+    // Image-mode primary / explicit prepare (call scheduleTilePyramid).
+    return false;
 }
 
 bool scheduleSoftPixels(const QString &path, int maxEdge)

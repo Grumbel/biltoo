@@ -94,7 +94,8 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
             continue;
         }
         if (!ThumtooCache::hasDurableTilesKnown(path)) {
-            (void)ThumtooCache::scheduleTilePyramid(path);
+            // Do not FocusFull neighbors — that decoded full archive JPEGs off-screen.
+            ThumtooCache::scheduleProbe(path);
             continue;
         }
         double dpc = kPrefetchMaxDpc;

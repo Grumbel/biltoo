@@ -2,23 +2,20 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2815.9-performance-panel-ui (base 2085c07).
+**Tip:** biltoo-2815.10-no-focusfull-overview (base 2085c07).
 
-### 2815.9
-- Performance panel: metric cards, status badge (Settled/Working/Hot/Idle tick)
-- FocusFull card flags >1 (needs thumtoo focus-full-no-busy-wait)
-- Cleaner deltas + recent schedule log
+### 2815.10 — true settle CPU root cause
+- scheduleTileSynthOrPyramid no longer calls scheduleTilePyramid on cold paths
+- Filmstrip cold path: scheduleProbe only (was FocusFull per archive member)
+- Neighbor prefetch: probe only, not FocusFull
+- FocusFull fully decodes each archive JPEG at scale 0; overview was scheduling
+  that for every MetArt-style member → 100% CPU after UI looked settled
 
-### thumtoo (required for settle CPU)
-- thumtoo-focus-full-no-busy-wait-551a360.bundle — FocusFull wait, no archive pyramid coalesce
-
-### Prior
-- 2815.8 Gallery→Image paint freeze
-- 2815.7 tile LOD settle
-- 2815.6 Performance panel
-- 2815.5 vips concurrency 1
+### Still useful
+- thumtoo-focus-full-no-busy-wait (worker wait, no archive pyramid coalesce)
+- Rebuild thumtoo + biltoo together
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2815.9-performance-panel-ui-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2815.10-no-focusfull-overview-2085c07.bundle HEAD
 ```
