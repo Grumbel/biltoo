@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include <QAbstractSpinBox>
+#include <QTextEdit>
+#include <QPlainTextEdit>
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
 #include <QtMath>
@@ -587,6 +590,37 @@ void MainWindow::updateHelpPanelFromWidget(QWidget *widget, const QPoint &localP
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    // Smooth hold-zoom for -/+/ = when not typing in a line edit / spin box.
+    if (event && (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+        if (!ke->isAutoRepeat()) {
+            QWidget *fw = QApplication::focusWidget();
+            const bool typing = fw
+                && (qobject_cast<QLineEdit *>(fw) || qobject_cast<QAbstractSpinBox *>(fw)
+                    || qobject_cast<QTextEdit *>(fw) || qobject_cast<QPlainTextEdit *>(fw));
+            if (!typing && !QApplication::activePopupWidget()
+                && !(ke->modifiers()
+                     & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+                const int key = ke->key();
+                const bool zoomInKey = (key == Qt::Key_Plus || key == Qt::Key_Equal);
+                const bool zoomOutKey = (key == Qt::Key_Minus);
+                if (event->type() == QEvent::KeyPress) {
+                    if (zoomInKey) {
+                        startToolbarZoomHold(+1);
+                        return true;
+                    }
+                    if (zoomOutKey) {
+                        startToolbarZoomHold(-1);
+                        return true;
+                    }
+                } else if (zoomInKey || zoomOutKey) {
+                    stopToolbarZoomHold();
+                    return true;
+                }
+            }
+        }
+    }
+
     // Filmstrip dock moved/resized by KD → re-detect edge for H/V orientation.
     if (m_thumbnailDock && watched == m_thumbnailDock
         && (event->type() == QEvent::Move || event->type() == QEvent::Resize
