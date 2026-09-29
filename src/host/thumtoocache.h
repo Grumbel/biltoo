@@ -270,6 +270,8 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 bool schedulePixels(const QString &path, int maxEdge);
 /** True if soft-band PreferCache for path#edge is queued or decoding. */
 bool isPixelsPending(const QString &path, int maxEdge);
+/** True when PreferCache already finished for this path#edge (hit or miss). */
+bool isPixelsSettled(const QString &path, int maxEdge);
 
 /** PreferCache raster up to kImageLadderEdge (8192 interim); host callback via ladderReady. */
 bool scheduleDisplayPixels(const QString &path, int maxEdge);

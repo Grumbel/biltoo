@@ -1422,8 +1422,8 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
                              PathRasterService::ClimbPolicy::TileDisplay);
         return;
     }
-    // Fallback when no service wired (tests / early init).
-    ThumtooCache::forgetPixelsSettled(path, edge);
+    // Fallback when no service wired (tests / early init). Do not
+    // forgetPixelsSettled here — that re-armed PreferCache every surface tick.
     if (ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
@@ -1939,16 +1939,12 @@ void ThumbnailBar::filmstripSurfaceTick()
             m_thumbLoadScheduled.remove(i);
             continue;
         }
-        // LQIP-only underlay is not terminal — keep driving tiles until strip edge.
-        // Always re-arm TileSynth/pyramid for short visible cells (awaitLadder used
-        // to stick after pyramid with no PreferCache).
-        // If PreferCache already settled short, forget so the next schedule is not a no-op.
+        // LQIP-only underlay is not terminal — PathRaster climbs PreferCache.
+        // Do NOT forgetPixelsSettled every tick: that re-armed PreferCache forever
+        // (settle → clear → schedule → settle) for cells that plateau short of
+        // decodeSize. durableTilesReady still forgets once when tiles appear.
         if (climbPending
-            && DisplayQuality::hostLongEdge(path) < decodeSize
-            && ThumtooCache::hasDurableTilesKnown(path)) {
-            ThumtooCache::forgetPixelsSettled(path, decodeSize);
-            // Allow DisplaySurface to ScheduleClimb again; stuck climbPending +
-            // evaluate None left cells on LQIP until selection forced a reload.
+            && DisplayQuality::hostLongEdge(path) < decodeSize) {
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
         }

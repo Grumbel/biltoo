@@ -1804,6 +1804,22 @@ bool isPixelsPending(const QString &path, int maxEdge)
         || g_pixelsInflight.contains(dispKey);
 }
 
+bool isPixelsSettled(const QString &path, int maxEdge)
+{
+    if (maxEdge <= 0 || path.isEmpty()) {
+        return false;
+    }
+    init();
+    const QString softKey = path + QLatin1Char('#') + QString::number(maxEdge);
+    const QString ovKey =
+        path + QLatin1Char('#') + QStringLiteral("ov") + QString::number(maxEdge);
+    const QString dispKey =
+        path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
+    std::lock_guard lock(g_mu);
+    return g_pixelsSettled.contains(softKey) || g_pixelsSettled.contains(ovKey)
+        || g_pixelsSettled.contains(dispKey);
+}
+
 bool scheduleDisplayPixels(const QString &path, int maxEdge)
 {
     if (maxEdge <= 0 || isUnsupported(path)) {
@@ -2398,24 +2414,25 @@ bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
     if (path.isEmpty() || maxEdge <= 0) {
         return false;
     }
-    BackgroundWorkLog::noteTile(
-        QStringLiteral("synth edge=%1  %2")
-            .arg(maxEdge)
-            .arg(QFileInfo(path).fileName()));
     if (!cachedSize(path).isValid()) {
         scheduleProbe(path);
     }
-    if (hasDurableTilesKnown(path)) {
-        return scheduleDisplayPixels(path, maxEdge)
-            || isPixelsPending(path, maxEdge);
+    if (!hasDurableTilesKnown(path)) {
+        // Cold: size probe only — never FocusFull / tile pyramid.
+        // Filmstrip + Gallery overview used to scheduleTilePyramid for every cold
+        // archive member. Durable pyramids belong to Image-mode primary / explicit
+        // prepare (call scheduleTilePyramid).
+        return false;
     }
-    // Cold: size probe only — never FocusFull / tile pyramid.
-    // Filmstrip + Gallery overview used to scheduleTilePyramid for every cold
-    // archive member. Each FocusFull fully decodes the JPEG from the zip
-    // (scale-0 base), pegging CPU while the UI looked "settled" (MetArt-style
-    // albums: hundreds of members × full decode). Durable pyramids belong to
-    // Image-mode primary / explicit prepare (call scheduleTilePyramid).
-    return false;
+    // Already finished PreferCache for this edge (hit or miss) — not a new job.
+    if (isPixelsSettled(path, maxEdge) && !isPixelsPending(path, maxEdge)) {
+        return false;
+    }
+    if (isPixelsPending(path, maxEdge)) {
+        return true;
+    }
+    // scheduleDisplayPixels notes PreferCache only when it actually queues.
+    return scheduleDisplayPixels(path, maxEdge);
 }
 
 bool scheduleSoftPixels(const QString &path, int maxEdge)

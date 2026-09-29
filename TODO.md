@@ -2,13 +2,13 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2828.1-annot-screen-handles on 2827.1 stack.
+**Tip:** biltoo-2829.1-prefercache-reschedule-loop on 2828.1 stack.
 
-### 2828.1 Annotation chrome resolution
-- Selection handles sized in device px (scene via view scale × DPR)
-- Sticky note text drawn in device-pixel space (readable in Gallery)
-- Handle hit radius matches screen size (page units from view scale)
-- Rounded corners / dog-ear use device-px sizes
+### 2829.1 PreferCache reschedule loop
+- isPixelsSettled API
+- scheduleTileSynthOrPyramid does not note/schedule when settled
+- PathRaster: preferGaveUp when Prefer settled short of need
+- Filmstrip surface tick no longer forgetPixelsSettled every 1.5s
 
 ### Required thumtoo
-thumtoo-007.1-materialize-tile-cell-3e6987f.bundle
+thumtoo-008.1-markdown-cmark-mutex-3e6987f.bundle

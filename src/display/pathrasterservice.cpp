@@ -235,9 +235,18 @@ void PathRasterService::pump(const QString &path, Entry &entry)
         if (edge <= 0) {
             return false;
         }
+        if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
+            return true;
+        }
+        if (ThumtooCache::isPixelsPending(path, edge)) {
+            return true;
+        }
+        // PreferCache already answered this edge — do not re-arm every tick.
+        if (ThumtooCache::isPixelsSettled(path, edge)) {
+            return false;
+        }
         if (ThumtooCache::hasDurableTilesKnown(path)) {
-            return ThumtooCache::scheduleTileSynthOrPyramid(path, edge)
-                || ThumtooCache::isPixelsPending(path, edge);
+            return ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         }
         ThumtooCache::scheduleProbe(path);
         return ThumtooCache::scheduleDisplayPixels(path, edge)
@@ -249,6 +258,10 @@ void PathRasterService::pump(const QString &path, Entry &entry)
                                            : ThumtooCache::kGalleryLadderEdge;
         if (schedulePrefer(path, edge)) {
             accepted.scheduleBand = true;
+        } else if (ThumtooCache::isPixelsSettled(path, edge)
+                   && ImageCache::longEdge(ImageCache::get(path)) < edge) {
+            // Soft/display settled short of need — advance SM past Prefer.
+            m.state().preferGaveUp = true;
         }
     }
     if (plan.scheduleDisplay) {
@@ -256,6 +269,9 @@ void PathRasterService::pump(const QString &path, Entry &entry)
         if (schedulePrefer(path, edge)) {
             accepted.scheduleDisplay = true;
             accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
+        } else if (ThumtooCache::isPixelsSettled(path, edge)
+                   && ImageCache::longEdge(ImageCache::get(path)) < edge) {
+            m.state().preferGaveUp = true;
         }
     }
     // plan.scheduleTiles: interactive grid tiles are TileLoadCoordinator's job.
