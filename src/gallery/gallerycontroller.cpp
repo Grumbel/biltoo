@@ -2278,22 +2278,9 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             }
             under = ImageCache::matchNativeAspect(under, native);
             args.underlay = under;
+            args.path = slot.path;
             if (tilelod::prepare_and_paint_cover(painter, args)) {
                 drewTiles = true;
-                if (tilePlanDebugOverlayEnabled() && lod.session()) {
-                    painter->save();
-                    painter->translate(r.topLeft());
-                    const double sx = r.width() / double(qMax(1, native.width()));
-                    const double sy = r.height() / double(qMax(1, native.height()));
-                    painter->scale(sx, sy);
-                    const tilelod::DrawPlan plan = lod.session()->draw_plan();
-                    paintTilePlanDebugOverlay(
-                        painter, lod.session(), plan,
-                        QRectF(0, 0, native.width(), native.height()),
-                        QPointF(), native, ContentXform::Value{},
-                        false, slot.path);
-                    painter->restore();
-                }
             }
         }
 

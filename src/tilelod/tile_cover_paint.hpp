@@ -15,6 +15,7 @@
 #include <QPainter>
 #include <QRectF>
 #include <QSize>
+#include <QString>
 
 namespace tilelod {
 
@@ -23,6 +24,7 @@ struct CoverPaintArgs {
   QSize native;                 ///< content pixel size (scale 0)
   QRectF dest;                  ///< device/view destination rect
   QImage underlay;              ///< LQIP / soft under holes
+  QString path;                 ///< optional; defaults to lod->path() for overlay
   int tick_budget = 24;         ///< issue budget per prepare
   int min_scale = 0;            ///< Image/Slideshow: 0 so density can climb
   bool tick = true;             ///< false when host already ticked this frame

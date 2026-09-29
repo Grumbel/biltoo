@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tilelod/tile_cover_paint.hpp"
+#include "tilelod/tile_plan_debug_overlay.hpp"
+
+#include "content/contentxform.h"
 
 #include <algorithm>
 
@@ -45,6 +48,18 @@ bool prepare_and_paint_cover(QPainter *painter, CoverPaintArgs const& args)
       args.dest.height() / static_cast<double>(std::max(1, args.native.height()));
   painter->scale(sx, sy);
   const bool drew = args.lod->paint(painter, args.underlay);
+  // Shared plan overlay for every cover client (Gallery virtual, Slideshow,
+  // filmstrip) — same HUD as paint_tiles_display when debugOverlay is set.
+  if (tilePlanDebugOverlayEnabled() && args.lod->session()) {
+    const DrawPlan plan = args.lod->session()->draw_plan();
+    const QString path =
+        args.path.isEmpty() ? args.lod->path() : args.path;
+    paintTilePlanDebugOverlay(
+        painter, args.lod->session(), plan,
+        QRectF(0, 0, args.native.width(), args.native.height()),
+        QPointF(), args.native, ContentXform::Value{},
+        false, path);
+  }
   painter->restore();
   return drew;
 }
