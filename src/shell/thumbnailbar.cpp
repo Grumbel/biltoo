@@ -11,6 +11,7 @@
 #include "host/pagepath.h"
 #include "display/imagecache.h"
 #include "tilelod/tile_cover_paint.hpp"
+#include "tilelod/tile_plan_debug_overlay.hpp"
 #include "tilelod/tile_lod_controller.hpp"
 #include "host/imageloader.h"
 #include "host/thumtoocache.h"
@@ -284,6 +285,26 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                     args.tick = false; // surface tick issues tiles
                     args.min_scale = 0;
                     drewTiles = tilelod::prepare_and_paint_cover(painter, args);
+                    // Same plan overlay as Gallery virtual slots / ImageItem.
+                    if (tilePlanDebugOverlayEnabled() && lod->session()) {
+                        painter->save();
+                        painter->translate(contentRect.topLeft());
+                        const double sx =
+                            contentRect.width()
+                            / double(qMax(1, native.width()));
+                        const double sy =
+                            contentRect.height()
+                            / double(qMax(1, native.height()));
+                        painter->scale(sx, sy);
+                        const tilelod::DrawPlan plan =
+                            lod->session()->draw_plan();
+                        paintTilePlanDebugOverlay(
+                            painter, lod->session(), plan,
+                            QRectF(0, 0, native.width(), native.height()),
+                            QPointF(), native, ContentXform::Value{},
+                            false, path);
+                        painter->restore();
+                    }
                 }
             }
         }
