@@ -228,9 +228,9 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     accepted.displayEdge = plan.displayEdge;
     accepted.fullEdge = plan.fullEdge;
 
-    // Durable tiles → TileSynth via PreferCache. Cold → PreferCache overview
-    // (scheduleDisplayPixels). Never FocusFull / full pyramid from this climb —
-    // Interactive tiles and prepare own those.
+    // Warm → TileSynth whole-frame from durable tiles. Cold → size probe only
+    // (EMB/placeholder + interactive tiles elsewhere). Never soft PreferCache.
+    // LQIP is warm-only (side-effect of tile work), not a cold underlay encode.
     auto schedulePrefer = [](const QString &path, int edge) -> bool {
         if (edge <= 0) {
             return false;
@@ -241,16 +241,16 @@ void PathRasterService::pump(const QString &path, Entry &entry)
         if (ThumtooCache::isPixelsPending(path, edge)) {
             return true;
         }
-        // PreferCache already answered this edge — do not re-arm every tick.
         if (ThumtooCache::isPixelsSettled(path, edge)) {
             return false;
         }
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            return ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
+        if (!ThumtooCache::hasDurableTilesKnown(path)) {
+            if (!ThumtooCache::cachedSize(path).isValid()) {
+                ThumtooCache::scheduleProbe(path);
+            }
+            return false;
         }
-        ThumtooCache::scheduleProbe(path);
-        return ThumtooCache::scheduleDisplayPixels(path, edge)
-            || ThumtooCache::isPixelsPending(path, edge);
+        return ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
     };
 
     if (plan.scheduleBand) {

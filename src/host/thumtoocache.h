@@ -273,7 +273,11 @@ bool isPixelsPending(const QString &path, int maxEdge);
 /** True when PreferCache already finished for this path#edge (hit or miss). */
 bool isPixelsSettled(const QString &path, int maxEdge);
 
-/** PreferCache raster up to kImageLadderEdge (8192 interim); host callback via ladderReady. */
+/**
+ * TileSynth whole-frame from durable tiles only (≤ kImageLadderEdge).
+ * Returns false when cold (no durable tiles) — never soft PreferCache encode.
+ * LQIP is not produced here; it is a warm side-effect of tile work.
+ */
 bool scheduleDisplayPixels(const QString &path, int maxEdge);
 /** Full / near-native via thumtoo request_full_pixels (≤ ~8192). */
 bool scheduleFullPixels(const QString &path, int maxEdge = 0);

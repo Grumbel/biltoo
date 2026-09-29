@@ -1825,6 +1825,18 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }
+    // KILL_SOFT / THUMTOO_HOST_CONTRACT: whole-frame product path is TileSynth
+    // from durable tiles only. Cold has no soft PreferCache encode and no LQIP
+    // generation (LQIP is a free side-effect of prior tile work — warm only).
+    // Cold paint uses EMB (if present) + placeholder + interactive tiles.
+    if (!hasDurableTilesKnown(path)) {
+        if (!cachedSize(path).isValid()) {
+            scheduleProbe(path);
+        }
+        thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (cold — tiles only when warm)",
+                   qPrintable(path), maxEdge);
+        return false;
+    }
     if (maxEdge > kImageLadderEdge) {
         maxEdge = kImageLadderEdge;
     }
@@ -1869,14 +1881,9 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d attempts=%d",
                    qPrintable(path), maxEdge, g_pixelsActive, attempts);
     }
-    // PreferCache is the thumtoo RasterPolicy name (store soft → tiles → file).
-    // Product path with durable tiles is TileSynth (whole-frame from pyramid);
-    // without tiles it is soft PreferCache / file. Label the work log accordingly.
-    const bool tileSynth = hasDurableTilesKnown(path);
+    // Durable tiles required above — product TileSynth only (warm).
     BackgroundWorkLog::notePixels(
-        QStringLiteral("%1 edge=%2  %3")
-            .arg(tileSynth ? QStringLiteral("TileSynth")
-                           : QStringLiteral("PreferCache"))
+        QStringLiteral("TileSynth edge=%1  %2")
             .arg(maxEdge)
             .arg(QFileInfo(path).fileName()));
     const QString pathCopy = path;

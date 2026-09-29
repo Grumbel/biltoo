@@ -1422,13 +1422,12 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
                              PathRasterService::ClimbPolicy::TileDisplay);
         return;
     }
-    // Fallback when no service wired (tests / early init). Do not
-    // forgetPixelsSettled here — that re-armed PreferCache every surface tick.
+    // Fallback: TileSynth when warm; cold → size probe only (EMB/placeholder).
+    // No soft PreferCache; LQIP is not generated on cold (tile side-effect only).
     if (ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
     }
-    (void)ThumtooCache::scheduleDisplayPixels(path, edge);
     if (!ThumtooCache::cachedSize(path).isValid()) {
         ThumtooCache::scheduleProbe(path);
     }

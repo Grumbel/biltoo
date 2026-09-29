@@ -13,16 +13,16 @@ ladder is not a product path ([KILL_SOFT.md](KILL_SOFT.md)).
 ```text
 1. Exact / parent 256² tiles   ← product display when path has Succeeded tiles
 2. Coarser retained tiles        (same TileLodRegistry, min_scale / overview)
-3. EMB or LQIP underlay          only cold, or holes under incomplete coverage
+3. EMB underlay (cold free) or LQIP (warm tile side-effect) under incomplete coverage
 4. Neutral placeholder           no underlay and no tiles yet
 ```
 
 | Layer | What it is | When it may show |
 |-------|------------|------------------|
 | **Tiles** | Durable / process `TileLodRegistry` grid | Path has Succeeded tiles **or** cell is issuing. Painted by `paint_tiles_display` (live `ImageItem`) or `prepare_and_paint_cover` (virtual background when RAM already warm). |
-| **EMB** | EXIF / PDF `/Thumb` ≤320 | **Cold only** as full-cell floor, or under tile **holes**. Must not remain the only visible layer when registry already has tiles for that path. |
-| **LQIP** | ThumbHash / ≤96 | Same role as EMB; often replaced in cache when a larger EMB arrives. |
-| **Soft / PreferCache** | — | **Removed** in Gallery. |
+| **EMB** | EXIF / PDF `/Thumb` ≤320 | **Cold** free floor (no source open beyond what container already has), or under tile **holes**. Must not remain the only layer when tiles exist for the path. |
+| **LQIP** | ThumbHash / ≤96 | **Warm only** — free side-effect of prior tile work (`ensure_lqip` from tiles). **Never** encode LQIP on cold paths. |
+| **Soft / PreferCache encode** | — | **Removed**. Warm whole-frame = TileSynth from durable tiles only. |
 
 ## One rasterizer, shared RAM
 
