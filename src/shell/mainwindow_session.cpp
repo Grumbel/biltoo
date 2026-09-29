@@ -86,6 +86,43 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
     applyExpandedLoad(images, startAt);
 }
 
+void MainWindow::reportSessionOpenFailed(const QStringList &sourcePaths, bool append)
+{
+    const QString msg = SessionExpand::emptyResultMessage(sourcePaths, append);
+
+    if (!append) {
+        // Failed Open/replace: beginReplace already emptied the filmstrip; drop
+        // the previous session so we do not resurrect its paths or thumbs.
+        m_session.clear();
+        updateFileExportActions();
+        m_currentIndex = -1;
+        m_galleryReturnActive = false;
+        m_workspaceReturnActive = false;
+        if (m_imageView) {
+            m_imageView->hostWorkspace().clearWorkspace();
+            m_imageView->hostShell().setWorkspaceBackground(WorkspaceBackground{});
+            if (!m_imageView->isImageMode()) {
+                m_imageView->setViewMode(ImageView::ViewMode::Image);
+            }
+            m_imageView->prepareImageModeCanvas();
+            m_imageView->hostShell().setCentreProgress(tr("Could not open"), msg);
+        }
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setMultiSelectEnabled(false);
+            m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
+        }
+        updateNavigationActions();
+        updateWorkspaceActionVisibility();
+    }
+
+    if (statusBar()) {
+        statusBar()->showMessage(msg, 8000);
+    }
+    if (m_messageLogPanel) {
+        m_messageLogPanel->appendError(tr("Open"), msg);
+    }
+}
+
 void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 {
     m_session.setPaths(images); // also clears fat appearance (new ids)
@@ -590,6 +627,9 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
 void MainWindow::finishCurrentIndexChromeUpdate()
 {
     m_thumbnailBar->setCurrentIndex(m_currentIndex);
+    if (m_annotationDock && m_annotationDock->isOpen()) {
+        updateAnnotationPanel();
+    }
     if (m_metadataPanel) {
         m_metadataPath.clear();
     }
