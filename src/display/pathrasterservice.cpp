@@ -231,26 +231,26 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     // Warm → TileSynth whole-frame from durable tiles. Cold → size probe only
     // (EMB/placeholder + interactive tiles elsewhere). Never soft PreferCache.
     // LQIP is warm-only (side-effect of tile work), not a cold underlay encode.
-    auto schedulePrefer = [](const QString &path, int edge) -> bool {
+    auto schedulePrefer = [](const QString &rasterPath, int edge) -> bool {
         if (edge <= 0) {
             return false;
         }
-        if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
+        if (ImageCache::longEdge(ImageCache::get(rasterPath)) >= edge) {
             return true;
         }
-        if (ThumtooCache::isPixelsPending(path, edge)) {
+        if (ThumtooCache::isPixelsPending(rasterPath, edge)) {
             return true;
         }
-        if (ThumtooCache::isPixelsSettled(path, edge)) {
+        if (ThumtooCache::isPixelsSettled(rasterPath, edge)) {
             return false;
         }
-        if (!ThumtooCache::hasDurableTilesKnown(path)) {
-            if (!ThumtooCache::cachedSize(path).isValid()) {
-                ThumtooCache::scheduleProbe(path);
+        if (!ThumtooCache::hasDurableTilesKnown(rasterPath)) {
+            if (!ThumtooCache::cachedSize(rasterPath).isValid()) {
+                ThumtooCache::scheduleProbe(rasterPath);
             }
             return false;
         }
-        return ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
+        return ThumtooCache::scheduleTileSynthOrPyramid(rasterPath, edge);
     };
 
     if (plan.scheduleBand) {
