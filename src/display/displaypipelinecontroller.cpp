@@ -1743,11 +1743,12 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
         tileLodTimer()->setSingleShot(true);
         QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(), [this]() {
             // Image focus: higher budget so density climb is not starved.
-            tickPrimaryTileLod(m_host->isGalleryMode() ? 48 : 32);
+            tickPrimaryTileLod(m_host->isGalleryMode() ? 256 : 32);
         });
     }
+    // Gallery: re-tick ASAP while coverage is incomplete (issue is cheap).
     if (!tileLodTimer()->isActive()) {
-        tileLodTimer()->start(16);
+        tileLodTimer()->start(m_host->isGalleryMode() ? 4 : 16);
     }
 }
 

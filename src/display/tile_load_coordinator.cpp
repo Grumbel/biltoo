@@ -153,23 +153,22 @@ void TileLoadCoordinator::tick(int globalBudget)
         return;
     }
 
-    // Coalesce scroll storms — multiple decode-window refreshes per frame.
+    // Coalesce scroll storms — Image mode only. Gallery issue is pure enqueue
+    // (thumtoo workers); do not drip-feed 6–32 cells/frame and starve the pool.
+    const bool gallery = m_pipeline->host()->isGalleryMode();
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
+    if (!gallery && m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
         return;
     }
     m_lastTickMs = nowMs;
 
     QElapsedTimer wall;
     wall.start();
-    // Gallery overview: many small cells need coarse tiles quickly. Image-mode
-    // focus needs a longer wall so progressive climb is not starved at 4 keys.
-    // Hard wall — one tickItemTileLod must not run multi-second (warm PDF
-    // pyramid issue used to do SQLite get_tile + JPEG decode on this thread).
-    const bool gallery = m_pipeline->host()->isGalleryMode();
-    // Gallery was 8ms and coalesced to ≤1 tick/16ms — warm Store hits still
-    // issued too few cells per frame so settle looked single-threaded/slow.
-    const qint64 kWallMs = gallery ? 24 : 16;
+    // Image: keep a short wall (tickItemTileLod still does plan work on GUI).
+    // Gallery: high wall so one tick can enqueue the whole viewport; workers
+    // do decode. Old 8–24ms + kMaxTargets=6 was intentional when issue did
+    // SQLite/JPEG on this thread — that is gone.
+    const qint64 kWallMs = gallery ? 100 : 16;
 
     QRectF sceneVis;
     if (m_pipeline->host()->canvasScene() && m_pipeline->host()->viewportWidget()) {
@@ -182,11 +181,9 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
     sortByPolicy(cands);
 
-    // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    // Gallery was capped at 6 items/tick → hundreds of tileLod ticks to cover
-    // a 150-image viewport on a hot Store (totals tileLod=1180). Raise the
-    // target count; issue work is async (thumtoo workers), GUI only plans.
-    const int kMaxTargets = gallery ? 32 : 1;
+    // Gallery: issue every candidate that still needs coverage (viewport can
+    // be 100–200 cells). Image: one focus item.
+    const int kMaxTargets = gallery ? 256 : 1;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
