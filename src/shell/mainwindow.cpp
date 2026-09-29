@@ -307,15 +307,9 @@ MainWindow::MainWindow(QWidget *parent)
                 return want;
             });
         // Same climb service as Image/Workspace (THUMTOO_HOST_CONTRACT).
+        // ThumbnailBar connects rasterImproved → visible installs itself.
         if (m_imageView->hostPathRaster()) {
             m_thumbnailBar->setPathRasterService(m_imageView->hostPathRaster());
-            QObject::connect(m_imageView->hostPathRaster(),
-                             &PathRasterService::rasterImproved,
-                             m_thumbnailBar, [this](const QString &, int) {
-                                 if (m_thumbnailBar) {
-                                     m_thumbnailBar->scheduleVisibleThumbnailLoads();
-                                 }
-                             });
         }
         // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
         // when the strip already decoded the path.

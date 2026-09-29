@@ -1331,6 +1331,24 @@ void ThumbnailBar::setStripBackground(const QColor &color)
     }
 }
 
+void ThumbnailBar::setPathRasterService(PathRasterService *svc)
+{
+    if (m_pathRaster == svc) {
+        return;
+    }
+    if (m_pathRaster) {
+        disconnect(m_pathRaster, &PathRasterService::rasterImproved, this, nullptr);
+    }
+    m_pathRaster = svc;
+    if (m_pathRaster) {
+        // Climb deliveries land in ImageCache — re-arm visible strip installs.
+        connect(m_pathRaster, &PathRasterService::rasterImproved, this,
+                [this](const QString &, int) {
+                    scheduleVisibleThumbnailLoads();
+                });
+    }
+}
+
 void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) const
 {
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {

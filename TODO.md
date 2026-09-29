@@ -2,15 +2,14 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2823.2-gallery-minscale-density on 2823.1 stack.
+**Tip:** biltoo-2823.3-filmstrip-raster-connect on 2823.2 stack.
+
+### 2823.3
+- ThumbnailBar::setPathRasterService owns rasterImproved → scheduleVisible
+  (MainWindow no longer calls private scheduleVisibleThumbnailLoads)
 
 ### 2823.2 Gallery min_scale = density
-- Gallery no longer floors requests on `durableTileMinScale` (Store is cache, not limit)
-- `min_scale` = dens from screen dpc + screen-edge hard floor
-- Inspection zoom can interactive encode-on-miss below stored finest
-
-### 2823.1
-- Hard floor uses screen long edge (not scene)
+### 2823.1 Screen-edge hard floor
 
 ### Required thumtoo
 thumtoo-007.1-materialize-tile-cell-3e6987f.bundle

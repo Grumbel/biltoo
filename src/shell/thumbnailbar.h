@@ -145,7 +145,7 @@ public:
         m_contentAppearanceProvider = std::move(provider);
     }
     /** Shared host climb (same service as Image/Workspace). */
-    void setPathRasterService(PathRasterService *svc) { m_pathRaster = svc; }
+    void setPathRasterService(PathRasterService *svc);
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
