@@ -137,10 +137,7 @@ void MainWindow::applyExpandedPathsResult(const QStringList &images, bool append
 {
     if (images.isEmpty()) {
         setExpandProgressBusy(false);
-        if (statusBar()) {
-            statusBar()->showMessage(
-                SessionExpand::emptyResultMessage(sourcePaths, append), 8000);
-        }
+        reportSessionOpenFailed(sourcePaths, append);
         return;
     }
     // Expand worker done — drop Opening/Indexing HUD before apply/layout.

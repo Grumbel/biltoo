@@ -79,14 +79,8 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 
     QStringList images = expandPaths(paths);
     if (images.isEmpty()) {
-        // AUDIT M26: explicit feedback when Open finds nothing usable
-        // Restore filmstrip for the still-current session (we cleared above).
-        if (m_thumbnailBar) {
-            m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-        }
-        if (statusBar()) {
-            statusBar()->showMessage(tr("No readable images found."), 5000);
-        }
+        // Failed replace — do not resurrect the previous filmstrip.
+        reportSessionOpenFailed(paths, /*append=*/false);
         return;
     }
     applyExpandedLoad(images, startAt);

@@ -393,19 +393,34 @@ QStringList expandPathList(const QStringList &paths, bool recursive,
 
 QString emptyResultMessage(const QStringList &paths, bool append)
 {
-    bool anyPdf = false;
+    bool anyDoc = false;
     bool anyEpub = false;
     bool anyRemote = false;
+    bool anyArchive = false;
+    QString firstDoc;
     for (const QString &p : paths) {
         if (SessionInputPath::isHttpUrl(p)) {
             anyRemote = true;
+            continue;
         }
         if (PagePath::isPdfFile(p) || PagePath::isMarkdownFile(p)
-            || PagePath::isPlainTextFile(p)) {
-            anyPdf = true;
+            || PagePath::isPlainTextFile(p) || PagePath::isDjvuFile(p)) {
+            anyDoc = true;
+            if (firstDoc.isEmpty()) {
+                firstDoc = p;
+            }
         }
         if (PagePath::isEpubFile(p)) {
             anyEpub = true;
+            if (firstDoc.isEmpty()) {
+                firstDoc = p;
+            }
+        }
+        if (ArchivePath::isArchiveFile(p)) {
+            anyArchive = true;
+            if (firstDoc.isEmpty()) {
+                firstDoc = p;
+            }
         }
     }
     if (anyRemote) {
@@ -413,18 +428,16 @@ QString emptyResultMessage(const QStringList &paths, bool append)
             "Could not download remote URL (network error, redirect, or empty body). "
             "Try: curl -L -o file.pdf '<url>' and open the local file.");
     }
-    if ((anyPdf || anyEpub) && !ThumtooCache::isAvailable()) {
-        return QObject::tr("Cannot open PDF/EPUB: thumtoo is not available.");
+    if ((anyDoc || anyEpub) && !ThumtooCache::isAvailable()) {
+        return QObject::tr("Cannot open document: thumtoo is not available.");
     }
-    if (anyEpub) {
-        return QObject::tr(
-            "Cannot open EPUB (no pages found). Rebuild thumtoo "
-            "with MuPDF and update the biltoo flake input.");
+    // Concrete open error after expand (missing file / MuPDF last error).
+    if (!firstDoc.isEmpty()) {
+        return ThumtooCache::formatLoadErrorMessage(firstDoc, true);
     }
-    if (anyPdf) {
+    if (anyArchive) {
         return QObject::tr(
-            "Cannot open PDF (no pages found). Rebuild thumtoo "
-            "with Poppler/MuPDF and update the biltoo flake input.");
+            "Could not open archive (missing file, or no image members).");
     }
     return append ? QObject::tr("No readable images to add.")
                   : QObject::tr("No readable images found.");

@@ -2,17 +2,18 @@
 
 ## Status (2026-09-29)
 
-**Tip:** `biltoo-2814.2-load-error-no-gui-stat` (base `2085c07`).
+**Tip:** `biltoo-2814.3-open-fail-ui` (base `2085c07`).
 
-### 2814.2
-- formatLoadErrorMessage(path, allowFilesystemStat): GUI must pass false
-- Report load error once (no per-statusChanged MessageLog spam)
-- Root cause of “slow reopen / filmstrip stuck”: QFileInfo::exists on NFS in updateStatus
+### 2814.3
+- Failed Open/Bookshelf: do not restore previous filmstrip
+- Centre HUD "Could not open" + Messages + status bar
+- emptyResultMessage uses formatLoadErrorMessage
 
-### Prior
-- 2814.1 load error UI (had the NFS bug)
+### Note
+Expand still opens PDFs for page count (no durable page_count read yet).
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2814.2-load-error-no-gui-stat-2085c07.bundle HEAD
+git -C thumtoo pull --ff-only …/thumtoo-354.7-mupdf-error-global-fb6a408.bundle HEAD
+git pull --ff-only …/biltoo-2814.3-open-fail-ui-2085c07.bundle HEAD
 ```
