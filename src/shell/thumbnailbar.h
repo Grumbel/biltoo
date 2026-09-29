@@ -361,10 +361,7 @@ private:
     QImage applyStoredAppearanceToThumb(const QString &path, const QImage &src,
                                         SessionImageId sessionId = kInvalidSessionImageId) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
-    /**
-     * Issue interactive tiles for a filmstrip cell (shared TileLodRegistry).
-     * Paint uses prepare_and_paint_cover — same path as Slideshow/Gallery cover.
-     */
+    /** Issue interactive tiles for a visible strip cell (shared TileLodRegistry). */
     void scheduleFilmstripTilePixels(const QString &path, int edge) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;

@@ -283,7 +283,6 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                     args.underlay = pm.isNull() ? QImage() : pm.toImage();
                     args.tick = false; // surface tick issues tiles
                     args.min_scale = 0;
-                    args.path = path;
                     drewTiles = tilelod::prepare_and_paint_cover(painter, args);
                 }
             }
@@ -294,8 +293,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
     // Hairline on the image bounds (not the full cell).
-    if (contentRect.width() > 0 && contentRect.height() > 0
-        && (!pm.isNull() || contentRect.isValid())) {
+    if (contentRect.width() > 0 && contentRect.height() > 0) {
         painter->setPen(QPen(QColor(0, 0, 0), 1));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
@@ -626,7 +624,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     }
                 }
             });
-    // Gallery may discover durable tiles first; PreferCache can settle short and
+    // Gallery may discover durable tiles first; strip then issues interactive tiles.
     // leave filmstrip on LQIP forever (g_pixelsSettled + climbPending → evaluate None).
     // Wake strip cells when the process memo flips to durable-yes.
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
@@ -648,8 +646,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                 if (!any) {
                     return;
                 }
-                // Allow TileSynth/PreferCache to run again for strip edge.
-                ThumtooCache::forgetPixelsSettled(path, decodeSize);
+                // Tiles are product path — issue interactive cover tiles.
                 scheduleFilmstripTilePixels(path, decodeSize);
                 scheduleVisibleThumbnailLoads();
             });
@@ -676,15 +673,13 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         haveEdge =
                             it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
                     }
-                    // Soft is only an underlay — keep climbing until strip edge.
+                    // Pixmap underlay is secondary to tiles; still accept upgrades.
                     if (haveEdge >= decodeSize && !wasAwaiting) {
                         continue;
                     }
                     m_thumbAwaitLadder.remove(i);
                     m_thumbLoadScheduled.remove(i);
-                    // PreferCache/TileSynth delivery is host-raw in ImageCache.
-                    // Install on the GUI — same pipeline as filmstripSurfaceTick.
-                    // No QThreadPool: makeThumbnail was only ImageCache/LQIP.
+                    // Host-raw sample for underlay under tile holes only.
                     if (i < m_sessionIds.size()) {
                         const SessionImageId rowId = m_sessionIds.at(i);
                         if (rowId != kInvalidSessionImageId
@@ -719,10 +714,12 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     }
                     m_thumbFailed.remove(i);
                     setThumbnailIcon(i, image);
-                    if (ImageCache::longEdge(image) < decodeSize) {
+                    // Always keep tile issue warm for visible short cells.
+                    if (ImageCache::longEdge(image) < decodeSize
+                        || !ThumtooCache::hasDurableTilesKnown(path)) {
                         m_thumbAwaitLadder.insert(i);
-                        scheduleFilmstripTilePixels(path, decodeSize);
                     }
+                    scheduleFilmstripTilePixels(path, decodeSize);
                     emit loadsChanged();
                 }
             });
@@ -937,7 +934,7 @@ void ThumbnailBar::setThumbSize(int pixels)
     if (m_files.isEmpty()) {
         return;
     }
-    // Sharper need → PreferCache climb. Smaller strip → rebake icons at the
+    // Sharper need → tile issue at higher density. Smaller strip → rebake underlay at the
     // new edge (do not keep painting a 512px pixmap into a 48px cell).
     if (thumbDecodePixels() > m_decodedSize) {
         scheduleDebouncedThumbReload();
@@ -1429,7 +1426,7 @@ void ThumbnailBar::setPathRasterService(PathRasterService *svc)
     }
     m_pathRaster = svc;
     if (m_pathRaster) {
-        // Climb deliveries land in ImageCache — re-arm visible strip installs.
+        // Underlay improvements in ImageCache (other modes) — refresh strip icons.
         connect(m_pathRaster, &PathRasterService::rasterImproved, this,
                 [this](const QString &, int) {
                     scheduleVisibleThumbnailLoads();
@@ -1443,22 +1440,23 @@ tilelod::TileLodController *ThumbnailBar::filmstripLodFor(const QString &path) c
         return nullptr;
     }
     std::shared_ptr<tilelod::TileLodController> &slot = m_filmstripLod[path];
+    const bool needBind = !slot || slot->path() != path;
     if (!slot) {
         slot = std::make_shared<tilelod::TileLodController>();
     }
-    if (slot->path() != path) {
+    if (needBind) {
         slot->setPath(path);
-    }
-    // Completions must repaint the strip (same wake pattern as Slideshow).
-    if (slot->session() && viewport()) {
-        QPointer<QWidget> vp(viewport());
-        slot->session()->set_wake([vp]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
-                if (vp) {
-                    vp->update();
-                }
+        // One wake per bind — tile completions repaint the strip.
+        if (slot->session() && viewport()) {
+            QPointer<QWidget> vp(viewport());
+            slot->session()->set_wake([vp]() {
+                QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
+                    if (vp) {
+                        vp->update();
+                    }
+                });
             });
-        });
+        }
     }
     return slot.get();
 }
@@ -1468,7 +1466,6 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
     }
-    // Size is required for tile viewport math.
     const QSize native = ThumtooCache::cachedSize(path);
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         ThumtooCache::scheduleProbe(path);
@@ -1476,8 +1473,6 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         return;
     }
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
-        // Discover Store pyramid; issue still runs — cold interactive tiles via
-        // the same TileSession source once size is known.
         ThumtooCache::scheduleDurableTilesDiscovery(path);
     }
 
@@ -1486,15 +1481,10 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         return;
     }
     lod->setContentSize(native.width(), native.height(), /*minScale=*/0);
-    // Full-content cover at filmstrip cell density (device px per content px).
-    // Cell long edge ≈ filmstripDecodeEdge (device px); dpc drives tile scale.
-    const QSizeF dest(edge, edge);
-    const double dpc = tilelod::cover_device_per_content(dest, native);
+    const double dpc =
+        tilelod::cover_device_per_content(QSizeF(edge, edge), native);
     lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
     (void)lod->tick(8);
-    if (viewport()) {
-        viewport()->update();
-    }
 }
 
 
@@ -1542,7 +1532,7 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize,
                                    SessionImageId sessionId) const
 {
     // Process-memory only (ImageCache + underlay). Filmstrip never file-decodes
-    // here — PreferCache/TileSynth fills ImageCache; this prepares the strip icon.
+    // here — underlay may improve in ImageCache; tiles paint via cover path.
     QImage image = ImageCache::get(path, maxSize);
     if (image.isNull()) {
         image = ImageCache::get(path);
@@ -2003,10 +1993,7 @@ void ThumbnailBar::filmstripSurfaceTick()
             m_thumbLoadScheduled.remove(i);
             continue;
         }
-        // LQIP-only underlay is not terminal — PathRaster climbs PreferCache.
-        // Do NOT forgetPixelsSettled every tick: that re-armed PreferCache forever
-        // (settle → clear → schedule → settle) for cells that plateau short of
-        // decodeSize. durableTilesReady still forgets once when tiles appear.
+        // Underlay short of strip edge is not terminal — issue tiles each tick.
         if (climbPending
             && DisplayQuality::hostLongEdge(path) < decodeSize) {
             m_thumbAwaitLadder.remove(i);
@@ -2179,7 +2166,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
     }
 
-    // Filmstrip: LQIP underlay + PreferCache/TileSynth (same ImageCache as Gallery).
+    // Filmstrip: LQIP/EMB underlay + interactive tiles (shared TileLodRegistry).
     // No per-row QThreadPool decode — thumtoo workers own the climb.
     for (int i = lo; i < hi; ++i) {
         if (m_thumbLoadScheduled.contains(i) || m_thumbAwaitLadder.contains(i)
@@ -2263,7 +2250,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     if (haveAfter >= decodeSize) {
                         continue;
                     }
-                    // Drive tiles via shared PreferCache/TileSynth (ImageCache).
+                    // Issue interactive tiles for the visible cell.
                     // Do not also spawn makeThumbnail — that re-decoded the file
                     // on a pool thread while Gallery already held durable tiles.
                     scheduleFilmstripTilePixels(path, decodeSize);
@@ -2272,7 +2259,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 }
             }
         }
-        // Shared PreferCache / TileSynth only — no per-row pool decode.
+        // Shared tile issue only — no per-row pool decode.
         // makeThumbnail is ImageCache/LQIP; filmstripSurfaceTick installs when
         // ImageCache improves. scheduleFilmstripTilePixels drives the climb.
         scheduleFilmstripTilePixels(path, decodeSize);

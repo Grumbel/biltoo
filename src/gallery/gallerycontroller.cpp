@@ -2278,7 +2278,6 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             }
             under = ImageCache::matchNativeAspect(under, native);
             args.underlay = under;
-            args.path = slot.path;
             if (tilelod::prepare_and_paint_cover(painter, args)) {
                 drewTiles = true;
             }
