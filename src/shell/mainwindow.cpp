@@ -2504,7 +2504,7 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
             m_imageView->hostCrop().cancelCrop();
         }
         clearAnnotationToolSelection();
-        m_imageView->setCurrentTool(Tool::Select);
+        m_imageView->setTool(ImageView::Tool::Select);
         m_imageView->hostAttention().setAttentionMode(true);
         if (m_attentionAct) {
             const QSignalBlocker block(m_attentionAct);
