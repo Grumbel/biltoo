@@ -1758,10 +1758,14 @@ void GalleryController::updateDecodeWindow()
             s_lastLogMs = now;
             // Pass-2 underlay/schedule slice (not tile issue). realWork = probe
             // or underlay install started; scheduled = blank visible cells visited.
-            std::fprintf(stderr,
-                         "biltoo/gallery-decode: underlayWork=%d blankVisible=%d\n",
-                         lqipBusy ? 1 : 0, scheduled);
-            std::fflush(stderr);
+            // Skip the idle (0,0) sample — otherwise every re-arm with TILE_DEBUG
+            // floods stderr while the gallery is settled.
+            if (lqipBusy || scheduled > 0) {
+                std::fprintf(stderr,
+                             "biltoo/gallery-decode: underlayWork=%d blankVisible=%d\n",
+                             lqipBusy ? 1 : 0, scheduled);
+                std::fflush(stderr);
+            }
         }
     }
 

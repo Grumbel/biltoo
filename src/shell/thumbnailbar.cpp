@@ -1968,6 +1968,7 @@ void ThumbnailBar::filmstripSurfaceTick()
     const int decodeSize = filmstripDecodeEdge();
     const QRect vis = viewport()->rect().adjusted(-40, -40, 40, 40);
     QSet<QString> visiblePaths;
+    bool needSchedule = false;
     for (int i = 0; i < m_files.size(); ++i) {
         QListWidgetItem *it = item(i);
         if (!it) {
