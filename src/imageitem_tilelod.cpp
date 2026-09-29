@@ -375,12 +375,17 @@ void ImageItem::prepareTileLodPlan()
         minScale = ThumtooCache::durableTileMinScale(m_path);
         const qreal dpc0 = tileDevicePerContent();
         const int maxS = tilelod::max_scale_for_size(native.width(), native.height());
+        // Density already includes view zoom (scene × view × dpr / native).
+        // Floor requests at dens so overview cells stay coarse; when the user
+        // zooms in, dens drops and min_scale must follow or climb is stuck.
         const int dens = tilelod::target_scale_for_density(
             static_cast<double>(dpc0), 0, maxS);
         if (dens > minScale) {
             minScale = dens;
         }
-        // Hard floor: cell much smaller than native must not request full-res.
+        // Hard floor uses *screen* long edge (not scene). Scene-only floor kept
+        // min_scale elevated after Ctrl+wheel zoom — dens asked for finer tiles
+        // but the floor still thought the packed cell was tiny.
         const qreal contentLong = qMax(native.width(), native.height());
         qreal sceneLong = 0.0;
         if (!m_galleryCellSize.isEmpty()) {
@@ -389,12 +394,30 @@ void ImageItem::prepareTileLodPlan()
             const QRectF br = sceneBoundingRect();
             sceneLong = qMax(br.width(), br.height());
         }
-        if (contentLong > 512.0 && sceneLong > 0.0) {
-            if (sceneLong * 8.0 < contentLong && minScale < 3) {
+        qreal viewScale = 1.0;
+        qreal dpr = 1.0;
+        if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
+            QGraphicsView *view = scene()->views().first();
+            const QTransform vt = view->transform();
+            qreal sMax = 1.0;
+            qreal sMin = 1.0;
+            PlacementLinear::singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(),
+                                               &sMax, &sMin);
+            viewScale = ViewTransform::floorScale(sMax);
+            if (QWidget *vp = view->viewport()) {
+                dpr = vp->devicePixelRatioF();
+            }
+        }
+        if (!(dpr > 0.0)) {
+            dpr = 1.0;
+        }
+        const qreal screenLong = sceneLong * viewScale * dpr;
+        if (contentLong > 512.0 && screenLong > 0.0) {
+            if (screenLong * 8.0 < contentLong && minScale < 3) {
                 minScale = 3;
-            } else if (sceneLong * 4.0 < contentLong && minScale < 2) {
+            } else if (screenLong * 4.0 < contentLong && minScale < 2) {
                 minScale = 2;
-            } else if (sceneLong * 2.0 < contentLong && minScale < 1) {
+            } else if (screenLong * 2.0 < contentLong && minScale < 1) {
                 minScale = 1;
             }
         }
