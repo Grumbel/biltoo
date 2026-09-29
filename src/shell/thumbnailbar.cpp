@@ -10,6 +10,8 @@
 #include "host/archivepath.h"
 #include "host/pagepath.h"
 #include "display/imagecache.h"
+#include "tilelod/tile_cover_paint.hpp"
+#include "tilelod/tile_lod_controller.hpp"
 #include "host/imageloader.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
@@ -248,7 +250,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
     QRect contentRect;
-    if (!pm.isNull() && inner.width() > 0 && inner.height() > 0) {
+    if (inner.width() > 0 && inner.height() > 0) {
         // sizeHint already = content + pads. Draw at that logical size — do not
         // re-letterbox into inner (that added aspect-dependent side gaps when
         // option.rect was wider than the content, e.g. IconMode iconSize floor).
@@ -261,11 +263,38 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             inner.y() + (inner.height() - ch) / 2,
             cw,
             ch);
-        painter->drawPixmap(contentRect, pm);
+        bool drewTiles = false;
+        if (ThumbnailBar *bar = qobject_cast<ThumbnailBar *>(parent())) {
+            QString path = index.data(ThumbnailBar::RolePath).toString();
+            if (path.isEmpty()) {
+                if (const QListWidgetItem *it = bar->item(index.row())) {
+                    path = it->data(ThumbnailBar::RolePath).toString();
+                }
+            }
+            const QSize native =
+                path.isEmpty() ? QSize() : ThumtooCache::cachedSize(path);
+            if (!path.isEmpty() && native.isValid() && native.width() > 0
+                && native.height() > 0) {
+                if (tilelod::TileLodController *lod = bar->filmstripLodFor(path)) {
+                    tilelod::CoverPaintArgs args;
+                    args.lod = lod;
+                    args.native = native;
+                    args.dest = QRectF(contentRect);
+                    args.underlay = pm.isNull() ? QImage() : pm.toImage();
+                    args.tick = false; // surface tick issues tiles
+                    args.min_scale = 0;
+                    drewTiles = tilelod::prepare_and_paint_cover(painter, args);
+                }
+            }
+        }
+        if (!drewTiles && !pm.isNull()) {
+            painter->drawPixmap(contentRect, pm);
+        }
     }
 
     // Hairline on the image bounds (not the full cell).
-    if (!pm.isNull() && contentRect.width() > 0 && contentRect.height() > 0) {
+    if (contentRect.width() > 0 && contentRect.height() > 0
+        && (!pm.isNull() || contentRect.isValid())) {
         painter->setPen(QPen(QColor(0, 0, 0), 1));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
@@ -1407,33 +1436,64 @@ void ThumbnailBar::setPathRasterService(PathRasterService *svc)
     }
 }
 
+tilelod::TileLodController *ThumbnailBar::filmstripLodFor(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return nullptr;
+    }
+    std::shared_ptr<tilelod::TileLodController> &slot = m_filmstripLod[path];
+    if (!slot) {
+        slot = std::make_shared<tilelod::TileLodController>();
+    }
+    if (slot->path() != path) {
+        slot->setPath(path);
+    }
+    // Completions must repaint the strip (same wake pattern as Slideshow).
+    if (slot->session() && viewport()) {
+        QPointer<QWidget> vp(viewport());
+        slot->session()->set_wake([vp]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
+                if (vp) {
+                    vp->update();
+                }
+            });
+        });
+    }
+    return slot.get();
+}
+
 void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) const
 {
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
     }
-    // ImageCache is process authority — covered rows need no climb.
-    // LQIP-sized samples are not "covered" for strip edge (ThumbDecodeEdgeRole
-    // may still be low; host edge alone is not enough if below filmstrip need).
-    if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
-        return;
-    }
-    if (!ThumtooCache::hasDurableTilesKnown(path)) {
-        // Cold or memo unknown: discover Store tiles (warm → durableTilesReady →
-        // TileSynth). Size probe for layout. Never soft PreferCache / LQIP encode.
-        if (!ThumtooCache::cachedSize(path).isValid()) {
-            ThumtooCache::scheduleProbe(path);
-        }
+    // Size is required for tile viewport math.
+    const QSize native = ThumtooCache::cachedSize(path);
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        ThumtooCache::scheduleProbe(path);
         ThumtooCache::scheduleDurableTilesDiscovery(path);
         return;
     }
-    // Warm: TileSynth whole-frame via PathRaster (or direct fallback).
-    if (m_pathRaster) {
-        m_pathRaster->ensure(path, edge, ThumtooCache::cachedSize(path),
-                             PathRasterService::ClimbPolicy::TileDisplay);
+    if (!ThumtooCache::hasDurableTilesKnown(path)) {
+        // Discover Store pyramid; issue still runs — cold interactive tiles via
+        // the same TileSession source once size is known.
+        ThumtooCache::scheduleDurableTilesDiscovery(path);
+    }
+
+    tilelod::TileLodController *lod = filmstripLodFor(path);
+    if (!lod) {
         return;
     }
-    (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
+    lod->setContentSize(native.width(), native.height(), /*minScale=*/0);
+    // Full-content cover at filmstrip cell density (device px per content px).
+    // Cell long edge ≈ filmstripDecodeEdge (device px); dpc drives tile scale.
+    const QSizeF dest(edge, edge);
+    const double dpc = tilelod::cover_device_per_content(dest, native);
+    lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
+    (void)lod->tick(8);
+    if (viewport()) {
+        viewport()->update();
+    }
 }
 
 
@@ -1821,6 +1881,7 @@ void ThumbnailBar::showEvent(QShowEvent *event)
 
 void ThumbnailBar::invalidateThumbPixels()
 {
+    m_filmstripLod.clear();
     // Drop prepared pixels so scheduleVisible reloads. Rows/paths stay.
     // Bump generation so in-flight pool jobs cannot reinstall after a mode/size
     // change that already cleared the strip.

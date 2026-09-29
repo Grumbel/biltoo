@@ -10,6 +10,11 @@
 #include "imageview_types.h"
 #include "session/sessionsearchindex.h"
 #include <QListWidget>
+
+#include <memory>
+#include <QHash>
+
+namespace tilelod { class TileLodController; }
 #include <functional>
 #include "display/displaysurface.h"
 #include "display/pathrasterservice.h"
@@ -146,6 +151,8 @@ public:
     }
     /** Shared host climb (same service as Image/Workspace). */
     void setPathRasterService(PathRasterService *svc);
+    /** Shared TileLodController for filmstrip cover paint (Gallery registry). */
+    tilelod::TileLodController *filmstripLodFor(const QString &path) const;
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
@@ -355,9 +362,8 @@ private:
                                         SessionImageId sessionId = kInvalidSessionImageId) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /**
-     * Filmstrip sharpness: LQIP is cache-only; PreferCache only when durable
-     * tiles are known (TileSynth). Cold path schedules tile pyramid only —
-     * never soft-ladder encode (soft underlay is removed).
+     * Issue interactive tiles for a filmstrip cell (shared TileLodRegistry).
+     * Paint uses prepare_and_paint_cover — same path as Slideshow/Gallery cover.
      */
     void scheduleFilmstripTilePixels(const QString &path, int edge) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
@@ -427,6 +433,8 @@ private:
     /** Session rows selected at press (stable drag multi-payload). */
     QList<int> m_pressSelectedRows;
     PathRasterService *m_pathRaster = nullptr;
+    /** Path → LOD controller for tile cover paint (mutable: used from const schedule). */
+    mutable QHash<QString, std::shared_ptr<tilelod::TileLodController>> m_filmstripLod;
 };
 
 

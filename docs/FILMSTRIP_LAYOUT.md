@@ -203,3 +203,11 @@ that overlay is ImageItem / Gallery tile-LOD only.
 When the strip **grows**, `scheduleDebouncedThumbReload` climbs PreferCache.
 When it **shrinks**, `rebakeIconsForCurrentDecodeEdge` re-prepares icons at the
 new edge so paint does not downsample a large pixmap into a small cell.
+
+## Tile paint (not TileSynth icons)
+
+Filmstrip cells paint **real 256² tiles** via `tilelod::prepare_and_paint_cover`
+and a per-path `TileLodController` bound to `TileLodRegistry` — the same
+shared RAM and issue path as Gallery / Image / Slideshow cover. Underlay
+pixmaps (EMB/LQIP) remain only under holes or when no tiles yet. Whole-frame
+TileSynth is not used for strip display.
