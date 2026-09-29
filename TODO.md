@@ -2,20 +2,21 @@
 
 ## Status (2026-09-29)
 
-**Tip:** biltoo-2815.7-tile-lod-settle (base 2085c07).
+**Tip:** biltoo-2815.8-gallery-open-paint-freeze (base 2085c07).
 
-### 2815.7
-- tickPrimaryTileLod: check visible coverage *before* TileLoadCoordinator::tick
-- Gallery decodeWatchdog: only tick tile LOD when on-screen cells still need tiles
-- Stops post-settle 1 Hz coordinator wake + 16 ms timer re-arm when coverage is done
+### 2815.8
+- Gallery→Image: freeze viewport updates during leaveForImageMode (stash + enter)
+- Defer finishCurrentIndexChromeUpdate (filmstrip/title) to next event-loop tick
+- Cuts the noticeable ~100ms empty-scene paint lag before first Image frame
 
 ### Prior
-- 2815.6 Performance panel + BackgroundWorkLog
-- 2815.5 vips_concurrency_set(1)
+- 2815.7 tile LOD settle
+- 2815.6 Performance panel
+- 2815.5 vips concurrency 1
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2815.7-tile-lod-settle-2085c07.bundle HEAD
+git pull --ff-only …/biltoo-2815.8-gallery-open-paint-freeze-2085c07.bundle HEAD
 ```
 
-Fast-forward from ec5a7f87 (2815.6).
+Fast-forward from 104158c1 (2815.7).

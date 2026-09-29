@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <QTimer>
 #include "shell/mainwindow_includes.h"
 #include "imageitem.h"
 #include "util/biltoo_logging.h"
@@ -286,18 +287,17 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
         m_imageView->hostImage().setClassicPath(path);
         m_imageView->setCurrentSessionId(sid);
         m_imageView->hostSlideshow().setSessionPosition(sessionIndex, m_session.size(), false);
+        // leaveForImageMode freezes paints, runs Image::enter → loadImage (cache/LQIP).
         m_imageView->hostGallery().leaveForImageMode();
-        // enter() already loadImage(path); re-affirm after setCurrentIndex chrome
-        // so a same-index refresh cannot leave a blank canvas (classicPath kept).
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
         m_thumbnailBar->selectNoneThumbs();
     }
+    // Same index: setCurrentIndex only refreshes canvas if needed — does not run
+    // finishCurrentIndexChromeUpdate. Defer filmstrip/title chrome to the next
+    // event loop tick so the first Image paint is not blocked by ThumbnailBar.
     setCurrentIndex(sessionIndex);
-    // Guarantee Image canvas has pixels after mode switch. itemCount()>0 alone
-    // is not enough: a blank placeholder with classicPath already set skipped
-    // a second load and left Workspace→Image empty when soft delivery failed.
     if (m_imageView && m_imageView->isImageMode() && !path.isEmpty()) {
         bool needLoad = m_imageView->itemCount() == 0
             || m_imageView->hostImage().classicPath() != path;
@@ -313,6 +313,9 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
             m_imageView->hostDisplayPipeline().loadImage(path);
         }
     }
+    QTimer::singleShot(0, this, [this]() {
+        finishCurrentIndexChromeUpdate();
+    });
     // Sticky Double view: rebuild FixedN around the opened page.
     if (wantDouble && sid != kInvalidSessionImageId) {
         m_spreadBook.state().direction = m_spreadDirection;

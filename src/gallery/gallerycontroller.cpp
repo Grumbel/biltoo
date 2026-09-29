@@ -368,8 +368,19 @@ void GalleryController::leaveForImageMode()
     if (m_view->isGalleryMode()) {
         snapshotViewport();
     }
-    // Workspace: setViewMode snapshots + stashes free-form tiles.
+    // Freeze viewport paints for the whole Gallery→Image transition (stash every
+    // cell, clear scene, build underlay). Intermediate empty-scene paints were a
+    // noticeable ~100ms lag before the first Image frame.
+    QWidget *vp = m_view->viewport();
+    const bool prevUpdates = vp && vp->updatesEnabled();
+    if (vp) {
+        vp->setUpdatesEnabled(false);
+    }
     m_view->setViewMode(ImageView::ViewMode::Image);
+    if (vp) {
+        vp->setUpdatesEnabled(prevUpdates);
+        vp->update();
+    }
 }
 
 bool GalleryController::returnFromImage(int layoutMode, const QString &focusPath,
