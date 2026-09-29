@@ -524,10 +524,7 @@ void init(const char *argv0)
         // Non-fatal: Qt-only decode still works
         g_warning("VIPS_INIT failed; continuing without libvips");
     }
-    // Cap internal libvips workers immediately. ImageLoader::init runs before
-    // ThumtooCache/image_library_init; default concurrency is hardware_concurrency
-    // and multiplies with QThreadPool jobs into many "libvips worker" threads.
-    vips_concurrency_set(1);
+    // Leave default vips concurrency (see TODO: PreferCache→FocusFull was the spam).
 #else
     Q_UNUSED(argv0);
 #endif
