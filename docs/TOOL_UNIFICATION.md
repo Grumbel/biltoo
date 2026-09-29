@@ -32,7 +32,7 @@ checked at all times (`ExclusionPolicy::Exclusive`).
 **Crop specifics**
 
 - Enter: `enterCropFromCanvasTool()` (clears attention + annot; Gallery defers until Image has display pixels, holding Select in the radio until then).
-- Exit: choose Select / Pan / Zoom / annot tool, **or** re-select Crop / press `C` while cropping (toggle-off → Select).
+- Exit: choose Select / Pan / Zoom / annot tool, **or** re-select Crop / press `C` while cropping (toggle-off → **mode default**: Pan in Image, Select in Gallery/Workspace via `activateDefaultViewTool`).
 - Attention stays **outside** the radio (Image-only mode entry).
 
 ### Why Exclusive (not Optional)

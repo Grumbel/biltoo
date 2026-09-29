@@ -1261,7 +1261,7 @@ void MainWindow::toggleCropMode()
         return;
     }
     if (m_imageView->hostCrop().active()) {
-        setSelectTool();
+        activateDefaultViewTool();
         return;
     }
     if (m_cropAct) {
@@ -1340,6 +1340,31 @@ bool MainWindow::enterCropFromCanvasTool()
     syncCanvasToolChrome();
     return m_imageView->hostCrop().active();
 }
+
+void MainWindow::activateDefaultViewTool()
+{
+    if (!m_imageView) {
+        return;
+    }
+    // Image → Pan; Gallery / Workspace → Select (same as setActiveMode).
+    const int mode = m_imageView->isImageMode() ? 0
+        : (m_imageView->isGalleryMode() ? 1 : 2);
+    const Tool t = ViewInteraction::defaultToolForMode(mode);
+    QAction *act = m_selectToolAct;
+    if (t == Tool::Pan && m_panToolAct) {
+        act = m_panToolAct;
+    } else if (t == Tool::Zoom && m_zoomToolAct) {
+        act = m_zoomToolAct;
+    }
+    if (!act) {
+        return;
+    }
+    if (!act->isChecked()) {
+        act->setChecked(true);
+    }
+    onCanvasToolTriggered(act);
+}
+
 
 
 void MainWindow::exportDocumentText()
@@ -2419,40 +2444,16 @@ void MainWindow::onCanvasToolTriggered(QAction *act)
         a->setChecked(on);
     }
 
-    // Crop tool: enter mode, or re-activate while already cropping → Select (toggle-off).
+    // Crop tool: enter mode, or re-activate while already cropping → mode default
+    // (Pan in Image, Select in Gallery/Workspace).
     if (act == m_cropAct) {
         if (m_imageView->hostCrop().active()) {
-            if (m_selectToolAct) {
-                for (QAction *a : canvasToolActions()) {
-                    if (!a) {
-                        continue;
-                    }
-                    const QSignalBlocker block(a);
-                    a->setChecked(a == m_selectToolAct);
-                }
-                m_imageView->hostCrop().setCropMode(false);
-                if (m_imageView->hostAnnot().isToolActive()) {
-                    m_imageView->hostAnnot().setTool(Annotation::Tool::None);
-                    updateAnnotationPanel();
-                }
-                m_imageView->setTool(ImageView::Tool::Select);
-                m_imageView->restoreToolCursor();
-            }
+            activateDefaultViewTool();
             return;
         }
         if (!enterCropFromCanvasTool()) {
-            // Failed entry (e.g. no Gallery target) → fall back to Select.
-            if (m_selectToolAct) {
-                for (QAction *a : canvasToolActions()) {
-                    if (!a) {
-                        continue;
-                    }
-                    const QSignalBlocker block(a);
-                    a->setChecked(a == m_selectToolAct);
-                }
-                m_imageView->setTool(ImageView::Tool::Select);
-                m_imageView->restoreToolCursor();
-            }
+            // Failed entry (e.g. no Gallery target) → mode default tool.
+            activateDefaultViewTool();
         }
         return;
     }

@@ -207,6 +207,8 @@ private slots:
     void toggleCropMode();
     /** Enter crop from the canvas tool radio (Gallery may defer until Image pixels). */
     bool enterCropFromCanvasTool();
+    /** Mode default canvas tool (Pan in Image, Select in Gallery/Workspace). */
+    void activateDefaultViewTool();
     void toggleAttentionMode();
     void openSearchBar();
     void cancelSearchBar();
