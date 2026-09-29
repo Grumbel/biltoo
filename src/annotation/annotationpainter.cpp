@@ -75,13 +75,30 @@ QPointF AnnotationPainter::pageToScene(ImageView *view, ImageItem *item, const Q
                                        const QRectF &pageBounds, bool pageYUp,
                                        const QSize &sourceSize)
 {
-    const QRectF disp = pageRectToDisplay(
-        view, item, QRectF(pagePt.x(), pagePt.y(), 0.01, 0.01), pageBounds, pageYUp, sourceSize);
-    if (disp.isEmpty()) {
+    if (!item || !view || sourceSize.width() < 1 || sourceSize.height() < 1) {
         return {};
     }
-    const QPointF local = disp.center() + item->offset();
-    return item->mapToScene(local);
+    SessionImageId sid = targetSid(item);
+    const WorkspaceItemState st =
+        view->hostDisplayPipeline().wantAppearanceForItem(item, sid);
+    const ContentXform::Value x = ContentXform::Value::fromState(st);
+    const QRectF inSource =
+        ThumtooCache::pageRectToImageRect(QRectF(pagePt.x(), pagePt.y(), 1e-3, 1e-3),
+                                          pageBounds, sourceSize, pageYUp);
+    if (inSource.isEmpty()) {
+        return {};
+    }
+    QPointF disp =
+        ContentXform::mapSourcePointToDisplay(inSource.center(), sourceSize, x);
+    const QSize logical = ContentXform::layoutSize(sourceSize, x);
+    const QSize itemSz = item->imageSize();
+    if (logical.width() > 0 && logical.height() > 0 && itemSz.width() > 0
+        && itemSz.height() > 0
+        && (logical.width() != itemSz.width() || logical.height() != itemSz.height())) {
+        disp = QPointF(disp.x() * qreal(itemSz.width()) / qreal(logical.width()),
+                       disp.y() * qreal(itemSz.height()) / qreal(logical.height()));
+    }
+    return item->mapToScene(disp + item->offset());
 }
 
 /** Scene-space length of one page unit (for non-cosmetic stroke widths). */

@@ -25,6 +25,8 @@
 #include <QtMath>
 #include "image/toolcursors.h"
 #include <QCursor>
+#include <QGraphicsScene>
+#include <QGraphicsItem>
 
 /**
  * Coordinate contract (docs/OCR_COORDINATES.md, docs/CONTENT_COORDINATES.md):
@@ -166,11 +168,56 @@ void AnnotationController::setLayerVisible(bool on)
 
 ImageItem *AnnotationController::targetItem() const
 {
-    if (!m_view || !m_view->isImageMode()) {
+    if (!m_view) {
         return nullptr;
+    }
+    // Image mode: session cursor / primary. Gallery/Workspace: still used for
+    // chrome that needs a single item; hit-testing uses itemAtViewPos.
+    if (m_view->isImageMode()) {
+        return m_view->primaryItem();
     }
     return m_view->primaryItem();
 }
+
+ImageItem *AnnotationController::itemAtViewPos(const QPoint &viewPos) const
+{
+    if (!m_view) {
+        return nullptr;
+    }
+    if (m_view->isImageMode()) {
+        return targetItem();
+    }
+    // Top-most ImageItem under the cursor (Gallery / Workspace).
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return nullptr;
+    }
+    const QPointF scenePt = m_view->mapToScene(viewPos);
+    const QList<QGraphicsItem *> hits = scene->items(scenePt, Qt::IntersectsItemShape,
+                                                     Qt::DescendingOrder, m_view->transform());
+    for (QGraphicsItem *gi : hits) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (m_view->liveItems().contains(ii)) {
+                return ii;
+            }
+        }
+    }
+    return nullptr;
+}
+
+ImageItem *AnnotationController::itemForDraftSid() const
+{
+    if (!m_view || m_draftSid == kInvalidSessionImageId) {
+        return targetItem();
+    }
+    for (ImageItem *it : m_view->liveItems()) {
+        if (it && it->sessionId() == m_draftSid) {
+            return it;
+        }
+    }
+    return targetItem();
+}
+
 
 SessionImageId AnnotationController::targetSid(ImageItem *item) const
 {
@@ -241,10 +288,14 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
                                          const QRectF &pageBounds, bool pageYUp,
                                          const QSize &sourceSize) const
 {
-    if (!item || !m_view) {
+    if (!item || !m_view || sourceSize.width() < 1 || sourceSize.height() < 1) {
         return {};
     }
-    // View → scene → item local → display (subtract offset) — inverse of paint.
+    // One pipeline (inverse of paint):
+    //   view → scene → item local → logical display → source → page
+    // Content orient (flip + quarter turns + crop) is only in ContentXform —
+    // no separate rotate/flip branches. Item placement (spread scale, Workspace
+    // pose) is handled by mapFromScene.
     const QPointF local =
         item->mapFromScene(m_view->mapToScene(viewPos)) - item->offset();
     SessionImageId sid = targetSid(item);
@@ -261,13 +312,12 @@ QPointF AnnotationController::viewToPage(ImageItem *item, const QPoint &viewPos,
         disp = QPointF(local.x() * qreal(logical.width()) / qreal(itemSz.width()),
                        local.y() * qreal(logical.height()) / qreal(itemSz.height()));
     }
-    const QRectF srcRect = ContentXform::mapDisplayRectToSource(
-        QRectF(disp.x(), disp.y(), 1.0, 1.0), sourceSize, x);
-    if (srcRect.isEmpty()) {
+    const QPointF srcPt = ContentXform::mapDisplayPointToSource(disp, sourceSize, x);
+    if (!qIsFinite(srcPt.x()) || !qIsFinite(srcPt.y())) {
         return {};
     }
-    const QRectF pageRect =
-        ThumtooCache::imageRectToPageRect(srcRect, pageBounds, sourceSize, pageYUp);
+    const QRectF pageRect = ThumtooCache::imageRectToPageRect(
+        QRectF(srcPt.x(), srcPt.y(), 1e-3, 1e-3), pageBounds, sourceSize, pageYUp);
     return pageRect.center();
 }
 
@@ -637,10 +687,7 @@ bool AnnotationController::tryMousePress(QMouseEvent *event)
     if (!isToolActive() || !m_view || !event || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (!m_view->isImageMode()) {
-        return false;
-    }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemAtViewPos(event->pos());
     if (!item) {
         return false;
     }
@@ -794,7 +841,7 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
     if (!m_drawing || !isToolActive() || !event) {
         return false;
     }
-    ImageItem *item = targetItem();
+    ImageItem *item = itemForDraftSid();
     if (!item) {
         return false;
     }
@@ -845,6 +892,7 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
     if (event && event->button() != Qt::LeftButton) {
         return false;
     }
+    // item resolved via m_draftSid in finish* helpers / itemForDraftSid
     m_drawing = false;
     if (m_tool == Annotation::Tool::FreehandHighlighter
         || m_tool == Annotation::Tool::Pen) {

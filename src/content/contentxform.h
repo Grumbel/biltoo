@@ -233,6 +233,12 @@ QRectF mapSourceRectToOriented(const QRectF &sourceRect, const QSize &native,
  */
 QTransform sourceToDisplayTransform(const QSize &native, const Value &x);
 
+/** Single-point maps (prefer over 1×1 AABB for rotate-correct input/paint). */
+QPointF mapSourcePointToDisplay(const QPointF &sourcePt, const QSize &native,
+                               const Value &x);
+QPointF mapDisplayPointToSource(const QPointF &displayPt, const QSize &native,
+                               const Value &x);
+
 } // namespace ContentXform
 
 #endif

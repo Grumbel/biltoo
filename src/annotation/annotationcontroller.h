@@ -79,6 +79,9 @@ public:
 
 private:
     ImageItem *targetItem() const;
+    /** Top-most live ImageItem under view pos (Gallery/Workspace hit-test). */
+    ImageItem *itemAtViewPos(const QPoint &viewPos) const;
+    ImageItem *itemForDraftSid() const;
     QString pathForSid(SessionImageId sid) const;
     /** Committed page objects (+ optional select chrome) for one item. */
     void paintItemAnnotations(QPainter &painter, ImageItem *item,

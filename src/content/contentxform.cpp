@@ -542,4 +542,27 @@ QTransform sourceToDisplayTransform(const QSize &native, const Value &x)
     return QTransform(m11, m12, m21, m22, o.x(), o.y());
 }
 
+QPointF mapSourcePointToDisplay(const QPointF &sourcePt, const QSize &native,
+                                const Value &x)
+{
+    if (!isPositiveSize(native)) {
+        return {};
+    }
+    return sourceToDisplayTransform(native, x).map(sourcePt);
+}
+
+QPointF mapDisplayPointToSource(const QPointF &displayPt, const QSize &native,
+                                const Value &x)
+{
+    if (!isPositiveSize(native)) {
+        return {};
+    }
+    bool invertible = false;
+    const QTransform inv = sourceToDisplayTransform(native, x).inverted(&invertible);
+    if (!invertible) {
+        return {};
+    }
+    return inv.map(displayPt);
+}
+
 } // namespace ContentXform
