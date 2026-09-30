@@ -2022,17 +2022,19 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    // Image-mode floor: rasters min_scale 0; document pages may use live
-    // negative scales (thumtoo PDF/DjVu/EPUB denser tiles).
+    // Shared cover path with Gallery/Image (prepare_and_paint_cover).
+    // Slideshow is cover-fit, not interactive 1:1 zoom: keep min_scale 0 so we
+    // never target live negative scales (−1 = 2× layout). Paint used
+    // kDocumentLiveMinScale while tickSlideshowTileLod stayed at 0 — incomplete
+    // −1 grids painted a cropped subset of cells. Image mode still uses
+    // kDocumentLiveMinScale for document zoom (imageitem_tilelod).
     tilelod::CoverPaintArgs args;
     args.lod = lod;
     args.native = native;
     args.dest = dest;
     args.underlay = underlay;
     args.tick_budget = 32;
-    args.min_scale = (PagePath::isPageRef(path) || PagePath::isTextForceRef(path))
-                         ? tilelod::kDocumentLiveMinScale
-                         : 0;
+    args.min_scale = 0;
     args.tick = true;
     WorkspaceItemState app;
     if (snapshotSlideshowContentAppearance(path, &app)

@@ -977,8 +977,12 @@ Biltoo:
 
 - `tilelod::dim_at_tile_scale` expands for `scale < 0` (matches thumtoo
   `pdf_page_size_at_scale`).
-- Image / Slideshow floor: `kDocumentLiveMinScale` (−4) for page refs so density
-  can request live finer tiles when zoomed past 1:1 layout.
+- Image-mode floor: `kDocumentLiveMinScale` (−4) for page refs so density can
+  request live finer tiles when zoomed past 1:1 layout.
+- **Slideshow** cover paint/tick: `min_scale` **0** only (shared
+  `prepare_and_paint_cover`). Phase is cover-fit; negative live scales are
+  Image-mode zoom territory. Mixing −4 paint with 0 tick produced incomplete
+  −1 grids (cropped tile subset).
 - Gallery overview still density-floors; zoom-in may request negative scales for
   document pages only.
 - **SVG:** opened as a normal path today (no `//page:`). Negative scales are

@@ -2,16 +2,17 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2841.1-spread-annot-shared-path (on origin `40b320f` / HudModel tr).
+**Tip:** biltoo-2842.1-slideshow-tile-min-scale-0 (on origin `1824408`).
 
-### 2841.1
-- Annotation overlay: Image mode (including Double View) paints all `liveItems`
-  and hit-tests multi-underlay like Gallery — shared path, not primary-only.
-- Empty-canvas centre invite: sessionN > 0 uses statusText (not “Drop images…”).
+### 2842.1
+- Slideshow `paintSlideshowTiles`: `min_scale` **0** (shared `prepare_and_paint_cover`).
+  Paint had `kDocumentLiveMinScale` while tick stayed at 0 → incomplete −1 grids
+  (cropped tile subset). Image mode still uses `kDocumentLiveMinScale` for zoom.
 
-### On origin already
-- 40b320f HudModel tr plural overload
-- 2839.2 Gallery empty status / source-missing chrome
+### On origin already (1824408)
+- Double View annotations multi-`liveItems` path
+- Empty invite when sessionN > 0
+- HudModel tr plurals (40b320f)
 
 ### Required thumtoo
-thumtoo-010.1-document-page-count-store preferred; minimum 009.2 tile stretch
+thumtoo-010.3-document-page-count-store (on origin `b37b5e2`) preferred
