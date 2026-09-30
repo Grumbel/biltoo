@@ -1743,7 +1743,7 @@ void MainWindow::createToolBar()
 {
     m_toolBar = addToolBar(tr("Main"));
     m_toolBar->setObjectName(QStringLiteral("MainToolBar"));
-    m_toolBar->setMovable(false);
+    m_toolBar->setMovable(true);
     m_toolBar->setFloatable(false);
     m_toolBar->setIconSize(QSize(24, 24));
     m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -1962,7 +1962,7 @@ void MainWindow::createToolBar()
     // Left vertical tools strip (Select/Pan/Zoom/Crop/Attention + annot + Workspace chrome).
     m_workspaceToolBar = new QToolBar(tr("Tools"), this);
     m_workspaceToolBar->setObjectName(QStringLiteral("ToolsToolBar"));
-    m_workspaceToolBar->setMovable(false);
+    m_workspaceToolBar->setMovable(true);
     m_workspaceToolBar->setFloatable(false);
     m_workspaceToolBar->setIconSize(QSize(24, 24));
     m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -2019,7 +2019,7 @@ void MainWindow::createToolBar()
     // Browser-style location bar: own row only while visible (see rebuildAuxiliaryTopToolBars).
     m_locationBar = addToolBar(tr("Location"));
     m_locationBar->setObjectName(QStringLiteral("LocationBar"));
-    m_locationBar->setMovable(false);
+    m_locationBar->setMovable(true);
     m_locationBar->setFloatable(false);
     m_locationBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
     m_locationEdit = new QLineEdit(m_locationBar);
@@ -2051,7 +2051,7 @@ void MainWindow::createToolBar()
     // Search bar (same pattern as Location): Ctrl+F shows; pin via View menu.
     m_searchBar = addToolBar(tr("Search"));
     m_searchBar->setObjectName(QStringLiteral("SearchBar"));
-    m_searchBar->setMovable(false);
+    m_searchBar->setMovable(true);
     m_searchBar->setFloatable(false);
     m_searchBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
     m_searchEdit = new QLineEdit(m_searchBar);

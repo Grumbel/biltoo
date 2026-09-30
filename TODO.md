@@ -2,7 +2,7 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2838.3-probe-fail-source-memo (on 2838.2 stack).
+**Tip:** biltoo-2839.1-movable-toolbars (on 2838.3 stack).
 
 ### Stopping point (2838 feature line complete)
 - Document live negative tile scales for PDF/DjVu/EPUB page refs.
@@ -67,6 +67,9 @@ rotation vs content orient — not blocking.
 ### 2838.3
 - Size probe miss (`!reply.size`) notes source unavailable.
 - Filmstrip cell badge when source unavailable with cached preview.
+
+### 2839.1
+- QToolBars `setMovable(true)` (main, Tools, location, search). Floatable still off.
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)
