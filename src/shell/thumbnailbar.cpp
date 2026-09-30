@@ -316,7 +316,8 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             }
         }
         if (ThumtooCache::isSourceUnavailable(warnPath)) {
-            const int s = qBound(8, contentRect.width() / 6, 16);
+            // ~2× previous badge diameter.
+            const int s = qBound(16, contentRect.width() / 3, 32);
             const QRect badge(contentRect.right() - s - 2, contentRect.top() + 2, s, s);
             painter->setPen(Qt::NoPen);
             painter->setBrush(QColor(180, 40, 40, 220));

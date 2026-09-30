@@ -2,7 +2,7 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2839.1-movable-toolbars (on 2838.3 stack).
+**Tip:** biltoo-2839.2-gallery-status-missing-source (on 2839.1 stack).
 
 ### Stopping point (2838 feature line complete)
 - Document live negative tile scales for PDF/DjVu/EPUB page refs.
@@ -70,6 +70,10 @@ rotation vs content orient — not blocking.
 
 ### 2839.1
 - QToolBars `setMovable(true)` (main, Tools, location, search). Floatable still off.
+
+### 2839.2
+- Gallery empty status uses session path count (not “no images” when filmstrip has rows).
+- Source-missing ImageItem banner + filmstrip badge ~2× size.
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)

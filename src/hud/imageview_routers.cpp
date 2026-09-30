@@ -6,6 +6,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "host/thumtoocache.h"
+#include "session/sessiondocument.h"
 #include "host/pagepath.h"
 #include "hud/hudmodel.h"
 #include "item/itemcomponents.h"
@@ -83,9 +84,20 @@ QString ImageView::statusTextEmpty() const
     const QString errName = m_session.identity().hasLastLoadError()
         ? ThumtooCache::formatLoadErrorMessage(m_session.identity().lastLoadErrorRef())
         : QString();
+    int sessionN = 0;
+    int unavailableN = 0;
+    if (m_sessionDoc) {
+        sessionN = m_sessionDoc->size();
+        for (const QString &p : m_sessionDoc->paths()) {
+            if (ThumtooCache::isSourceUnavailable(p)) {
+                ++unavailableN;
+            }
+        }
+    }
     return HudModel::emptyCanvasStatus(
         m_session.identity().hasLastLoadError(), errName,
-        m_image.hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode());
+        m_image.hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode(),
+        sessionN, unavailableN);
 }
 
 QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,

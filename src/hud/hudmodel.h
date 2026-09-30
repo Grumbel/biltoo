@@ -41,7 +41,9 @@ QString sessionBadge(int index, int total);
 /** Empty-canvas status line from mode + load-error flags. */
 QString emptyCanvasStatus(bool hasLoadError, const QString &loadErrorDisplayName,
                           bool hasClassicPath, bool imageMode,
-                          bool galleryMode, bool workspaceMode);
+                          bool galleryMode, bool workspaceMode,
+                          int sessionImageCount = 0,
+                          int sourceUnavailableCount = 0);
 
 /** Multi-item mode header: mode · N images · Zoom Z%. */
 QString multiItemHeader(bool galleryMode, int itemCount, int zoomPercent);

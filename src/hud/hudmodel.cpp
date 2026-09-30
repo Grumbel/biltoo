@@ -95,7 +95,9 @@ QString sessionBadge(int index, int total)
 
 QString emptyCanvasStatus(bool hasLoadError, const QString &loadErrorDisplayName,
                           bool hasClassicPath, bool imageMode,
-                          bool galleryMode, bool workspaceMode)
+                          bool galleryMode, bool workspaceMode,
+                          int sessionImageCount,
+                          int sourceUnavailableCount)
 {
     if (hasLoadError) {
         // loadErrorDisplayName is already a user-facing sentence when callers
@@ -110,9 +112,27 @@ QString emptyCanvasStatus(bool hasLoadError, const QString &loadErrorDisplayName
         return tr("Loading…");
     }
     if (galleryMode) {
+        // Session may still list paths (filmstrip LQIP/cache) while the canvas
+        // has no packed items (no sizes / all sources missing).
+        if (sessionImageCount > 0) {
+            if (sourceUnavailableCount >= sessionImageCount) {
+                return tr("Gallery — %n image(s); source missing (cached previews may remain)",
+                          nullptr, sessionImageCount);
+            }
+            if (sourceUnavailableCount > 0) {
+                return tr("Gallery — %n image(s); some sources missing",
+                          nullptr, sessionImageCount);
+            }
+            return tr("Gallery — %n image(s) (layout pending)",
+                      nullptr, sessionImageCount);
+        }
         return tr("Gallery — no images");
     }
     if (workspaceMode) {
+        if (sessionImageCount > 0) {
+            return tr("Workspace — %n image(s) in session (none on canvas)",
+                      nullptr, sessionImageCount);
+        }
         return tr("Workspace — drop images or use Open");
     }
     return tr("Ready");

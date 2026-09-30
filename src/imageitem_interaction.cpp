@@ -1117,20 +1117,22 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->setOpacity(1.0);
         const qreal inv = 1.0 / ViewTransform::floorScale(screenScale());
         QFont f = painter->font();
-        f.setPointSizeF(qBound(8.0, 11.0 * inv, 16.0));
+        // ~2× previous on-screen size (was ~11pt class).
+        f.setPointSizeF(qBound(12.0, 22.0 * inv, 28.0));
         f.setBold(true);
         painter->setFont(f);
         const QString line = QCoreApplication::translate(
             "ImageItem", "Source missing — cached preview only");
         const QFontMetricsF fm(f);
-        const QRectF textBox = fm.boundingRect(line).adjusted(-6, -3, 6, 3);
-        QRectF bar(r.left(), r.top(), r.width(), qMin(r.height() * 0.22, textBox.height() + 8));
-        if (bar.height() < textBox.height() + 4) {
-            bar.setHeight(textBox.height() + 4);
+        const QRectF textBox = fm.boundingRect(line).adjusted(-10, -6, 10, 6);
+        QRectF bar(r.left(), r.top(), r.width(),
+                   qMin(r.height() * 0.4, textBox.height() + 16));
+        if (bar.height() < textBox.height() + 8) {
+            bar.setHeight(textBox.height() + 8);
         }
-        painter->fillRect(bar, QColor(40, 20, 20, 200));
+        painter->fillRect(bar, QColor(40, 20, 20, 210));
         painter->setPen(QColor(255, 200, 180));
-        painter->drawText(bar, Qt::AlignCenter, line);
+        painter->drawText(bar, Qt::AlignCenter | Qt::TextWordWrap, line);
         painter->restore();
     }
 
