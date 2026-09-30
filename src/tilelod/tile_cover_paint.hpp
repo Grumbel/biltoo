@@ -4,12 +4,15 @@
 #pragma once
 
 /**
- * Identity cover: full native content stretched into @c dest (Slideshow, etc.).
- * Oriented content (crop / flip / 90°) uses paint_tiles_display instead.
+ * Shared cover paint for Slideshow / Gallery virtual / filmstrip.
+ * Identity @c xform: native content stretched into @c dest (paint_draw_plan).
+ * Orient / crop / flip: same viewport + plan, paint via paint_tiles_display
+ * (tile payloads stay source-oriented; dest is layout/display space).
  * Both read Succeeded tiles from TileLodRegistry (process-wide, path-keyed).
  */
 
 #include "tilelod/tile_lod_controller.hpp"
+#include "content/contentxform.h"
 
 #include <QImage>
 #include <QPainter>
@@ -20,9 +23,10 @@ namespace tilelod {
 
 struct CoverPaintArgs {
   TileLodController *lod = nullptr;
-  QSize native;                 ///< content pixel size (scale 0)
-  QRectF dest;                  ///< device/view destination rect
-  QImage underlay;              ///< LQIP / soft under holes
+  QSize native;                 ///< content pixel size (scale 0, source space)
+  QRectF dest;                  ///< device/view destination rect (layout aspect)
+  QImage underlay;              ///< LQIP / soft under holes (identity path only)
+  ContentXform::Value xform;    ///< identity → pure cover; else orient at paint
   int tick_budget = 24;         ///< issue budget per prepare
   int min_scale = 0;            ///< Image/Slideshow: 0 so density can climb
   bool tick = true;             ///< false when host already ticked this frame

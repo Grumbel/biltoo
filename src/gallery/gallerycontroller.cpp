@@ -2282,6 +2282,13 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
             }
             under = ImageCache::matchNativeAspect(under, native);
             args.underlay = under;
+            if (slot.id != kInvalidSessionImageId
+                && m_view->itemWorld().hasDurableAppearance(slot.id)) {
+                const WorkspaceItemState st = m_view->sessionAppearanceValue(slot.id);
+                if (SessionAppearance::hasContentAppearance(st)) {
+                    args.xform = ContentXform::Value::fromState(st);
+                }
+            }
             if (tilelod::prepare_and_paint_cover(painter, args)) {
                 drewTiles = true;
             }

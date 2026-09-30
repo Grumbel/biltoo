@@ -1,19 +1,24 @@
 # TODO / agent handoff
 
-## Status (2026-09-29)
+## Status (2026-09-30)
 
-**Tip:** biltoo-2833.4-tile-stretch-full-bitmap (on 2833.3 stack).
+**Tip:** biltoo-2834.1-cover-orient-shared-paint (on 2833.4 stack).
 
-### 2833.4
-- DrawPlan ExactTile: `src_uv` = full bitmap; stretch into content-space cell
-  (DCT/floor-half size drift is not a failure)
-
-### 2833.3
-- TileLoadCoordinator: settled Failed stops zero-tile re-issue
+### 2834.1
+- `prepare_and_paint_cover` accepts `ContentXform::Value xform`.
+  Identity → prior paint_draw_plan cover; orient/crop/flip →
+  `paint_tiles_display` (same plan/registry as ImageItem).
+- Gallery virtual slots + filmstrip pass session appearance into cover args.
+- Filmstrip content rect was already layout-oriented; tiles now rotate with it.
+- Docs: FILMSTRIP_LAYOUT, tile_display_paint.hpp comments.
 
 ### Required thumtoo
-thumtoo-009.2-tile-size-stretch (on 008.1; includes 009.1 jpeg rgb path)
+thumtoo-010.1-tile-supersede-activity-finish (on 009.2; fixes stuck
+`tile=N/0` Working badge from single-cell supersede activity leak)
 
 ### Note
-`TILE s=N ERROR` means host Failed the cell. With 009.2 + stretch, store hits
-with drifted w/h succeed; paint maps full bitmap → grid dest.
+`status=Working` with `activity tile=N/0` and thumtoo pending=0 was a ledger
+leak, not real work. Apply 010.1.
+
+### Still open (tool unification design)
+- Text Highlighter → Mark selection (ANNOTATION_OVERLAY §14; do not rush)

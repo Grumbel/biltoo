@@ -283,6 +283,15 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                     args.underlay = pm.isNull() ? QImage() : pm.toImage();
                     args.tick = false; // surface tick issues tiles
                     args.min_scale = 0;
+                    SessionImageId sid = kInvalidSessionImageId;
+                    const QVariant sidVar = index.data(ThumbnailBar::RoleSessionId);
+                    if (sidVar.isValid()) {
+                        sid = static_cast<SessionImageId>(sidVar.toLongLong());
+                    }
+                    const WorkspaceItemState st = bar->contentAppearanceFor(sid, path);
+                    if (SessionAppearance::hasContentAppearance(st)) {
+                        args.xform = ContentXform::Value::fromState(st);
+                    }
                     drewTiles = tilelod::prepare_and_paint_cover(painter, args);
                 }
             }

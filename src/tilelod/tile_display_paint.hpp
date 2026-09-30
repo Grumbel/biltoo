@@ -6,10 +6,10 @@
 /**
  * Single host path: DrawPlan + shared TileMemoryCache → screen pixels.
  *
- * - Identity cover (Slideshow / filmstrip rasterize): prepare_and_paint_cover
+ * - Identity cover (Slideshow; Gallery/filmstrip without orient): prepare_and_paint_cover
  *   → TileLodController::paint → paint_draw_plan.
- * - Oriented content (ImageItem / Gallery / Workspace): paint_tiles_display
- *   (same plan + resolve, with ContentXform mapping).
+ * - Oriented content (ImageItem; Gallery/filmstrip CoverPaintArgs::xform):
+ *   prepare_and_paint_cover → paint_tiles_display (same plan + ContentXform).
  *
  * Tile RAM is always path-keyed in TileLodRegistry (process-wide). Controllers
  * are per surface; Succeeded tiles are shared across modes and widgets.

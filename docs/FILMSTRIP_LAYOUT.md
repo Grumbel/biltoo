@@ -208,6 +208,8 @@ new edge so paint does not downsample a large pixmap into a small cell.
 
 Filmstrip cells paint **real 256² tiles** via `tilelod::prepare_and_paint_cover`
 and a per-path `TileLodController` bound to `TileLodRegistry` — the same
-shared RAM and issue path as Gallery / Image / Slideshow cover. Underlay
-pixmaps (EMB/LQIP) remain only under holes or when no tiles yet. Whole-frame
-TileSynth is not used for strip display.
+shared RAM and issue path as Gallery / Image / Slideshow. When the cell has
+content appearance (flip / 90° / crop), `CoverPaintArgs::xform` selects the
+oriented `paint_tiles_display` branch (tile payloads stay source-oriented).
+Underlay pixmaps (EMB/LQIP) remain only under holes or when no tiles yet.
+Whole-frame TileSynth is not used for strip display.

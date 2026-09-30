@@ -149,6 +149,15 @@ public:
     {
         m_contentAppearanceProvider = std::move(provider);
     }
+    /** Content ops for a strip cell (ItemWorld / XDG fallback via provider). */
+    WorkspaceItemState contentAppearanceFor(SessionImageId sessionId,
+                                            const QString &path) const
+    {
+        if (m_contentAppearanceProvider) {
+            return m_contentAppearanceProvider(sessionId, path);
+        }
+        return {};
+    }
     /** Shared host climb (same service as Image/Workspace). */
     void setPathRasterService(PathRasterService *svc);
     /** Shared TileLodController for filmstrip cover paint (Gallery registry). */
