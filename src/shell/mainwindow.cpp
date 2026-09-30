@@ -2981,7 +2981,13 @@ void MainWindow::onSlideshowTick()
 void MainWindow::toggleToolBar()
 {
     const bool visible = m_toggleToolBarAct->isChecked();
-    m_toolBar->setVisible(visible);
+    for (QToolBar *tb : {
+             m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
+             m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar}) {
+        if (tb) {
+            tb->setVisible(visible);
+        }
+    }
     if (!isFullScreen()) {
         m_toolBarVisibleBeforeFullscreen = visible;
     }
@@ -4419,9 +4425,13 @@ void MainWindow::updateFullscreenUi()
         m_searchBarVisibleBeforeFullscreen =
             m_searchBar && m_searchBar->isVisible();
 
-        m_toolBar->setVisible(false);
-        if (m_workspaceToolBar) {
-            m_workspaceToolBar->setVisible(false);
+        for (QToolBar *tb : {
+                 m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
+                 m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar,
+                 m_workspaceToolBar, m_annotationToolBar}) {
+            if (tb) {
+                tb->setVisible(false);
+            }
         }
         m_locationBarTransient = false;
         m_searchBarTransient = false;
@@ -4489,7 +4499,13 @@ void MainWindow::updateFullscreenUi()
             m_imageView->setFocus(Qt::OtherFocusReason);
         }
     } else {
-        m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
+        for (QToolBar *tb : {
+                 m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
+                 m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar}) {
+            if (tb) {
+                tb->setVisible(m_toolBarVisibleBeforeFullscreen);
+            }
+        }
         m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
         if (m_metadataDock) {
             setDockOpen(m_metadataDock, m_metadataVisibleBeforeFullscreen);
@@ -4553,6 +4569,9 @@ void MainWindow::updateFullscreenUi()
         // Tools strip is used in Gallery / Image / Workspace — not Workspace-only.
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(m_imageView != nullptr);
+        }
+        if (m_annotationToolBar) {
+            m_annotationToolBar->setVisible(m_imageView != nullptr);
         }
         m_locationBarTransient = m_locationBarVisibleBeforeFullscreen
             && !m_locationBarPinned;
@@ -4687,7 +4706,13 @@ void MainWindow::readSettings()
     m_searchBarTransient = false;
     rebuildAuxiliaryTopToolBars();
 
-    m_toolBar->setVisible(m_toolBarVisibleBeforeFullscreen);
+    for (QToolBar *tb : {
+             m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
+             m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar}) {
+        if (tb) {
+            tb->setVisible(m_toolBarVisibleBeforeFullscreen);
+        }
+    }
     m_toggleToolBarAct->setChecked(m_toolBarVisibleBeforeFullscreen);
 
     // Messages: explicit preference wins over dockLayoutState (default hidden).

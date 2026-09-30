@@ -1003,13 +1003,14 @@ void MainWindow::createActions()
     m_sortGroup->addAction(m_sortPixelCountAct);
     m_sortGroup->setExclusive(true);
 
-    m_toggleToolBarAct = new QAction(tr("Show &Toolbar"), this);
+    m_toggleToolBarAct = new QAction(tr("Show &Toolbars"), this);
     m_toggleToolBarAct->setShortcut(Qt::CTRL | Qt::Key_T);
     m_toggleToolBarAct->setShortcutContext(Qt::WindowShortcut);
     m_toggleToolBarAct->setCheckable(true);
     m_toggleToolBarAct->setChecked(true);
     m_toggleToolBarAct->setIcon(themeIcon(QStringLiteral("configure-toolbars"), QStyle::SP_ToolBarHorizontalExtensionButton));
-    m_toggleToolBarAct->setStatusTip(tr("Show or hide the toolbar (Ctrl+T)"));
+    m_toggleToolBarAct->setStatusTip(
+        tr("Show or hide the top toolbars (Session, Edit, Transform, Layout, …) (Ctrl+T)"));
     connect(m_toggleToolBarAct, &QAction::triggered, this, &MainWindow::toggleToolBar);
 
     m_showLocationBarAct = new QAction(tr("Show &Location Bar"), this);
@@ -1758,15 +1759,29 @@ void addToolbarGroupSeparator(QToolBar *bar)
 
 void MainWindow::createToolBar()
 {
-    m_toolBar = addToolBar(tr("Main"));
-    m_toolBar->setObjectName(QStringLiteral("MainToolBar"));
-    m_toolBar->setMovable(true);
-    m_toolBar->setFloatable(false);
-    m_toolBar->setIconSize(QSize(24, 24));
-    m_toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    auto makeTopBar = [this](const QString &title, const QString &objectName) -> QToolBar * {
+        QToolBar *tb = addToolBar(title);
+        tb->setObjectName(objectName);
+        tb->setMovable(true);
+        tb->setFloatable(false);
+        tb->setIconSize(QSize(24, 24));
+        tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        return tb;
+    };
+    auto makeLeftBar = [this](const QString &title, const QString &objectName) -> QToolBar * {
+        auto *tb = new QToolBar(title, this);
+        tb->setObjectName(objectName);
+        tb->setMovable(true);
+        tb->setFloatable(false);
+        tb->setIconSize(QSize(24, 24));
+        tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        tb->setOrientation(Qt::Vertical);
+        addToolBar(Qt::LeftToolBarArea, tb);
+        return tb;
+    };
 
-    // Left: file + undo/redo
-    // Up stays in Gallery menu / Esc — not on the main toolbar.
+    // --- Session (file / open / reload / sort) ---
+    m_toolBar = makeTopBar(tr("Session"), QStringLiteral("SessionToolBar"));
     m_toolBar->addAction(m_newAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_openLocationAct);
@@ -1791,22 +1806,25 @@ void MainWindow::createToolBar()
         sortBtn->setMenu(sortPopup);
         m_toolBar->addWidget(sortBtn);
     }
-    addToolbarGroupSeparator(m_toolBar);
-    m_toolBar->addAction(m_undoAct);
-    m_toolBar->addAction(m_redoAct);
-    addToolbarGroupSeparator(m_toolBar);
-    m_toolBar->addAction(m_rotateLeftAct);
-    m_toolBar->addAction(m_rotateRightAct);
-    m_toolBar->addAction(m_flipHAct);
-    m_toolBar->addAction(m_flipVAct);
-    m_toolBar->addAction(m_cropAct);
-    m_toolBar->addAction(m_viewBackgroundAct);
-    // Attention Point stays under Image menu (specialized; not main-bar).
-    addToolbarGroupSeparator(m_toolBar);
-    // Gallery layout combo: main button = Go to Gallery (current layout icon);
-    // small menu button = pick a different layout (QToolButton::MenuButtonPopup).
+
+    // --- Edit ---
+    m_editToolBar = makeTopBar(tr("Edit"), QStringLiteral("EditToolBar"));
+    m_editToolBar->addAction(m_undoAct);
+    m_editToolBar->addAction(m_redoAct);
+
+    // --- Transform (rotate / flip / crop / background) ---
+    m_transformToolBar = makeTopBar(tr("Transform"), QStringLiteral("TransformToolBar"));
+    m_transformToolBar->addAction(m_rotateLeftAct);
+    m_transformToolBar->addAction(m_rotateRightAct);
+    m_transformToolBar->addAction(m_flipHAct);
+    m_transformToolBar->addAction(m_flipVAct);
+    m_transformToolBar->addAction(m_cropAct);
+    m_transformToolBar->addAction(m_viewBackgroundAct);
+
+    // --- Layout (gallery packs + workspace mode + spread + band count) ---
+    m_layoutToolBar = makeTopBar(tr("Layout"), QStringLiteral("LayoutToolBar"));
     {
-        auto *layoutBtn = new QToolButton(m_toolBar);
+        auto *layoutBtn = new QToolButton(m_layoutToolBar);
         layoutBtn->setObjectName(QStringLiteral("LayoutToolButton"));
         layoutBtn->setPopupMode(QToolButton::MenuButtonPopup);
         auto *layoutPopup = new QMenu(layoutBtn);
@@ -1823,16 +1841,12 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutFacingAct);
         layoutBtn->setMenu(layoutPopup);
         layoutBtn->setDefaultAction(m_galleryLayoutToolbarAct);
-        m_toolBar->addWidget(layoutBtn);
-        // Seed icon/tooltip from the preferred return layout (Masonry by default).
+        m_layoutToolBar->addWidget(layoutBtn);
         syncGalleryLayoutUi(m_galleryReturnLayout);
     }
-    // Workspace mode sits next to the layout group (mode switcher, not a pack).
-    m_toolBar->addAction(m_workspaceModeAct);
-
-    // Double view (spread): toggle + menu for binding / direction / N.
+    m_layoutToolBar->addAction(m_workspaceModeAct);
     {
-        auto *dvBtn = new QToolButton(m_toolBar);
+        auto *dvBtn = new QToolButton(m_layoutToolBar);
         dvBtn->setPopupMode(QToolButton::MenuButtonPopup);
         dvBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
         auto *dvMenu = new QMenu(dvBtn);
@@ -1848,63 +1862,55 @@ void MainWindow::createToolBar()
         dvMenu->addAction(m_spreadN4Act);
         dvBtn->setMenu(dvMenu);
         dvBtn->setDefaultAction(m_doubleViewAct);
-        m_toolBar->addWidget(dvBtn);
+        m_layoutToolBar->addWidget(dvBtn);
+    }
+    {
+        auto *masonryCountHost = new QWidget(m_layoutToolBar);
+        auto *masonryCountLayout = new QHBoxLayout(masonryCountHost);
+        masonryCountLayout->setContentsMargins(4, 0, 4, 0);
+        masonryCountLayout->setSpacing(4);
+        m_masonryCountLabel = new QLabel(tr("Columns:"), masonryCountHost);
+        m_masonryCountSpin = new QSpinBox(masonryCountHost);
+        m_masonryCountSpin->setRange(1, 32);
+        m_masonryCountSpin->setSingleStep(1);
+        m_masonryCountSpin->setValue(3);
+        m_masonryCountSpin->setToolTip(
+            tr("Columns (Grid / Contact sheet / Masonry) or rows (Masonry Rows / Strip)."));
+        masonryCountLayout->addWidget(m_masonryCountLabel);
+        masonryCountLayout->addWidget(m_masonryCountSpin);
+        m_masonryCountAction = m_layoutToolBar->addWidget(masonryCountHost);
+        m_masonryCountAction->setVisible(false);
+        connect(m_masonryCountSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+                this, [this](int count) {
+                    if (!m_imageView) {
+                        return;
+                    }
+                    const auto mode = m_imageView->hostLayout().currentMode();
+                    if (mode == LayoutMode::MasonryRows
+                        || mode == LayoutMode::MasonryRowsFill
+                        || mode == LayoutMode::StripRows) {
+                        m_imageView->hostGallery().setMasonryRows(count);
+                    } else if (mode == LayoutMode::Grid
+                               || mode == LayoutMode::GridCrop
+                               || mode == LayoutMode::ContactSheet) {
+                        m_imageView->hostGallery().setGridColumns(count);
+                    } else {
+                        m_imageView->hostGallery().setMasonryColumns(count);
+                    }
+                });
     }
 
-    // Masonry column/row count — shown while a masonry layout is active
-    auto *masonryCountHost = new QWidget(m_toolBar);
-    auto *masonryCountLayout = new QHBoxLayout(masonryCountHost);
-    masonryCountLayout->setContentsMargins(4, 0, 4, 0);
-    masonryCountLayout->setSpacing(4);
-    m_masonryCountLabel = new QLabel(tr("Columns:"), masonryCountHost);
-    m_masonryCountSpin = new QSpinBox(masonryCountHost);
-    m_masonryCountSpin->setRange(1, 32);
-    m_masonryCountSpin->setSingleStep(1);
-    m_masonryCountSpin->setValue(3);
-    m_masonryCountSpin->setToolTip(
-        tr("Columns (Grid / Contact sheet / Masonry) or rows (Masonry Rows / Strip)."));
-    masonryCountLayout->addWidget(m_masonryCountLabel);
-    masonryCountLayout->addWidget(m_masonryCountSpin);
-    m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
-    m_masonryCountAction->setVisible(false);
-    connect(m_masonryCountSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, [this](int count) {
-                if (!m_imageView) {
-                    return;
-                }
-                const auto mode = m_imageView->hostLayout().currentMode();
-                if (mode == LayoutMode::MasonryRows
-                    || mode == LayoutMode::MasonryRowsFill
-                    || mode == LayoutMode::StripRows) {
-                    m_imageView->hostGallery().setMasonryRows(count);
-                } else if (mode == LayoutMode::Grid
-                           || mode == LayoutMode::GridCrop
-                           || mode == LayoutMode::ContactSheet) {
-                    m_imageView->hostGallery().setGridColumns(count);
-                } else {
-                    m_imageView->hostGallery().setMasonryColumns(count);
-                }
-            });
+    // --- Navigate ---
+    m_navigateToolBar = makeTopBar(tr("Navigate"), QStringLiteral("NavigateToolBar"));
+    m_navigateToolBar->addAction(m_previousAct);
+    m_navigateToolBar->addAction(m_slideshowAct);
+    m_navigateToolBar->addAction(m_nextAct);
 
-    // Expanding spacer — centres prev / play / next
-    auto *spacerLeft = new QWidget(m_toolBar);
-    spacerLeft->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_toolBar->addWidget(spacerLeft);
-
-    // Centre: previous, slideshow, next
-    m_toolBar->addAction(m_previousAct);
-    m_toolBar->addAction(m_slideshowAct);
-    m_toolBar->addAction(m_nextAct);
-
-    auto *spacerRight = new QWidget(m_toolBar);
-    spacerRight->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_toolBar->addWidget(spacerRight);
-
-    // Right: zoom group, workspace mode, metadata, fullscreen
-    // Toolbar +/- : hold-to-zoom (smooth). Menu / shortcuts keep single-step QActions.
+    // --- Zoom ---
+    m_zoomToolBar = makeTopBar(tr("Zoom"), QStringLiteral("ZoomToolBar"));
     {
         auto makeHoldZoomBtn = [this](QAction *act, int direction) -> QToolButton * {
-            auto *btn = new QToolButton(m_toolBar);
+            auto *btn = new QToolButton(m_zoomToolBar);
             btn->setIcon(act->icon());
             btn->setToolTip(act->toolTip().isEmpty() ? act->text() : act->toolTip());
             btn->setStatusTip(act->statusTip());
@@ -1929,68 +1935,47 @@ void MainWindow::createToolBar()
         auto *holdOut = makeHoldZoomBtn(m_zoomOutAct, -1);
         holdOut->setToolTip(tr("Zoom out (hold for continuous)"));
         holdOut->setStatusTip(tr("Zoom out continuously while held"));
-        m_toolBar->addWidget(holdIn);
-        m_toolBar->addWidget(holdOut);
-        // Stepwise buttons (menu action) kept for comparison / testing.
-        m_toolBar->addAction(m_zoomInAct);
-        m_toolBar->addAction(m_zoomOutAct);
-        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomInAct))) {
+        m_zoomToolBar->addWidget(holdIn);
+        m_zoomToolBar->addWidget(holdOut);
+        m_zoomToolBar->addAction(m_zoomInAct);
+        m_zoomToolBar->addAction(m_zoomOutAct);
+        if (auto *b = qobject_cast<QToolButton *>(m_zoomToolBar->widgetForAction(m_zoomInAct))) {
             b->setToolTip(tr("Zoom in one step"));
         }
-        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomOutAct))) {
+        if (auto *b = qobject_cast<QToolButton *>(m_zoomToolBar->widgetForAction(m_zoomOutAct))) {
             b->setToolTip(tr("Zoom out one step"));
         }
     }
-    m_toolBar->addAction(m_zoom1to1Act);
-    m_toolBar->addAction(m_zoomFitAct);
-    m_toolBar->addAction(m_zoomFillAct);
-    addToolbarGroupSeparator(m_toolBar);
-    // Text panel (speaker glyph) — not Speak; TTS stays under Edit.
-    if (m_toggleTextAct) {
-        m_toolBar->addAction(m_toggleTextAct);
-    }
-    // Toolbar: open/close OCR panel only. Run stays on the panel button.
-    if (m_toggleOcrAct) {
-        m_toggleOcrAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
-        m_toolBar->addAction(m_toggleOcrAct);
-    } else {
-        m_toolBar->addAction(m_ocrPageAct);
-    }
-    m_toolBar->addAction(m_showTextRegionsAct);
-    addToolbarGroupSeparator(m_toolBar);
-    m_toolBar->addAction(m_toggleThumbnailBarAct);
-    m_toolBar->addAction(m_toggleMetadataAct);
-    if (m_toggleAdjustmentsAct) {
-        m_toolBar->addAction(m_toggleAdjustmentsAct);
-    }
-    // Help sits with chrome toggles, immediately before Fullscreen.
-    m_toolBar->addAction(m_toggleHelpAct);
-    // Panels popup: extra separators so it reads apart from help / fullscreen.
-    addToolbarGroupSeparator(m_toolBar);
-    if (m_panelsMenu) {
-        auto *panelsBtn = new QToolButton(m_toolBar);
-        panelsBtn->setObjectName(QStringLiteral("PanelsToolButton"));
-        panelsBtn->setIcon(themeIcon(QStringLiteral("view-list-details"),
-                                     QStyle::SP_FileDialogDetailedView));
-        panelsBtn->setToolTip(tr("Panels"));
-        panelsBtn->setStatusTip(tr("Show or hide side panels and the filmstrip"));
-        panelsBtn->setPopupMode(QToolButton::InstantPopup);
-        panelsBtn->setMenu(m_panelsMenu);
-        panelsBtn->setAutoRaise(true);
-        m_toolBar->addWidget(panelsBtn);
-    }
-    addToolbarGroupSeparator(m_toolBar);
-    m_toolBar->addAction(m_fullscreenAct);
+    m_zoomToolBar->addAction(m_zoom1to1Act);
+    m_zoomToolBar->addAction(m_zoomFitAct);
+    m_zoomToolBar->addAction(m_zoomFillAct);
 
-    // Left vertical tools strip (Select/Pan/Zoom/Crop/Attention + annot + Workspace chrome).
-    m_workspaceToolBar = new QToolBar(tr("Tools"), this);
-    m_workspaceToolBar->setObjectName(QStringLiteral("ToolsToolBar"));
-    m_workspaceToolBar->setMovable(true);
-    m_workspaceToolBar->setFloatable(false);
-    m_workspaceToolBar->setIconSize(QSize(24, 24));
-    m_workspaceToolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_workspaceToolBar->setOrientation(Qt::Vertical);
-    addToolBar(Qt::LeftToolBarArea, m_workspaceToolBar);
+    // --- Text / OCR ---
+    m_textToolBar = makeTopBar(tr("Text"), QStringLiteral("TextToolBar"));
+    if (m_toggleTextAct) {
+        m_textToolBar->addAction(m_toggleTextAct);
+    }
+    if (m_toggleOcrAct) {
+        m_textToolBar->addAction(m_toggleOcrAct);
+    }
+    if (m_ocrPageAct) {
+        m_textToolBar->addAction(m_ocrPageAct);
+    }
+    m_textToolBar->addAction(m_showTextRegionsAct);
+
+    // --- Panels ---
+    m_panelsToolBar = makeTopBar(tr("Panels"), QStringLiteral("PanelsToolBar"));
+    m_panelsToolBar->addAction(m_toggleThumbnailBarAct);
+    m_panelsToolBar->addAction(m_toggleMetadataAct);
+    if (m_toggleAdjustmentsAct) {
+        m_panelsToolBar->addAction(m_toggleAdjustmentsAct);
+    }
+    if (m_toggleHelpAct) {
+        m_panelsToolBar->addAction(m_toggleHelpAct);
+    }
+
+    // --- Tools (left): canvas interaction ---
+    m_workspaceToolBar = makeLeftBar(tr("Tools"), QStringLiteral("ToolsToolBar"));
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addAction(m_zoomToolAct);
@@ -2000,46 +1985,73 @@ void MainWindow::createToolBar()
     if (m_attentionAct) {
         m_workspaceToolBar->addAction(m_attentionAct);
     }
-    if (m_annotHighlightAct) {
-        m_workspaceToolBar->addAction(m_annotHighlightAct);
-    }
-    if (m_annotTextHighlightAct) {
-        m_workspaceToolBar->addAction(m_annotTextHighlightAct);
-    }
-    if (m_annotPenAct) {
-        m_workspaceToolBar->addAction(m_annotPenAct);
-    }
-    if (m_annotEraserAct) {
-        m_workspaceToolBar->addAction(m_annotEraserAct);
-    }
-    if (m_annotSelectAct) {
-        m_workspaceToolBar->addAction(m_annotSelectAct);
-    }
-    if (m_annotRectAct) {
-        m_workspaceToolBar->addAction(m_annotRectAct);
-    }
-    if (m_annotEllipseAct) {
-        m_workspaceToolBar->addAction(m_annotEllipseAct);
-    }
-    if (m_annotLineAct) {
-        m_workspaceToolBar->addAction(m_annotLineAct);
-    }
-    if (m_annotStickyAct) {
-        m_workspaceToolBar->addAction(m_annotStickyAct);
-    }
     addToolbarGroupSeparator(m_workspaceToolBar);
-    // Page guide pair, then temporary default toggle, then layout.
-    // Background itself lives on the main toolbar (mode-dispatch) and in the
-    // Workspace menu — not duplicated on this vertical bar.
     m_workspaceToolBar->addAction(m_pageGuideAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     addToolbarGroupSeparator(m_workspaceToolBar);
     m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
-    addToolbarGroupSeparator(m_workspaceToolBar);
-    m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
+    if (m_toggleLayoutPanelAct) {
+        addToolbarGroupSeparator(m_workspaceToolBar);
+        m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
+    }
     m_workspaceToolBar->hide();
 
-    // Browser-style location bar: own row only while visible (see rebuildAuxiliaryTopToolBars).
+    // --- Annotations (left): mark-up tools ---
+    m_annotationToolBar = makeLeftBar(tr("Annotations"), QStringLiteral("AnnotationToolBar"));
+    if (m_annotHighlightAct) {
+        m_annotationToolBar->addAction(m_annotHighlightAct);
+    }
+    if (m_annotTextHighlightAct) {
+        m_annotationToolBar->addAction(m_annotTextHighlightAct);
+    }
+    if (m_annotPenAct) {
+        m_annotationToolBar->addAction(m_annotPenAct);
+    }
+    if (m_annotEraserAct) {
+        m_annotationToolBar->addAction(m_annotEraserAct);
+    }
+    if (m_annotSelectAct) {
+        m_annotationToolBar->addAction(m_annotSelectAct);
+    }
+    if (m_annotRectAct) {
+        m_annotationToolBar->addAction(m_annotRectAct);
+    }
+    if (m_annotEllipseAct) {
+        m_annotationToolBar->addAction(m_annotEllipseAct);
+    }
+    if (m_annotLineAct) {
+        m_annotationToolBar->addAction(m_annotLineAct);
+    }
+    if (m_annotStickyAct) {
+        m_annotationToolBar->addAction(m_annotStickyAct);
+    }
+    m_annotationToolBar->hide();
+
+    // View → Toolbars (must run after bars exist; createMenus runs earlier).
+    if (m_viewMenu) {
+        auto *toolbarsMenu = m_viewMenu->addMenu(tr("T&oolbars"));
+        toolbarsMenu->setStatusTip(tr("Show or hide each toolbar independently"));
+        auto addBarToggle = [toolbarsMenu](QToolBar *tb) {
+            if (!tb) {
+                return;
+            }
+            if (QAction *a = tb->toggleAction()) {
+                toolbarsMenu->addAction(a);
+            }
+        };
+        addBarToggle(m_toolBar);
+        addBarToggle(m_editToolBar);
+        addBarToggle(m_transformToolBar);
+        addBarToggle(m_layoutToolBar);
+        addBarToggle(m_navigateToolBar);
+        addBarToggle(m_zoomToolBar);
+        addBarToggle(m_textToolBar);
+        addBarToggle(m_panelsToolBar);
+        toolbarsMenu->addSeparator();
+        addBarToggle(m_workspaceToolBar);
+        addBarToggle(m_annotationToolBar);
+    }
+
     m_locationBar = addToolBar(tr("Location"));
     m_locationBar->setObjectName(QStringLiteral("LocationBar"));
     m_locationBar->setMovable(true);
@@ -2291,7 +2303,9 @@ void MainWindow::installActionHelpTracking()
 
     // Toolbars: disabled QToolButtons do not emit QAction::hovered; resolve
     // via actionAt under the cursor (parent receives mouse when child disabled).
-    for (QToolBar *tb : {m_toolBar, m_workspaceToolBar}) {
+    for (QToolBar *tb : {m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
+                          m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar,
+                          m_workspaceToolBar, m_annotationToolBar}) {
         if (!tb) {
             continue;
         }
@@ -2529,7 +2543,9 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_toggleScrollBarsAct, tr(
         "<p>Show or hide scroll bars on the image view.</p>"));
     setHelp(m_toggleToolBarAct, tr(
-        "<p>Show or hide the main toolbar.</p>"));
+        "<p>Show or hide the <b>top</b> toolbars together (Session, Edit, Transform, "
+        "Layout, Navigate, Zoom, Text, Panels). Individual bars stay under "
+        "<b>View → Toolbars</b>. Left Tools / Annotations are separate.</p>"));
     setHelp(m_showLocationBarAct, tr(
         "<p>Keep the location bar visible. Otherwise it opens with the location shortcut "
         "and hides on Enter or Esc.</p>"));

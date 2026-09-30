@@ -674,8 +674,19 @@ private:
     KDDockWidgets::QtWidgets::DockWidget *m_helpDock = nullptr;
     KeyboardShortcutsPanel *m_shortcutsPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_shortcutsDock = nullptr;
+    /** Top strip: Session (also legacy alias for “main” toolbar visibility). */
     QToolBar *m_toolBar = nullptr;
+    QToolBar *m_editToolBar = nullptr;
+    QToolBar *m_transformToolBar = nullptr;
+    QToolBar *m_layoutToolBar = nullptr;
+    QToolBar *m_navigateToolBar = nullptr;
+    QToolBar *m_zoomToolBar = nullptr;
+    QToolBar *m_textToolBar = nullptr;
+    QToolBar *m_panelsToolBar = nullptr;
+    /** Left vertical: canvas tools (select/pan/zoom/crop/attention). */
     QToolBar *m_workspaceToolBar = nullptr;
+    /** Left vertical: annotation tools. */
+    QToolBar *m_annotationToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;
     QProgressBar *m_statusProgress = nullptr;
     /** Cancels stale archive-expand workers when a newer open starts. */
