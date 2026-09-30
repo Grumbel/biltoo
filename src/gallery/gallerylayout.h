@@ -9,6 +9,7 @@
 #include <QSizeF>
 #include "item/itemcomponents.h"
 #include <cmath>
+#include <algorithm>
 #include "view/viewtransform.h"
 #include <functional>
 
@@ -324,10 +325,33 @@ inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes
 }
 
 /**
+ * Robust width for contact-sheet scale: median native width so one ultra-wide
+ * page does not shrink every other page (large empty gutters on normal rows).
+ */
+inline qreal contactSheetReferenceWidth(const QVector<QSizeF> &layoutSizes)
+{
+    if (layoutSizes.isEmpty()) {
+        return 1.0;
+    }
+    QVector<qreal> widths;
+    widths.reserve(layoutSizes.size());
+    for (const QSizeF &ns : layoutSizes) {
+        widths.append(ns.width() > 1.0 ? ns.width() : 1.0);
+    }
+    std::sort(widths.begin(), widths.end());
+    const int n = widths.size();
+    if (n % 2 == 1) {
+        return widths.at(n / 2);
+    }
+    return 0.5 * (widths.at(n / 2 - 1) + widths.at(n / 2));
+}
+
+/**
  * Contact sheet: order-preserving wrap L→R, T→B with **one global scale**.
- * Scale is target column width / max page width so relative page sizes stay
- * true and every page fits a nominal column. Last row is left-aligned (never stretched to full width).
- * Short pages in a mixed-height row are vertically centred (valign middle).
+ * Scale targets nominal column width from the **median** page width (not max),
+ * so a single wide outlier does not force empty space on every other row.
+ * Pages wider than the row at that scale are scaled down individually to fit.
+ * Last row is left-aligned (never stretched). Short pages are vertically centred.
  */
 inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSizes,
                                                qreal margin, qreal gap, qreal availW,
@@ -336,13 +360,8 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
     const int cols = resolvedFlowColumns(gridColumns);
     const qreal layoutW = availW;
     const qreal targetW = cellAxisLength(layoutW, gap, cols);
-    qreal maxW = 1.0;
-    for (const QSizeF &ns : layoutSizes) {
-        if (ns.width() > maxW) {
-            maxW = ns.width();
-        }
-    }
-    const qreal globalScale = axisFillScale(targetW, maxW);
+    const qreal refW = contactSheetReferenceWidth(layoutSizes);
+    const qreal globalScale = axisFillScale(targetW, refW);
 
     struct Entry {
         QSizeF ns;
@@ -364,13 +383,18 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
     };
 
     for (const QSizeF &ns : layoutSizes) {
-        const qreal scale = globalScale;
-        const qreal w = ns.width() * scale;
-        const qreal h = ns.height() * scale;
+        qreal scale = globalScale;
+        qreal w = ns.width() * scale;
+        // Outlier wider than the layout: shrink only this page so other rows
+        // keep the median-based scale (least empty space overall).
+        if (w > layoutW + 1e-6) {
+            scale = axisFillScale(layoutW, ns.width());
+            w = ns.width() * scale;
+        }
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
             flushRow();
         }
-        cur.append(Entry{ns, scale, w, h});
+        cur.append(Entry{ns, scale, w, ns.height() * scale});
         rowW += (cur.size() == 1 ? w : gap + w);
     }
     flushRow();
@@ -383,7 +407,6 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
         for (const Entry &e : row) {
             placedH = qMax(placedH, e.h);
         }
-        // Vertical centre within the row band (short/landscape pages mid-row).
         const qreal rowMidY = y + placedH / 2.0;
         qreal x = margin;
         for (const Entry &e : row) {
@@ -399,10 +422,10 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
 }
 
 /**
- * Strip rows: order-preserving wrap with **uniform row height**.
- * Each page is scaled to the band height (landscapes become full height and
- * wider). Rows wrap at layout width; last row left-aligned. @p masonryRows
- * sets how many bands share @p availH (same spin as Masonry Rows).
+ * Strip rows: order-preserving wrap with a **base** uniform row height, then
+ * each non-final row that under-fills the width is scaled up so that row uses
+ * the full width (odd sparse rows grow instead of leaving gutters).
+ * @p masonryRows sets the base band height from @p availH.
  */
 inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
                                             qreal margin, qreal gap,
@@ -411,7 +434,7 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
 {
     const int n = layoutSizes.size();
     const int bands = resolvedBandCount(masonryRows, n > 0 ? n : 1);
-    const qreal rowH = cellAxisLength(availH, gap, bands);
+    const qreal baseRowH = cellAxisLength(availH, gap, bands);
     const qreal layoutW = availW;
 
     struct Entry {
@@ -434,21 +457,72 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
     };
 
     for (const QSizeF &ns : layoutSizes) {
-        const qreal scale = axisFillScale(rowH, ns.height());
-        const qreal w = ns.width() * scale;
-        const qreal h = ns.height() * scale;
+        qreal scale = axisFillScale(baseRowH, ns.height());
+        qreal w = ns.width() * scale;
+        qreal h = ns.height() * scale;
+        // Solo ultra-wide at base height: shrink to row width so packing continues.
+        if (w > layoutW + 1e-6) {
+            scale = axisFillScale(layoutW, ns.width());
+            w = ns.width() * scale;
+            h = ns.height() * scale;
+        }
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
             flushRow();
+        }
+        if (cur.isEmpty() && w > layoutW + 1e-6) {
+            scale = axisFillScale(layoutW, ns.width());
+            w = ns.width() * scale;
+            h = ns.height() * scale;
         }
         cur.append(Entry{ns, scale, w, h});
         rowW += (cur.size() == 1 ? w : gap + w);
     }
     flushRow();
 
+    // Fill sparse non-final rows to layout width (minimise empty space on the
+    // odd row without shrinking well-filled neighbours).
+    constexpr qreal kFillSlack = 1.0; // px — avoid fighting float width
+    for (int ri = 0; ri < rows.size(); ++ri) {
+        QVector<Entry> &row = rows[ri];
+        if (row.isEmpty()) {
+            continue;
+        }
+        const bool lastRow = (ri + 1 == rows.size());
+        // Leave a truly short last row ragged (classic contact/strip look).
+        if (lastRow && row.size() == 1) {
+            continue;
+        }
+        qreal used = 0.0;
+        for (int i = 0; i < row.size(); ++i) {
+            used += row.at(i).w;
+            if (i + 1 < row.size()) {
+                used += gap;
+            }
+        }
+        if (used < 1.0 || used >= layoutW - kFillSlack) {
+            continue;
+        }
+        // Last row: only justify when it already covers most of the width
+        // (avoids stretching a single leftover thumbnail across the viewport).
+        if (lastRow && used < layoutW * 0.55) {
+            continue;
+        }
+        const qreal s = layoutW / used;
+        for (Entry &e : row) {
+            e.scale *= s;
+            e.w *= s;
+            e.h *= s;
+        }
+    }
+
     QVector<PackPose> out;
     out.reserve(n);
     qreal y = margin;
     for (const QVector<Entry> &row : rows) {
+        qreal rowH = baseRowH;
+        for (const Entry &e : row) {
+            rowH = qMax(rowH, e.h);
+        }
         qreal x = margin;
         for (const Entry &e : row) {
             PackPose p;
