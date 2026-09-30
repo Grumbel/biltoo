@@ -1709,53 +1709,6 @@ void MainWindow::createMenus()
 
 namespace {
 
-/** Wider, visible group break between toolbar icon clusters. */
-void addToolbarGroupSeparator(QToolBar *bar)
-{
-    if (!bar) {
-        return;
-    }
-    const bool vertical = bar->orientation() == Qt::Vertical;
-    auto *host = new QWidget(bar);
-    host->setObjectName(QStringLiteral("ToolBarGroupSeparator"));
-    host->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-    auto *line = new QFrame(host);
-    line->setObjectName(QStringLiteral("ToolBarGroupSeparatorLine"));
-    line->setFrameShadow(QFrame::Plain);
-    if (vertical) {
-        host->setFixedHeight(18);
-        line->setFrameShape(QFrame::HLine);
-        line->setFixedHeight(2);
-        auto *lay = new QVBoxLayout(host);
-        lay->setContentsMargins(4, 7, 4, 7);
-        lay->setSpacing(0);
-        lay->addWidget(line);
-        line->setStyleSheet(QStringLiteral(
-            "QFrame#ToolBarGroupSeparatorLine {"
-            "  background: palette(mid);"
-            "  border: none;"
-            "  min-height: 2px;"
-            "  max-height: 2px;"
-            "}"));
-    } else {
-        host->setFixedWidth(18);
-        line->setFrameShape(QFrame::VLine);
-        line->setFixedWidth(2);
-        auto *lay = new QHBoxLayout(host);
-        lay->setContentsMargins(7, 4, 7, 4);
-        lay->setSpacing(0);
-        lay->addWidget(line);
-        line->setStyleSheet(QStringLiteral(
-            "QFrame#ToolBarGroupSeparatorLine {"
-            "  background: palette(mid);"
-            "  border: none;"
-            "  min-width: 2px;"
-            "  max-width: 2px;"
-            "}"));
-    }
-    bar->addWidget(host);
-}
-
 } // namespace
 
 void MainWindow::createToolBar()
