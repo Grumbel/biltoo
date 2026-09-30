@@ -11,4 +11,4 @@ SPDX-License-Identifier: GPL-3.0-or-later
 | **Session lists** | Recent Sessions, Bookshelf | XDG **state** JSON (`SessionListStore`) |
 | **Library** | tiles, OCR | thumtoo Store |
 
-`SessionListStore` writes `session-lists.json` under AppStateLocation / `~/.local/state/biltoo/`, debounced (~400 ms), flushed on quit. Migrates legacy QSettings arrays once.
+`SessionListStore` writes `session-lists.json` under XDG state home / `~/.local/state/biltoo/`, debounced (~400 ms), flushed on quit. Migrates legacy QSettings arrays once.

@@ -70,19 +70,13 @@ SessionListStore::SessionListStore(QObject *parent)
 
 QString SessionListStore::stateDirectory()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::AppStateLocation);
-#else
-    QString dir;
-#endif
-    if (dir.isEmpty()) {
-        QString xdg = qEnvironmentVariable("XDG_STATE_HOME");
-        if (xdg.isEmpty()) {
-            xdg = QDir::homePath() + QStringLiteral("/.local/state");
-        }
-        dir = xdg + QStringLiteral("/biltoo");
+    // XDG state only. Do not use QStandardPaths::AppStateLocation — absent in
+    // some Qt 6 builds (compile error even when QT_VERSION claims 6.7+).
+    QString xdg = qEnvironmentVariable("XDG_STATE_HOME");
+    if (xdg.isEmpty()) {
+        xdg = QDir::homePath() + QStringLiteral("/.local/state");
     }
-    return dir;
+    return xdg + QStringLiteral("/biltoo");
 }
 
 QString SessionListStore::storeFilePath()
