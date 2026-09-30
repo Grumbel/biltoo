@@ -40,20 +40,31 @@ EdgeNavPolicy::Zone ImageController::edgeZoneAt(const QPoint &viewPos) const
         // Crop / attention / annotation tools own the viewport — no edge-nav HUD.
         return EdgeNavPolicy::Zone::None;
     }
+    // Use viewport size (not the full QGraphicsView including scrollbars):
+    // mouse coords are viewport-local, and the right/bottom HUD must not claim
+    // the scrollbar strip where clicks cannot hit the edge chrome.
+    const QWidget *vp = m_view->viewport();
+    const int vw = vp ? vp->width() : m_view->width();
+    const int vh = vp ? vp->height() : m_view->height();
+    if (viewPos.x() < 0 || viewPos.y() < 0 || viewPos.x() >= vw || viewPos.y() >= vh) {
+        return EdgeNavPolicy::Zone::None;
+    }
     return EdgeNavPolicy::zoneAt(
-        viewPos, m_view->width(), m_view->height(),
+        viewPos, vw, vh,
         sessionNav().isGalleryReturnAvailable(),
         sessionNav().isImageModeNavEnabled());
 }
 
 int ImageController::edgeZoneWidth() const
 {
-    return EdgeNavPolicy::zoneWidth(m_view->width());
+    const QWidget *vp = m_view->viewport();
+    return EdgeNavPolicy::zoneWidth(vp ? vp->width() : m_view->width());
 }
 
 int ImageController::edgeZoneHeight() const
 {
-    return EdgeNavPolicy::zoneHeight(m_view->height());
+    const QWidget *vp = m_view->viewport();
+    return EdgeNavPolicy::zoneHeight(vp ? vp->height() : m_view->height());
 }
 
 bool ImageController::setHoverEdge(EdgeNavPolicy::Zone zone)

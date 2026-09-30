@@ -291,6 +291,18 @@ bool ViewShellChrome::handleViewportEvent(QEvent *event)
     case QEvent::Drop:
         dropEvent(static_cast<QDropEvent *>(event));
         return true;
+    case QEvent::Leave:
+    case QEvent::HoverLeave:
+        // Moving onto scrollbars (siblings of the viewport under the scroll
+        // area) does not leave the ImageView widget, so ImageView::leaveEvent
+        // never runs — clear edge HUD here so Right/Left/Up hide when the
+        // pointer can no longer click them.
+        if (m_view) {
+            m_view->hostImage().onViewportLeave();
+            m_view->hostGallery().onViewportLeave();
+            m_view->hostSlideshow().onViewportLeave();
+        }
+        return false;
     default:
         return false;
     }
