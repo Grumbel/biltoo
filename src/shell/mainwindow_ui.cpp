@@ -532,7 +532,7 @@ void MainWindow::createActions()
         }
     });
 
-    m_ocrPageAct = new QAction(tr("OCR &This Page"), this);
+    m_ocrPageAct = new QAction(tr("OCR &Panel…"), this);
     m_ocrPageAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
     m_ocrPageAct->setStatusTip(tr("Open the OCR panel for the current page"));
     m_ocrPageAct->setWhatsThis(tr(
@@ -1049,7 +1049,7 @@ void MainWindow::createActions()
         m_toggleOcrAct = m_ocrDock->toggleAction();
         m_toggleOcrAct->setText(tr("Show &OCR Panel"));
         m_toggleOcrAct->setStatusTip(
-            tr("OCR options, progress, and log (page or whole document)"));
+            tr("Show or hide the OCR panel (does not start OCR; use Run OCR in the panel)"));
         connect(m_ocrDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
             if (visible) {
                 updateOcrPanel();
@@ -1932,7 +1932,13 @@ void MainWindow::createToolBar()
     if (m_toggleTextAct) {
         m_toolBar->addAction(m_toggleTextAct);
     }
-    m_toolBar->addAction(m_ocrPageAct);
+    // Toolbar: open/close OCR panel only. Run stays on the panel button.
+    if (m_toggleOcrAct) {
+        m_toggleOcrAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
+        m_toolBar->addAction(m_toggleOcrAct);
+    } else {
+        m_toolBar->addAction(m_ocrPageAct);
+    }
     m_toolBar->addAction(m_showTextRegionsAct);
     addToolbarGroupSeparator(m_toolBar);
     m_toolBar->addAction(m_toggleThumbnailBarAct);

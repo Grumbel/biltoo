@@ -2,17 +2,12 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2842.1-slideshow-tile-min-scale-0 (on origin `1824408`).
+**Tip:** biltoo-2843.1-open-focus-and-ocr-panel (on origin `6c3a0cc`).
 
-### 2842.1
-- Slideshow `paintSlideshowTiles`: `min_scale` **0** (shared `prepare_and_paint_cover`).
-  Paint had `kDocumentLiveMinScale` while tick stayed at 0 → incomplete −1 grids
-  (cropped tile subset). Image mode still uses `kDocumentLiveMinScale` for zoom.
+### Stack on origin/master
+1. Open-focus: Gallery/Filmstrip double-click centres Image on click point.
+2. OCR toolbar opens panel only; Run is not default.
 
-### On origin already (1824408)
-- Double View annotations multi-`liveItems` path
-- Empty invite when sessionN > 0
-- HudModel tr plurals (40b320f)
-
-### Required thumtoo
-thumtoo-010.3-document-page-count-store (on origin `b37b5e2`) preferred
+### On origin already
+- 6c3a0cc slideshow min_scale 0
+- 1824408 Double View annotations multi-liveItems

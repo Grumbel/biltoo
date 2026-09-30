@@ -89,7 +89,8 @@ void OcrPanel::buildUi()
     auto *actions = new QGroupBox(tr("Run"), inner);
     auto *actLay = new QVBoxLayout(actions);
     m_runBtn = new QPushButton(tr("Run OCR"), actions);
-    m_runBtn->setDefault(true);
+    m_runBtn->setDefault(false);
+    m_runBtn->setAutoDefault(false);
     m_cancelBtn = new QPushButton(tr("Cancel"), actions);
     m_cancelBtn->setEnabled(false);
     actLay->addWidget(m_runBtn);
