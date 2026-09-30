@@ -325,33 +325,52 @@ inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes
 }
 
 /**
- * Robust width for contact-sheet scale: median native width so one ultra-wide
- * page does not shrink every other page (large empty gutters on normal rows).
+ * Scale a contact/strip row so native widths fill @p layoutW (relative sizes kept).
+ * sum(nativeW)*scale + (n-1)*gap = layoutW.
  */
-inline qreal contactSheetReferenceWidth(const QVector<QSizeF> &layoutSizes)
+inline void scaleRowToWidth(QVector<qreal> &scales,
+                            QVector<qreal> &widths,
+                            QVector<qreal> &heights,
+                            const QVector<QSizeF> &natives,
+                            qreal gap,
+                            qreal layoutW)
 {
-    if (layoutSizes.isEmpty()) {
-        return 1.0;
+    const int n = natives.size();
+    if (n <= 0) {
+        return;
     }
-    QVector<qreal> widths;
-    widths.reserve(layoutSizes.size());
-    for (const QSizeF &ns : layoutSizes) {
-        widths.append(ns.width() > 1.0 ? ns.width() : 1.0);
+    qreal sumW = 0.0;
+    for (const QSizeF &ns : natives) {
+        sumW += (ns.width() > 1.0 ? ns.width() : 1.0);
     }
-    std::sort(widths.begin(), widths.end());
-    const int n = widths.size();
-    if (n % 2 == 1) {
-        return widths.at(n / 2);
+    if (sumW < 1e-6) {
+        sumW = 1.0;
     }
-    return 0.5 * (widths.at(n / 2 - 1) + widths.at(n / 2));
+    const qreal gaps = gap * qreal(n > 1 ? n - 1 : 0);
+    const qreal s = qMax(1e-6, (layoutW - gaps) / sumW);
+    scales.resize(n);
+    widths.resize(n);
+    heights.resize(n);
+    for (int i = 0; i < n; ++i) {
+        const QSizeF &ns = natives.at(i);
+        scales[i] = s;
+        widths[i] = ns.width() * s;
+        heights[i] = ns.height() * s;
+        // Solo ultra-wide: never exceed layoutW.
+        if (n == 1 && widths[i] > layoutW + 1e-6) {
+            scales[i] = layoutW / qMax(1.0, ns.width());
+            widths[i] = ns.width() * scales[i];
+            heights[i] = ns.height() * scales[i];
+        }
+    }
 }
 
 /**
- * Contact sheet: order-preserving wrap L→R, T→B with **one global scale**.
- * Scale targets nominal column width from the **median** page width (not max),
- * so a single wide outlier does not force empty space on every other row.
- * Pages wider than the row at that scale are scaled down individually to fit.
- * Last row is left-aligned (never stretched). Short pages are vertically centred.
+ * Contact sheet: order-preserving wrap with a fixed **column count**.
+ * Full rows take exactly @p gridColumns pages and scale so the row fills the
+ * width (no dangling gutter when one more page would almost fit). The last
+ * row keeps the remainder, left-aligned unless it already fills most of the
+ * width. Relative page widths within a row are preserved.
  */
 inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSizes,
                                                qreal margin, qreal gap, qreal availW,
@@ -359,48 +378,72 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
 {
     const int cols = resolvedFlowColumns(gridColumns);
     const qreal layoutW = availW;
-    const qreal targetW = cellAxisLength(layoutW, gap, cols);
-    const qreal refW = contactSheetReferenceWidth(layoutSizes);
-    const qreal globalScale = axisFillScale(targetW, refW);
+    const int n = layoutSizes.size();
 
     struct Entry {
-        QSizeF ns;
         qreal scale = 1.0;
         qreal w = 0.0;
         qreal h = 0.0;
     };
     QVector<QVector<Entry>> rows;
-    QVector<Entry> cur;
-    qreal rowW = 0.0;
 
-    auto flushRow = [&]() {
-        if (cur.isEmpty()) {
-            return;
+    int i = 0;
+    while (i < n) {
+        const int remaining = n - i;
+        const int take = qMin(cols, remaining);
+        QVector<QSizeF> natives;
+        natives.reserve(take);
+        for (int k = 0; k < take; ++k) {
+            natives.append(layoutSizes.at(i + k));
         }
-        rows.append(cur);
-        cur.clear();
-        rowW = 0.0;
-    };
-
-    for (const QSizeF &ns : layoutSizes) {
-        qreal scale = globalScale;
-        qreal w = ns.width() * scale;
-        // Outlier wider than the layout: shrink only this page so other rows
-        // keep the median-based scale (least empty space overall).
-        if (w > layoutW + 1e-6) {
-            scale = axisFillScale(layoutW, ns.width());
-            w = ns.width() * scale;
+        QVector<qreal> scales, widths, heights;
+        scaleRowToWidth(scales, widths, heights, natives, gap, layoutW);
+        // Last partial row: do not stretch a short remainder across the viewport.
+        const bool lastPartial = (take < cols);
+        if (lastPartial && take >= 1) {
+            qreal used = 0.0;
+            for (int k = 0; k < take; ++k) {
+                used += widths.at(k);
+                if (k + 1 < take) {
+                    used += gap;
+                }
+            }
+            // Only justify when the partial row already covers most of the width.
+            if (used < layoutW * 0.85) {
+                // Use nominal column scale from a full row of `cols` equal median-ish:
+                // scale as if filling cols slots — avoids huge stretch of 1–2 leftovers.
+                qreal sumW = 0.0;
+                for (const QSizeF &ns : natives) {
+                    sumW += (ns.width() > 1.0 ? ns.width() : 1.0);
+                }
+                // Target: each page ~ one column width (same as full row of cols).
+                const qreal colW = cellAxisLength(layoutW, gap, cols);
+                // scale so average native width maps to colW
+                const qreal avgW = sumW / qreal(take);
+                const qreal s = colW / qMax(1.0, avgW);
+                for (int k = 0; k < take; ++k) {
+                    scales[k] = s;
+                    widths[k] = natives.at(k).width() * s;
+                    heights[k] = natives.at(k).height() * s;
+                    if (widths[k] > layoutW + 1e-6) {
+                        scales[k] = layoutW / qMax(1.0, natives.at(k).width());
+                        widths[k] = natives.at(k).width() * scales[k];
+                        heights[k] = natives.at(k).height() * scales[k];
+                    }
+                }
+            }
         }
-        if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
-            flushRow();
+        QVector<Entry> row;
+        row.reserve(take);
+        for (int k = 0; k < take; ++k) {
+            row.append(Entry{scales.at(k), widths.at(k), heights.at(k)});
         }
-        cur.append(Entry{ns, scale, w, ns.height() * scale});
-        rowW += (cur.size() == 1 ? w : gap + w);
+        rows.append(row);
+        i += take;
     }
-    flushRow();
 
     QVector<PackPose> out;
-    out.reserve(layoutSizes.size());
+    out.reserve(n);
     qreal y = margin;
     for (const QVector<Entry> &row : rows) {
         qreal placedH = 0.0;
@@ -456,18 +499,48 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
         rowW = 0.0;
     };
 
+    auto rowUsed = [&](const QVector<Entry> &row) -> qreal {
+        qreal u = 0.0;
+        for (int i = 0; i < row.size(); ++i) {
+            u += row.at(i).w;
+            if (i + 1 < row.size()) {
+                u += gap;
+            }
+        }
+        return u;
+    };
+    auto applyUniformScale = [&](QVector<Entry> &row, qreal s) {
+        for (Entry &e : row) {
+            e.scale *= s;
+            e.w *= s;
+            e.h *= s;
+        }
+    };
+
     for (const QSizeF &ns : layoutSizes) {
         qreal scale = axisFillScale(baseRowH, ns.height());
         qreal w = ns.width() * scale;
         qreal h = ns.height() * scale;
-        // Solo ultra-wide at base height: shrink to row width so packing continues.
         if (w > layoutW + 1e-6) {
             scale = axisFillScale(layoutW, ns.width());
             w = ns.width() * scale;
             h = ns.height() * scale;
         }
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
-            flushRow();
+            // Almost fits: squeeze current row + this page to layoutW instead of
+            // leaving a large trailing gutter (Columns-driven compactness).
+            const qreal need = rowW + gap + w;
+            const qreal squeeze = layoutW / need;
+            // Allow up to ~12% shrink so one more cell can land on the row.
+            if (squeeze >= 0.88) {
+                applyUniformScale(cur, squeeze);
+                scale *= squeeze;
+                w *= squeeze;
+                h *= squeeze;
+                rowW = rowUsed(cur);
+            } else {
+                flushRow();
+            }
         }
         if (cur.isEmpty() && w > layoutW + 1e-6) {
             scale = axisFillScale(layoutW, ns.width());

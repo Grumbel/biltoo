@@ -2,14 +2,18 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2856.1-toolbar-toggle-view (on `ea477d6` + agent stack).
+**Tip:** biltoo-2857.1-contact-sheet-cols (on `ea477d6` + agent stack).
 
-### 2856.1
-- QToolBar uses `toggleViewAction()`, not `toggleAction()` (dock widgets).
+### 2857.1
+- **Contact Sheet**: pack exactly `Columns` pages per full row and scale the
+  row to fill width (no almost-fit trailing gutter). Last partial row stays
+  nominal column scale unless already ~full.
+- **Strip Rows**: if the next page almost fits, squeeze the row up to 12%
+  instead of wrapping early.
 
 ### Prior
+- 2856.1 toolbar toggleViewAction
 - 2855.1 zoom/text icons
-- 2854.1 perf Working stale
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.
