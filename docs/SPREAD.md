@@ -297,7 +297,7 @@ class SpreadTextCoordinator {
 
 | Phase | Ship | Done when |
 |-------|------|-----------|
-| **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Done:** state/book/layout, Double view, nav stride, multi-underlay install, text paint deferred. |
+| **P0** | `SpreadState` + presenter layout N=2; nav stride; Double view toggle | **Done:** state/book/layout, Double view, nav stride, multi-underlay install, text paint deferred. Annotation paint/hit uses the same multi-`liveItems` path as Gallery (not primary-only). |
 | **P1** | Gallery View Selection; status range | **Done:** View Selection + Gallery menu; status range; event-driven sync; FixedN filmstrip; leave/dual mutual exclusion; N≤8. |
 | **P2** | Text coordinator + cross-page rubber-band/copy | **Done:** layers, rubber-band, paint, copy, panel flatten, multi search, secondary glyphs. |
 | **P3** | Speak plan + highlights over members | **Done:** SpeakSpan.sessionId; full-spread plan; Image highlight; Gallery multi-member ring (active strong, others dim). |

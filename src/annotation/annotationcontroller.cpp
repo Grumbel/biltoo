@@ -183,10 +183,13 @@ ImageItem *AnnotationController::itemAtViewPos(const QPoint &viewPos) const
     if (!m_view) {
         return nullptr;
     }
-    if (m_view->isImageMode()) {
+    // Single-page Image: session cursor underlay. Multi-underlay Image
+    // (Double View / spread) shares Gallery/Workspace scene hit-test so the
+    // second page is not forced to primaryItem().
+    if (m_view->isImageMode() && m_view->liveItems().size() <= 1) {
         return targetItem();
     }
-    // Top-most ImageItem under the cursor (Gallery / Workspace).
+    // Top-most ImageItem under the cursor (Gallery / Workspace / spread).
     QGraphicsScene *scene = m_view->canvasScene();
     if (!scene) {
         return nullptr;
@@ -512,24 +515,15 @@ void AnnotationController::paintOverlay(QPainter &painter)
         return;
     }
 
-    if (m_view->isImageMode()) {
-        ImageItem *item = targetItem();
-        if (!item) {
-            return;
-        }
-        paintItemAnnotations(painter, item, true);
-        paintDraftChrome(painter, item);
-        return;
-    }
-
-    // Gallery / Workspace: committed marks on every tile; selection + in-progress
-    // draft chrome on the draft sid tile (tools may be active in Gallery).
+    // One path for Image (single + Double View / spread), Gallery, Workspace:
+    // committed marks on every live underlay. Selection chrome is a no-op when
+    // selectedIds is empty (see AnnotationPainter::paintSelectionChrome).
+    // Draft stroke/rubber is drawn once on the draft item.
     for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->sessionId() == kInvalidSessionImageId) {
             continue;
         }
-        const bool chrome = (item->sessionId() == m_draftSid);
-        paintItemAnnotations(painter, item, chrome);
+        paintItemAnnotations(painter, item, true);
     }
     if (m_drawing) {
         if (ImageItem *di = itemForDraftSid()) {

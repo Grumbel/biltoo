@@ -319,6 +319,8 @@ void ViewShellChrome::paintEmptySessionInvite(QPainter &painter) const
     QString title;
     QString hint;
     const QString loadErr = m_view->hostSessionId().lastLoadErrorRef();
+    const SessionDocument *doc = m_view->sessionDocument();
+    const int sessionN = doc ? doc->size() : 0;
     if (!loadErr.isEmpty()) {
         // Same path as status bar — library error codes only (no exists()).
         title = ThumtooCache::formatLoadErrorMessage(loadErr);
@@ -326,6 +328,14 @@ void ViewShellChrome::paintEmptySessionInvite(QPainter &painter) const
             "ImageView",
             "Cached previews may still appear in the filmstrip if this path was "
             "opened before. New tiles cannot be generated until the file is available.");
+    } else if (sessionN > 0) {
+        // Session has paths but no packed canvas items (missing sources, sizes
+        // pending, or expand-only). Do not show the virgin "Drop images" invite.
+        title = m_view->statusText();
+        hint = QCoreApplication::translate(
+            "ImageView",
+            "Cached previews may remain in the filmstrip. Layout needs sizes; "
+            "missing sources cannot generate new tiles.");
     } else if (m_view->isWorkspaceMode()) {
         title = QCoreApplication::translate("ImageView", "Drop images here");
         hint = QCoreApplication::translate(
