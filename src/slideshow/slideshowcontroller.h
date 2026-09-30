@@ -180,6 +180,11 @@ private:
     QSize resolveMotionLogicalSize(const QString &path) const;
     QRectF computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh, qreal motionT, QPointF biasA, QPointF biasB, const QString &path) const;
     bool paintSlideshowTiles(QPainter *painter, const QString &path, const QRectF &dest, const QImage &underlay) const;
+    /**
+     * Tick phase-owned tile sessions while pure-phase owns the viewport.
+     * @return true if either arm still needs coverage (caller should re-arm LOD timer).
+     */
+    bool tickSlideshowTileLod(int budget);
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT, uint pathHash) const;
     void freezeScrollbarsForMotion();
     void resetItemPlacementForMotion(ImageItem *item);

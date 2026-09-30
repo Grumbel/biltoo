@@ -1,5 +1,20 @@
 # Slideshow
 
+## Tile LOD during pure-phase
+
+Live `ImageItem` is hidden while the pure-phase composite owns the viewport, so
+`tileLodWanted()` is false and `tickPrimaryTileLod` used to skip all work.
+Higher pyramid cells could finish in thumtoo (activity shows load) while the
+dwell frame stayed on coarse parents.
+
+**Contract:** `DisplayPipelineController::tickPrimaryTileLod` calls
+`SlideshowController::tickSlideshowTileLod` when progress is active. That ticks
+phase `fromTiles` / `toTiles` sessions (shared `TileLodRegistry`), rebinds wake
+→ viewport update, and re-arms the LOD timer until coverage settles.
+
+Paint still uses `prepare_and_paint_cover` (optional `ContentXform` for orient).
+
+
 ## Warm cache / durable tiles
 
 When `ImageCache` already covers the soft or target edge, slideshow must not

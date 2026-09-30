@@ -1693,6 +1693,31 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
         return;
     }
 
+    // Slideshow pure-phase: ImageItems are not tileLodWanted (hidden). Phase
+    // TileLodControllers only climbed inside paintSlideshowTiles; with motion
+    // off that meant completions could load into the registry while the dwell
+    // frame stayed on coarse parents until the next key press. Drive phase
+    // sessions here (same budget path as Image focus).
+    if (m_host->hostSlideshow().hud().isProgressActive()) {
+        if (m_host->hostSlideshow().tickSlideshowTileLod(budget)) {
+            if (m_host->viewportWidget()) {
+                m_host->viewportWidget()->update();
+            }
+            BackgroundWorkLog::noteTileLodTick();
+            if (!tileLodTimer()) {
+                tileLodTimer() = new QTimer(m_host->hostObject());
+                tileLodTimer()->setSingleShot(true);
+                QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(), [this]() {
+                    tickPrimaryTileLod(m_host->isGalleryMode() ? 256 : 32);
+                });
+            }
+            if (!tileLodTimer()->isActive()) {
+                tileLodTimer()->start(16);
+            }
+            return;
+        }
+    }
+
     // Decide first whether any visible (Gallery) / live (Image/Workspace) item
     // still needs tiles. Gallery watchdog used to call this every 1s even when
     // coverage was done — that ran TileLoadCoordinator::tick and could re-arm

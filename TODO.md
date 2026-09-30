@@ -2,19 +2,19 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2834.2-cover-orient-docs-tests (on 2834.1 stack).
+**Tip:** biltoo-2835.1-slideshow-tile-lod-climb (on 2834.2 stack).
 
-### 2834.2
-- Docs: GALLERY_PIXELS + TILE_LOD — cover shares orient path with ImageItem
-- Test: `ContentOrientPaintContractTest::coverDestDensity_usesLayoutSize_whenOriented`
-  (dest aspect = layoutSize; density must not use native on odd turns)
-
-### 2834.1
-- `CoverPaintArgs::xform` → `paint_tiles_display` when orient/crop/flip
-- Gallery virtual + filmstrip pass session appearance
+### 2835.1
+- Slideshow pure-phase: `tickPrimaryTileLod` drives phase tile sessions via
+  `tickSlideshowTileLod` (ImageItems are not tileLodWanted while hidden).
+- Re-arm LOD timer + viewport update until phase coverage settles — higher
+  tiles were loading (activity) but dwell stayed on coarse parents when motion
+  off / paint infrequent.
+- Phase buffer orient uses `PixelKind::FullSource` (quality climb intent).
+- Cover paint gets session `ContentXform` for orient parity with Gallery.
 
 ### Required thumtoo
-thumtoo-010.2-tile-supersede-activity-tests (includes 010.1 activity finish)
+thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)
 
-### Still open
-- Text Highlighter → Mark selection (ANNOTATION_OVERLAY §14; design only)
+### Prior
+2834.2 cover orient docs/tests; 2834.1 cover orient paint

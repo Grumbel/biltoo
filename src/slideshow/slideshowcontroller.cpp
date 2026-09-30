@@ -802,8 +802,11 @@ void SlideshowController::scheduleSlideshowPhaseBufferUpgrade(const QString &pat
             }
             QImage out = capped;
             if (hasApp) {
+                // FullSource: quality climb samples are already display-budget
+                // rasters; SoftPreview only changes transform mode but documents
+                // the wrong intent for mid-slide HQ upgrades.
                 const QImage oriented = SessionAppearance::materializeDisplay(
-                    capped, appState, SessionAppearance::PixelKind::SoftPreview);
+                    capped, appState, SessionAppearance::PixelKind::FullSource);
                 if (!oriented.isNull()) {
                     out = oriented;
                 }
@@ -1907,6 +1910,65 @@ tilelod::TileLodController *SlideshowController::slideshowTilesForPath(const QSt
 }
 
 
+
+bool SlideshowController::tickSlideshowTileLod(int budget)
+{
+    if (!hud().isProgressActive() || budget <= 0) {
+        return false;
+    }
+    bool needMore = false;
+    auto tickArm = [&](const QString &path, tilelod::TileLodController *lod) {
+        if (path.isEmpty() || !lod) {
+            return;
+        }
+        if (lod->path() != path) {
+            lod->setPath(path);
+        }
+        if (lod->session() && m_view->viewport()) {
+            QPointer<QWidget> vp(m_view->viewport());
+            lod->session()->set_wake([vp]() {
+                QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
+                    if (vp) {
+                        vp->update();
+                    }
+                });
+            });
+        }
+        QSize native = m_view->logicalSizeForPath(path);
+        if (!isPositiveSize(native)) {
+            native = ThumtooCache::cachedSize(path);
+        }
+        if (!isPositiveSize(native)) {
+            return;
+        }
+        // Density from viewport CSS long edge vs native (motion dest is similar).
+        const int vw = m_view->viewport() ? m_view->viewport()->width() : 0;
+        const int vh = m_view->viewport() ? m_view->viewport()->height() : 0;
+        if (vw < 1 || vh < 1) {
+            return;
+        }
+        const QSize layout = resolveMotionLogicalSize(path);
+        const double dpc = tilelod::cover_device_per_content(
+            QSizeF(vw, vh), layout.isValid() ? layout : native);
+        lod->setContentSize(native.width(), native.height(), /*minScale=*/0);
+        lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
+        const int applied = lod->tick(budget);
+        if (applied > 0 || !lod->viewportFullyCovered()) {
+            needMore = true;
+        }
+    };
+
+    if (!phase().fromPathRef().isEmpty()) {
+        tickArm(phase().fromPathRef(), phase().ensureFromTiles());
+    }
+    if (!phase().toPathRef().isEmpty()
+        && phase().toPathRef() != phase().fromPathRef()) {
+        tickArm(phase().toPathRef(), phase().ensureToTiles());
+    }
+    return needMore;
+}
+
+
 bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &path,
                                     const QRectF &dest, const QImage &underlay) const
 {
@@ -1968,12 +2030,21 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     args.tick_budget = 32;
     args.min_scale = 0;
     args.tick = true;
+    WorkspaceItemState app;
+    if (snapshotSlideshowContentAppearance(path, &app)
+        && SessionAppearance::hasContentAppearance(app)) {
+        args.xform = ContentXform::Value::fromState(app);
+    }
     const bool drew = tilelod::prepare_and_paint_cover(painter, args);
-    if (drew && !lod->viewportFullyCovered() && m_view->viewport()) {
-        // Keep climbing while the motion/progress timer paints.
+    // Keep climbing: incomplete coverage OR denser scale still holding.
+    // (Previously only !fullyCovered; after last cell of a coarse step lands,
+    // progressive advance issues finer keys — need another frame.)
+    if (m_view->viewport()
+        && (lod->session() && lod->session()->request_scale_holding()
+            || !lod->viewportFullyCovered())) {
         m_view->viewport()->update();
     }
-    // Drive shared coordinator so in-flight tiles complete off the paint path.
+    // Drive phase + ImageItem LOD (tickPrimaryTileLod handles slideshow arms).
     m_view->hostDisplayPipeline().tickPrimaryTileLod(32);
     return drew;
 }
