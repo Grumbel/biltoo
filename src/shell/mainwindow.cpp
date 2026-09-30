@@ -3,6 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include <kddockwidgets/core/DockWidget.h>
+#include "shell/filmstripdraghandle.h"
 #include "shell/messagelogpanel.h"
 #include "shell/performancepanel.h"
 #include "shell/chromecolors.h"
@@ -391,7 +392,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_thumbnailDock = new DockWidget(QStringLiteral("ThumbnailDock"));
     m_thumbnailDock->setTitle(tr("Filmstrip"));
-    m_thumbnailDock->setWidget(m_thumbnailBar);
+    {
+        // Title bar is collapsed (DockViewFactory); left grip starts a dock drag.
+        auto *host = new QWidget;
+        host->setObjectName(QStringLiteral("FilmstripDockHost"));
+        auto *lay = new QHBoxLayout(host);
+        lay->setContentsMargins(0, 0, 0, 0);
+        lay->setSpacing(0);
+        auto *grip = new FilmstripDragHandle(m_thumbnailDock, host);
+        lay->addWidget(grip, 0);
+        lay->addWidget(m_thumbnailBar, 1);
+        m_thumbnailDock->setWidget(host);
+    }
     // addDockWidget deferred until placeFilmstripDock() — preferredSize is ignored
     // when the layout has no other items yet (KD DefaultSizeMode fills 100%).
     connect(m_thumbnailDock, &DockWidget::isOpenChanged, this, [this](bool visible) {

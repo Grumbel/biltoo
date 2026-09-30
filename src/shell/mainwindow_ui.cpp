@@ -2433,7 +2433,7 @@ void MainWindow::populateActionHelpTexts()
         "opens <b>Image</b> mode — it does not place the image on the Workspace.</li>"
         "<li>Drag thumbs onto the Workspace canvas to place them. Filenames under "
         "thumbs can be hidden from View.</li>"
-        "<li>Drag the filmstrip title bar to dock it on any edge (or float it).</li>"
+        "<li>Drag the filmstrip’s left grip to dock it on any edge (or float it).</li>"
         "<li>Visibility defaults differ by mode (Workspace often on, Gallery often off) "
         "and can be toggled independently.</li>"
         "</ul>"

@@ -2,18 +2,14 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2867.1-fixed-toolbar-gaps (on `ea477d6` + agent stack).
+**Tip:** biltoo-2868.1-filmstrip-drag-grip (on `ea477d6` + agent stack).
 
-### 2867.1
-- Toolbars **unmovable** again.
-- Single top **Main** strip: wide group gaps + expanding stretch so Text/Panels
-  stay right-aligned on resize.
-- Single left **Tools** strip with the same group gaps (interaction | page |
-  ink | shapes).
+### 2868.1
+- Filmstrip: left-edge **drag grip** (title bar still collapsed) starts
+  KDDock title-bar drag via `Core::DockWidget::startDragging(false)`.
 
 ### Prior
-- 2866.1 unused toolbar sep
-- 2865.1 edge HUD scrollbar
+- 2867.1 fixed toolbar gaps
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.
