@@ -131,12 +131,17 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
 
-        // Cell tag when large enough on screen (device px).
+        // Cell tag: constant on-screen size (not proportional to cell).
+        // setPixelSize is in painter logical units; deviceTransform scales them,
+        // so divide by sx or labels explode when zoomed in (fine / negative s)
+        // and vanish when zoomed out (coarse / large s).
         const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
-        if (cellDev >= 16.0 && !cellTag.isEmpty()) {
+        if (cellDev >= 18.0 && !cellTag.isEmpty()) {
+            constexpr qreal kTagDevicePx = 11.0;
+            const int cpx = qMax(1, qRound(kTagDevicePx / qMax(sx, qreal(0.001))));
             QFont cf = painter->font();
             cf.setBold(true);
-            const int cpx = qBound(10, qRound(cellDev * 0.22), 48);
+            cf.setStyleHint(QFont::SansSerif);
             cf.setPixelSize(cpx);
             painter->setFont(cf);
             painter->setPen(QColor(0, 0, 0, 200));
@@ -169,13 +174,25 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     if (cov.fully_covered()) {
         summary << QStringLiteral("COMPLETE");
     } else if (cov.in_flight > 0) {
-        summary << QStringLiteral("LOADING");
+        summary << QStringLiteral("LOADING %1/%2")
+                       .arg(cov.exact_succeeded)
+                       .arg(cov.visible);
     } else if (cov.settled() && cov.failed > 0) {
-        summary << QStringLiteral("ERROR %1/%2")
+        // Failed = tile request returned miss (encode deny, cancel, source
+        // error). Negative s is live denser-than-layout (PDF/DjVu/EPUB).
+        summary << QStringLiteral("FAILED %1/%2")
                        .arg(cov.failed)
                        .arg(cov.visible);
+        if (target < 0) {
+            summary << QStringLiteral("live denser");
+        }
+        if (cov.exact_succeeded == 0 && cov.failed == cov.visible) {
+            summary << QStringLiteral("no cells");
+        }
     } else {
-        summary << QStringLiteral("WAITING");
+        summary << QStringLiteral("WAITING %1/%2")
+                       .arg(cov.exact_succeeded)
+                       .arg(cov.visible);
     }
     // EMB/LQIP in the summary only when the plan still has underlay holes —
     // not when every visible cell is EXACT (underlay may still sit under tiles
@@ -191,20 +208,18 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     }
 
     const int nlines = summary.size();
-    const qreal shortEdge = qMin(labelBox.width(), labelBox.height());
-    // Fill most of the content box — host summary, not thumtoo TILE stamps.
-    int px = qRound(shortEdge * 0.92 / (nlines * 1.12));
-    px = qBound(24, px, 1024);
+    // Constant on-screen summary size (same compensation as cell tags).
+    constexpr qreal kSummaryDevicePx = 14.0;
+    int px = qMax(1, qRound(kSummaryDevicePx / qMax(sx, qreal(0.001))));
 
     QFont pf = painter->font();
-    // Black weight — setBold alone often looks medium at large pixel sizes.
     pf.setWeight(QFont::Black);
     pf.setStyleHint(QFont::SansSerif);
     pf.setFamily(QStringLiteral("Sans Serif"));
     pf.setPixelSize(px);
     painter->setFont(pf);
 
-    // Shrink if the longest line exceeds the box width.
+    // Shrink only if a line would exceed the content box in logical units.
     {
         qreal maxLineW = 0.0;
         const QFontMetrics fm(pf);
@@ -212,7 +227,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
             maxLineW = qMax(maxLineW, qreal(fm.horizontalAdvance(line)));
         }
         if (maxLineW > labelBox.width() * 0.98 && maxLineW > 1.0) {
-            px = qBound(18, qRound(px * (labelBox.width() * 0.98) / maxLineW), 1024);
+            px = qMax(1, qRound(px * (labelBox.width() * 0.98) / maxLineW));
             pf.setPixelSize(px);
             painter->setFont(pf);
         }
@@ -234,7 +249,6 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
             lineH);
         painter->drawText(lineRect, Qt::AlignHCenter | Qt::AlignVCenter, line);
     }
-    Q_UNUSED(sx);
     painter->restore();
 }
 
