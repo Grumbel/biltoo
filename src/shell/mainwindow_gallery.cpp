@@ -811,6 +811,9 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(m_imageView && !isFullScreen());
     }
+    if (m_annotationToolBar) {
+        m_annotationToolBar->setVisible(m_imageView && !isFullScreen());
+    }
     // Canvas materials: Gallery/Image → session View; Workspace → project.
     // Same main-toolbar action for all three modes (vertical bar no longer
     // duplicates Background).
