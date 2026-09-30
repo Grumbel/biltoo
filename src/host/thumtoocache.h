@@ -360,13 +360,10 @@ bool hasDurableTilesKnown(const QString &path);
  */
 void scheduleDurableTilesDiscovery(const QString &path);
 /**
- * Session open: fill process size memo + durable-tile memo (no LQIP fetch).
- * Underlay is seeded only by request_size replies into ImageCache.
- * from the Store. Safe on the GUI: schedules pool work and returns immediately
- * (never joins). sizeReady / durableTilesReady notify as memos land; the
- * sizes_cold path in finishApplyExpandedLoad covers the first pack.
- * Off-GUI callers still run the warm synchronously.
- * Does not open source files; Store lookups only.
+ * Session open: warm durable-tile memos after the size gate settles.
+ * Process sizes are hydrated by scheduleProbeBatch (Store get_size, then
+ * request_size only for misses). Underlay still arrives via request_size /
+ * tile LQIP into ImageCache. Safe on the GUI: schedules pool work and returns.
  */
 void warmSessionOpenMemos(const QStringList &paths);
 

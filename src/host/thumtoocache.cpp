@@ -2425,51 +2425,28 @@ void warmSessionOpenMemos(const QStringList &paths)
         return;
     }
     const QStringList copy = paths;
-    // Size memo only (no underlay Store reads). Durable has_tile was split
-    // out so size resolve does not contend with request_size on the Store.
-    auto workOneSize = [](const QString &p) {
-        if (p.isEmpty()) {
-            return;
-        }
-        // Size memo only. Do not Store get_lqip / get_embedded here — that is a
-        // separate underlay fetch. LQIP/EMB enter ImageCache only when
-        // request_size returns them with the size row (finishProbeSlot).
-        // Do NOT emit sizeReady per path — scheduleProbeBatch delivers hits.
-        (void)cachedSize(p, /*scheduleRevalidate=*/false);
-    };
+    // Size hydrate is owned by scheduleProbeBatch (one Store get_size walk,
+    // then request_size only for misses). Do not dual-walk sizes here — that
+    // raced the probe FIFO and produced ~300-hit bursts with ~1s gaps on large
+    // PDF sessions. This path only warms durable has_tile after sizes settle.
     auto workOneDurable = [](const QString &p) {
         if (p.isEmpty()) {
             return;
         }
-        // durableTilesReady fires on first positive hasDurableTiles hit.
         (void)hasDurableTiles(p);
     };
-    // Sequential on the global QThreadPool — never spawn std::thread workers.
-    // Nested pool wait would deadlock when already on a pool thread; raw
-    // threads stacked with per-path scheduleTilePyramid jobs under cold open.
-    auto workAll = [copy, workOneSize, workOneDurable]() {
+    auto workAll = [copy, workOneDurable]() {
         ASSERT_NOT_GUI_THREAD();
         init();
-        // Pass 1: sizes (+ LQIP) so the Gallery size gate can settle quickly.
-        for (const QString &p : copy) {
-            workOneSize(p);
+        // Wait for size gate / probe FIFO to drain so has_tile does not contend
+        // with get_size hydrate or cold request_size on the same Store.
+        for (int i = 0; i < 500 && sizeProbesBusy(); ++i) {
+            QThread::msleep(20);
         }
-        // Pass 2: durable has_tile after size probes drain. Separate pool job
-        // (do not join here) so this slot frees for request_size workers.
-        QThreadPool::globalInstance()->start([copy, workOneDurable]() {
-            ASSERT_NOT_GUI_THREAD();
-            for (int i = 0; i < 500 && sizeProbesBusy(); ++i) {
-                QThread::msleep(20);
-            }
-            for (const QString &p : copy) {
-                workOneDurable(p);
-            }
-        });
+        for (const QString &p : copy) {
+            workOneDurable(p);
+        }
     };
-    // Never join Store warm on the GUI thread. Session-replace clears durable
-    // memos (1234) so every Open paid a full cold warm wall and froze the UI.
-    // finishApplyExpandedLoad already has a sizes_cold probe path; sizeReady /
-    // durableTilesReady drive pack as memos land.
     if (QThread::isMainThread()) {
         QThreadPool::globalInstance()->start(workAll);
     } else {

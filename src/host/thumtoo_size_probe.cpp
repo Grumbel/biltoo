@@ -223,7 +223,8 @@ void scheduleProbeBatch(const QStringList &paths)
         if (path.isEmpty()) {
             continue;
         }
-        if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
+        // GUI-safe memo peek only (cachedSize on GUI does not touch Store).
+        if (const QSize memo = ProcessMemos::instance().size(path);
             memo.isValid() && memo.width() > 0 && memo.height() > 0) {
             memoHits.append(qMakePair(path, memo));
             continue;
@@ -233,9 +234,50 @@ void scheduleProbeBatch(const QStringList &paths)
     if (!memoHits.isEmpty()) {
         emitSizeReadyChunked(std::move(memoHits), generation);
     }
-    if (!need.isEmpty()) {
-        enqueueProbePaths(need);
+    if (need.isEmpty()) {
+        return;
     }
+
+    // One worker: Store get_size only (no request_size LQIP/EMB, no parallel
+    // warmSessionOpenMemos race). Hydrate process memos, emit hits, then
+    // enqueueProbePaths only for true Store misses (cold / incomplete rows).
+    const QStringList needCopy = need;
+    auto hydrate = [needCopy, generation]() {
+        ASSERT_NOT_GUI_THREAD();
+        if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
+            return;
+        }
+        init();
+        QVector<QPair<QString, QSize>> storeHits;
+        QStringList stillNeed;
+        storeHits.reserve(needCopy.size());
+        stillNeed.reserve(needCopy.size() / 8 + 1);
+        for (const QString &path : needCopy) {
+            if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
+                return;
+            }
+            if (path.isEmpty()) {
+                continue;
+            }
+            // Light path: Client::get_size (region dims only).
+            const QSize sz = cachedSize(path, /*scheduleRevalidate=*/false);
+            if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
+                storeHits.append(qMakePair(path, sz));
+            } else {
+                stillNeed.append(path);
+            }
+        }
+        if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
+            return;
+        }
+        if (!storeHits.isEmpty()) {
+            emitSizeReadyChunked(std::move(storeHits), generation);
+        }
+        if (!stillNeed.isEmpty()) {
+            enqueueProbePaths(stillNeed);
+        }
+    };
+    QThreadPool::globalInstance()->start(hydrate);
 }
 
 bool sizeProbesBusy()
