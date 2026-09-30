@@ -4,6 +4,7 @@
 #include "shell/mainwindow_includes.h"
 #include "annotation/annotationtypes.h"
 #include <QActionGroup>
+#include <QFrame>
 #include <QSignalBlocker>
 #include "imageitem.h"
 #include <memory>
@@ -1718,17 +1719,64 @@ void MainWindow::createToolBar()
             return;
         }
         if (QLayout *lay = tb->layout()) {
-            lay->setContentsMargins(2, 0, 2, 0);
-            lay->setSpacing(2);
+            lay->setContentsMargins(4, 0, 4, 0);
+            lay->setSpacing(3);
         }
-        // Compact adjacent toolbars; avoid thick chrome between groups.
         tb->setStyleSheet(QStringLiteral(
-            "QToolBar { spacing: 2px; margin: 0px; padding: 1px; border: none; }"));
+            "QToolBar { spacing: 3px; margin: 0px; padding: 2px; border: none; }"));
     };
+    /** Wide gap between unrelated tool clusters (stronger than QToolBar::addSeparator). */
+    auto addGroupGap = [](QToolBar *bar) {
+        if (!bar) {
+            return;
+        }
+        const bool vertical = bar->orientation() == Qt::Vertical;
+        auto *host = new QWidget(bar);
+        host->setObjectName(QStringLiteral("ToolBarGroupGap"));
+        host->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        auto *line = new QFrame(host);
+        line->setObjectName(QStringLiteral("ToolBarGroupGapLine"));
+        line->setFrameShadow(QFrame::Plain);
+        if (vertical) {
+            host->setFixedHeight(16);
+            line->setFrameShape(QFrame::HLine);
+            line->setFixedHeight(2);
+            auto *lay = new QVBoxLayout(host);
+            lay->setContentsMargins(6, 6, 6, 6);
+            lay->setSpacing(0);
+            lay->addWidget(line);
+        } else {
+            host->setFixedWidth(16);
+            line->setFrameShape(QFrame::VLine);
+            line->setFixedWidth(2);
+            auto *lay = new QHBoxLayout(host);
+            lay->setContentsMargins(6, 4, 6, 4);
+            lay->setSpacing(0);
+            lay->addWidget(line);
+        }
+        line->setStyleSheet(QStringLiteral(
+            "QFrame#ToolBarGroupGapLine {"
+            "  background: palette(mid);"
+            "  border: none;"
+            "}"));
+        bar->addWidget(host);
+    };
+    auto addStretch = [](QToolBar *bar) {
+        if (!bar) {
+            return;
+        }
+        auto *fill = new QWidget(bar);
+        fill->setObjectName(QStringLiteral("ToolBarStretch"));
+        fill->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        fill->setMinimumWidth(12);
+        fill->setStyleSheet(QStringLiteral("background: transparent;"));
+        bar->addWidget(fill);
+    };
+
     auto makeTopBar = [this, tightenBar](const QString &title, const QString &objectName) -> QToolBar * {
         QToolBar *tb = addToolBar(title);
         tb->setObjectName(objectName);
-        tb->setMovable(true);
+        tb->setMovable(false);
         tb->setFloatable(false);
         tb->setIconSize(QSize(22, 22));
         tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -1738,7 +1786,7 @@ void MainWindow::createToolBar()
     auto makeLeftBar = [this, tightenBar](const QString &title, const QString &objectName) -> QToolBar * {
         auto *tb = new QToolBar(title, this);
         tb->setObjectName(objectName);
-        tb->setMovable(true);
+        tb->setMovable(false);
         tb->setFloatable(false);
         tb->setIconSize(QSize(22, 22));
         tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -1749,8 +1797,8 @@ void MainWindow::createToolBar()
         return tb;
     };
 
-    // --- Session (file / open / reload / sort) ---
-    m_toolBar = makeTopBar(tr("Session"), QStringLiteral("SessionToolBar"));
+    // One unmovable top strip: group gaps + stretch so Text/Panels stay right.
+    m_toolBar = makeTopBar(tr("Main"), QStringLiteral("MainToolBar"));
     m_toolBar->addAction(m_newAct);
     m_toolBar->addAction(m_openAct);
     m_toolBar->addAction(m_openLocationAct);
@@ -1776,24 +1824,21 @@ void MainWindow::createToolBar()
         m_toolBar->addWidget(sortBtn);
     }
 
-    // --- Edit ---
-    m_editToolBar = makeTopBar(tr("Edit"), QStringLiteral("EditToolBar"));
-    m_editToolBar->addAction(m_undoAct);
-    m_editToolBar->addAction(m_redoAct);
+    addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_undoAct);
+    m_toolBar->addAction(m_redoAct);
 
-    // --- Transform (rotate / flip / crop / background) ---
-    m_transformToolBar = makeTopBar(tr("Transform"), QStringLiteral("TransformToolBar"));
-    m_transformToolBar->addAction(m_rotateLeftAct);
-    m_transformToolBar->addAction(m_rotateRightAct);
-    m_transformToolBar->addAction(m_flipHAct);
-    m_transformToolBar->addAction(m_flipVAct);
-    m_transformToolBar->addAction(m_cropAct);
-    m_transformToolBar->addAction(m_viewBackgroundAct);
+    addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_rotateLeftAct);
+    m_toolBar->addAction(m_rotateRightAct);
+    m_toolBar->addAction(m_flipHAct);
+    m_toolBar->addAction(m_flipVAct);
+    m_toolBar->addAction(m_cropAct);
+    m_toolBar->addAction(m_viewBackgroundAct);
 
-    // --- Layout (gallery packs + workspace mode + spread + band count) ---
-    m_layoutToolBar = makeTopBar(tr("Layout"), QStringLiteral("LayoutToolBar"));
+    addGroupGap(m_toolBar);
     {
-        auto *layoutBtn = new QToolButton(m_layoutToolBar);
+        auto *layoutBtn = new QToolButton(m_toolBar);
         layoutBtn->setObjectName(QStringLiteral("LayoutToolButton"));
         layoutBtn->setPopupMode(QToolButton::MenuButtonPopup);
         auto *layoutPopup = new QMenu(layoutBtn);
@@ -1810,12 +1855,12 @@ void MainWindow::createToolBar()
         layoutPopup->addAction(m_layoutFacingAct);
         layoutBtn->setMenu(layoutPopup);
         layoutBtn->setDefaultAction(m_galleryLayoutToolbarAct);
-        m_layoutToolBar->addWidget(layoutBtn);
+        m_toolBar->addWidget(layoutBtn);
         syncGalleryLayoutUi(m_galleryReturnLayout);
     }
-    m_layoutToolBar->addAction(m_workspaceModeAct);
+    m_toolBar->addAction(m_workspaceModeAct);
     {
-        auto *dvBtn = new QToolButton(m_layoutToolBar);
+        auto *dvBtn = new QToolButton(m_toolBar);
         dvBtn->setPopupMode(QToolButton::MenuButtonPopup);
         dvBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
         auto *dvMenu = new QMenu(dvBtn);
@@ -1831,10 +1876,10 @@ void MainWindow::createToolBar()
         dvMenu->addAction(m_spreadN4Act);
         dvBtn->setMenu(dvMenu);
         dvBtn->setDefaultAction(m_doubleViewAct);
-        m_layoutToolBar->addWidget(dvBtn);
+        m_toolBar->addWidget(dvBtn);
     }
     {
-        auto *masonryCountHost = new QWidget(m_layoutToolBar);
+        auto *masonryCountHost = new QWidget(m_toolBar);
         auto *masonryCountLayout = new QHBoxLayout(masonryCountHost);
         masonryCountLayout->setContentsMargins(4, 0, 4, 0);
         masonryCountLayout->setSpacing(4);
@@ -1847,7 +1892,7 @@ void MainWindow::createToolBar()
             tr("Columns (Grid / Flow / Flow Fill / Masonry) or rows (Masonry Rows)."));
         masonryCountLayout->addWidget(m_masonryCountLabel);
         masonryCountLayout->addWidget(m_masonryCountSpin);
-        m_masonryCountAction = m_layoutToolBar->addWidget(masonryCountHost);
+        m_masonryCountAction = m_toolBar->addWidget(masonryCountHost);
         m_masonryCountAction->setVisible(false);
         connect(m_masonryCountSpin, QOverload<int>::of(&QSpinBox::valueChanged),
                 this, [this](int count) {
@@ -1869,17 +1914,15 @@ void MainWindow::createToolBar()
                 });
     }
 
-    // --- Navigate ---
-    m_navigateToolBar = makeTopBar(tr("Navigate"), QStringLiteral("NavigateToolBar"));
-    m_navigateToolBar->addAction(m_previousAct);
-    m_navigateToolBar->addAction(m_slideshowAct);
-    m_navigateToolBar->addAction(m_nextAct);
+    addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_previousAct);
+    m_toolBar->addAction(m_slideshowAct);
+    m_toolBar->addAction(m_nextAct);
 
-    // --- Zoom ---
-    m_zoomToolBar = makeTopBar(tr("Zoom"), QStringLiteral("ZoomToolBar"));
+    addGroupGap(m_toolBar);
     {
         auto makeHoldZoomBtn = [this](QAction *act, int direction) -> QToolButton * {
-            auto *btn = new QToolButton(m_zoomToolBar);
+            auto *btn = new QToolButton(m_toolBar);
             btn->setIcon(act->icon());
             btn->setToolTip(act->toolTip().isEmpty() ? act->text() : act->toolTip());
             btn->setStatusTip(act->statusTip());
@@ -1904,60 +1947,55 @@ void MainWindow::createToolBar()
         auto *holdOut = makeHoldZoomBtn(m_zoomOutAct, -1);
         holdOut->setToolTip(tr("Zoom out (hold for continuous)"));
         holdOut->setStatusTip(tr("Zoom out continuously while held"));
-        m_zoomToolBar->addWidget(holdIn);
-        m_zoomToolBar->addWidget(holdOut);
-        m_zoomToolBar->addAction(m_zoomInAct);
-        m_zoomToolBar->addAction(m_zoomOutAct);
-        if (auto *b = qobject_cast<QToolButton *>(m_zoomToolBar->widgetForAction(m_zoomInAct))) {
+        m_toolBar->addWidget(holdIn);
+        m_toolBar->addWidget(holdOut);
+        m_toolBar->addAction(m_zoomInAct);
+        m_toolBar->addAction(m_zoomOutAct);
+        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomInAct))) {
             b->setToolTip(tr("Zoom in one step"));
         }
-        if (auto *b = qobject_cast<QToolButton *>(m_zoomToolBar->widgetForAction(m_zoomOutAct))) {
+        if (auto *b = qobject_cast<QToolButton *>(m_toolBar->widgetForAction(m_zoomOutAct))) {
             b->setToolTip(tr("Zoom out one step"));
         }
     }
-    m_zoomToolBar->addAction(m_zoom1to1Act);
-    m_zoomToolBar->addAction(m_zoomFitAct);
-    m_zoomToolBar->addAction(m_zoomFillAct);
+    m_toolBar->addAction(m_zoom1to1Act);
+    m_toolBar->addAction(m_zoomFitAct);
+    m_toolBar->addAction(m_zoomFillAct);
 
-    // Expanding spacer on the top row (like TeX \hfill): pushes Text/Panels right.
-    m_topFillToolBar = makeTopBar(QString(), QStringLiteral("TopFillToolBar"));
-    m_topFillToolBar->setMovable(false);
-    m_topFillToolBar->toggleViewAction()->setVisible(false);
-    {
-        auto *fill = new QWidget(m_topFillToolBar);
-        fill->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        fill->setMinimumWidth(8);
-        // Invisible; only claims free space between Zoom and Text/Panels.
-        fill->setStyleSheet(QStringLiteral("background: transparent;"));
-        m_topFillToolBar->addWidget(fill);
-    }
+    addStretch(m_toolBar);
+    addGroupGap(m_toolBar);
 
-    // --- Text / OCR ---
-    m_textToolBar = makeTopBar(tr("Text"), QStringLiteral("TextToolBar"));
     if (m_toggleTextAct) {
-        m_textToolBar->addAction(m_toggleTextAct);
+        m_toolBar->addAction(m_toggleTextAct);
     }
     if (m_toggleOcrAct) {
-        m_textToolBar->addAction(m_toggleOcrAct);
+        m_toolBar->addAction(m_toggleOcrAct);
     }
-    // m_ocrPageAct is the same as toggleOcrAct (open panel) — omit from toolbar.
     if (m_ocrDocumentAct) {
-        m_textToolBar->addAction(m_ocrDocumentAct);
+        m_toolBar->addAction(m_ocrDocumentAct);
     }
-    m_textToolBar->addAction(m_showTextRegionsAct);
+    m_toolBar->addAction(m_showTextRegionsAct);
 
-    // --- Panels ---
-    m_panelsToolBar = makeTopBar(tr("Panels"), QStringLiteral("PanelsToolBar"));
-    m_panelsToolBar->addAction(m_toggleThumbnailBarAct);
-    m_panelsToolBar->addAction(m_toggleMetadataAct);
+    addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_toggleThumbnailBarAct);
+    m_toolBar->addAction(m_toggleMetadataAct);
     if (m_toggleAdjustmentsAct) {
-        m_panelsToolBar->addAction(m_toggleAdjustmentsAct);
+        m_toolBar->addAction(m_toggleAdjustmentsAct);
     }
     if (m_toggleHelpAct) {
-        m_panelsToolBar->addAction(m_toggleHelpAct);
+        m_toolBar->addAction(m_toggleHelpAct);
     }
 
-    // --- Tools (left): canvas interaction only ---
+    m_editToolBar = nullptr;
+    m_transformToolBar = nullptr;
+    m_layoutToolBar = nullptr;
+    m_navigateToolBar = nullptr;
+    m_zoomToolBar = nullptr;
+    m_textToolBar = nullptr;
+    m_panelsToolBar = nullptr;
+    m_topFillToolBar = nullptr;
+
+    // Left tools strip: interaction | page | ink | shapes
     m_workspaceToolBar = makeLeftBar(tr("Tools"), QStringLiteral("ToolsToolBar"));
     m_workspaceToolBar->addAction(m_selectToolAct);
     m_workspaceToolBar->addAction(m_panToolAct);
@@ -1968,57 +2006,51 @@ void MainWindow::createToolBar()
     if (m_attentionAct) {
         m_workspaceToolBar->addAction(m_attentionAct);
     }
-    m_workspaceToolBar->hide();
-
-    // --- Page (left): print page guide / layout panel ---
-    m_pageToolBar = makeLeftBar(tr("Page"), QStringLiteral("PageToolBar"));
-    m_pageToolBar->addAction(m_pageGuideAct);
-    m_pageToolBar->addAction(m_fitPageGuideAct);
-    m_pageToolBar->addAction(m_workspaceBgDefaultAct);
+    addGroupGap(m_workspaceToolBar);
+    m_workspaceToolBar->addAction(m_pageGuideAct);
+    m_workspaceToolBar->addAction(m_fitPageGuideAct);
+    m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
     if (m_toggleLayoutPanelAct) {
-        m_pageToolBar->addAction(m_toggleLayoutPanelAct);
+        m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
     }
-    m_pageToolBar->hide();
-
-    // --- Annotations (left): mark-up tools ---
-    m_annotationToolBar = makeLeftBar(tr("Annotations"), QStringLiteral("AnnotationToolBar"));
+    addGroupGap(m_workspaceToolBar);
     if (m_annotHighlightAct) {
-        m_annotationToolBar->addAction(m_annotHighlightAct);
+        m_workspaceToolBar->addAction(m_annotHighlightAct);
     }
     if (m_annotTextHighlightAct) {
-        m_annotationToolBar->addAction(m_annotTextHighlightAct);
+        m_workspaceToolBar->addAction(m_annotTextHighlightAct);
     }
     if (m_annotPenAct) {
-        m_annotationToolBar->addAction(m_annotPenAct);
+        m_workspaceToolBar->addAction(m_annotPenAct);
     }
     if (m_annotEraserAct) {
-        m_annotationToolBar->addAction(m_annotEraserAct);
+        m_workspaceToolBar->addAction(m_annotEraserAct);
     }
     if (m_annotSelectAct) {
-        m_annotationToolBar->addAction(m_annotSelectAct);
+        m_workspaceToolBar->addAction(m_annotSelectAct);
     }
-    m_annotationToolBar->hide();
-
-    // --- Shapes (left): vector tools ---
-    m_shapesToolBar = makeLeftBar(tr("Shapes"), QStringLiteral("ShapesToolBar"));
+    addGroupGap(m_workspaceToolBar);
     if (m_annotRectAct) {
-        m_shapesToolBar->addAction(m_annotRectAct);
+        m_workspaceToolBar->addAction(m_annotRectAct);
     }
     if (m_annotEllipseAct) {
-        m_shapesToolBar->addAction(m_annotEllipseAct);
+        m_workspaceToolBar->addAction(m_annotEllipseAct);
     }
     if (m_annotLineAct) {
-        m_shapesToolBar->addAction(m_annotLineAct);
+        m_workspaceToolBar->addAction(m_annotLineAct);
     }
     if (m_annotStickyAct) {
-        m_shapesToolBar->addAction(m_annotStickyAct);
+        m_workspaceToolBar->addAction(m_annotStickyAct);
     }
-    m_shapesToolBar->hide();
+    m_workspaceToolBar->hide();
 
-    // View → Toolbars (must run after bars exist; createMenus runs earlier).
+    m_pageToolBar = nullptr;
+    m_annotationToolBar = nullptr;
+    m_shapesToolBar = nullptr;
+
     if (m_viewMenu) {
         auto *toolbarsMenu = m_viewMenu->addMenu(tr("T&oolbars"));
-        toolbarsMenu->setStatusTip(tr("Show or hide each toolbar independently"));
+        toolbarsMenu->setStatusTip(tr("Show or hide toolbars"));
         auto addBarToggle = [toolbarsMenu](QToolBar *tb) {
             if (!tb) {
                 return;
@@ -2028,23 +2060,12 @@ void MainWindow::createToolBar()
             }
         };
         addBarToggle(m_toolBar);
-        addBarToggle(m_editToolBar);
-        addBarToggle(m_transformToolBar);
-        addBarToggle(m_layoutToolBar);
-        addBarToggle(m_navigateToolBar);
-        addBarToggle(m_zoomToolBar);
-        addBarToggle(m_textToolBar);
-        addBarToggle(m_panelsToolBar);
-        toolbarsMenu->addSeparator();
         addBarToggle(m_workspaceToolBar);
-        addBarToggle(m_pageToolBar);
-        addBarToggle(m_annotationToolBar);
-        addBarToggle(m_shapesToolBar);
     }
 
     m_locationBar = addToolBar(tr("Location"));
     m_locationBar->setObjectName(QStringLiteral("LocationBar"));
-    m_locationBar->setMovable(true);
+    m_locationBar->setMovable(false);
     m_locationBar->setFloatable(false);
     m_locationBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
     m_locationEdit = new QLineEdit(m_locationBar);
@@ -2076,7 +2097,7 @@ void MainWindow::createToolBar()
     // Search bar (same pattern as Location): Ctrl+F shows; pin via View menu.
     m_searchBar = addToolBar(tr("Search"));
     m_searchBar->setObjectName(QStringLiteral("SearchBar"));
-    m_searchBar->setMovable(true);
+    m_searchBar->setMovable(false);
     m_searchBar->setFloatable(false);
     m_searchBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
     m_searchEdit = new QLineEdit(m_searchBar);

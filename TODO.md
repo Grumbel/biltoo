@@ -2,15 +2,18 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2865.1-edge-hud-scrollbar (on `ea477d6` + agent stack).
+**Tip:** biltoo-2867.1-fixed-toolbar-gaps (on `ea477d6` + agent stack).
 
-### 2865.1
-- Clear Left/Right/Up edge HUD when the pointer leaves the **viewport**
-  (including onto scrollbars).
-- Edge zones use viewport size; positions outside the viewport do not light HUD.
+### 2867.1
+- Toolbars **unmovable** again.
+- Single top **Main** strip: wide group gaps + expanding stretch so Text/Panels
+  stay right-aligned on resize.
+- Single left **Tools** strip with the same group gaps (interaction | page |
+  ink | shapes).
 
 ### Prior
-- 2864.1 TTS settings persist
+- 2866.1 unused toolbar sep
+- 2865.1 edge HUD scrollbar
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.
