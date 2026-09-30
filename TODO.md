@@ -2,16 +2,19 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2877.1-overlay-device-text (on `ea477d6` + agent stack).
+**Tip:** biltoo-2878.1-dock-toolbar-chrome (on `ea477d6` + agent stack).
 
-### 2877.1
-- Tile plan overlay text drawn in **device space** at fixed 11/14 px (no
-  logical px / sx). Fixes FreeType `render glyph failed err=62` from huge
-  setPixelSize when zoomed out.
+### 2878.1
+- **Docks on unmaximize:** `changeEvent` only runs fullscreen chrome when
+  `WindowFullScreen` actually toggles (not on maximize/restore). Fixes docks
+  closing via leave-fullscreen restore snapshots.
+- **Toolbar:** slideshow nav centred (stretch | prev/play/next | stretch);
+  zoom + **fullscreen** button on the right; group gaps are empty space (no
+  separator line).
 
 ### Prior
-- 2876.1 overlay text size (1/sx approach — caused FreeType err)
-- 2875.1 tile scroll cancel
+- 2877.1 overlay device text
+- 2876.1 overlay text size
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

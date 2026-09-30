@@ -4493,8 +4493,16 @@ void MainWindow::showContextMenu(const QPoint &pos)
 
 void MainWindow::changeEvent(QEvent *event)
 {
+    // Maximize / restore also emit WindowStateChange. Running the fullscreen
+    // chrome path on those transitions closed docks (snapshot defaults) when
+    // leaving maximized — looked like docks "vanished" without going fullscreen.
     if (event->type() == QEvent::WindowStateChange) {
-        updateFullscreenUi();
+        const auto *se = static_cast<QWindowStateChangeEvent *>(event);
+        const bool wasFs = se->oldState().testFlag(Qt::WindowFullScreen);
+        const bool nowFs = isFullScreen();
+        if (wasFs != nowFs) {
+            updateFullscreenUi();
+        }
     }
     QMainWindow::changeEvent(event);
 }

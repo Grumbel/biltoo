@@ -55,6 +55,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QEvent>
+#include <QWindowStateChangeEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QLineEdit>

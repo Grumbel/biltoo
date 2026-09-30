@@ -1725,7 +1725,7 @@ void MainWindow::createToolBar()
         tb->setStyleSheet(QStringLiteral(
             "QToolBar { spacing: 3px; margin: 0px; padding: 2px; border: none; }"));
     };
-    /** Wide gap between unrelated tool clusters (stronger than QToolBar::addSeparator). */
+    /** Quiet gap between tool clusters (empty space — no separator line). */
     auto addGroupGap = [](QToolBar *bar) {
         if (!bar) {
             return;
@@ -1734,31 +1734,14 @@ void MainWindow::createToolBar()
         auto *host = new QWidget(bar);
         host->setObjectName(QStringLiteral("ToolBarGroupGap"));
         host->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        auto *line = new QFrame(host);
-        line->setObjectName(QStringLiteral("ToolBarGroupGapLine"));
-        line->setFrameShadow(QFrame::Plain);
+        host->setStyleSheet(QStringLiteral("background: transparent;"));
         if (vertical) {
-            host->setFixedHeight(16);
-            line->setFrameShape(QFrame::HLine);
-            line->setFixedHeight(2);
-            auto *lay = new QVBoxLayout(host);
-            lay->setContentsMargins(6, 6, 6, 6);
-            lay->setSpacing(0);
-            lay->addWidget(line);
+            host->setFixedHeight(12);
+            host->setMinimumWidth(1);
         } else {
-            host->setFixedWidth(16);
-            line->setFrameShape(QFrame::VLine);
-            line->setFixedWidth(2);
-            auto *lay = new QHBoxLayout(host);
-            lay->setContentsMargins(6, 4, 6, 4);
-            lay->setSpacing(0);
-            lay->addWidget(line);
+            host->setFixedWidth(12);
+            host->setMinimumHeight(1);
         }
-        line->setStyleSheet(QStringLiteral(
-            "QFrame#ToolBarGroupGapLine {"
-            "  background: palette(mid);"
-            "  border: none;"
-            "}"));
         bar->addWidget(host);
     };
     auto addStretch = [](QToolBar *bar) {
@@ -1914,12 +1897,14 @@ void MainWindow::createToolBar()
                 });
     }
 
-    addGroupGap(m_toolBar);
+    // Centre: slideshow nav (prev / play / next).
+    addStretch(m_toolBar);
     m_toolBar->addAction(m_previousAct);
     m_toolBar->addAction(m_slideshowAct);
     m_toolBar->addAction(m_nextAct);
+    addStretch(m_toolBar);
 
-    addGroupGap(m_toolBar);
+    // Right: zoom cluster, then fullscreen, then panel toggles.
     {
         auto makeHoldZoomBtn = [this](QAction *act, int direction) -> QToolButton * {
             auto *btn = new QToolButton(m_toolBar);
@@ -1962,9 +1947,10 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomFitAct);
     m_toolBar->addAction(m_zoomFillAct);
 
-    addStretch(m_toolBar);
     addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_fullscreenAct);
 
+    addGroupGap(m_toolBar);
     if (m_toggleTextAct) {
         m_toolBar->addAction(m_toggleTextAct);
     }
