@@ -2,7 +2,14 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2837.1-mark-text-selection (on 2836.1 stack).
+**Tip:** biltoo-2837.2-mark-selection-shortcut (on 2837.1 stack).
+
+### Stopping point
+Tool unification lean path for text markup is complete: Exclusive radio,
+Mark selection (panel + Ctrl+Shift+M), Text Highlighter kept. Next work is
+optional demotion of Text Highlighter after field use, or Workspace free
+rotation vs content orient — not blocking.
+
 
 ### 2835.1
 - Slideshow pure-phase: `tickPrimaryTileLod` drives phase tile sessions via
@@ -28,6 +35,9 @@
   (TextSelection / multi bag → HighlightQuad, panel colour).
 - Text Highlighter tool kept; demotion still optional (ANNOTATION_OVERLAY §14).
 - Panel button enabled when `TextLayerSession::hasSelection()`.
+
+### 2837.2
+- Mark selection shortcut **Ctrl+Shift+M** + Image menu action (same path as panel).
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)

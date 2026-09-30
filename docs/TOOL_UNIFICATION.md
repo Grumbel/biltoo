@@ -62,6 +62,7 @@ is implemented explicitly when the same action is re-selected while already acti
 | `C` | Crop |
 | `Shift+A` | Attention |
 | `Shift+H` | HUD overlay toggle (not a canvas tool) |
+| `Ctrl+Shift+M` | Mark selection (text → highlight; not a canvas tool) |
 
 ## Coordinate contract (central)
 
@@ -78,7 +79,7 @@ view pos
 
 ## Still open
 
-- **Text Highlighter tool** — optional demotion after **Mark selection** (Annotations
-  panel, 2837.1) sees more use; see [ANNOTATION_OVERLAY.md §14](ANNOTATION_OVERLAY.md).
+- **Text Highlighter tool** — optional demotion after **Mark selection** (panel +
+  Ctrl+Shift+M, 2837.1/2837.2) sees more use; see [ANNOTATION_OVERLAY.md §14](ANNOTATION_OVERLAY.md).
 - Workspace free rotation/shear of items vs content orient — needs testing.
 - Rubber-band shapes in Gallery still use view rects (OK for ortho tiles).

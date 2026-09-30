@@ -391,6 +391,29 @@ void MainWindow::createActions()
     m_annotTextHighlightAct->setStatusTip(
         tr("Drag over text regions to highlight (Multiply; needs text/OCR layer)"));
     m_annotTextHighlightAct->setToolTip(tr("Text highlighter"));
+    m_annotMarkSelectionAct = new QAction(tr("&Mark selection"), this);
+    m_annotMarkSelectionAct->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_M));
+    m_annotMarkSelectionAct->setShortcutContext(Qt::WindowShortcut);
+    m_annotMarkSelectionAct->setStatusTip(
+        tr("Turn the current text selection into a highlight (Ctrl+Shift+M; Annotations panel colour)"));
+    m_annotMarkSelectionAct->setToolTip(tr("Mark selection as highlight (Ctrl+Shift+M)"));
+    connect(m_annotMarkSelectionAct, &QAction::triggered, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        const int n = m_imageView->hostAnnot().markTextSelection();
+        if (statusBar()) {
+            if (n > 0) {
+                statusBar()->showMessage(
+                    tr("Marked text selection as highlight on %n page(s).", nullptr, n), 4000);
+            } else {
+                statusBar()->showMessage(
+                    tr("No text selection to mark. Select text with the Select tool first."),
+                    4000);
+            }
+        }
+        updateAnnotationPanel();
+    });
     m_annotClearAct = new QAction(tr("Clear Page &Annotations"), this);
     m_annotClearAct->setIcon(resourceIcon(QStringLiteral("annot-clear")));
     m_annotClearAct->setStatusTip(tr("Remove all annotation strokes on the current page"));
@@ -1259,6 +1282,9 @@ void MainWindow::createMenus()
     }
     if (m_annotTextHighlightAct) {
         m_imageMenu->addAction(m_annotTextHighlightAct);
+    }
+    if (m_annotMarkSelectionAct) {
+        m_imageMenu->addAction(m_annotMarkSelectionAct);
     }
     if (m_annotPenAct) {
         m_imageMenu->addAction(m_annotPenAct);

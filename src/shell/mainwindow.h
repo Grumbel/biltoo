@@ -760,6 +760,7 @@ private:
     QAction *m_cropAct = nullptr;
     QAction *m_annotHighlightAct = nullptr;
     QAction *m_annotTextHighlightAct = nullptr;
+    QAction *m_annotMarkSelectionAct = nullptr;
     QAction *m_annotPenAct = nullptr;
     QAction *m_annotEraserAct = nullptr;
     QAction *m_annotSelectAct = nullptr;

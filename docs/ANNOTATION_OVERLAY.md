@@ -342,7 +342,7 @@ redundant.
 
 ### Still open
 
-- Optional shortcut for Mark selection.
+- ~~Optional shortcut for Mark selection~~ — **Ctrl+Shift+M** / Image menu (2837.2).
 - Whether to demote/remove the Text Highlighter *tool* after more field use.
 
 ## 13. References (apps / specs)
