@@ -2,29 +2,16 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2853.1-topic-toolbars (on `ea477d6` + agent stack).
+**Tip:** biltoo-2854.1-perf-working-stale (on `ea477d6` + agent stack).
 
-### 2853.1
-Split the single top toolbar into topical movable bars:
-
-| Toolbar | Contents |
-|---------|----------|
-| Session | New/Open/Location/Add/Reload/Sort |
-| Edit | Undo/Redo |
-| Transform | Rotate, Flip, Crop, Background |
-| Layout | Gallery layout, Workspace mode, Double view, Columns spin |
-| Navigate | Prev / Slideshow / Next |
-| Zoom | Hold +/- , step +/- , 1:1, Fit, Fill |
-| Text | Text panel, OCR, regions |
-| Panels | Filmstrip, Metadata, Adjustments, Help |
-| Tools (left) | Select, Pan, Zoom tool, Crop, Attention, guides, bg |
-| Annotations (left) | Highlighter, pen, shapes, sticky, … |
-
-Ctrl+T toggles all top bars; View → Toolbars toggles each (incl. left).
+### 2854.1
+- Performance "Working" stuck: call thumtoo `reconcile_activity_if_idle()` from
+  `workActivity()`; badge ignores orphaned `tileQueued` when host queue is idle.
+- Requires thumtoo tip with `Client::reconcile_activity_if_idle` (012.1).
 
 ### Prior
+- 2853.1 topic toolbars
 - 2852.1 QSet cbegin
-- 2851.1 shortcuts panel fill
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

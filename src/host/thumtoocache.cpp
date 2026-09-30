@@ -1681,6 +1681,9 @@ WorkActivity workActivity()
     if (!c) {
         return out;
     }
+    // Drop orphaned tile_queued notes when the real job queue is idle — otherwise
+    // Performance stays on "Working" with pending=0 inflight=0 tile=N/0.
+    c->reconcile_activity_if_idle();
     const thumtoo::ActivitySnapshot s = c->activity_snapshot();
     out.sizeQueued = static_cast<quint64>(s.size_probe_queued);
     out.sizeRunning = static_cast<quint64>(s.size_probe_running);

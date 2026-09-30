@@ -238,10 +238,14 @@ void PerformancePanel::refresh()
         }
     }
 
-    const quint64 actTotal = act.sizeQueued + act.sizeRunning + act.softQueued + act.softRunning
-        + act.tileQueued + act.tileRunning + act.archiveReadRunning;
+    // Live activity: ignore tileQueued alone when the host queue is empty —
+    // that is the historical "stuck Working" false positive (orphaned ledger).
+    const quint64 actLive = act.sizeQueued + act.sizeRunning + act.softQueued + act.softRunning
+        + act.tileRunning + act.archiveReadRunning;
     const bool focusHot = q.focusFullInflight > 1;
     const bool queueBusy = q.pending > 0 || q.inflight > 0 || q.focusFullInflight > 0;
+    const bool tileQueueBusy = act.tileQueued > 0 && queueBusy;
+    const bool actBusy = actLive > 0 || tileQueueBusy;
     const bool poolBusy = snap.qtPoolActive > 0;
     const bool probeBusy = pq.busy;
     const bool deltaBusy = (snap.delta.poolStarts + snap.delta.scheduleProbe
@@ -254,7 +258,7 @@ void PerformancePanel::refresh()
     if (focusHot || (q.focusFullInflight > 0 && q.inflight > 20)) {
         badgeText = tr("Hot");
         badgeBg = QStringLiteral("#c44");
-    } else if (queueBusy || poolBusy || actTotal > 0 || deltaBusy || probeBusy) {
+    } else if (queueBusy || poolBusy || actBusy || deltaBusy || probeBusy) {
         badgeText = tr("Working");
         badgeBg = QStringLiteral("#c90");
     } else if (tickOnly) {
@@ -286,7 +290,9 @@ void PerformancePanel::refresh()
                      .arg(act.sizeQueued).arg(act.sizeRunning)
                      .arg(act.softQueued).arg(act.softRunning)
                      .arg(act.tileQueued).arg(act.tileRunning),
-                 actTotal > 0 ? QStringLiteral("busy") : QStringLiteral("ok"));
+                 actBusy || act.tileQueued > 0 ? (actBusy ? QStringLiteral("busy")
+                                                         : QStringLiteral("stale"))
+                                               : QStringLiteral("ok"));
     setCardValue(m_deltaValue,
                  tr("probe %1 · pix %2 · tile %3 · gal %4 · lod %5")
                      .arg(snap.delta.scheduleProbe)
