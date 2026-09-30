@@ -250,13 +250,22 @@ void GalleryLayoutTest::packPoses_contactSheetAndStripRows()
     QCOMPARE(mixed.at(0).center, QPointF(25.0, 20.0)); // rowMid = 20
     QCOMPARE(mixed.at(1).center, QPointF(85.0, 20.0));
 
-    // Strip: 1 band, availH=100 → rowH=100; 50×40 → scale 2.5, w=125.
+    // Flow Fill: Columns=2, avg aspect 50/40 → rowH=(110-10)/(2*1.25)=40;
+    // scale=1, both fit one row (50+10+50).
     const auto strip = GalleryLayout::packPosesStripRows(
-        {QSizeF(50, 40), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 100.0, 1);
+        {QSizeF(50, 40), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 2);
     QCOMPARE(strip.size(), 2);
-    QVERIFY(qAbs(strip.at(0).scale - 2.5) < 1e-9);
-    QCOMPARE(strip.at(0).center, QPointF(62.5, 50.0));
-    QCOMPARE(strip.at(1).center, QPointF(62.5, 160.0));
+    QVERIFY(qAbs(strip.at(0).scale - 1.0) < 1e-9);
+    QCOMPARE(strip.at(0).center, QPointF(25.0, 20.0));
+    QCOMPARE(strip.at(1).center, QPointF(85.0, 20.0));
+
+    // Columns=1: each page is its own row; rowH=110/1.25=88; scale=2.2.
+    const auto strip1 = GalleryLayout::packPosesStripRows(
+        {QSizeF(50, 40), QSizeF(50, 40)}, 0.0, 10.0, 110.0, 1);
+    QCOMPARE(strip1.size(), 2);
+    QVERIFY(qAbs(strip1.at(0).scale - 2.2) < 1e-9);
+    QCOMPARE(strip1.at(0).center, QPointF(55.0, 44.0));
+    QCOMPARE(strip1.at(1).center, QPointF(55.0, 44.0 + 88.0 + 10.0));
 }
 
 void GalleryLayoutTest::packPoses_facing()
