@@ -296,6 +296,11 @@ the AABB of transformed corners for viewport request and draw destinations.
 **Crop / orient paint rules:**
 - `ImageItem::tileContentXform()` must carry `cropRect` (applied xform or
   session crop) — `hasCrop` alone is not enough for maps.
+- **Gallery virtual / filmstrip** use the same rules via
+  `prepare_and_paint_cover` + `CoverPaintArgs::xform` (session appearance).
+  Viewport stays **source/native**; density uses **layoutSize** when oriented;
+  paint scales layout→dest then `paint_tiles_display`. Stretching native tiles
+  into a rotated content rect is a bug (correct box, unrotated pixels).
 - Tile **payloads stay source-oriented**. Paint path: extract `src_uv` → orient
   patch (flip / quarter-turn, same order as materializeDisplay) → draw into
   dest AABB from `mapSourceRectToOriented` / crop-local (+ free-rot painter for

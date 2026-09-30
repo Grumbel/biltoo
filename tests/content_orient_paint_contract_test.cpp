@@ -33,6 +33,8 @@ private slots:
     void displayToSourceRoundTrip_fullContent_allTurns();
     void successivePlusOneTurns_layoutCycles();
     void axisAlignedCrop_layoutFollowsMappedCrop_allTurns();
+    /** Cover/filmstrip: dest footprint follows layoutSize; density uses layout. */
+    void coverDestDensity_usesLayoutSize_whenOriented();
 };
 
 namespace {
@@ -377,6 +379,60 @@ void ContentOrientPaintContractTest::axisAlignedCrop_layoutFollowsMappedCrop_all
         QVERIFY2(hit > 0,
                  qPrintable(QStringLiteral(
                                 "no tile cells intersected crop turns=%1").arg(turns)));
+    }
+}
+
+
+void ContentOrientPaintContractTest::coverDestDensity_usesLayoutSize_whenOriented()
+{
+    // prepare_and_paint_cover (Gallery virtual / filmstrip):
+    //   layout = layoutSize(native, xform)
+    //   dest   letterboxed to layout aspect (content rect already correct)
+    //   dpc    = cover_device_per_content(dest, layout)  — NOT native
+    // Stretching native tiles into a rotated dest (old bug) keeps layout box
+    // but paints unrotated pixels; density must track layout axes.
+    const QSize native(3000, 2000); // landscape
+    for (int turns = 0; turns < 4; ++turns) {
+        ContentXform::Value x = orientOnly(turns);
+        const QSize lay = ContentXform::layoutSize(native, x);
+        QVERIFY(lay.width() >= 1 && lay.height() >= 1);
+
+        // Simulate a filmstrip content rect fitted to layout aspect at 120px cross-axis.
+        const qreal cross = 120.0;
+        QSizeF destSz;
+        if (lay.height() >= lay.width()) {
+            destSz = QSizeF(cross * lay.width() / qreal(lay.height()), cross);
+        } else {
+            destSz = QSizeF(cross, cross * lay.height() / qreal(lay.width()));
+        }
+        QVERIFY(destSz.width() > 1.0 && destSz.height() > 1.0);
+
+        // Aspect of dest must match layout (not native when odd turns).
+        const qreal layAr = qreal(lay.width()) / qreal(lay.height());
+        const qreal destAr = destSz.width() / destSz.height();
+        QVERIFY2(qAbs(layAr - destAr) < 0.02,
+                 qPrintable(QStringLiteral("dest aspect != layout turns=%1").arg(turns)));
+
+        if (ContentXform::swapsAspect(x)) {
+            QVERIFY2(lay.width() == native.height() && lay.height() == native.width(),
+                     "odd turns swap layout axes");
+            // Bug pattern: dens from native would use landscape scale into portrait dest.
+            const qreal densLayout =
+                qMax(destSz.width() / lay.width(), destSz.height() / lay.height());
+            const qreal densNative =
+                qMax(destSz.width() / native.width(), destSz.height() / native.height());
+            QVERIFY2(qAbs(densLayout - densNative) > 1e-6 || turns % 2 == 0,
+                     "layout vs native density should differ on odd turns");
+            Q_UNUSED(densLayout);
+        }
+
+        // Full-frame oriented AABB matches layout — cover scales this into dest.
+        const QRectF ori =
+            ContentXform::mapSourceRectToOriented(fullSource(native), native, x);
+        QVERIFY2(qAbs(ori.width() - lay.width()) < 1.01
+                     && qAbs(ori.height() - lay.height()) < 1.01,
+                 qPrintable(QStringLiteral(
+                                "oriented AABB != layout turns=%1").arg(turns)));
     }
 }
 

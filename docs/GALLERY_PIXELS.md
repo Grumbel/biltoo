@@ -29,8 +29,8 @@ ladder is not a product path ([KILL_SOFT.md](KILL_SOFT.md)).
 | API | Role |
 |-----|------|
 | `TileLodRegistry` | Process-wide **path-keyed** Succeeded tiles. Shared across Image / Gallery / Workspace / Slideshow. |
-| `paint_tiles_display` | Oriented tile paint + plan overlay (`ImageItem`). |
-| `prepare_and_paint_cover` | Identity native→dest cover (Slideshow, virtual warm floor). Retained tiles **bypass** the 32px screen floor. Returns true only if tile **pixels** were drawn (not merely plan commands). |
+| `paint_tiles_display` | Oriented tile paint + plan overlay (`ImageItem`; also cover branch when `xform` non-identity). |
+| `prepare_and_paint_cover` | Shared Gallery virtual / filmstrip / Slideshow entry. Identity `xform` → native→dest `paint_draw_plan`. Orient/crop/flip → same viewport + **`paint_tiles_display`** (payloads stay source-oriented; dest is layout space). Retained tiles **bypass** the 32px screen floor. Returns true only if tile **pixels** were drawn. |
 | `tileLodActive()` | True if this controller has tiles **or** retained path RAM. |
 | `tileLodHasPathRam()` | Registry (or controller retained) has Succeeded tiles for the path. |
 
@@ -50,6 +50,8 @@ registry already held the pyramid.
 Background under live items. Order:
 
 1. If registry has Succeeded tiles for the path → `prepare_and_paint_cover`
+   (pass session `ContentXform` when the cell has flip/turns/crop so tiles match
+   the layout-sized dest; identity for unoriented paths).
    (min_scale) + optional plan overlay; `touch()` path for LRU.
 2. Else EMB/LQIP from `ImageCache::getUnderlay`.
 3. Else neutral placeholder.

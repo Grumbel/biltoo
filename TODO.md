@@ -2,23 +2,19 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2834.1-cover-orient-shared-paint (on 2833.4 stack).
+**Tip:** biltoo-2834.2-cover-orient-docs-tests (on 2834.1 stack).
+
+### 2834.2
+- Docs: GALLERY_PIXELS + TILE_LOD — cover shares orient path with ImageItem
+- Test: `ContentOrientPaintContractTest::coverDestDensity_usesLayoutSize_whenOriented`
+  (dest aspect = layoutSize; density must not use native on odd turns)
 
 ### 2834.1
-- `prepare_and_paint_cover` accepts `ContentXform::Value xform`.
-  Identity → prior paint_draw_plan cover; orient/crop/flip →
-  `paint_tiles_display` (same plan/registry as ImageItem).
-- Gallery virtual slots + filmstrip pass session appearance into cover args.
-- Filmstrip content rect was already layout-oriented; tiles now rotate with it.
-- Docs: FILMSTRIP_LAYOUT, tile_display_paint.hpp comments.
+- `CoverPaintArgs::xform` → `paint_tiles_display` when orient/crop/flip
+- Gallery virtual + filmstrip pass session appearance
 
 ### Required thumtoo
-thumtoo-010.1-tile-supersede-activity-finish (on 009.2; fixes stuck
-`tile=N/0` Working badge from single-cell supersede activity leak)
+thumtoo-010.2-tile-supersede-activity-tests (includes 010.1 activity finish)
 
-### Note
-`status=Working` with `activity tile=N/0` and thumtoo pending=0 was a ledger
-leak, not real work. Apply 010.1.
-
-### Still open (tool unification design)
-- Text Highlighter → Mark selection (ANNOTATION_OVERLAY §14; do not rush)
+### Still open
+- Text Highlighter → Mark selection (ANNOTATION_OVERLAY §14; design only)
