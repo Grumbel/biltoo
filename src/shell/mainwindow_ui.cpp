@@ -769,18 +769,18 @@ void MainWindow::createActions()
         tr("Row masonry scaled to a shared right edge (rectangular)"));
     connect(m_layoutMasonryRowsFillAct, &QAction::triggered, this, &MainWindow::setLayoutMasonryRowsFill);
 
-    m_layoutContactSheetAct = new QAction(tr("Layout &Contact Sheet"), this);
+    m_layoutContactSheetAct = new QAction(tr("Layout &Flow"), this);
     m_layoutContactSheetAct->setCheckable(true);
     m_layoutContactSheetAct->setIcon(resourceIcon(QStringLiteral("view-list-icons")));
     m_layoutContactSheetAct->setStatusTip(
-        tr("Gallery: reading order, wrap rows to fill width (good for books)"));
+        tr("Flow: fixed columns of pages in reading order (book/PDF overview)"));
     connect(m_layoutContactSheetAct, &QAction::triggered, this, &MainWindow::setLayoutContactSheet);
 
-    m_layoutStripRowsAct = new QAction(tr("Layout &Strip Rows"), this);
+    m_layoutStripRowsAct = new QAction(tr("Layout Flow &Rows"), this);
     m_layoutStripRowsAct->setCheckable(true);
     m_layoutStripRowsAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
     m_layoutStripRowsAct->setStatusTip(
-        tr("Gallery: ordered wrap, uniform row height (landscapes full band height)"));
+        tr("Flow Rows: uniform row height, pages wrap in reading order"));
     connect(m_layoutStripRowsAct, &QAction::triggered, this, &MainWindow::setLayoutStripRows);
 
     m_layoutFacingAct = new QAction(tr("Layout F&acing"), this);
@@ -2638,11 +2638,16 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_layoutMasonryRowsFillAct, tr(
         "<p>Gallery layout: masonry rows with fill so the outer shape is rectangular.</p>"));
     setHelp(m_layoutContactSheetAct, tr(
-        "<p>Gallery layout: ordered contact sheet — one global scale so relative page "
-        "sizes stay true; wraps left-to-right; last row is left-aligned.</p>"));
+        "<p><b>Flow</b> (CSS-like columns for books/PDFs): place exactly <b>Columns</b> "
+        "pages per full row in reading order, scaled so each full row fills the width. "
+        "Relative page widths within a row are preserved. The <b>last row is left-aligned</b> "
+        "with empty space — leftovers are not enlarged.</p>"));
     setHelp(m_layoutStripRowsAct, tr(
-        "<p>Gallery layout: ordered strip rows — uniform row height (landscapes fill the "
-        "band and go wider); wraps in session order; last row is not stretched.</p>"));
+        "<p><b>Flow Rows</b>: rows of uniform height (set by the Rows spin) for book/PDF "
+        "pages. Each page is scaled to the band height (wide landscapes become wider). "
+        "Pages wrap in reading order when the row is full. The <b>last row is left-aligned</b>; "
+        "earlier rows may be nudged flush to the right edge without changing left-to-right "
+        "relative scale within the row.</p>"));
     setHelp(m_layoutFacingAct, tr(
         "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
     setHelp(m_reorderSessionAct, tr(

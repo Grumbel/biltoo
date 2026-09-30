@@ -65,9 +65,9 @@ enum class Mode {
     MasonryFill,
     /** Row masonry then per-row scale so all rows share one right edge. */
     MasonryRowsFill,
-    /** Ordered wrap + one global scale (contact sheet / relative sizes). */
+    /** Flow (CSS-like): fixed column count, pages wrap L→R; last row left-aligned. */
     ContactSheet,
-    /** Ordered wrap + uniform row height (strip; landscapes full band height). */
+    /** Flow Rows: uniform row height bands; wrap by width; last row left-aligned. */
     StripRows,
     /** Two-up spreads; page 1 alone as cover, then pairs (2–3), (4–5), … */
     Facing
@@ -397,40 +397,36 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
             natives.append(layoutSizes.at(i + k));
         }
         QVector<qreal> scales, widths, heights;
-        scaleRowToWidth(scales, widths, heights, natives, gap, layoutW);
-        // Last partial row: do not stretch a short remainder across the viewport.
         const bool lastPartial = (take < cols);
-        if (lastPartial && take >= 1) {
-            qreal used = 0.0;
-            for (int k = 0; k < take; ++k) {
-                used += widths.at(k);
-                if (k + 1 < take) {
-                    used += gap;
-                }
+        if (!lastPartial) {
+            // Full row of `cols`: scale so the row fills the width (compact).
+            scaleRowToWidth(scales, widths, heights, natives, gap, layoutW);
+        } else {
+            // Last row: same nominal column scale as a full row would use — left
+            // aligned with trailing empty space (never enlarge leftovers).
+            qreal sumAll = 0.0;
+            int nAll = 0;
+            for (const QSizeF &ns : layoutSizes) {
+                sumAll += (ns.width() > 1.0 ? ns.width() : 1.0);
+                ++nAll;
             }
-            // Only justify when the partial row already covers most of the width.
-            if (used < layoutW * 0.85) {
-                // Use nominal column scale from a full row of `cols` equal median-ish:
-                // scale as if filling cols slots — avoids huge stretch of 1–2 leftovers.
-                qreal sumW = 0.0;
-                for (const QSizeF &ns : natives) {
-                    sumW += (ns.width() > 1.0 ? ns.width() : 1.0);
+            const qreal avgW = sumAll / qreal(qMax(1, nAll));
+            const qreal colW = cellAxisLength(layoutW, gap, cols);
+            const qreal sNom = colW / qMax(1.0, avgW);
+            scales.resize(take);
+            widths.resize(take);
+            heights.resize(take);
+            for (int k = 0; k < take; ++k) {
+                const QSizeF &ns = natives.at(k);
+                qreal s = sNom;
+                qreal w = ns.width() * s;
+                if (w > layoutW + 1e-6) {
+                    s = layoutW / qMax(1.0, ns.width());
+                    w = ns.width() * s;
                 }
-                // Target: each page ~ one column width (same as full row of cols).
-                const qreal colW = cellAxisLength(layoutW, gap, cols);
-                // scale so average native width maps to colW
-                const qreal avgW = sumW / qreal(take);
-                const qreal s = colW / qMax(1.0, avgW);
-                for (int k = 0; k < take; ++k) {
-                    scales[k] = s;
-                    widths[k] = natives.at(k).width() * s;
-                    heights[k] = natives.at(k).height() * s;
-                    if (widths[k] > layoutW + 1e-6) {
-                        scales[k] = layoutW / qMax(1.0, natives.at(k).width());
-                        widths[k] = natives.at(k).width() * scales[k];
-                        heights[k] = natives.at(k).height() * scales[k];
-                    }
-                }
+                scales[k] = s;
+                widths[k] = w;
+                heights[k] = ns.height() * s;
             }
         }
         QVector<Entry> row;
@@ -465,10 +461,12 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
 }
 
 /**
- * Strip rows: order-preserving wrap with a **base** uniform row height, then
- * each non-final row that under-fills the width is scaled up so that row uses
- * the full width (odd sparse rows grow instead of leaving gutters).
- * @p masonryRows sets the base band height from @p availH.
+ * Flow Rows (StripRows): order-preserving wrap with **uniform row height**.
+ * Each page is scaled to the band height (landscapes become full height and
+ * wider). Rows wrap at layout width; last row is left-aligned (never stretched).
+ * Non-final rows that under-fill the width are scaled up once so the row is
+ * flush — no progressive left-to-right growth.
+ * @p masonryRows sets how many bands share @p availH.
  */
 inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
                                             qreal margin, qreal gap,
@@ -499,24 +497,6 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
         rowW = 0.0;
     };
 
-    auto rowUsed = [&](const QVector<Entry> &row) -> qreal {
-        qreal u = 0.0;
-        for (int i = 0; i < row.size(); ++i) {
-            u += row.at(i).w;
-            if (i + 1 < row.size()) {
-                u += gap;
-            }
-        }
-        return u;
-    };
-    auto applyUniformScale = [&](QVector<Entry> &row, qreal s) {
-        for (Entry &e : row) {
-            e.scale *= s;
-            e.w *= s;
-            e.h *= s;
-        }
-    };
-
     for (const QSizeF &ns : layoutSizes) {
         qreal scale = axisFillScale(baseRowH, ns.height());
         qreal w = ns.width() * scale;
@@ -527,43 +507,32 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
             h = ns.height() * scale;
         }
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
-            // Almost fits: squeeze current row + this page to layoutW instead of
-            // leaving a large trailing gutter (Columns-driven compactness).
-            const qreal need = rowW + gap + w;
-            const qreal squeeze = layoutW / need;
-            // Allow up to ~12% shrink so one more cell can land on the row.
-            if (squeeze >= 0.88) {
-                applyUniformScale(cur, squeeze);
-                scale *= squeeze;
-                w *= squeeze;
-                h *= squeeze;
-                rowW = rowUsed(cur);
-            } else {
-                flushRow();
-            }
-        }
-        if (cur.isEmpty() && w > layoutW + 1e-6) {
-            scale = axisFillScale(layoutW, ns.width());
+            flushRow();
+            // Recompute for a fresh row (may still be solo ultra-wide).
+            scale = axisFillScale(baseRowH, ns.height());
             w = ns.width() * scale;
             h = ns.height() * scale;
+            if (w > layoutW + 1e-6) {
+                scale = axisFillScale(layoutW, ns.width());
+                w = ns.width() * scale;
+                h = ns.height() * scale;
+            }
         }
         cur.append(Entry{ns, scale, w, h});
         rowW += (cur.size() == 1 ? w : gap + w);
     }
     flushRow();
 
-    // Fill sparse non-final rows to layout width (minimise empty space on the
-    // odd row without shrinking well-filled neighbours).
-    constexpr qreal kFillSlack = 1.0; // px — avoid fighting float width
+    // Justify non-final under-filled rows only (uniform scale on the whole row).
+    constexpr qreal kFillSlack = 1.0;
     for (int ri = 0; ri < rows.size(); ++ri) {
         QVector<Entry> &row = rows[ri];
         if (row.isEmpty()) {
             continue;
         }
         const bool lastRow = (ri + 1 == rows.size());
-        // Leave a truly short last row ragged (classic contact/strip look).
-        if (lastRow && row.size() == 1) {
-            continue;
+        if (lastRow) {
+            continue; // leave last row dangling
         }
         qreal used = 0.0;
         for (int i = 0; i < row.size(); ++i) {
@@ -573,11 +542,6 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
             }
         }
         if (used < 1.0 || used >= layoutW - kFillSlack) {
-            continue;
-        }
-        // Last row: only justify when it already covers most of the width
-        // (avoids stretching a single leftover thumbnail across the viewport).
-        if (lastRow && used < layoutW * 0.55) {
             continue;
         }
         const qreal s = layoutW / used;
