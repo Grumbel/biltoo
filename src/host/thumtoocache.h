@@ -476,6 +476,8 @@ struct TileCoord {
     int x = 0;
     int y = 0;
 };
+/** Drop queued interactive tiles for specific cells (scroll cancel). */
+int cancelTileCells(const QString &path, const QVector<TileCoord> &coords);
 /**
  * Async tile cells as rgba8 TileBitmap (no QImage round-trip).
  * nullopt = miss/fail for that index.

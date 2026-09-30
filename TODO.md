@@ -2,23 +2,16 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2874.1-ttfp-baseline-docs (on `ea477d6` + agent stack).
+**Tip:** biltoo-2875.1-tile-scroll-cancel (on `ea477d6` + agent stack).
 
-### 2874.1
-- `docs/TTFP.md`: Baseline 2026-09-30 multipage PDF Gallery open (~2400 pages, ~0.5 s TTFP, SHAs, failure shapes).
-- Link from `docs/PERFORMANCE.md`.
-
-### 2873.1
-- Drop host-side `ensure_pdf_page_sizes` special case — thumtoo `request_size`
-  ensures multipage dims on miss (016.1).
-- Comments: size probe vs durable warm ownership clarified.
+### 2875.1
+- `cancelTileCells` + LOD `cancel_obsolete` wires per-cell thumtoo cancel
+  (was a no-op for non-empty coords).
+- Pair with **thumtoo-017.1-interactive-tile-lifo**.
 
 ### Prior
-- 2872.1 ensure on miss (host)
-- 2871.1 parallel light probe
+- 2874.1 TTFP baseline docs
+- 2873.1 size-probe cleanup
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.
-
-### Perf reference
-Gallery multipage PDF TTFP baseline (~2400 pages, settled Store): **docs/TTFP.md § Baseline 2026-09-30** (biltoo `3907788` + thumtoo `d6a341f`, ~0.5 s first pixels).

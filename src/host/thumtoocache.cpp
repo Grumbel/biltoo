@@ -2054,6 +2054,29 @@ int cancelTilesForPath(const QString &path)
     return static_cast<int>(c->cancel_uri(uri));
 }
 
+int cancelTileCells(const QString &path, const QVector<TileCoord> &coords)
+{
+    if (path.isEmpty() || coords.isEmpty()) {
+        return 0;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return 0;
+    }
+    std::vector<thumtoo::Client::TileCoord> cells;
+    cells.reserve(static_cast<size_t>(coords.size()));
+    for (const TileCoord &t : coords) {
+        cells.push_back({t.scale, t.x, t.y});
+    }
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return 0;
+    }
+    return static_cast<int>(c->cancel_tile_cells(uri, cells));
+}
+
 void purgePathDurable(const QString &path, std::function<void(qint64 tilesDeleted)> done)
 {
     if (path.isEmpty()) {

@@ -35,14 +35,18 @@ ThumtooTileSource::CancelFn makeCancel(QString path)
 {
   return [path](std::string const& /*uri*/,
                 std::vector<ThumtooTileSource::TileCoord> const& coords) {
-    // Per-key cancel_obsolete must NOT cancel_uri — that drops *all* queued
-    // EnsureTiles for the path and was invoked on every progressive scale step
-    // (hundreds of ms–seconds on a busy thumtoo queue). Generation filtering
-    // drops late completions; RAM InFlight is erased in TileSession.
-    if (!coords.empty()) {
+    // Full-path cancel (empty coords): drop every queued EnsureTiles for uri.
+    if (coords.empty()) {
+      (void)ThumtooCache::cancelTilesForPath(path);
       return;
     }
-    (void)ThumtooCache::cancelTilesForPath(path);
+    // Per-cell cancel on scroll: only those cells (not the whole path).
+    QVector<ThumtooCache::TileCoord> qcoords;
+    qcoords.reserve(static_cast<int>(coords.size()));
+    for (auto const& c : coords) {
+      qcoords.push_back({c.scale, c.x, c.y});
+    }
+    (void)ThumtooCache::cancelTileCells(path, qcoords);
   };
 }
 
