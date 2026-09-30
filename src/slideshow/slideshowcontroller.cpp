@@ -43,6 +43,8 @@
 #include "host/imageloader.h"
 #include <QGraphicsItem>
 #include "host/thumtoocache.h"
+#include "host/pagepath.h"
+#include "tilelod/lod_math.hpp"
 
 
 SlideshowController::SlideshowController(ImageView *view)
@@ -2020,15 +2022,17 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    // Image-mode floor: min_scale 0 so density can climb to full-res (Gallery
-    // durable floor left slideshow stuck on coarse overview tiles).
+    // Image-mode floor: rasters min_scale 0; document pages may use live
+    // negative scales (thumtoo PDF/DjVu/EPUB denser tiles).
     tilelod::CoverPaintArgs args;
     args.lod = lod;
     args.native = native;
     args.dest = dest;
     args.underlay = underlay;
     args.tick_budget = 32;
-    args.min_scale = 0;
+    args.min_scale = (PagePath::isPageRef(path) || PagePath::isTextForceRef(path))
+                         ? tilelod::kDocumentLiveMinScale
+                         : 0;
     args.tick = true;
     WorkspaceItemState app;
     if (snapshotSlideshowContentAppearance(path, &app)

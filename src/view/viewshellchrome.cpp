@@ -5,6 +5,7 @@
 
 #include "view/viewshellchrome.h"
 #include "imageview.h"
+#include "host/thumtoocache.h"
 #include "view/viewtransform.h"
 #include "view/canvaspatterngeometry.h"
 #include "shell/centreprogress.h"
@@ -315,15 +316,26 @@ void ViewShellChrome::paintEmptySessionInvite(QPainter &painter) const
     titleFont.setBold(true);
     QFont hintFont = m_view->font();
     hintFont.setPointSize(HudGeometry::clampHintPointSize(hintFont.pointSize()));
-    const QString title = m_view->isWorkspaceMode()
-        ? QCoreApplication::translate("ImageView", "Drop images here")
-        : QCoreApplication::translate("ImageView", "Drop images here or open a file");
-    const QString hint = m_view->isWorkspaceMode()
-        ? QCoreApplication::translate(
-              "ImageView",
-              "Drag files or filmstrip thumbnails onto the canvas to place images")
-        : QCoreApplication::translate(
-              "ImageView", "File → Open…  ·  Ctrl+O  ·  drag and drop");
+    QString title;
+    QString hint;
+    const QString loadErr = m_view->hostSessionId().lastLoadErrorRef();
+    if (!loadErr.isEmpty()) {
+        // Same path as status bar — library error codes only (no exists()).
+        title = ThumtooCache::formatLoadErrorMessage(loadErr);
+        hint = QCoreApplication::translate(
+            "ImageView",
+            "Cached previews may still appear in the filmstrip if this path was "
+            "opened before. New tiles cannot be generated until the file is available.");
+    } else if (m_view->isWorkspaceMode()) {
+        title = QCoreApplication::translate("ImageView", "Drop images here");
+        hint = QCoreApplication::translate(
+            "ImageView",
+            "Drag files or filmstrip thumbnails onto the canvas to place images");
+    } else {
+        title = QCoreApplication::translate("ImageView", "Drop images here or open a file");
+        hint = QCoreApplication::translate(
+            "ImageView", "File → Open…  ·  Ctrl+O  ·  drag and drop");
+    }
     const QFontMetrics titleFm(titleFont);
     const QFontMetrics hintFm(hintFont);
     const int gap = 8;

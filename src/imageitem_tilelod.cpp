@@ -21,6 +21,7 @@
 #include "item/placementlinear.h"
 #include "view/viewtransform.h"
 #include "imageview.h"
+#include "host/pagepath.h"
 
 #include <QDebug>
 #include <QFileInfo>
@@ -363,8 +364,16 @@ void ImageItem::prepareTileLodPlan()
     }
     // Tile grid is always full native (source) size.
     // Gallery: floor min_scale at density so overview never requests scale 0
-    // (full JPEG decode). Image/Workspace: min_scale 0 so density can climb.
-    int minScale = 0;
+    // (full JPEG decode). Image/Workspace: min_scale 0 for rasters so density
+    // can climb to full-res; document pages (PDF/DjVu/EPUB //page:) may use
+    // negative scales for live denser tiles (thumtoo; not stored below -2).
+    // SVG: treated as raster/image path today — no negative scale until a
+    // document-page URI path exists.
+    const bool documentLiveTiles =
+        PagePath::isPageRef(m_path) || PagePath::isTextForceRef(m_path);
+    const int scaleFloor =
+        documentLiveTiles ? tilelod::kDocumentLiveMinScale : 0;
+    int minScale = scaleFloor;
     bool galleryLayout = !m_galleryCellSize.isEmpty();
     if (!galleryLayout && scene() && !scene()->views().isEmpty()) {
         if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
@@ -379,7 +388,7 @@ void ImageItem::prepareTileLodPlan()
         const qreal dpc0 = tileDevicePerContent();
         const int maxS = tilelod::max_scale_for_size(native.width(), native.height());
         const int dens = tilelod::target_scale_for_density(
-            static_cast<double>(dpc0), 0, maxS);
+            static_cast<double>(dpc0), scaleFloor, maxS);
         minScale = dens;
         // Hard floor uses *screen* long edge (not scene). Scene-only floor kept
         // min_scale elevated after Ctrl+wheel zoom — dens asked for finer tiles

@@ -11,13 +11,36 @@
 
 namespace tilelod {
 
+/// Finest live tile scale biltoo will request for PDF/DjVu/EPUB pages.
+/// Thumtoo stores durable cells only for scale >= -2; finer is live-only.
+inline constexpr int kDocumentLiveMinScale = -4;
+
+
 /// Dimension at pyramid scale: successive integer floor-half (thumtoo/Galapix).
 [[nodiscard]] inline int dim_at_tile_scale(int n, int scale) noexcept
 {
   if (n <= 0) {
     return 0;
   }
-  if (scale <= 0) {
+  // Positive: successive floor-half (raster pyramid / PDF coarser).
+  // Zero: layout / file-native size.
+  // Negative: exact integer expand n * 2^{-scale} (PDF/DjVu/EPUB live denser
+  // tiles — matches thumtoo pdf_page_size_at_scale). Raster images must keep
+  // min_scale >= 0 so this branch is never used for photos.
+  if (scale < 0) {
+    // Cap expand to avoid overflow (host typically floors min_scale at -4..-6).
+    int const exp = -scale;
+    if (exp >= 20) {
+      return 0;
+    }
+    long long const mul = 1LL << exp;
+    long long const out = static_cast<long long>(n) * mul;
+    if (out > 0x3fffffffLL) {
+      return 0x3fffffff;
+    }
+    return static_cast<int>(out);
+  }
+  if (scale == 0) {
     return n;
   }
   for (int i = 0; i < scale; ++i) {
@@ -64,7 +87,7 @@ namespace tilelod {
   if (content_w <= 0 || content_h <= 0) {
     return {};
   }
-  int const scale = key.scale > 0 ? key.scale : 0;
+  int const scale = key.scale;
   int const level_w = dim_at_tile_scale(content_w, scale);
   int const level_h = dim_at_tile_scale(content_h, scale);
   int const nx = tiles_across(content_w, scale);
@@ -100,19 +123,57 @@ namespace tilelod {
   if (lr.empty()) {
     return {};
   }
-  int const scale = key.scale > 0 ? key.scale : 0;
-  int const factor = 1 << scale;
+  int const scale = key.scale;
   int const nx = tiles_across(content_w, scale);
   int const ny = tiles_across(content_h, scale);
-  int x = lr.x * factor;
-  int y = lr.y * factor;
-  int w = lr.w * factor;
-  int h = lr.h * factor;
-  if (key.x == nx - 1 && content_w > x) {
-    w = content_w - x;
-  }
-  if (key.y == ny - 1 && content_h > y) {
-    h = content_h - y;
+  int x = 0;
+  int y = 0;
+  int w = 0;
+  int h = 0;
+  if (scale > 0) {
+    // Coarser: level * 2^scale → content (edge stretch to native).
+    int const factor = 1 << scale;
+    x = lr.x * factor;
+    y = lr.y * factor;
+    w = lr.w * factor;
+    h = lr.h * factor;
+    if (key.x == nx - 1 && content_w > x) {
+      w = content_w - x;
+    }
+    if (key.y == ny - 1 && content_h > y) {
+      h = content_h - y;
+    }
+  } else if (scale < 0) {
+    // Denser live tiles: level is content * 2^{-scale}; map back to layout.
+    int const div = 1 << (-scale);
+    x = lr.x / div;
+    y = lr.y / div;
+    // Ceil extent so edge cells still cover layout.
+    w = (lr.w + div - 1) / div;
+    h = (lr.h + div - 1) / div;
+    if (w < 1) {
+      w = 1;
+    }
+    if (h < 1) {
+      h = 1;
+    }
+    if (x + w > content_w) {
+      w = content_w - x;
+    }
+    if (y + h > content_h) {
+      h = content_h - y;
+    }
+  } else {
+    x = lr.x;
+    y = lr.y;
+    w = lr.w;
+    h = lr.h;
+    if (key.x == nx - 1 && content_w > x) {
+      w = content_w - x;
+    }
+    if (key.y == ny - 1 && content_h > y) {
+      h = content_h - y;
+    }
   }
   if (w < 1 || h < 1) {
     return {};

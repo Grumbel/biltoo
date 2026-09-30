@@ -134,6 +134,32 @@ void test_dim_at_tile_scale()
   CHECK_EQ(tilelod::dim_at_tile_scale(5, 1), 2);
   CHECK_EQ(tilelod::dim_at_tile_scale(5, 2), 1);
   CHECK_EQ(tilelod::dim_at_tile_scale(5, 3), 0);
+  // Negative: exact expand (PDF live denser tiles).
+  CHECK_EQ(tilelod::dim_at_tile_scale(1000, -1), 2000);
+  CHECK_EQ(tilelod::dim_at_tile_scale(1000, -2), 4000);
+  CHECK_EQ(tilelod::dim_at_tile_scale(256, -1), 512);
+}
+
+void test_negative_scale_content_rect()
+{
+  // Layout 512×512, scale -1 → level 1024; cell (0,0) content maps to 128×128.
+  auto r = tilelod::tile_content_rect(512, 512, { -1, 0, 0 });
+  CHECK(!r.empty());
+  CHECK_EQ(r.x, 0);
+  CHECK_EQ(r.y, 0);
+  CHECK_EQ(r.w, 128);
+  CHECK_EQ(r.h, 128);
+  // tiles_across at -1 for 512: level 1024 → 4 tiles
+  CHECK_EQ(tilelod::tiles_across(512, -1), 4);
+}
+
+void test_density_allows_negative_min()
+{
+  // Zoom denser than 1:1 with document floor -4.
+  int s = tilelod::target_scale_for_density(2.0, tilelod::kDocumentLiveMinScale, 8);
+  CHECK(s < 0);
+  // Raster floor 0 still clamps.
+  CHECK_EQ(tilelod::target_scale_for_density(2.0, 0, 8), 0);
 }
 
 void test_max_scale_and_grid()
@@ -987,6 +1013,8 @@ void test_trim_updates_succeeded_count()
 int main()
 {
   test_dim_at_tile_scale();
+  test_negative_scale_content_rect();
+  test_density_allows_negative_min();
   test_max_scale_and_grid();
   test_planner_1to1();
   test_planner_zoomed_out();

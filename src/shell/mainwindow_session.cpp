@@ -100,12 +100,16 @@ void MainWindow::reportSessionOpenFailed(const QStringList &sourcePaths, bool ap
         m_galleryReturnActive = false;
         m_workspaceReturnActive = false;
         if (m_imageView) {
+            if (!sourcePaths.isEmpty()) {
+                m_imageView->hostSessionId().setLastLoadError(sourcePaths.first());
+            }
             m_imageView->hostWorkspace().clearWorkspace();
             m_imageView->hostShell().setWorkspaceBackground(WorkspaceBackground{});
             if (!m_imageView->isImageMode()) {
                 m_imageView->setViewMode(ImageView::ViewMode::Image);
             }
             m_imageView->prepareImageModeCanvas();
+            // Centre progress + empty-canvas paint both use formatLoadErrorMessage.
             m_imageView->hostShell().setCentreProgress(tr("Could not open"), msg);
         }
         if (m_thumbnailBar) {

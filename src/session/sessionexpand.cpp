@@ -431,13 +431,17 @@ QString emptyResultMessage(const QStringList &paths, bool append)
     if ((anyDoc || anyEpub) && !ThumtooCache::isAvailable()) {
         return QObject::tr("Cannot open document: thumtoo is not available.");
     }
-    // Concrete open error after expand (MuPDF last error only — no filesystem stat).
+    // Concrete open error after expand (MuPDF / library error only — no filesystem stat).
     if (!firstDoc.isEmpty()) {
         return ThumtooCache::formatLoadErrorMessage(firstDoc);
     }
     if (anyArchive) {
         return QObject::tr(
             "Could not open archive (missing file, or no image members).");
+    }
+    // Plain image / unknown path: still prefer library last error when present.
+    if (!paths.isEmpty()) {
+        return ThumtooCache::formatLoadErrorMessage(paths.first());
     }
     return append ? QObject::tr("No readable images to add.")
                   : QObject::tr("No readable images found.");

@@ -2,7 +2,7 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2837.4-paint-tiles-parens (on 2837.3 stack).
+**Tip:** biltoo-2838.1-document-live-tiles-and-open-errors (on 2837.4 stack).
 
 ### Stopping point
 Tool unification lean path for text markup is complete: Exclusive radio,
@@ -45,6 +45,12 @@ rotation vs content orient — not blocking.
 
 ### 2837.4
 - Parentheses around `&&`/`||` in `paintSlideshowTiles` (Wparentheses).
+
+### 2838.1 — Document live tiles + open errors
+- Negative tile scales for PDF/DjVu/EPUB page refs (`kDocumentLiveMinScale` −4);
+  lod_math + tests; Image/Slideshow floors; SVG still raster path (doc note).
+- Open errors: `formatLoadErrorMessage` classifies library “not found”; empty
+  canvas + HUD + `reportSessionOpenFailed` set `lastLoadError` (no exists()).
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)

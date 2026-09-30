@@ -3047,6 +3047,28 @@ QString formatLoadErrorMessage(const QString &sessionPathOrError)
         }
     }
 #endif
+    // Classify library error strings — still no filesystem stat.
+    const QString lower = detail.toLower();
+    const bool notFound =
+        lower.contains(QLatin1String("no such file"))
+        || lower.contains(QLatin1String("not found"))
+        || lower.contains(QLatin1String("does not exist"))
+        || lower.contains(QLatin1String("enoent"))
+        || lower.contains(QLatin1String("cannot open"))
+        || lower.contains(QLatin1String("can't open"))
+        || lower.contains(QLatin1String("failed to open"))
+        || lower.contains(QLatin1String("no such path"))
+        || lower.contains(QLatin1String("path does not exist"));
+    if (notFound) {
+        if (detail.isEmpty()
+            || lower == QLatin1String("no such file or directory")
+            || lower.startsWith(QLatin1String("no such file"))) {
+            return QCoreApplication::translate("ThumtooCache", "File not found: “%1”")
+                .arg(name);
+        }
+        return QCoreApplication::translate("ThumtooCache", "File not found: “%1” (%2)")
+            .arg(name, detail);
+    }
     if (detail.isEmpty()) {
         return QCoreApplication::translate("ThumtooCache", "Could not load “%1”")
             .arg(name);

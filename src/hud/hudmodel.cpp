@@ -98,6 +98,12 @@ QString emptyCanvasStatus(bool hasLoadError, const QString &loadErrorDisplayName
                           bool galleryMode, bool workspaceMode)
 {
     if (hasLoadError) {
+        // loadErrorDisplayName is already a user-facing sentence when callers
+        // pass formatLoadErrorMessage; otherwise a path leaf.
+        if (loadErrorDisplayName.contains(QLatin1Char(' '))
+            || loadErrorDisplayName.contains(QLatin1Char(':'))) {
+            return loadErrorDisplayName;
+        }
         return tr("Failed to load “%1”").arg(loadErrorDisplayName);
     }
     if (hasClassicPath && imageMode) {

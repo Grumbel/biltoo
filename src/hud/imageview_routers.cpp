@@ -81,7 +81,7 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 QString ImageView::statusTextEmpty() const
 {
     const QString errName = m_session.identity().hasLastLoadError()
-        ? PagePath::displayName(m_session.identity().lastLoadErrorRef())
+        ? ThumtooCache::formatLoadErrorMessage(m_session.identity().lastLoadErrorRef())
         : QString();
     return HudModel::emptyCanvasStatus(
         m_session.identity().hasLastLoadError(), errName,

@@ -963,3 +963,25 @@ not re-copy or re-grade every frame. Soft underlay remains pre-graded from mater
 
 - Archived investigation log: [TILE_DRAW_INVESTIGATION.md](TILE_DRAW_INVESTIGATION.md)
 - Slideshow pure-phase tile climb: [SLIDESHOW.md](../SLIDESHOW.md) (`tickSlideshowTileLod`)
+
+## Document live scales (negative)
+
+Raster images: `min_scale >= 0` (file-native is finest).
+
+PDF / DjVu / EPUB **page refs** (`//page:…`): thumtoo supports **negative**
+scales for denser-than-layout tiles (scale −1 = 2× layout linear, 288 dpi when
+layout is 144 dpi). Durable store only keeps scale ≥ −2; finer cells are
+live-only (rgb888).
+
+Biltoo:
+
+- `tilelod::dim_at_tile_scale` expands for `scale < 0` (matches thumtoo
+  `pdf_page_size_at_scale`).
+- Image / Slideshow floor: `kDocumentLiveMinScale` (−4) for page refs so density
+  can request live finer tiles when zoomed past 1:1 layout.
+- Gallery overview still density-floors; zoom-in may request negative scales for
+  document pages only.
+- **SVG:** opened as a normal path today (no `//page:`). Negative scales are
+  not requested until SVG is a document-page URI with the same live-tile path
+  as PDF. Raster SVG via image codecs stays `min_scale >= 0`.
+
