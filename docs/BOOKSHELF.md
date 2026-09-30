@@ -20,7 +20,7 @@ not only the automatic Recent list (time-ordered, capped, easy to lose).
 
 ## Phase 1 — Menu only (in tree)
 
-Menu bar **Bookshelf**: Add Current Session; click entry to open; **Delete** (or Backspace) on a highlighted entry removes the pin. Persistence: QSettings array `bookshelf` (path lists).
+Menu bar **Bookshelf**: Add Current Session; click entry to open; **Delete** (or Backspace) on a highlighted entry removes the pin. Persistence: `SessionListStore` JSON under XDG state (see [APP_STATE.md](APP_STATE.md)).
 
 
 Mirror **Recent Sessions**:

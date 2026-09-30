@@ -976,6 +976,7 @@ connect(m_helpPanel, &HelpPanel::showAllShortcutsRequested,
         m_thumbnailBar->setVisible(false);
     }
     updateNavigationActions();
+    m_sessionListStore = new SessionListStore(this);
     readSettings();
     updateWorkspaceActionVisibility();
 }
@@ -4892,29 +4893,16 @@ void MainWindow::readSettings()
         }
     }
 
-    // Session history (full path lists per open)
-    m_sessionHistory.clear();
-    const int histCount = settings.beginReadArray(QStringLiteral("sessionHistory"));
-    for (int i = 0; i < histCount && i < kMaxSessionHistory; ++i) {
-        settings.setArrayIndex(i);
-        const QStringList paths = settings.value(QStringLiteral("paths")).toStringList();
-        if (!paths.isEmpty()) {
-            m_sessionHistory.append(paths);
+    // Session lists: XDG state JSON (SessionListStore), not QSettings.
+    if (m_sessionListStore) {
+        m_sessionListStore->load();
+        m_sessionHistory = m_sessionListStore->sessionHistory();
+        if (m_sessionHistory.size() > kMaxSessionHistory) {
+            m_sessionHistory = m_sessionHistory.mid(0, kMaxSessionHistory);
         }
+        m_bookshelf = m_sessionListStore->bookshelf();
     }
-    settings.endArray();
     rebuildHistoryMenu();
-
-    m_bookshelf.clear();
-    const int shelfCount = settings.beginReadArray(QStringLiteral("bookshelf"));
-    for (int i = 0; i < shelfCount; ++i) {
-        settings.setArrayIndex(i);
-        const QStringList paths = settings.value(QStringLiteral("paths")).toStringList();
-        if (!paths.isEmpty()) {
-            m_bookshelf.append(paths);
-        }
-    }
-    settings.endArray();
     rebuildBookshelfMenu();
 
     m_recentProjects.clear();
@@ -5008,18 +4996,7 @@ void MainWindow::writeSettings()
     settings.remove(QStringLiteral("geometry"));
     settings.remove(QStringLiteral("normalGeometry"));
 
-    settings.beginWriteArray(QStringLiteral("sessionHistory"), m_sessionHistory.size());
-    for (int i = 0; i < m_sessionHistory.size(); ++i) {
-        settings.setArrayIndex(i);
-        settings.setValue(QStringLiteral("paths"), m_sessionHistory.at(i));
-    }
-    settings.endArray();
-    settings.beginWriteArray(QStringLiteral("bookshelf"), m_bookshelf.size());
-    for (int i = 0; i < m_bookshelf.size(); ++i) {
-        settings.setArrayIndex(i);
-        settings.setValue(QStringLiteral("paths"), m_bookshelf.at(i));
-    }
-    settings.endArray();
+    // sessionHistory / bookshelf: SessionListStore (debounced).
     settings.setValue(QStringLiteral("recentProjects"), m_recentProjects);
     settings.setValue(QStringLiteral("dockLayoutVersion"), kDockLayoutStateVersion);
     {
@@ -5301,6 +5278,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     if (m_tts) {
         m_tts->stop();
+    }
+    if (m_sessionListStore) {
+        m_sessionListStore->flush();
     }
     writeSettings();
     QMainWindow::closeEvent(event);

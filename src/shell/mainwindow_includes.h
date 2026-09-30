@@ -78,6 +78,7 @@
 #include <QMimeData>
 #include <QScreen>
 #include <QSettings>
+#include "shell/sessionliststore.h"
 #include <QShortcut>
 #include <QSignalBlocker>
 #include <QSpinBox>

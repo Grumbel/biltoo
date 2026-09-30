@@ -2,16 +2,12 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2843.3-visualrect-index (on origin `94a711d`).
+**Tip:** biltoo-2844.1 (on origin `6ad534a`).
 
-### Bundle stacking rule
-Next tip base = current origin/master (or previous tip after pull). Never
-re-root the same fixes on an older origin commit. Fix-forward only.
+### Stack on origin/master 6ad534a
+1. LOD planner negative-scale content stride
+2. SessionListStore (Recent/Bookshelf → XDG state, debounced)
 
-### 2843.3
-- `visualRect(indexFromItem(hit))` — Qt6 QListView API (compile fix).
-
-### On origin already
-- 94a711d OCR toolbar opens panel
-- c3ff7f9 open-focus double-click (broken visualRect)
-- 6c3a0cc slideshow min_scale 0
+### Bundle rule
+Base = current origin/master HEAD at tip creation. Never re-root on an older
+origin commit when origin has advanced. Fix-forward only.

@@ -178,6 +178,7 @@ set(BILTOO_LIB_SOURCES
   src/shell/mainwindow_nav.cpp
   src/shell/mainwindow_slideshow.cpp
   src/shell/mainwindow_clipboard.cpp
+  src/shell/sessionliststore.cpp
   src/shell/mainwindow_project.cpp
   src/shell/mainwindow_print.cpp
   src/session/sessionexport.cpp

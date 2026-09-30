@@ -4,6 +4,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+class SessionListStore;
+
 #include "imageview.h"
 #include "item/itemcomponents.h"
 #include "session/sessiondocument.h"
@@ -888,6 +890,7 @@ private:
     /** Stacked paste offset (reset on Copy/Cut); each Paste steps by 40px. */
     int m_workspacePasteGeneration = 0;
     /** Past sessions (full path lists), newest first. */
+    SessionListStore *m_sessionListStore = nullptr;
     QList<QStringList> m_sessionHistory;
     static constexpr int kMaxSessionHistory = 20;
     /** User-pinned sessions (path lists); no auto-eviction. */

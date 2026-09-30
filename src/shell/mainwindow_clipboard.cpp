@@ -188,6 +188,9 @@ void MainWindow::rememberSessionHistory(const QStringList &paths)
     while (m_sessionHistory.size() > kMaxSessionHistory) {
         m_sessionHistory.removeLast();
     }
+    if (m_sessionListStore) {
+        m_sessionListStore->replaceSessionHistory(m_sessionHistory);
+    }
     rebuildHistoryMenu();
 }
 
@@ -277,6 +280,9 @@ void MainWindow::openHistoryEntry()
 void MainWindow::clearSessionHistory()
 {
     m_sessionHistory.clear();
+    if (m_sessionListStore) {
+        m_sessionListStore->replaceSessionHistory(m_sessionHistory);
+    }
     rebuildHistoryMenu();
 }
 
@@ -303,6 +309,9 @@ void MainWindow::addCurrentSessionToBookshelf()
         if (m_bookshelf.at(i) == normalized) {
             // Already pinned — move to front so it is easy to find.
             m_bookshelf.move(i, 0);
+            if (m_sessionListStore) {
+                m_sessionListStore->replaceBookshelf(m_bookshelf);
+            }
             rebuildBookshelfMenu();
             if (statusBar()) {
                 statusBar()->showMessage(tr("Already on the Bookshelf."), 3000);
@@ -311,6 +320,9 @@ void MainWindow::addCurrentSessionToBookshelf()
         }
     }
     m_bookshelf.prepend(normalized);
+    if (m_sessionListStore) {
+        m_sessionListStore->replaceBookshelf(m_bookshelf);
+    }
     rebuildBookshelfMenu();
     if (statusBar()) {
         statusBar()->showMessage(tr("Added to Bookshelf (%1 item(s)).").arg(normalized.size()), 4000);
@@ -388,6 +400,9 @@ void MainWindow::removeBookshelfEntryAt(int index)
         return;
     }
     m_bookshelf.removeAt(index);
+    if (m_sessionListStore) {
+        m_sessionListStore->replaceBookshelf(m_bookshelf);
+    }
     rebuildBookshelfMenu();
 }
 
