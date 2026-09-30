@@ -38,15 +38,18 @@ public:
 
     Annotation::Page &ensurePage(SessionImageId sid, const QRectF &pageBounds, bool pageYUp)
     {
+        // Prefer early return + *insert over it.value() after insert: GCC 14 +
+        // Qt 6.11 -Wnull-dereference fires on QHashPrivate::iterator::isUnused
+        // when the insert path is inlined (false positive; table is non-null).
         auto it = m_pages.find(sid);
-        if (it == m_pages.end()) {
-            Annotation::Page pg;
-            pg.sid = sid;
-            pg.pageBounds = pageBounds;
-            pg.pageYUp = pageYUp;
-            it = m_pages.insert(sid, pg);
+        if (it != m_pages.end()) {
+            return *it;
         }
-        return it.value();
+        Annotation::Page pg;
+        pg.sid = sid;
+        pg.pageBounds = pageBounds;
+        pg.pageYUp = pageYUp;
+        return *m_pages.insert(sid, pg);
     }
 
     void addObject(SessionImageId sid, const Annotation::Object &obj,
