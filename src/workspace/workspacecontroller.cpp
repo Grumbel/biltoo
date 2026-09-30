@@ -767,10 +767,16 @@ void WorkspaceController::reloadFromDisk()
         return;
     }
 
-    QSet<QString> paths;
+    // QStringList (not QSet): GCC -Wnull-dereference on QSet::*cbegin() even when
+    // size()==1; values()/.first() on a list is warning-clean.
+    QStringList paths;
     for (ImageItem *item : targets) {
-        if (item && !item->path().isEmpty()) {
-            paths.insert(item->path());
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QString path = item->path();
+        if (!paths.contains(path)) {
+            paths.append(path);
         }
     }
     if (paths.isEmpty()) {
@@ -778,9 +784,7 @@ void WorkspaceController::reloadFromDisk()
     }
 
     // Always clear process caches (even when source fingerprint is unchanged).
-    // paths is already a QSet — no second dedup pass (avoids QSet iterator
-    // null-deref warnings from *constBegin() under GCC).
-    for (const QString &path : paths) {
+        for (const QString &path : paths) {
         ImageCache::remove(path);
         {
             QSize discarded;
@@ -802,9 +806,8 @@ void WorkspaceController::reloadFromDisk()
         ThumtooCache::scheduleProbe(path);
     }
     m_view->hostDisplayPipeline().ensureWorkspaceQualityClimb();
-    // QSet has no constFirst(); size==1 guarantees a valid iterator.
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(*paths.cbegin()).fileName()
+        ? QFileInfo(paths.constFirst()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });

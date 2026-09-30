@@ -2,18 +2,15 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2857.1-contact-sheet-cols (on `ea477d6` + agent stack).
+**Tip:** biltoo-2858.1-f5-stringlist (on `ea477d6` + agent stack).
 
-### 2857.1
-- **Contact Sheet**: pack exactly `Columns` pages per full row and scale the
-  row to fill width (no almost-fit trailing gutter). Last partial row stays
-  nominal column scale unless already ~full.
-- **Strip Rows**: if the next page almost fits, squeeze the row up to 12%
-  instead of wrapping early.
+### 2858.1
+- Soft F5 unique paths use `QStringList` (not `QSet`) so the single-path flash
+  label does not trip GCC `-Wnull-dereference` on QSet iterators.
 
 ### Prior
+- 2857.1 contact sheet columns
 - 2856.1 toolbar toggleViewAction
-- 2855.1 zoom/text icons
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

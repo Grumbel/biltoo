@@ -2624,10 +2624,16 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
         return;
     }
 
-    QSet<QString> paths;
+    // QStringList (not QSet): GCC -Wnull-dereference on QSet::*cbegin() even when
+    // size()==1; values()/.first() on a list is warning-clean.
+    QStringList paths;
     for (ImageItem *item : targets) {
-        if (item && !item->path().isEmpty()) {
-            paths.insert(item->path());
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QString path = item->path();
+        if (!paths.contains(path)) {
+            paths.append(path);
         }
     }
     if (paths.isEmpty()) {
@@ -2636,8 +2642,7 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
 
     // Always clear process caches for every targeted path (even when the
     // source fingerprint is unchanged). Durable Store stays until Shift+F5.
-    // paths is already a QSet — iterate once; use *cbegin() for the single-path flash label.
-    for (const QString &path : paths) {
+        for (const QString &path : paths) {
         ImageCache::remove(path);
         {
             QSize discarded;
@@ -2659,9 +2664,8 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
         ThumtooCache::scheduleProbe(path);
         m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
-    // QSet has no constFirst(); size==1 guarantees a valid iterator.
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(*paths.cbegin()).fileName()
+        ? QFileInfo(paths.constFirst()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
