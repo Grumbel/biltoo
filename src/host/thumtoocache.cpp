@@ -834,33 +834,15 @@ void requestSizeAsync(const QString &path,
             callback(false, QSize(), QImage());
             return;
         }
-        // Size gate / batch probe: prefer light get_size (region dims only).
-        // request_size also pulls LQIP+EMB and was the dominant cost on warm
-        // multipage PDF sessions (~2400 pages). Underlay is not a gate condition.
+        // Size gate: prefer light get_size (region dims only). Full
+        // request_size also pulls LQIP/EMB; on PDF page miss thumtoo
+        // ensure_pdf_page_sizes fills sibling dims first.
         if (auto sz = c->get_size(uri)) {
             const QSize out(sz->width, sz->height);
             if (out.width() > 0 && out.height() > 0) {
                 noteCachedSize(path, out);
                 callback(true, out, QImage());
                 return;
-            }
-        }
-        // Tail of a multipage PDF: many pages may lack region dims. One open
-        // fills all missing page sizes so we do not serially ProbeSize each.
-        if (PagePath::isPageRef(path) && !PagePath::parse(path).isEpub()) {
-            const QString doc = PagePath::documentFilePath(path);
-            if (PagePath::isPdfFile(doc) || PagePath::isMarkdownFile(doc)
-                || PagePath::isPlainTextFile(doc)) {
-                const std::filesystem::path abs = absPathStd(doc);
-                (void)c->ensure_pdf_page_sizes(abs);
-                if (auto sz = c->get_size(uri)) {
-                    const QSize out(sz->width, sz->height);
-                    if (out.width() > 0 && out.height() > 0) {
-                        noteCachedSize(path, out);
-                        callback(true, out, QImage());
-                        return;
-                    }
-                }
             }
         }
         c->request_size(uri, [callback, path](std::string, thumtoo::SizeReply reply) {
@@ -2454,10 +2436,9 @@ void warmSessionOpenMemos(const QStringList &paths)
         return;
     }
     const QStringList copy = paths;
-    // Size hydrate is owned by scheduleProbeBatch (one Store get_size walk,
-    // then request_size only for misses). Do not dual-walk sizes here — that
-    // raced the probe FIFO and produced ~300-hit bursts with ~1s gaps on large
-    // PDF sessions. This path only warms durable has_tile after sizes settle.
+    // Sizes are owned by scheduleProbeBatch / requestSizeAsync (get_size, then
+    // request_size on miss). This path only warms durable has_tile after the
+    // size probe FIFO drains — avoids Store contention with the size gate.
     auto workOneDurable = [](const QString &p) {
         if (p.isEmpty()) {
             return;

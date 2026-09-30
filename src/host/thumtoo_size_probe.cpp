@@ -30,7 +30,7 @@ QSet<QString> g_probeQueued;
 QStringList g_probeFifo;
 /** In-flight Store size requests (bounded parallel batch). */
 int g_probeInflight = 0;
-/** Cold-open / session size pass: probe many paths at once (not one-by-one). */
+/** Bounded parallel size probes (light get_size first; request_size on miss). */
 constexpr int kMaxConcurrentSizeProbes = 16;
 /** Memo sizeReady emits per event-loop turn — avoids GUI freeze on warm open. */
 constexpr int kSizeReadyChunk = 16;
