@@ -2,17 +2,16 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2851.1-shortcuts-panel-fill (on `ea477d6` + agent stack).
+**Tip:** biltoo-2852.1-qset-cbegin (on `ea477d6` + agent stack).
 
-### 2851.1
-- Keyboard Shortcuts panel was empty after the dialog→panel change: fill on
-  `showEvent` (layout restore / toggle), capture shortcut text at collect time,
-  store `QAction*` as `QObject*` in the table, reentrancy guard.
+### 2852.1
+- Soft F5 flash label: `QSet` has no `constFirst()` — use `*paths.cbegin()`
+  when `size() == 1`. (Hard reload still uses `QStringList::constFirst()`.)
 
 ### Prior
-- 2850.1 F5 QSet warning
+- 2851.1 shortcuts panel fill
+- 2850.1 F5 QSet warning attempt
 - 2849.1 contact/strip pack
-- 2848.1 annot shape modifiers
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

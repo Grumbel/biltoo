@@ -802,8 +802,9 @@ void WorkspaceController::reloadFromDisk()
         ThumtooCache::scheduleProbe(path);
     }
     m_view->hostDisplayPipeline().ensureWorkspaceQualityClimb();
+    // QSet has no constFirst(); size==1 guarantees a valid iterator.
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(paths.constFirst()).fileName()
+        ? QFileInfo(*paths.cbegin()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });

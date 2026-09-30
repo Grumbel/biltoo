@@ -2636,7 +2636,7 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
 
     // Always clear process caches for every targeted path (even when the
     // source fingerprint is unchanged). Durable Store stays until Shift+F5.
-    // paths is already a QSet — iterate once; use constFirst() for the flash.
+    // paths is already a QSet — iterate once; use *cbegin() for the single-path flash label.
     for (const QString &path : paths) {
         ImageCache::remove(path);
         {
@@ -2659,8 +2659,9 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
         ThumtooCache::scheduleProbe(path);
         m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
+    // QSet has no constFirst(); size==1 guarantees a valid iterator.
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(paths.constFirst()).fileName()
+        ? QFileInfo(*paths.cbegin()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
