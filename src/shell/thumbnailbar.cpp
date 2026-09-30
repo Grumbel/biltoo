@@ -3697,7 +3697,8 @@ void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
     // Open focus: map click within the strip cell to content-normalized coords.
-    const QRect cell = visualRect(hit);
+    // visualRect takes QModelIndex (Qt6), not QListWidgetItem*.
+    const QRect cell = visualRect(indexFromItem(hit));
     if (cell.width() > 1 && cell.height() > 1) {
         const qreal nx = qBound(0.0, (event->pos().x() - cell.x()) / qreal(cell.width()), 1.0);
         const qreal ny = qBound(0.0, (event->pos().y() - cell.y()) / qreal(cell.height()), 1.0);
