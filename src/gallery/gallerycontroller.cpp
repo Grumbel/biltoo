@@ -2634,64 +2634,41 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
         return;
     }
 
-    auto remaining = std::make_shared<int>(paths.size());
-    auto changedPaths = std::make_shared<QStringList>();
-    auto finish = [this, targets, changedPaths]() {
-        if (!m_view) {
-            return;
+    // Always clear process caches for every targeted path (even when the
+    // source fingerprint is unchanged). Durable Store stays until Shift+F5.
+    QSet<QString> done;
+    for (const QString &path : paths) {
+        if (done.contains(path)) {
+            continue;
         }
-        if (changedPaths->isEmpty()) {
-            m_view->hostHud().showFlash(ImageView::tr("Reload"),
-                ImageView::tr("Unchanged"),
-                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
-            return;
+        done.insert(path);
+        ImageCache::remove(path);
+        {
+            QSize discarded;
+            m_view->hostSizeBook().take(path, &discarded);
         }
-        QSet<QString> done;
-        for (const QString &path : *changedPaths) {
-            if (done.contains(path)) {
+        ThumtooCache::forgetCachedSize(path);
+        m_view->hostDisplayPipeline().purgeTilePathRam(path);
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
+        for (int edge : ThumtooCache::kLadderEdges) {
+            ThumtooCache::forgetPixelsSettled(path, edge);
+        }
+        for (ImageItem *item : targets) {
+            if (!item || item->path() != path) {
                 continue;
             }
-            done.insert(path);
-            ImageCache::remove(path);
-            {
-                QSize discarded;
-                m_view->hostSizeBook().take(path, &discarded);
-            }
-            ThumtooCache::forgetCachedSize(path);
-            m_view->hostDisplayPipeline().purgeTilePathRam(path);
-            m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
-            for (int edge : ThumtooCache::kLadderEdges) {
-                ThumtooCache::forgetPixelsSettled(path, edge);
-            }
-            for (ImageItem *item : targets) {
-                if (!item || item->path() != path) {
-                    continue;
-                }
-                m_view->hostDisplayPipeline().dropItemTileLodSession(item);
-                m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
-            }
-            // No PendingSessionBind — existing tiles keep their session ids.
-            ThumtooCache::scheduleProbe(path);
-            m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
+            m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+            m_view->hostDisplayPipeline().hostClearDecodedPixels(item);
         }
-        const QString detail = (changedPaths->size() == 1)
-            ? QFileInfo(changedPaths->constFirst()).fileName()
-            : ImageView::tr("%1 paths").arg(changedPaths->size());
-        m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
-            [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
-        emit m_view->statusChanged();
-    };
-
-    for (const QString &path : paths) {
-        ThumtooCache::checkSourceChanged(path, [remaining, changedPaths, finish, path](bool changed) {
-            if (changed) {
-                changedPaths->append(path);
-            }
-            if (--(*remaining) == 0) {
-                finish();
-            }
-        });
+        ThumtooCache::scheduleProbe(path);
+        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
+    const QString detail = (paths.size() == 1)
+        ? QFileInfo(*paths.constBegin()).fileName()
+        : ImageView::tr("%1 paths").arg(paths.size());
+    m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
+        [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+    emit m_view->statusChanged();
 }
 
 void GalleryController::hardReloadFromDisk(bool /*relayout*/)

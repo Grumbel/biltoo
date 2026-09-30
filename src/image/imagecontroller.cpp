@@ -221,26 +221,26 @@ void ImageController::reloadFromDisk()
         return;
     }
     const QString path = classicPath();
-    // Soft F5: regenerate only when the source fingerprint changed.
+    // Soft F5: always drop process-level caches and re-decode the focused
+    // image (RAM / ladder / tile session). Source fingerprint only affects the
+    // flash detail — durable Store tiles stay until Shift+F5.
     ThumtooCache::checkSourceChanged(path, [this, path](bool changed) {
         if (!m_view) {
             return;
         }
-        if (!changed) {
-            m_view->hostHud().showFlash(ImageView::tr("Reload"),
-                ImageView::tr("%1 (unchanged)").arg(QFileInfo(path).fileName()),
-                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
-            return;
-        }
-        // Source changed: drop process caches and re-decode the focused image only.
-        // Do not purge durable Store (Shift+F5) and do not touch session binds.
         clearProcessCachesForPath(m_view, path);
         clearDecodedOnPath(m_view, path);
         ThumtooCache::scheduleProbe(path);
         m_view->hostDisplayPipeline().scheduleImageLoad(
             path, static_cast<int>(ImageView::LoadReplace));
-        m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(),
-            [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        if (changed) {
+            m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        } else {
+            m_view->hostHud().showFlash(ImageView::tr("Reload"),
+                ImageView::tr("%1 (process cache cleared)").arg(QFileInfo(path).fileName()),
+                [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
+        }
         emit m_view->statusChanged();
     });
 }

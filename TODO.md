@@ -2,13 +2,13 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2844.3-xdg-state-path (on origin `62bc891`).
+**Tip:** biltoo-2845.1-epub-f5-process-cache (on `ea477d6` + agent commits).
+
+### 2845.1
+- Soft F5 (Image / Gallery / Workspace): always clear process tile/ladder
+  caches and re-decode, even when the source fingerprint is unchanged.
+  Durable Store still requires Shift+F5 (needs thumtoo-011.1 region purge).
+- EPUB layout collision fixed in **thumtoo-011.1** (layout in region key).
 
 ### Bundle policy
-Every tip bundle = `origin/master..HEAD` at creation time (all agent commits
-since last upstream tip). After `git pull` of that bundle, next tip bases on
-the new HEAD once it is origin, or on origin if only origin advanced.
-
-### 2844.3
-- SessionListStore::stateDirectory — pure XDG (`$XDG_STATE_HOME/biltoo`),
-  no AppStateLocation.
+Every tip bundle = full stack from the work-line base (`ea477d6`) to HEAD.

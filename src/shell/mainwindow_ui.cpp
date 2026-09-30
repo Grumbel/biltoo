@@ -70,10 +70,11 @@ void MainWindow::createActions()
     m_reloadAct = new QAction(tr("&Reload"), this);
     m_reloadAct->setShortcut(Qt::Key_F5);
     m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
-    m_reloadAct->setToolTip(tr("Reload page(s) under the cursor / selection from disk when changed (F5)"));
+    m_reloadAct->setToolTip(tr("Clear process caches and re-decode page(s) under the cursor / selection (F5)"));
     m_reloadAct->setStatusTip(
-        tr("Reload from disk (F5): check source mtime; regenerate only if changed — "
-           "current image in Image mode; selection (or focused) in Gallery/Workspace. No relayout."));
+        tr("Reload (F5): drop process tile/ladder caches and re-decode — "
+           "current image in Image mode; selection (or focused) in Gallery/Workspace. "
+           "Durable Store tiles stay until Shift+F5. No relayout."));
     connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
 
     m_hardReloadAct = new QAction(tr("Hard &Reload"), this);
