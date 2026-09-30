@@ -845,6 +845,24 @@ void requestSizeAsync(const QString &path,
                 return;
             }
         }
+        // Tail of a multipage PDF: many pages may lack region dims. One open
+        // fills all missing page sizes so we do not serially ProbeSize each.
+        if (PagePath::isPageRef(path) && !PagePath::parse(path).isEpub()) {
+            const QString doc = PagePath::documentFilePath(path);
+            if (PagePath::isPdfFile(doc) || PagePath::isMarkdownFile(doc)
+                || PagePath::isPlainTextFile(doc)) {
+                const std::filesystem::path abs = absPathStd(doc);
+                (void)c->ensure_pdf_page_sizes(abs);
+                if (auto sz = c->get_size(uri)) {
+                    const QSize out(sz->width, sz->height);
+                    if (out.width() > 0 && out.height() > 0) {
+                        noteCachedSize(path, out);
+                        callback(true, out, QImage());
+                        return;
+                    }
+                }
+            }
+        }
         c->request_size(uri, [callback, path](std::string, thumtoo::SizeReply reply) {
             if (!reply.size) {
                 // Library could not resolve size (missing source, bad URI, …).
