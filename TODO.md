@@ -2,17 +2,17 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2850.1-f5-qset-warning (on `ea477d6` + agent stack).
+**Tip:** biltoo-2851.1-shortcuts-panel-fill (on `ea477d6` + agent stack).
 
-### 2850.1
-- Silence GCC `-Wnull-dereference` on Workspace/Gallery soft F5: drop redundant
-  `QSet done` (paths already unique) and use `paths.constFirst()` instead of
-  `*paths.constBegin()`.
+### 2851.1
+- Keyboard Shortcuts panel was empty after the dialog→panel change: fill on
+  `showEvent` (layout restore / toggle), capture shortcut text at collect time,
+  store `QAction*` as `QObject*` in the table, reentrancy guard.
 
 ### Prior
+- 2850.1 F5 QSet warning
 - 2849.1 contact/strip pack
 - 2848.1 annot shape modifiers
-- 2847.1 shortcuts panel
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

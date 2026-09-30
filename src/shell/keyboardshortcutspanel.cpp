@@ -17,6 +17,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
+#include <QShowEvent>
 
 namespace {
 
@@ -111,7 +112,8 @@ KeyboardShortcutsPanel::KeyboardShortcutsPanel(QWidget *parent)
 }
 
 void KeyboardShortcutsPanel::setActions(const QList<QAction *> &actions,
-                                        const QList<QString> &actionCategories)
+                                        const QList<QString> &actionCategories,
+                                        const QList<QString> &shortcutOverrides)
 {
     if (!m_table) {
         return;
@@ -127,7 +129,10 @@ void KeyboardShortcutsPanel::setActions(const QList<QAction *> &actions,
             continue;
         }
         seen.insert(act);
-        const QString keys = shortcutsNative(act);
+        QString keys = shortcutsNative(act);
+        if (keys.isEmpty() && i < shortcutOverrides.size()) {
+            keys = shortcutOverrides.at(i);
+        }
         if (keys.isEmpty()) {
             continue;
         }
@@ -140,9 +145,11 @@ void KeyboardShortcutsPanel::setActions(const QList<QAction *> &actions,
         auto *catItem = new QTableWidgetItem(cat);
         auto *keyItem = new QTableWidgetItem(keys);
         auto *cmdItem = new QTableWidgetItem(plainActionTitle(act));
-        catItem->setData(Qt::UserRole, QVariant::fromValue(static_cast<void *>(act)));
-        keyItem->setData(Qt::UserRole, QVariant::fromValue(static_cast<void *>(act)));
-        cmdItem->setData(Qt::UserRole, QVariant::fromValue(static_cast<void *>(act)));
+        // Store QObject* so QVariant type is registered (void* was unreliable).
+        const QVariant actVar = QVariant::fromValue<QObject *>(act);
+        catItem->setData(Qt::UserRole, actVar);
+        keyItem->setData(Qt::UserRole, actVar);
+        cmdItem->setData(Qt::UserRole, actVar);
         if (!act->isEnabled()) {
             const QColor mid = palette().color(QPalette::Mid);
             catItem->setForeground(mid);
@@ -160,6 +167,12 @@ void KeyboardShortcutsPanel::setActions(const QList<QAction *> &actions,
     }
 }
 
+void KeyboardShortcutsPanel::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    emit refreshRequested();
+}
+
 QAction *KeyboardShortcutsPanel::actionAtRow(int row) const
 {
     if (!m_table || row < 0 || row >= m_table->rowCount()) {
@@ -169,7 +182,7 @@ QAction *KeyboardShortcutsPanel::actionAtRow(int row) const
     if (!it) {
         return nullptr;
     }
-    return static_cast<QAction *>(it->data(Qt::UserRole).value<void *>());
+    return qobject_cast<QAction *>(it->data(Qt::UserRole).value<QObject *>());
 }
 
 void KeyboardShortcutsPanel::onCurrentCellChanged(int currentRow, int, int, int)

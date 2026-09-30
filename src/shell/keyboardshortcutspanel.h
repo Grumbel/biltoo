@@ -6,11 +6,13 @@
 
 #include <QWidget>
 #include <QList>
+#include <QString>
 
 class QAction;
 class QLineEdit;
 class QTableWidget;
 class QTableWidgetItem;
+class QShowEvent;
 
 /**
  * Dockable table of application actions that have keyboard shortcuts.
@@ -25,14 +27,21 @@ public:
 
     /**
      * Replace table rows. Parallel @p actionCategories (empty → "Other").
-     * Shortcut text is read from each action at call time.
+     * Optional @p shortcutOverride supplies display text when the action's
+     * live shortcut list is empty (e.g. temporary fullscreen chords).
      */
     void setActions(const QList<QAction *> &actions,
-                    const QList<QString> &actionCategories);
+                    const QList<QString> &actionCategories,
+                    const QList<QString> &shortcutOverrides = {});
 
 signals:
+    /** Emitted when the panel becomes visible so the host can (re)fill rows. */
+    void refreshRequested();
     void actionHighlighted(QAction *action);
     void actionActivated(QAction *action);
+
+protected:
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,

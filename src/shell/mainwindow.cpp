@@ -859,6 +859,14 @@ connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocume
     m_shortcutsDock->setWidget(m_shortcutsPanel);
     addDockWidget(m_shortcutsDock, KDDockWidgets::Location_OnRight);
     m_shortcutsDock->close();
+    connect(m_shortcutsPanel, &KeyboardShortcutsPanel::refreshRequested, this,
+            [this]() {
+                // Fill when the dock becomes visible (layout restore / toggle)
+                // without requiring the Help → Shortcuts menu path.
+                if (m_shortcutsPanel && m_shortcutsPanel->isVisible()) {
+                    showKeyboardShortcuts();
+                }
+            });
     connect(m_shortcutsPanel, &KeyboardShortcutsPanel::actionHighlighted, this,
             [this](QAction *act) {
                 if (m_helpPanel && act) {
@@ -3191,21 +3199,54 @@ void MainWindow::toggleScrollBars()
 
 void MainWindow::showKeyboardShortcuts()
 {
+    static bool s_refreshing = false;
+    if (s_refreshing) {
+        return;
+    }
+    s_refreshing = true;
+    struct Guard {
+        bool &f;
+        ~Guard() { f = false; }
+    } guard{s_refreshing};
+
     // Collect actions that expose shortcuts, with menu-derived categories.
+    // Capture key text at collect time so the table is independent of later
+    // temporary setShortcuts (fullscreen F/F11) and of QAction lifetime quirks.
     QList<QAction *> actions;
     QList<QString> categories;
+    QList<QString> keyTexts;
     QSet<QAction *> seen;
 
-    auto addAct = [&](QAction *act, const QString &category) {
+    auto keysOf = [](const QAction *act) -> QString {
+        if (!act) {
+            return {};
+        }
+        QStringList parts;
+        const QList<QKeySequence> seqs = act->shortcuts();
+        if (!seqs.isEmpty()) {
+            for (const QKeySequence &s : seqs) {
+                if (!s.isEmpty()) {
+                    parts.append(s.toString(QKeySequence::NativeText));
+                }
+            }
+        } else if (!act->shortcut().isEmpty()) {
+            parts.append(act->shortcut().toString(QKeySequence::NativeText));
+        }
+        return parts.join(QStringLiteral(", "));
+    };
+
+    auto addAct = [&](QAction *act, const QString &category, const QString &keysOverride = {}) {
         if (!act || act->isSeparator() || seen.contains(act)) {
             return;
         }
-        if (act->shortcuts().isEmpty() && act->shortcut().isEmpty()) {
+        QString keys = keysOverride.isEmpty() ? keysOf(act) : keysOverride;
+        if (keys.isEmpty()) {
             return;
         }
         seen.insert(act);
         actions.append(act);
         categories.append(category);
+        keyTexts.append(keys);
     };
 
     std::function<void(QMenu *, const QString &)> walkMenu;
@@ -3243,25 +3284,28 @@ void MainWindow::showKeyboardShortcuts()
         addAct(act, tr("Other"));
     }
 
-    // F / F11 are dedicated QShortcuts on the window, not on the action.
-    // Temporarily expose them on the action so the table can list Fullscreen.
-    QList<QKeySequence> fullscreenShortcutsSaved;
+    // F / F11 are dedicated QShortcuts on the window, not on the action —
+    // list them via override text when the action has no shortcuts of its own.
     if (m_fullscreenAct) {
-        fullscreenShortcutsSaved = m_fullscreenAct->shortcuts();
-        if (fullscreenShortcutsSaved.isEmpty()) {
-            m_fullscreenAct->setShortcuts({QKeySequence(Qt::Key_F), QKeySequence(Qt::Key_F11)});
+        if (m_fullscreenAct->shortcuts().isEmpty() && m_fullscreenAct->shortcut().isEmpty()) {
+            const QString fsKeys = QKeySequence(Qt::Key_F).toString(QKeySequence::NativeText)
+                + QStringLiteral(", ")
+                + QKeySequence(Qt::Key_F11).toString(QKeySequence::NativeText);
+            addAct(m_fullscreenAct, tr("View"), fsKeys);
+        } else {
+            addAct(m_fullscreenAct, tr("View"));
         }
-        addAct(m_fullscreenAct, tr("View"));
     }
 
     if (m_shortcutsPanel) {
-        m_shortcutsPanel->setActions(actions, categories);
+        m_shortcutsPanel->setActions(actions, categories, keyTexts);
     }
-    if (m_fullscreenAct) {
-        m_fullscreenAct->setShortcuts(fullscreenShortcutsSaved);
+    // Open dock only when the user asked (menu / Help); refresh-from-show
+    // already has the panel visible.
+    if (m_shortcutsDock && !dockIsOpen(m_shortcutsDock)) {
+        setDockOpen(m_shortcutsDock, true);
     }
     if (m_shortcutsDock) {
-        setDockOpen(m_shortcutsDock, true);
         m_shortcutsDock->raise();
     }
 }
