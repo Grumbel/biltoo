@@ -210,7 +210,7 @@ void MainWindow::createActions()
     m_zoomFitAct->setShortcutContext(Qt::WindowShortcut);
     // F is reserved for fullscreen (common image-viewer convention)
     m_zoomFitAct->setCheckable(true);
-    m_zoomFitAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
+    m_zoomFitAct->setIcon(resourceIcon(QStringLiteral("zoom-fit-best")));
     m_zoomFitAct->setStatusTip(tr("Fit image to the window (Ctrl+Shift+F)"));
     connect(m_zoomFitAct, &QAction::triggered, this, &MainWindow::zoomFit);
 
@@ -218,7 +218,7 @@ void MainWindow::createActions()
     // Ctrl+F is Find (search toolbar). Fill keeps a chord that does not steal Find.
     m_zoomFillAct->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_0);
     m_zoomFillAct->setCheckable(true);
-    m_zoomFillAct->setIcon(themeIcon(QStringLiteral("zoom-fit-best"), QStyle::SP_TitleBarMaxButton));
+    m_zoomFillAct->setIcon(resourceIcon(QStringLiteral("zoom-fill")));
     m_zoomFillAct->setStatusTip(
         tr("Fill window (sticky while checked; click again or zoom ± to release)"));
     connect(m_zoomFillAct, &QAction::triggered, this, &MainWindow::zoomFill);
@@ -546,7 +546,7 @@ void MainWindow::createActions()
     connect(m_ocrPageAct, &QAction::triggered, this, &MainWindow::ocrCurrentPage);
 
     m_ocrDocumentAct = new QAction(tr("OCR &Document…"), this);
-    m_ocrDocumentAct->setIcon(resourceIcon(QStringLiteral("ocr-page")));
+    m_ocrDocumentAct->setIcon(resourceIcon(QStringLiteral("ocr-document")));
     m_ocrDocumentAct->setStatusTip(
         tr("Run OCR on all pages of the current document (language prompt)"));
     m_ocrDocumentAct->setWhatsThis(tr(
@@ -1065,6 +1065,7 @@ void MainWindow::createActions()
     if (m_ocrDock) {
         m_toggleOcrAct = m_ocrDock->toggleAction();
         m_toggleOcrAct->setText(tr("Show &OCR Panel"));
+        m_toggleOcrAct->setIcon(resourceIcon(QStringLiteral("panel-ocr")));
         m_toggleOcrAct->setStatusTip(
             tr("Show or hide the OCR panel (does not start OCR; use Run OCR in the panel)"));
         connect(m_ocrDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this, [this](bool visible) {
@@ -1076,7 +1077,7 @@ void MainWindow::createActions()
     if (m_textDock) {
         m_toggleTextAct = m_textDock->toggleAction();
         m_toggleTextAct->setText(tr("Show Te&xt Panel"));
-        m_toggleTextAct->setIcon(resourceIcon(QStringLiteral("text-speak")));
+        m_toggleTextAct->setIcon(resourceIcon(QStringLiteral("panel-text")));
         m_toggleTextAct->setStatusTip(
             tr("Page text / OCR regions with selection mirrored on the page"));
     }

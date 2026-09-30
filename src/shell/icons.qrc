@@ -33,6 +33,7 @@
     <file alias="actions/view-split-top-bottom.svg">../../data/icons/actions/view-split-top-bottom.svg</file>
     <file alias="actions/view-stack.svg">../../data/icons/actions/view-stack.svg</file>
     <file alias="actions/zoom-fit-best.svg">../../data/icons/actions/zoom-fit-best.svg</file>
+    <file alias="actions/zoom-fill.svg">../../data/icons/actions/zoom-fill.svg</file>
     <file alias="actions/zoom-tool.svg">../../data/icons/actions/zoom-tool.svg</file>
     <file alias="actions/zoom-in.svg">../../data/icons/actions/zoom-in.svg</file>
     <file alias="actions/zoom-original.svg">../../data/icons/actions/zoom-original.svg</file>
@@ -55,6 +56,9 @@
     <file alias="actions/workspace-background-default.svg">../../data/icons/actions/workspace-background-default.svg</file>
     <file alias="actions/text-speak.svg">../../data/icons/actions/text-speak.svg</file>
     <file alias="actions/ocr-page.svg">../../data/icons/actions/ocr-page.svg</file>
+    <file alias="actions/ocr-document.svg">../../data/icons/actions/ocr-document.svg</file>
+    <file alias="actions/panel-ocr.svg">../../data/icons/actions/panel-ocr.svg</file>
+    <file alias="actions/panel-text.svg">../../data/icons/actions/panel-text.svg</file>
     <file alias="actions/show-text-regions.svg">../../data/icons/actions/show-text-regions.svg</file>
     <file alias="actions/annot-highlighter-freehand.svg">../../data/icons/actions/annot-highlighter-freehand.svg</file>
     <file alias="actions/annot-highlighter-text.svg">../../data/icons/actions/annot-highlighter-text.svg</file>
