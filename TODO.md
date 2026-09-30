@@ -2,7 +2,7 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2838.1-document-live-tiles-and-open-errors (on 2837.4 stack).
+**Tip:** biltoo-2838.2-source-missing-chrome (on 2838.1 stack).
 
 ### Stopping point
 Tool unification lean path for text markup is complete: Exclusive radio,
@@ -51,6 +51,11 @@ rotation vs content orient — not blocking.
   lod_math + tests; Image/Slideshow floors; SVG still raster path (doc note).
 - Open errors: `formatLoadErrorMessage` classifies library “not found”; empty
   canvas + HUD + `reportSessionOpenFailed` set `lastLoadError` (no exists()).
+
+### 2838.2
+- Source-unavailable process memo (`noteSourceUnavailable` / clear on sizeReady).
+- ImageItem banner: “Source missing — cached preview only” when memo set.
+- formatLoadErrorMessage notes unavailable on not-found classification.
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)

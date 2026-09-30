@@ -178,6 +178,14 @@ void scheduleEnsureLqipFromTiles(const QString &path);
 bool isUnsupported(const QString &path);
 
 /**
+ * Memo: open/probe reported the source unavailable (library error — no exists()).
+ * GUI-safe read. Used to show “cached only” chrome while tiles/LQIP remain.
+ */
+void noteSourceUnavailable(const QString &path);
+void clearSourceUnavailable(const QString &path);
+bool isSourceUnavailable(const QString &path);
+
+/**
  * One Store size lookup on a worker (or sync when already off-GUI).
  * Callback runs on the completion thread — marshal to GUI if needed.
  * @p lqip may be null when LQIP is unavailable or already cached elsewhere.

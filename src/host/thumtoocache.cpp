@@ -216,6 +216,8 @@ constexpr int kMaxPixelScheduleAttempts = 4;
 /** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
 QSet<QString> g_unsupportedYes;
 QSet<QString> g_unsupportedNo;
+/** Paths whose open/probe failed with not-found class errors (no exists()). */
+QSet<QString> g_sourceUnavailable;
 /**
  * Negative durable-tile memo TTL (ProcessMemos). Short so mid-session
  * prepare/FocusFull can still flip true after a miss.
@@ -1164,7 +1166,10 @@ void scheduleEnsureLqipFromTiles(const QString &path)
                     if (sz.isValid()) {
                         QMetaObject::invokeMethod(
                             bridge(),
-                            [pathCopy, sz]() { emit bridge()->sizeReady(pathCopy, sz); },
+                            [pathCopy, sz]() {
+                                clearSourceUnavailable(pathCopy);
+                                emit bridge()->sizeReady(pathCopy, sz);
+                            },
                             Qt::QueuedConnection);
                     }
                 }
@@ -1333,7 +1338,10 @@ void scheduleStoreUnderlaySeed(const QString &path)
         // sizeReady → tryInstallGalleryUnderlay when definitive size is known.
         QMetaObject::invokeMethod(
             bridge(),
-            [pathCopy, sz]() { emit bridge()->sizeReady(pathCopy, sz); },
+            [pathCopy, sz]() {
+                                clearSourceUnavailable(pathCopy);
+                                emit bridge()->sizeReady(pathCopy, sz);
+                            },
             Qt::QueuedConnection);
         // EMB present does not imply Store LQIP — fill LQIP from tiles when possible.
         scheduleEnsureLqipFromTiles(pathCopy);
@@ -1425,6 +1433,34 @@ bool isUnsupported(const QString &path)
         g_unsupportedNo.insert(path);
     }
     return false;
+}
+
+
+void noteSourceUnavailable(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(g_mu);
+    g_sourceUnavailable.insert(path);
+}
+
+void clearSourceUnavailable(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(g_mu);
+    g_sourceUnavailable.remove(path);
+}
+
+bool isSourceUnavailable(const QString &path)
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    std::lock_guard lock(g_mu);
+    return g_sourceUnavailable.contains(path);
 }
 
 QByteArray cachedLadderBytes(const QString &path, int maxEdge)
@@ -2871,6 +2907,7 @@ void preparePaths(const QStringList &paths)
                 return;
             }
             putEmbeddedOrLqipUnderlay(path, reply);
+            clearSourceUnavailable(path);
             emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
         });
     });
@@ -3060,6 +3097,7 @@ QString formatLoadErrorMessage(const QString &sessionPathOrError)
         || lower.contains(QLatin1String("no such path"))
         || lower.contains(QLatin1String("path does not exist"));
     if (notFound) {
+        noteSourceUnavailable(sessionPathOrError);
         if (detail.isEmpty()
             || lower == QLatin1String("no such file or directory")
             || lower.startsWith(QLatin1String("no such file"))) {

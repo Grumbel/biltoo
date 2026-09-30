@@ -985,3 +985,10 @@ Biltoo:
   not requested until SVG is a document-page URI with the same live-tile path
   as PDF. Raster SVG via image codecs stays `min_scale >= 0`.
 
+## Source missing vs cached tiles
+
+When open/probe fails with a library not-found class error, biltoo memos the
+path (`ThumtooCache::noteSourceUnavailable`) **without** `QFileInfo::exists`.
+Durable tiles / LQIP may still paint; ImageItem shows a top banner
+“Source missing — cached preview only”. Successful sizeReady clears the memo.
+

@@ -1110,6 +1110,30 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
     }
 
+
+    // Source unavailable (library error memo) but tiles/LQIP may still paint.
+    if (ThumtooCache::isSourceUnavailable(m_path) && r.width() > 8.0 && r.height() > 8.0) {
+        painter->save();
+        painter->setOpacity(1.0);
+        const qreal inv = 1.0 / ViewTransform::floorScale(screenScale());
+        QFont f = painter->font();
+        f.setPointSizeF(qBound(8.0, 11.0 * inv, 16.0));
+        f.setBold(true);
+        painter->setFont(f);
+        const QString line = QCoreApplication::translate(
+            "ImageItem", "Source missing — cached preview only");
+        const QFontMetricsF fm(f);
+        const QRectF textBox = fm.boundingRect(line).adjusted(-6, -3, 6, 3);
+        QRectF bar(r.left(), r.top(), r.width(), qMin(r.height() * 0.22, textBox.height() + 8));
+        if (bar.height() < textBox.height() + 4) {
+            bar.setHeight(textBox.height() + 4);
+        }
+        painter->fillRect(bar, QColor(40, 20, 20, 200));
+        painter->setPen(QColor(255, 200, 180));
+        painter->drawText(bar, Qt::AlignCenter, line);
+        painter->restore();
+    }
+
     // Gallery: selection frame is painted by ImageView::drawForeground so
     // ItemCoordinateCache is not invalidated on every selection change / scroll.
     // Content-only paint stays cacheable across view pan under OpenGL.
