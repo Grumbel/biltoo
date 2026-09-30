@@ -1876,7 +1876,7 @@ void MainWindow::createToolBar()
         m_masonryCountSpin->setSingleStep(1);
         m_masonryCountSpin->setValue(3);
         m_masonryCountSpin->setToolTip(
-            tr("Columns (Grid / Contact sheet / Masonry) or rows (Masonry Rows / Strip)."));
+            tr("Columns (Grid / Flow / Masonry) or rows (Masonry Rows / Flow Rows)."));
         masonryCountLayout->addWidget(m_masonryCountLabel);
         masonryCountLayout->addWidget(m_masonryCountSpin);
         m_masonryCountAction = m_layoutToolBar->addWidget(masonryCountHost);
@@ -2374,7 +2374,7 @@ void MainWindow::populateActionHelpTexts()
         "<b>session</b> (undoable).</li>"
         "<li>Sort reorders the session and re-packs. Opening large sets waits for "
         "image sizes before packing; a centre HUD shows probe progress.</li>"
-        "<li>PDF/EPUB/DjVu page sessions often open Gallery in <b>Contact sheet</b> (reading order).</li>"
+        "<li>PDF/EPUB/DjVu page sessions often open Gallery in <b>Flow</b> (reading order).</li>"
         "</ul>"
         "<p><b>Law:</b> Gallery is not a kind of Workspace. Leaving for Image and "
         "returning restores layout and scroll; it does not open Workspace.</p>"));
@@ -2853,7 +2853,7 @@ void MainWindow::populateActionHelpTexts()
         "Workspace; Free Form is the default free-canvas behaviour.</p>"));
     setHelp(m_galleryLayoutToolbarAct, tr(
         "<p>Enter <b>Gallery</b> mode using the last chosen Gallery layout. The toolbar "
-        "button’s menu (arrow) picks Grid, Masonry, Contact sheet, Strip rows, Facing, "
+        "button’s menu (arrow) picks Grid, Masonry, Flow, Flow Rows, Facing, "
         "before or while entering Gallery.</p>"));
     setHelp(m_slideshowSettingsAct, tr(
         "<p>Open slideshow settings: interval, transition style, dwell motion "

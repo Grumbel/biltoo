@@ -366,7 +366,7 @@ inline void scaleRowToWidth(QVector<qreal> &scales,
 }
 
 /**
- * Contact sheet: order-preserving wrap with a fixed **column count**.
+ * Flow (ContactSheet): order-preserving wrap with a fixed **column count**.
  * Full rows take exactly @p gridColumns pages and scale so the row fills the
  * width (no dangling gutter when one more page would almost fit). The last
  * row keeps the remainder, left-aligned unless it already fills most of the
