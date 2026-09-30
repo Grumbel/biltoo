@@ -6,8 +6,6 @@
 #include "display/displayquality.h"
 #include "display/imagecache.h"
 #include "util/debugflags.h"
-#include "view/viewtransform.h"
-
 #include <QFont>
 #include <QFontMetrics>
 #include <QtMath>
@@ -31,8 +29,6 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     }
     painter->save();
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
-    const QTransform dt = painter->deviceTransform();
-    const qreal sx = ViewTransform::scaleFrom(dt);
 
     // Yellow = exact, orange = parent, magenta = EMB, cyan = LQIP, blue = hole.
     // Host-side coverage debug only. Durable TILE text on pixels belongs in
@@ -131,23 +127,23 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
 
-        // Cell tag: constant on-screen size (not proportional to cell).
-        // setPixelSize is in painter logical units; deviceTransform scales them,
-        // so divide by sx or labels explode when zoomed in (fine / negative s)
-        // and vanish when zoomed out (coarse / large s).
-        const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
-        if (cellDev >= 18.0 && !cellTag.isEmpty()) {
-            constexpr qreal kTagDevicePx = 11.0;
-            const int cpx = qMax(1, qRound(kTagDevicePx / qMax(sx, qreal(0.001))));
-            QFont cf = painter->font();
+        // Cell tag in device space at a fixed pixel size. Dividing logical
+        // setPixelSize by sx produced FreeType "render glyph failed err=62"
+        // when zoomed out (huge logical px) or edge cases at extreme scale.
+        const QRectF dstDev = painter->transform().mapRect(dst);
+        if (qMin(dstDev.width(), dstDev.height()) >= 18.0 && !cellTag.isEmpty()) {
+            painter->save();
+            painter->resetTransform();
+            QFont cf(QStringLiteral("Sans Serif"));
             cf.setBold(true);
             cf.setStyleHint(QFont::SansSerif);
-            cf.setPixelSize(cpx);
+            cf.setPixelSize(11);
             painter->setFont(cf);
             painter->setPen(QColor(0, 0, 0, 200));
-            painter->drawText(dst.adjusted(1, 1, 1, 1), Qt::AlignCenter, cellTag);
+            painter->drawText(dstDev.translated(1, 1), Qt::AlignCenter, cellTag);
             painter->setPen(edge);
-            painter->drawText(dst, Qt::AlignCenter, cellTag);
+            painter->drawText(dstDev, Qt::AlignCenter, cellTag);
+            painter->restore();
         }
     }
 
@@ -208,46 +204,29 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     }
 
     const int nlines = summary.size();
-    // Constant on-screen summary size (same compensation as cell tags).
-    constexpr qreal kSummaryDevicePx = 14.0;
-    int px = qMax(1, qRound(kSummaryDevicePx / qMax(sx, qreal(0.001))));
-
-    QFont pf = painter->font();
-    pf.setWeight(QFont::Black);
-    pf.setStyleHint(QFont::SansSerif);
-    pf.setFamily(QStringLiteral("Sans Serif"));
-    pf.setPixelSize(px);
-    painter->setFont(pf);
-
-    // Shrink only if a line would exceed the content box in logical units.
+    // Summary also in device space — fixed 14px, never extreme FreeType sizes.
+    const QRectF labelDev = painter->transform().mapRect(labelBox);
     {
-        qreal maxLineW = 0.0;
+        painter->save();
+        painter->resetTransform();
+        QFont pf(QStringLiteral("Sans Serif"));
+        pf.setWeight(QFont::Black);
+        pf.setStyleHint(QFont::SansSerif);
+        pf.setPixelSize(14);
+        painter->setFont(pf);
         const QFontMetrics fm(pf);
-        for (const QString &line : summary) {
-            maxLineW = qMax(maxLineW, qreal(fm.horizontalAdvance(line)));
+        const int lineH = fm.height();
+        const qreal totalH = lineH * nlines;
+        const qreal y0 = labelDev.center().y() - totalH / 2.0;
+        painter->setPen(QColor(0, 0, 0, 110));
+        painter->setBrush(Qt::NoBrush);
+        for (int i = 0; i < nlines; ++i) {
+            const QString &line = summary.at(i);
+            const QRectF lineRect(labelDev.left(), y0 + i * lineH, labelDev.width(),
+                                  lineH);
+            painter->drawText(lineRect, Qt::AlignHCenter | Qt::AlignVCenter, line);
         }
-        if (maxLineW > labelBox.width() * 0.98 && maxLineW > 1.0) {
-            px = qMax(1, qRound(px * (labelBox.width() * 0.98) / maxLineW));
-            pf.setPixelSize(px);
-            painter->setFont(pf);
-        }
-    }
-
-    const QFontMetrics fm(pf);
-    const int lineH = fm.height();
-    const qreal totalH = lineH * nlines;
-    const qreal y0 = labelBox.center().y() - totalH / 2.0;
-    // Semi-transparent black, no outline — yellow stays thumtoo stamps.
-    painter->setPen(QColor(0, 0, 0, 110));
-    painter->setBrush(Qt::NoBrush);
-    for (int i = 0; i < nlines; ++i) {
-        const QString &line = summary.at(i);
-        const QRectF lineRect(
-            labelBox.left(),
-            y0 + i * lineH,
-            labelBox.width(),
-            lineH);
-        painter->drawText(lineRect, Qt::AlignHCenter | Qt::AlignVCenter, line);
+        painter->restore();
     }
     painter->restore();
 }
