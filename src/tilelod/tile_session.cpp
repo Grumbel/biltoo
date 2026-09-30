@@ -388,7 +388,13 @@ int TileSession::pump()
     if (pc.bitmap && pc.bitmap->valid()) {
       m_cache->set_succeeded(pc.key, std::move(*pc.bitmap), pc.generation);
     } else {
-      m_cache->set_failed(pc.key, pc.generation);
+      // nullopt is a real miss only while still InFlight. Cancel/supersede
+      // completions must not pin Failed (terminal for this generation → LQIP).
+      CacheEntry const* e = m_cache->find(pc.key);
+      if (e && e->state == TileState::InFlight
+          && e->generation == pc.generation) {
+        m_cache->set_failed(pc.key, pc.generation);
+      }
     }
     ++applied;
   }

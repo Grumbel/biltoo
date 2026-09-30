@@ -1725,21 +1725,23 @@ void MainWindow::createToolBar()
         tb->setStyleSheet(QStringLiteral(
             "QToolBar { spacing: 3px; margin: 0px; padding: 2px; border: none; }"));
     };
-    /** Quiet gap between tool clusters (empty space — no separator line). */
+    /** Quiet gap ≈ one toolbar button (empty space — no separator line). */
     auto addGroupGap = [](QToolBar *bar) {
         if (!bar) {
             return;
         }
         const bool vertical = bar->orientation() == Qt::Vertical;
+        // Match iconSize (22) + typical button padding so gaps read as one control.
+        const int btn = 28;
         auto *host = new QWidget(bar);
         host->setObjectName(QStringLiteral("ToolBarGroupGap"));
         host->setAttribute(Qt::WA_TransparentForMouseEvents, true);
         host->setStyleSheet(QStringLiteral("background: transparent;"));
         if (vertical) {
-            host->setFixedHeight(12);
+            host->setFixedHeight(btn);
             host->setMinimumWidth(1);
         } else {
-            host->setFixedWidth(12);
+            host->setFixedWidth(btn);
             host->setMinimumHeight(1);
         }
         bar->addWidget(host);
@@ -1948,9 +1950,6 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_zoomFillAct);
 
     addGroupGap(m_toolBar);
-    m_toolBar->addAction(m_fullscreenAct);
-
-    addGroupGap(m_toolBar);
     if (m_toggleTextAct) {
         m_toolBar->addAction(m_toggleTextAct);
     }
@@ -1971,6 +1970,10 @@ void MainWindow::createToolBar()
     if (m_toggleHelpAct) {
         m_toolBar->addAction(m_toggleHelpAct);
     }
+
+    // Fullscreen last (far right of the top strip).
+    addGroupGap(m_toolBar);
+    m_toolBar->addAction(m_fullscreenAct);
 
     m_editToolBar = nullptr;
     m_transformToolBar = nullptr;
