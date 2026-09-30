@@ -834,6 +834,17 @@ void requestSizeAsync(const QString &path,
             callback(false, QSize(), QImage());
             return;
         }
+        // Size gate / batch probe: prefer light get_size (region dims only).
+        // request_size also pulls LQIP+EMB and was the dominant cost on warm
+        // multipage PDF sessions (~2400 pages). Underlay is not a gate condition.
+        if (auto sz = c->get_size(uri)) {
+            const QSize out(sz->width, sz->height);
+            if (out.width() > 0 && out.height() > 0) {
+                noteCachedSize(path, out);
+                callback(true, out, QImage());
+                return;
+            }
+        }
         c->request_size(uri, [callback, path](std::string, thumtoo::SizeReply reply) {
             if (!reply.size) {
                 // Library could not resolve size (missing source, bad URI, …).

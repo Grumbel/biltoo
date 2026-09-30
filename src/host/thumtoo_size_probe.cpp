@@ -31,7 +31,7 @@ QStringList g_probeFifo;
 /** In-flight Store size requests (bounded parallel batch). */
 int g_probeInflight = 0;
 /** Cold-open / session size pass: probe many paths at once (not one-by-one). */
-constexpr int kMaxConcurrentSizeProbes = 8;
+constexpr int kMaxConcurrentSizeProbes = 16;
 /** Memo sizeReady emits per event-loop turn — avoids GUI freeze on warm open. */
 constexpr int kSizeReadyChunk = 16;
 QMutex g_probeMu;
@@ -237,47 +237,10 @@ void scheduleProbeBatch(const QStringList &paths)
     if (need.isEmpty()) {
         return;
     }
-
-    // One worker: Store get_size only (no request_size LQIP/EMB, no parallel
-    // warmSessionOpenMemos race). Hydrate process memos, emit hits, then
-    // enqueueProbePaths only for true Store misses (cold / incomplete rows).
-    const QStringList needCopy = need;
-    auto hydrate = [needCopy, generation]() {
-        ASSERT_NOT_GUI_THREAD();
-        if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
-            return;
-        }
-        init();
-        QVector<QPair<QString, QSize>> storeHits;
-        QStringList stillNeed;
-        storeHits.reserve(needCopy.size());
-        stillNeed.reserve(needCopy.size() / 8 + 1);
-        for (const QString &path : needCopy) {
-            if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
-                return;
-            }
-            if (path.isEmpty()) {
-                continue;
-            }
-            // Light path: Client::get_size (region dims only).
-            const QSize sz = cachedSize(path, /*scheduleRevalidate=*/false);
-            if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
-                storeHits.append(qMakePair(path, sz));
-            } else {
-                stillNeed.append(path);
-            }
-        }
-        if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
-            return;
-        }
-        if (!storeHits.isEmpty()) {
-            emitSizeReadyChunked(std::move(storeHits), generation);
-        }
-        if (!stillNeed.isEmpty()) {
-            enqueueProbePaths(stillNeed);
-        }
-    };
-    QThreadPool::globalInstance()->start(hydrate);
+    // Bounded parallel workers (see kMaxConcurrentSizeProbes). Each slot uses
+    // light Client::get_size first; request_size only on true Store miss.
+    // Do not serial-hydrate on one thread — that was ~10× slower than 8-wide.
+    enqueueProbePaths(need);
 }
 
 bool sizeProbesBusy()
