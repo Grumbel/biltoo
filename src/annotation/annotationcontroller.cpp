@@ -11,6 +11,11 @@
 #include "imageview.h"
 #include "session/sessionappearance.h"
 #include "text/textlayergeometry.h"
+#include "text/textlayercontroller.h"
+#include "text/textselection.h"
+
+#include <QHash>
+#include <QSet>
 
 #include <QMouseEvent>
 #include <QEvent>
@@ -694,6 +699,146 @@ void AnnotationController::finishTextHighlight()
         yUp = layer.pageYUp;
     }
     commitObject(m_draftSid, obj, bounds, yUp, QObject::tr("Text highlight"));
+}
+
+int AnnotationController::markTextSelection()
+{
+    if (!m_view) {
+        return 0;
+    }
+    TextLayerController &text = m_view->hostText();
+    text.ensureMemberLayers();
+    const TextLayerSession &ts = text.session();
+
+    // Prefer multi-page bag; else primary selectedRegions on current session.
+    QVector<TextSelRef> refs;
+    if (!ts.multiSelection.isEmpty()) {
+        refs = ts.multiSelection.refs();
+    } else if (!ts.selectedRegions.isEmpty()) {
+        SessionImageId sid = kInvalidSessionImageId;
+        if (ImageItem *primary = m_view->primaryItem()) {
+            sid = targetSid(primary);
+        }
+        if (sid == kInvalidSessionImageId) {
+            sid = m_view->hostSessionId().currentIdValue();
+        }
+        if (sid == kInvalidSessionImageId) {
+            return 0;
+        }
+        const ThumtooCache::PageTextLayer &layer = ts.layer;
+        for (int idx : ts.selectedRegions) {
+            TextSelRef r;
+            r.sessionId = sid;
+            r.regionIndex = idx;
+            if (idx >= 0 && idx < layer.regions.size()) {
+                r.text = layer.regions.at(idx).text;
+            }
+            refs.append(r);
+        }
+    }
+    if (refs.isEmpty()) {
+        return 0;
+    }
+
+    // Group region indices by session id (preserve bag order within page).
+    QVector<SessionImageId> order;
+    QHash<SessionImageId, QVector<int>> bySid;
+    QHash<SessionImageId, QStringList> snippets;
+    for (const TextSelRef &r : refs) {
+        if (r.sessionId == kInvalidSessionImageId || r.regionIndex < 0) {
+            continue;
+        }
+        if (!bySid.contains(r.sessionId)) {
+            order.append(r.sessionId);
+        }
+        bySid[r.sessionId].append(r.regionIndex);
+        if (!r.text.isEmpty()) {
+            snippets[r.sessionId].append(r.text);
+        }
+    }
+
+    int pagesMarked = 0;
+    for (SessionImageId sid : order) {
+        ImageItem *item = nullptr;
+        for (ImageItem *it : m_view->liveItems()) {
+            if (it && it->sessionId() == sid) {
+                item = it;
+                break;
+            }
+        }
+        if (!item) {
+            item = m_view->primaryItem();
+            if (!item || targetSid(item) != sid) {
+                continue;
+            }
+        }
+
+        const ThumtooCache::PageTextLayer *layerPtr = text.layerForItem(item);
+        ThumtooCache::PageTextLayer cachedLayer;
+        const QString path = text.pathForItem(item);
+        if ((!layerPtr || layerPtr->regions.isEmpty()) && !path.isEmpty()) {
+            cachedLayer = ThumtooCache::cachedPageTextLayer(path);
+            if (!cachedLayer.regions.isEmpty()) {
+                layerPtr = &cachedLayer;
+            }
+        }
+        // Primary text session layer may be the only copy for current page.
+        if ((!layerPtr || layerPtr->regions.isEmpty()) && !ts.layer.regions.isEmpty()
+            && (ts.layerPath.isEmpty() || ts.layerPath == path
+                || path.isEmpty())) {
+            layerPtr = &ts.layer;
+        }
+        if (!layerPtr || layerPtr->regions.isEmpty()) {
+            continue;
+        }
+        const ThumtooCache::PageTextLayer &layer = *layerPtr;
+
+        Annotation::Object obj;
+        obj.id = m_session.nextId();
+        obj.kind = Annotation::Kind::HighlightQuad;
+        obj.blend = Annotation::Blend::Multiply;
+        obj.color = m_color;
+        QStringList snip = snippets.value(sid);
+        QSet<int> seen;
+        for (int idx : bySid.value(sid)) {
+            if (seen.contains(idx) || idx < 0 || idx >= layer.regions.size()) {
+                continue;
+            }
+            seen.insert(idx);
+            const auto &reg = layer.regions.at(idx);
+            if (!reg.bbox.isEmpty()) {
+                obj.quads.append(reg.bbox.normalized());
+            }
+            if (snip.isEmpty() && !reg.text.isEmpty()) {
+                snip.append(reg.text);
+            }
+        }
+        if (obj.quads.isEmpty()) {
+            continue;
+        }
+        obj.textSnippet = snip.join(QLatin1Char(' '));
+        if (obj.textSnippet.size() > 200) {
+            obj.textSnippet = obj.textSnippet.left(197) + QStringLiteral("…");
+        }
+
+        QRectF bounds;
+        bool yUp = false;
+        QSize sourceSize;
+        if (!pageSpaceForItem(item, &bounds, &yUp, &sourceSize)) {
+            continue;
+        }
+        if (layer.pageBounds.isValid()) {
+            bounds = layer.pageBounds;
+            yUp = layer.pageYUp;
+        }
+        commitObject(sid, obj, bounds, yUp, QObject::tr("Mark selection"));
+        ++pagesMarked;
+    }
+
+    if (pagesMarked > 0 && m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    return pagesMarked;
 }
 
 bool AnnotationController::tryMousePress(QMouseEvent *event)

@@ -63,6 +63,12 @@ public:
     bool tryMouseDoubleClick(QMouseEvent *event);
 
     void clearCurrentPage();
+    /**
+     * Convert current text selection (multi-page bag or primary regions) into
+     * Multiply HighlightQuad annotations using the panel colour. Returns how
+     * many pages received at least one new object. Does not change the tool.
+     */
+    int markTextSelection();
     /** Page pixels + annotations (display space of primary item). Null if none. */
     QImage renderFlattenedDisplay() const;
     void clearSelection();

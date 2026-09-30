@@ -528,6 +528,23 @@ MainWindow::MainWindow(QWidget *parent)
         }
         setCurrentIndex(idx);
     });
+    connect(m_annotationPanel, &AnnotationPanel::markSelectionRequested, this, [this]() {
+        if (!m_imageView) {
+            return;
+        }
+        const int n = m_imageView->hostAnnot().markTextSelection();
+        if (statusBar()) {
+            if (n > 0) {
+                statusBar()->showMessage(
+                    tr("Marked text selection as highlight on %n page(s).", nullptr, n), 4000);
+            } else {
+                statusBar()->showMessage(
+                    tr("No text selection to mark. Select text with the Select tool first."),
+                    4000);
+            }
+        }
+        updateAnnotationPanel();
+    });
     if (m_imageView && m_imageView->hostUndoStack()) {
         connect(m_imageView->hostUndoStack(), &QUndoStack::indexChanged, this, [this](int) {
             if (m_annotationDock && dockIsOpen(m_annotationDock)) {
@@ -3731,6 +3748,8 @@ void MainWindow::updateAnnotationPanel()
     }
     m_annotationPanel->setStatusText(
         tr("%1 — colour and width apply to new strokes.").arg(toolName));
+    const bool hasTextSel = m_imageView->hostText().session().hasSelection();
+    m_annotationPanel->setMarkSelectionEnabled(hasTextSel);
 
     // Pages that already have annotations (in-memory session store), session order.
     QVector<AnnotationPageEntry> entries;
@@ -5829,8 +5848,12 @@ void MainWindow::connectTextPanel()
                 }
                 m_imageView->hostText().setSelectedRegions(ids);
             });
-    connect(&m_imageView->hostText(), &TextLayerController::selectionChanged, this,
-            &MainWindow::updateCopyTextAction);
+    connect(&m_imageView->hostText(), &TextLayerController::selectionChanged, this, [this]() {
+        updateCopyTextAction();
+        if (m_annotationDock && dockIsOpen(m_annotationDock)) {
+            updateAnnotationPanel();
+        }
+    });
     connect(m_textPanel, &TextPanel::selectionMultiChanged, this,
             [this](const TextSelection &bag) {
                 if (!m_imageView) {

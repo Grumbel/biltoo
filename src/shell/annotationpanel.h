@@ -57,6 +57,7 @@ public:
      */
     void setAnnotatedPages(const QVector<AnnotationPageEntry> &entries,
                            SessionImageId currentSid = kInvalidSessionImageId);
+    void setMarkSelectionEnabled(bool on);
 
 signals:
     void colorChanged(const QColor &c);
@@ -64,6 +65,8 @@ signals:
     void layerVisibleChanged(bool on);
     /** User activated a row in the annotated-pages list. */
     void jumpToSessionId(SessionImageId sid);
+    /** Convert text selection → highlight quads (panel colour). */
+    void markSelectionRequested();
 
 private:
     void rebuildSwatch();
@@ -83,6 +86,7 @@ private:
     QDoubleSpinBox *m_widthSpin = nullptr;
     QCheckBox *m_visibleCheck = nullptr;
     QPushButton *m_customColorBtn = nullptr;
+    QPushButton *m_markSelectionBtn = nullptr;
     QListWidget *m_pageList = nullptr;
     QLabel *m_pageListHint = nullptr;
 };

@@ -123,6 +123,16 @@ AnnotationPanel::AnnotationPanel(QWidget *parent)
     widthForm->addRow(tr("Width"), m_widthSpin);
     layout->addWidget(widthBox);
 
+    m_markSelectionBtn = new QPushButton(tr("Mark selection"), inner);
+    m_markSelectionBtn->setToolTip(
+        tr("Turn the current text selection into a highlight annotation "
+           "(uses the colour above). Select text with the Select tool first."));
+    m_markSelectionBtn->setEnabled(false);
+    connect(m_markSelectionBtn, &QPushButton::clicked, this, [this]() {
+        emit markSelectionRequested();
+    });
+    layout->addWidget(m_markSelectionBtn);
+
     m_visibleCheck = new QCheckBox(tr("Show annotation layer"), inner);
     m_visibleCheck->setChecked(true);
     m_visibleCheck->setToolTip(tr("Hide or show all annotations without deleting them"));
@@ -323,5 +333,12 @@ void AnnotationPanel::pickCustomColor()
                                             QColorDialog::ShowAlphaChannel);
     if (c.isValid()) {
         emitColor(c);
+    }
+}
+
+void AnnotationPanel::setMarkSelectionEnabled(bool on)
+{
+    if (m_markSelectionBtn) {
+        m_markSelectionBtn->setEnabled(on);
     }
 }
