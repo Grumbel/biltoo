@@ -461,10 +461,11 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
 }
 
 /**
- * Flow Fill (StripRows): ordered wrap with **uniform row height** chosen so
- * about @p gridColumns average-aspect pages fill the row width (same Columns
- * control as Flow). Landscapes become wider at that height. Full rows may be
- * scaled flush to the right edge; the last row is left-aligned.
+ * Flow Fill (StripRows): ordered wrap with **uniform height per row**.
+ * Full rows take exactly @p gridColumns pages; row height is chosen so those
+ * pages fill the width (aspect_i * h sums to layoutW). That avoids packing
+ * only N−1 and stretching them into N slots. The last partial row uses the
+ * same nominal height as a full average row and stays left-aligned.
  */
 inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
                                             qreal margin, qreal gap,
@@ -475,96 +476,96 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
     const int cols = resolvedFlowColumns(gridColumns);
     const qreal layoutW = availW;
 
-    // Target row height from average aspect so ~cols pages fit in layoutW.
-    qreal sumAspect = 0.0; // width/height
-    int aspectN = 0;
-    for (const QSizeF &ns : layoutSizes) {
+    auto aspectOf = [](const QSizeF &ns) -> qreal {
         const qreal h = ns.height() > 1.0 ? ns.height() : 1.0;
         const qreal w = ns.width() > 1.0 ? ns.width() : 1.0;
-        sumAspect += w / h;
-        ++aspectN;
+        return w / h;
+    };
+
+    // Nominal row height from average aspect × Columns (for partial last row).
+    qreal sumAspectAll = 0.0;
+    for (const QSizeF &ns : layoutSizes) {
+        sumAspectAll += aspectOf(ns);
     }
-    const qreal avgAspect = aspectN > 0 ? (sumAspect / qreal(aspectN)) : 1.0;
-    const qreal gaps = gap * qreal(cols > 1 ? cols - 1 : 0);
-    // cols * (avgAspect * rowH) + gaps ≈ layoutW
-    const qreal baseRowH = qMax(1.0, (layoutW - gaps) / qMax(0.05, qreal(cols) * avgAspect));
+    const qreal avgAspect = n > 0 ? (sumAspectAll / qreal(n)) : 1.0;
+    const qreal nomGaps = gap * qreal(cols > 1 ? cols - 1 : 0);
+    const qreal nominalRowH =
+        qMax(1.0, (layoutW - nomGaps) / qMax(0.05, qreal(cols) * avgAspect));
 
     struct Entry {
-        QSizeF ns;
         qreal scale = 1.0;
         qreal w = 0.0;
         qreal h = 0.0;
     };
     QVector<QVector<Entry>> rows;
-    QVector<Entry> cur;
-    qreal rowW = 0.0;
 
-    auto flushRow = [&]() {
-        if (cur.isEmpty()) {
-            return;
-        }
-        rows.append(cur);
-        cur.clear();
-        rowW = 0.0;
-    };
+    int i = 0;
+    while (i < n) {
+        const int remaining = n - i;
+        const int take = qMin(cols, remaining);
+        const bool lastPartial = (take < cols);
 
-    for (const QSizeF &ns : layoutSizes) {
-        qreal scale = axisFillScale(baseRowH, ns.height());
-        qreal w = ns.width() * scale;
-        qreal h = ns.height() * scale;
-        if (w > layoutW + 1e-6) {
-            scale = axisFillScale(layoutW, ns.width());
-            w = ns.width() * scale;
-            h = ns.height() * scale;
+        qreal sumAspect = 0.0;
+        for (int k = 0; k < take; ++k) {
+            sumAspect += aspectOf(layoutSizes.at(i + k));
         }
-        if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
-            flushRow();
-            scale = axisFillScale(baseRowH, ns.height());
-            w = ns.width() * scale;
-            h = ns.height() * scale;
-            if (w > layoutW + 1e-6) {
+        sumAspect = qMax(0.05, sumAspect);
+
+        qreal rowH;
+        if (!lastPartial) {
+            // Full row: height so these `cols` pages fill layoutW exactly.
+            const qreal gaps = gap * qreal(take > 1 ? take - 1 : 0);
+            rowH = qMax(1.0, (layoutW - gaps) / sumAspect);
+        } else {
+            // Last row: nominal height — left-aligned, not stretched.
+            rowH = nominalRowH;
+        }
+
+        QVector<Entry> row;
+        row.reserve(take);
+        qreal used = 0.0;
+        for (int k = 0; k < take; ++k) {
+            const QSizeF &ns = layoutSizes.at(i + k);
+            qreal scale = axisFillScale(rowH, ns.height());
+            qreal w = ns.width() * scale;
+            qreal h = ns.height() * scale;
+            // Solo ultra-wide on a partial/single row: clamp to layoutW.
+            if (take == 1 && w > layoutW + 1e-6) {
                 scale = axisFillScale(layoutW, ns.width());
                 w = ns.width() * scale;
                 h = ns.height() * scale;
             }
+            row.append(Entry{scale, w, h});
+            used += (k == 0 ? w : gap + w);
         }
-        cur.append(Entry{ns, scale, w, h});
-        rowW += (cur.size() == 1 ? w : gap + w);
-    }
-    flushRow();
 
-    // Flush non-final under-filled rows (uniform scale); last row stays dangling.
-    constexpr qreal kFillSlack = 1.0;
-    for (int ri = 0; ri < rows.size(); ++ri) {
-        QVector<Entry> &row = rows[ri];
-        if (row.isEmpty() || (ri + 1 == rows.size())) {
-            continue;
-        }
-        qreal used = 0.0;
-        for (int i = 0; i < row.size(); ++i) {
-            used += row.at(i).w;
-            if (i + 1 < row.size()) {
-                used += gap;
+        // Full row: if float/clamp left a hair of slack or overshoot, uniform
+        // scale the row once so used == layoutW (keeps relative widths).
+        if (!lastPartial && used > 1.0) {
+            const qreal s = layoutW / used;
+            if (qAbs(s - 1.0) > 1e-6) {
+                for (Entry &e : row) {
+                    e.scale *= s;
+                    e.w *= s;
+                    e.h *= s;
+                }
             }
         }
-        if (used < 1.0 || used >= layoutW - kFillSlack) {
-            continue;
-        }
-        const qreal s = layoutW / used;
-        for (Entry &e : row) {
-            e.scale *= s;
-            e.w *= s;
-            e.h *= s;
-        }
+
+        rows.append(row);
+        i += take;
     }
 
     QVector<PackPose> out;
     out.reserve(n);
     qreal y = margin;
     for (const QVector<Entry> &row : rows) {
-        qreal rowH = baseRowH;
+        qreal rowH = 0.0;
         for (const Entry &e : row) {
             rowH = qMax(rowH, e.h);
+        }
+        if (rowH < 1.0) {
+            rowH = nominalRowH;
         }
         qreal x = margin;
         for (const Entry &e : row) {
