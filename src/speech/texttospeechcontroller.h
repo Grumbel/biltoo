@@ -74,6 +74,9 @@ private slots:
     void tryConnectAttempt();
     void onSynthWatchdog();
 
+    void loadSettings();
+    void saveSettings() const;
+
 private:
     void ensureConnected();
     void beginConnectAttempts(const QString &socketPath);

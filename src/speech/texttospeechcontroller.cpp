@@ -7,6 +7,7 @@
 #include "PlaybackController.h"
 #include "SentenceSplitter.h"
 
+#include <QSettings>
 #include <QTimer>
 #include <QtGlobal>
 
@@ -48,6 +49,15 @@ TextToSpeechController::TextToSpeechController(QObject *parent)
             &TextToSpeechController::onSentenceStarted);
     connect(m_playback, &PlaybackController::audioPositionChanged, this,
             &TextToSpeechController::audioPositionChanged);
+
+    loadSettings();
+    if (m_playback) {
+        m_playback->setSpeed(m_speed);
+        m_playback->setVolume(m_volume);
+        if (!m_voice.isEmpty()) {
+            m_playback->setVoice(m_voice);
+        }
+    }
 
     setStatus(tr("TTS idle"));
 }
@@ -296,11 +306,19 @@ void TextToSpeechController::onServerReady(const PiperServerInfo &info)
     m_ready = true;
     m_realAudio = info.realAudio;
     m_voices = info.voices;
-    m_voice = info.currentVoice;
+    // Prefer last saved voice when still available; else server default.
+    const QString preferred = m_voice;
+    if (!preferred.isEmpty() && m_voices.contains(preferred)) {
+        m_voice = preferred;
+    } else if (!info.currentVoice.isEmpty()) {
+        m_voice = info.currentVoice;
+    } else if (!m_voices.isEmpty() && m_voice.isEmpty()) {
+        m_voice = m_voices.constFirst();
+    }
     emit voicesChanged(m_voices);
     emit voiceChanged(m_voice);
 
-    // Re-apply session tempo/volume after (re)connect.
+    // Re-apply persistent tempo/volume/voice after (re)connect.
     if (m_playback) {
         m_playback->setSpeed(m_speed);
         m_playback->setVolume(m_volume);
@@ -402,6 +420,30 @@ void TextToSpeechController::onFailedToStart(const QString &reason)
     m_pendingSpeak.clear();
 }
 
+void TextToSpeechController::loadSettings()
+{
+    QSettings s;
+    s.beginGroup(QStringLiteral("tts"));
+    m_voice = s.value(QStringLiteral("voice")).toString().trimmed();
+    const double speed = s.value(QStringLiteral("speed"), m_speed).toDouble();
+    m_speed = qBound(PlaybackController::kMinSpeed, speed, PlaybackController::kMaxSpeed);
+    const float vol = float(s.value(QStringLiteral("volume"), double(m_volume)).toDouble());
+    m_volume = qBound(PlaybackController::kMinVolume, vol, PlaybackController::kMaxVolume);
+    s.endGroup();
+}
+
+void TextToSpeechController::saveSettings() const
+{
+    QSettings s;
+    s.beginGroup(QStringLiteral("tts"));
+    if (!m_voice.isEmpty()) {
+        s.setValue(QStringLiteral("voice"), m_voice);
+    }
+    s.setValue(QStringLiteral("speed"), m_speed);
+    s.setValue(QStringLiteral("volume"), double(m_volume));
+    s.endGroup();
+}
+
 void TextToSpeechController::setVoice(const QString &voice)
 {
     const QString v = voice.trimmed();
@@ -412,6 +454,7 @@ void TextToSpeechController::setVoice(const QString &voice)
     if (m_playback) {
         m_playback->setVoice(m_voice);
     }
+    saveSettings();
     emit voiceChanged(m_voice);
 }
 
@@ -425,6 +468,7 @@ void TextToSpeechController::setSpeed(double speed)
     if (m_playback) {
         m_playback->setSpeed(m_speed);
     }
+    saveSettings();
     emit speedChanged(m_speed);
 }
 
@@ -438,5 +482,6 @@ void TextToSpeechController::setVolume(float volume)
     if (m_playback) {
         m_playback->setVolume(m_volume);
     }
+    saveSettings();
     emit volumeChanged(m_volume);
 }
