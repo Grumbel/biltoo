@@ -320,6 +320,12 @@ MainWindow::MainWindow(QWidget *parent)
                 return m_thumbnailBar->sampleForImageModePending(path, sid, displayReady);
             });
     }
+    connect(m_thumbnailBar, &ThumbnailBar::openFocusNormRequested,
+            this, [this](qreal nx, qreal ny) {
+                if (m_imageView) {
+                    m_imageView->hostImage().framing().setStickyPanNorm(nx, ny);
+                }
+            });
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
     connect(m_thumbnailBar, &ThumbnailBar::indexNavigated,

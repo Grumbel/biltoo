@@ -930,6 +930,11 @@ bool GalleryController::tryMouseDoubleClick(QMouseEvent *event)
     const QPointF scenePos = m_view->mapToScene(event->pos());
     for (QGraphicsItem *gi : scene->items(scenePos)) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            // Open focus: centre Image mode on the click point (not top/centre).
+            const QRectF br = item->sceneBoundingRect();
+            if (br.width() > 1.0 && br.height() > 1.0) {
+                m_view->hostImage().framing().setStickyPanFromScene(scenePos, br, true);
+            }
             emitItemOpenInImageMode(item);
             event->accept();
             return true;

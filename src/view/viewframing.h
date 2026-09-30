@@ -21,6 +21,8 @@ struct ViewFraming {
     bool stickyZoomEnabled = false;
     StickyZoomKind stickyZoomKind = StickyZoomKind::Fit;
     bool haveStickyPanAnchor = false;
+    /** When true, leave/nav must not overwrite sticky pan (Gallery/Filmstrip open). */
+    bool openFocusHold = false;
     qreal stickyPanNormX = 0.5;
     qreal stickyPanNormY = 0.5;
     /** Free (non-sticky) nav: keep absolute view scale across images. */
@@ -56,8 +58,20 @@ struct ViewFraming {
 
     QPointF stickyPanNormPoint() const { return QPointF(stickyPanNormX, stickyPanNormY); }
 
-    /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds. */
-    void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds)
+    /** Set sticky pan from normalized content coords (0–1 within item bounds). */
+    void setStickyPanNorm(qreal nx, qreal ny)
+    {
+        stickyPanNormX = nx;
+        stickyPanNormY = ny;
+        clampStickyPanNorms();
+        haveStickyPanAnchor = true;
+        openFocusHold = true;
+    }
+
+    /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds.
+     *  @p holdOpen: Gallery/Filmstrip open focus — survive leaveForImageMode. */
+    void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds,
+                               bool holdOpen = false)
     {
         if (itemBounds.width() < 1.0 || itemBounds.height() < 1.0) {
             return;
@@ -66,6 +80,9 @@ struct ViewFraming {
         stickyPanNormY = (sceneCentre.y() - itemBounds.top()) / itemBounds.height();
         clampStickyPanNorms();
         haveStickyPanAnchor = true;
+        if (holdOpen) {
+            openFocusHold = true;
+        }
     }
 
     QPointF sceneFromStickyPan(const QRectF &itemBounds) const
@@ -174,7 +191,13 @@ struct ViewFraming {
     }
 
 
-    void clearStickyPan() { haveStickyPanAnchor = false; }
+    void clearStickyPan()
+    {
+        haveStickyPanAnchor = false;
+        openFocusHold = false;
+    }
+    bool isOpenFocusHold() const { return openFocusHold; }
+    void clearOpenFocusHold() { openFocusHold = false; }
 
     void clearPreservedViewScale() { havePreservedViewScale = false; }
 

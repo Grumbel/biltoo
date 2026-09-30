@@ -73,6 +73,10 @@ void ImageController::releaseStickyZoom()
 
 void ImageController::captureStickyPanAnchor(ImageItem *item)
 {
+    // Gallery/Filmstrip open focus must survive leaveForImageMode.
+    if (m_framing.isOpenFocusHold()) {
+        return;
+    }
     // Sample scale + pan when leaving an image so free navigation (and mode
     // leave/enter) can keep the same zoom and relative position.
     if (!item || !m_view->viewport() || !m_view->canvasScene()) {
@@ -118,6 +122,7 @@ void ImageController::restoreStickyPanAnchor(ImageItem *item)
         return;
     }
     m_view->centerOn(m_framing.sceneFromStickyPan(r));
+    m_framing.clearOpenFocusHold();
 }
 
 
@@ -174,15 +179,15 @@ void ImageController::applyImageModeFraming(ImageItem *item)
         }
         syncImageModeSceneRect(item);
         m_view->refreshScrollBarGeometry();
-        if (!m_framing.isStickyFit()) {
+        // Always restore open/nav focus when set (incl. sticky Fit). Fit used to
+        // skip this — refreshScrollBarGeometry left scroll at the top.
+        if (m_framing.hasStickyPan()) {
             restoreStickyPanAnchor(item);
-            // Scroll ranges often settle after this returns — restore again.
-            // QPointer so a destroy mid-navigation cancels the callback safely.
             const QPointer<ImageView> guard(m_view);
             QTimer::singleShot(0, m_view, [guard]() {
                 ImageView *const view = guard.data();
                 if (!view || !view->hostFraming().isStickyZoomEnabled()
-                    || view->hostFraming().isStickyFit()
+                    || !view->hostFraming().hasStickyPan()
                     || !view->canvasScene() || !view->viewport()) {
                     return;
                 }
@@ -236,6 +241,22 @@ void ImageController::applyImageModeFraming(ImageItem *item)
     }
     m_framing.setFitOnly();
     fitItem(item, Qt::KeepAspectRatio);
+    if (m_framing.hasStickyPan()) {
+        syncImageModeSceneRect(item);
+        m_view->refreshScrollBarGeometry();
+        restoreStickyPanAnchor(item);
+        const QPointer<ImageView> guard(m_view);
+        QTimer::singleShot(0, m_view, [guard]() {
+            ImageView *const view = guard.data();
+            if (!view || !view->hostFraming().hasStickyPan() || !view->canvasScene()
+                || !view->viewport()) {
+                return;
+            }
+            if (ImageItem *cur = view->targetItem()) {
+                view->hostImage().restoreStickyPanAnchor(cur);
+            }
+        });
+    }
 }
 
 

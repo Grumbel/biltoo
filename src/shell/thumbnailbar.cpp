@@ -3696,8 +3696,14 @@ void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
         event->accept();
         return;
     }
+    // Open focus: map click within the strip cell to content-normalized coords.
+    const QRect cell = visualRect(hit);
+    if (cell.width() > 1 && cell.height() > 1) {
+        const qreal nx = qBound(0.0, (event->pos().x() - cell.x()) / qreal(cell.width()), 1.0);
+        const qreal ny = qBound(0.0, (event->pos().y() - cell.y()) / qreal(cell.height()), 1.0);
+        emit openFocusNormRequested(nx, ny);
+    }
     // Open in Image mode — never toggle Workspace canvas membership.
-    // Place on Workspace via drag-drop only.
     emit indexActivated(row(hit));
     event->accept();
 }

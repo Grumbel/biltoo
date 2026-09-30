@@ -273,6 +273,8 @@ signals:
      * or Workspace). Not used for plain Image-mode single-click navigation.
      */
     void indexActivated(int index);
+    /** Normalized click (0–1) in the strip cell before indexActivated. */
+    void openFocusNormRequested(qreal nx, qreal ny);
     /**
      * Filmstrip internal reorder: selected rows should be moved so the
      * first of them sits at @p insertBefore in the post-remove list
