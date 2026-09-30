@@ -919,6 +919,10 @@ private:
     int m_currentIndex = -1;
     bool m_recursive = false;
     ThumbnailEdge m_thumbnailEdge = ThumbnailEdge::Bottom;
+    /** Cross-axis thickness before last redock (width↔height swap). */
+    int m_filmstripLastCrossAxis = 0;
+    QWidget *m_filmstripHost = nullptr;
+    class FilmstripDragHandle *m_filmstripGrip = nullptr;
     bool m_startInWorkspaceMode = false; // preference / startup default
     bool m_slideshowFullscreen = true;   // enter fullscreen when starting slideshow
     bool m_slideshowLoop = true;          // last → first; false = stop after last

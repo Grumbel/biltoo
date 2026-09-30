@@ -4,6 +4,7 @@
 #include "shell/mainwindow_includes.h"
 #include <kddockwidgets/core/DockWidget.h>
 #include "shell/filmstripdraghandle.h"
+#include <QVBoxLayout>
 #include "shell/messagelogpanel.h"
 #include "shell/performancepanel.h"
 #include "shell/chromecolors.h"
@@ -393,16 +394,17 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailDock = new DockWidget(QStringLiteral("ThumbnailDock"));
     m_thumbnailDock->setTitle(tr("Filmstrip"));
     {
-        // Title bar is collapsed (DockViewFactory); left grip starts a dock drag.
-        auto *host = new QWidget;
-        host->setObjectName(QStringLiteral("FilmstripDockHost"));
-        auto *lay = new QHBoxLayout(host);
+        // Title bar is collapsed (DockViewFactory); grip starts a dock drag.
+        // Left grip for horizontal strip; top grip for vertical strip.
+        m_filmstripHost = new QWidget;
+        m_filmstripHost->setObjectName(QStringLiteral("FilmstripDockHost"));
+        auto *lay = new QHBoxLayout(m_filmstripHost);
         lay->setContentsMargins(0, 0, 0, 0);
         lay->setSpacing(0);
-        auto *grip = new FilmstripDragHandle(m_thumbnailDock, host);
-        lay->addWidget(grip, 0);
+        m_filmstripGrip = new FilmstripDragHandle(m_thumbnailDock, m_filmstripHost);
+        lay->addWidget(m_filmstripGrip, 0);
         lay->addWidget(m_thumbnailBar, 1);
-        m_thumbnailDock->setWidget(host);
+        m_thumbnailDock->setWidget(m_filmstripHost);
     }
     // addDockWidget deferred until placeFilmstripDock() — preferredSize is ignored
     // when the layout has no other items yet (KD DefaultSizeMode fills 100%).
@@ -3040,17 +3042,58 @@ void MainWindow::applyFilmstripExtentConstraints()
     }
     const int minE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize);
     const int maxE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize);
-    const int extent = filmstripExtentForBar(m_thumbnailBar);
+    const int nominal = filmstripExtentForBar(m_thumbnailBar);
+    // Prefer last cross-axis size (width↔height when flipping edge), else thumb extent.
+    int extent = nominal;
+    if (m_filmstripLastCrossAxis > 0) {
+        extent = qBound(minE, m_filmstripLastCrossAxis, maxE);
+    }
     const bool horizontalBar =
         (m_thumbnailEdge == ThumbnailEdge::Bottom || m_thumbnailEdge == ThumbnailEdge::Top);
+
+    // Grip: left on horizontal strip, top on vertical strip.
+    if (m_filmstripGrip && m_filmstripHost) {
+        const bool alongTop = !horizontalBar;
+        if (m_filmstripGrip->alongTop() != alongTop) {
+            // Rebuild layout so the grip sits on the correct edge.
+            if (QLayout *old = m_filmstripHost->layout()) {
+                QLayoutItem *item;
+                while ((item = old->takeAt(0)) != nullptr) {
+                    delete item; // widgets stay; only layout items
+                }
+                delete old;
+            }
+            m_filmstripGrip->setAlongTop(alongTop);
+            if (alongTop) {
+                auto *lay = new QVBoxLayout(m_filmstripHost);
+                lay->setContentsMargins(0, 0, 0, 0);
+                lay->setSpacing(0);
+                lay->addWidget(m_filmstripGrip, 0);
+                lay->addWidget(m_thumbnailBar, 1);
+            } else {
+                auto *lay = new QHBoxLayout(m_filmstripHost);
+                lay->setContentsMargins(0, 0, 0, 0);
+                lay->setSpacing(0);
+                lay->addWidget(m_filmstripGrip, 0);
+                lay->addWidget(m_thumbnailBar, 1);
+            }
+        }
+    }
+
     if (horizontalBar) {
         m_thumbnailBar->setMinimumHeight(minE);
         m_thumbnailBar->setMaximumHeight(maxE);
         m_thumbnailBar->setMinimumWidth(0);
         m_thumbnailBar->setMaximumWidth(QWIDGETSIZE_MAX);
         m_thumbnailBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        // Hint the layout engine toward thumbSize extent (not half the window).
         m_thumbnailBar->resize(qMax(m_thumbnailBar->width(), 200), extent);
+        if (m_filmstripHost) {
+            m_filmstripHost->setMinimumHeight(minE);
+            m_filmstripHost->setMaximumHeight(maxE);
+            m_filmstripHost->setMinimumWidth(0);
+            m_filmstripHost->setMaximumWidth(QWIDGETSIZE_MAX);
+            m_filmstripHost->resize(qMax(m_filmstripHost->width(), 200), extent);
+        }
     } else {
         m_thumbnailBar->setMinimumWidth(minE);
         m_thumbnailBar->setMaximumWidth(maxE);
@@ -3058,8 +3101,18 @@ void MainWindow::applyFilmstripExtentConstraints()
         m_thumbnailBar->setMaximumHeight(QWIDGETSIZE_MAX);
         m_thumbnailBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
         m_thumbnailBar->resize(extent, qMax(m_thumbnailBar->height(), 200));
+        if (m_filmstripHost) {
+            m_filmstripHost->setMinimumWidth(minE);
+            m_filmstripHost->setMaximumWidth(maxE);
+            m_filmstripHost->setMinimumHeight(0);
+            m_filmstripHost->setMaximumHeight(QWIDGETSIZE_MAX);
+            m_filmstripHost->resize(extent, qMax(m_filmstripHost->height(), 200));
+        }
     }
     m_thumbnailBar->updateGeometry();
+    if (m_filmstripHost) {
+        m_filmstripHost->updateGeometry();
+    }
 }
 
 void MainWindow::placeFilmstripDock(KDDockWidgets::Location loc)
@@ -3068,7 +3121,12 @@ void MainWindow::placeFilmstripDock(KDDockWidgets::Location loc)
         return;
     }
     applyFilmstripExtentConstraints();
-    const int extent = filmstripExtentForBar(m_thumbnailBar);
+    const int minE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMinThumbSize);
+    const int maxE = ThumbnailBar::extentForThumbSize(ThumbnailBar::kMaxThumbSize);
+    int extent = filmstripExtentForBar(m_thumbnailBar);
+    if (m_filmstripLastCrossAxis > 0) {
+        extent = qBound(minE, m_filmstripLastCrossAxis, maxE);
+    }
     // Cross-axis preferred length; long axis is a soft width/height for the group.
     KDDockWidgets::Size preferred;
     if (loc == KDDockWidgets::Location_OnLeft || loc == KDDockWidgets::Location_OnRight) {
@@ -3178,6 +3236,19 @@ void MainWindow::onThumbnailDockLocationChanged()
 
     const bool edgeChanged = (edge != m_thumbnailEdge);
     if (edgeChanged) {
+        // Remember current cross-axis thickness so width↔height stays stable.
+        if (m_thumbnailDock && m_filmstripHost) {
+            const QSize sz = m_filmstripHost->size();
+            const bool wasHoriz =
+                (m_thumbnailEdge == ThumbnailEdge::Bottom
+                 || m_thumbnailEdge == ThumbnailEdge::Top);
+            m_filmstripLastCrossAxis = wasHoriz ? sz.height() : sz.width();
+            if (m_filmstripLastCrossAxis < 8) {
+                // Fallback: dock view size if host not laid out yet.
+                const QSize ds = m_thumbnailDock->size();
+                m_filmstripLastCrossAxis = wasHoriz ? ds.height() : ds.width();
+            }
+        }
         m_thumbnailEdge = edge;
         updateThumbnailEdgeActions();
     }
@@ -3186,6 +3257,33 @@ void MainWindow::onThumbnailDockLocationChanged()
     const Qt::Orientation want = horizontalBar ? Qt::Horizontal : Qt::Vertical;
     if (m_thumbnailBar->barOrientation() != want || edgeChanged) {
         m_thumbnailBar->setBarOrientation(want);
+        applyFilmstripExtentConstraints();
+    }
+    // After a real edge change, re-dock with preferred size so KDDW does not
+    // keep a half-window allocation from the drop.
+    if (edgeChanged && m_thumbnailDock && dockIsOpen(m_thumbnailDock)
+        && !m_thumbnailDock->isFloating()) {
+        KDDockWidgets::Location loc = KDDockWidgets::Location_OnBottom;
+        switch (edge) {
+        case ThumbnailEdge::Top:
+            loc = KDDockWidgets::Location_OnTop;
+            break;
+        case ThumbnailEdge::Left:
+            loc = KDDockWidgets::Location_OnLeft;
+            break;
+        case ThumbnailEdge::Right:
+            loc = KDDockWidgets::Location_OnRight;
+            break;
+        case ThumbnailEdge::Bottom:
+        default:
+            loc = KDDockWidgets::Location_OnBottom;
+            break;
+        }
+        m_dockLocationGuard = true;
+        m_thumbnailDock->close();
+        placeFilmstripDock(loc);
+        m_thumbnailDock->open();
+        m_dockLocationGuard = false;
         applyFilmstripExtentConstraints();
     }
 }
