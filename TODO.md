@@ -2,7 +2,11 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2873.1-size-probe-cleanup (on `ea477d6` + agent stack).
+**Tip:** biltoo-2874.1-ttfp-baseline-docs (on `ea477d6` + agent stack).
+
+### 2874.1
+- `docs/TTFP.md`: Baseline 2026-09-30 multipage PDF Gallery open (~2400 pages, ~0.5 s TTFP, SHAs, failure shapes).
+- Link from `docs/PERFORMANCE.md`.
 
 ### 2873.1
 - Drop host-side `ensure_pdf_page_sizes` special case — thumtoo `request_size`
