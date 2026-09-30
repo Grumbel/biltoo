@@ -811,8 +811,14 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(m_imageView && !isFullScreen());
     }
+    if (m_pageToolBar) {
+        m_pageToolBar->setVisible(m_imageView && !isFullScreen());
+    }
     if (m_annotationToolBar) {
         m_annotationToolBar->setVisible(m_imageView && !isFullScreen());
+    }
+    if (m_shapesToolBar) {
+        m_shapesToolBar->setVisible(m_imageView && !isFullScreen());
     }
     // Canvas materials: Gallery/Image → session View; Workspace → project.
     // Same main-toolbar action for all three modes (vertical bar no longer

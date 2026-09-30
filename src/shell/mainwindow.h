@@ -685,8 +685,11 @@ private:
     QToolBar *m_panelsToolBar = nullptr;
     /** Left vertical: canvas tools (select/pan/zoom/crop/attention). */
     QToolBar *m_workspaceToolBar = nullptr;
+    QToolBar *m_pageToolBar = nullptr; /**< page guide / print frame tools */
     /** Left vertical: annotation tools. */
     QToolBar *m_annotationToolBar = nullptr;
+    QToolBar *m_shapesToolBar = nullptr; /**< rect/ellipse/line/sticky */
+    QToolBar *m_topFillToolBar = nullptr; /**< expanding spacer (\hfill) on top row */
     QLabel *m_statusLabel = nullptr;
     QProgressBar *m_statusProgress = nullptr;
     /** Cancels stale archive-expand workers when a newer open starts. */

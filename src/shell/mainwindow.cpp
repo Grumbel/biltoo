@@ -4428,7 +4428,7 @@ void MainWindow::updateFullscreenUi()
         for (QToolBar *tb : {
                  m_toolBar, m_editToolBar, m_transformToolBar, m_layoutToolBar,
                  m_navigateToolBar, m_zoomToolBar, m_textToolBar, m_panelsToolBar,
-                 m_workspaceToolBar, m_annotationToolBar}) {
+                 m_workspaceToolBar, m_pageToolBar, m_annotationToolBar, m_shapesToolBar}) {
             if (tb) {
                 tb->setVisible(false);
             }
@@ -4570,8 +4570,14 @@ void MainWindow::updateFullscreenUi()
         if (m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(m_imageView != nullptr);
         }
+        if (m_pageToolBar) {
+            m_pageToolBar->setVisible(m_imageView != nullptr);
+        }
         if (m_annotationToolBar) {
             m_annotationToolBar->setVisible(m_imageView != nullptr);
+        }
+        if (m_shapesToolBar) {
+            m_shapesToolBar->setVisible(m_imageView != nullptr);
         }
         m_locationBarTransient = m_locationBarVisibleBeforeFullscreen
             && !m_locationBarPinned;
