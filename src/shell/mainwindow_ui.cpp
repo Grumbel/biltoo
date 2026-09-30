@@ -2036,7 +2036,7 @@ void MainWindow::createToolBar()
             if (!tb) {
                 return;
             }
-            if (QAction *a = tb->toggleAction()) {
+            if (QAction *a = tb->toggleViewAction()) {
                 toolbarsMenu->addAction(a);
             }
         };
