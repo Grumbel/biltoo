@@ -16,9 +16,11 @@
 namespace HudModel {
 namespace {
 
-QString tr(const char *s)
+// Match QObject::tr / QCoreApplication::translate so %n plurals work
+// (source, disambiguation, n). One-arg call sites stay valid.
+QString tr(const char *s, const char *disambiguation = nullptr, int n = -1)
 {
-    return QCoreApplication::translate("HudModel", s);
+    return QCoreApplication::translate("HudModel", s, disambiguation, n);
 }
 
 } // namespace

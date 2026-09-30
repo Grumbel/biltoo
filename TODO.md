@@ -2,7 +2,12 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2839.2-gallery-status-missing-source (on 2839.1 stack).
+**Tip:** biltoo-2840.1-hudmodel-tr-plural (on 2839.2 / origin `84a322a`).
+
+### 2840.1
+- `HudModel` anonymous `tr`: accept Qt plural form `(source, disambiguation, n)`
+  via `QCoreApplication::translate` so `%n image(s)` empty-canvas status lines
+  in 2839.2 compile. One-arg call sites unchanged.
 
 ### Stopping point (2838 feature line complete)
 - Document live negative tile scales for PDF/DjVu/EPUB page refs.
