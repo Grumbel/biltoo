@@ -2636,12 +2636,8 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
 
     // Always clear process caches for every targeted path (even when the
     // source fingerprint is unchanged). Durable Store stays until Shift+F5.
-    QSet<QString> done;
+    // paths is already a QSet — iterate once; use constFirst() for the flash.
     for (const QString &path : paths) {
-        if (done.contains(path)) {
-            continue;
-        }
-        done.insert(path);
         ImageCache::remove(path);
         {
             QSize discarded;
@@ -2664,7 +2660,7 @@ void GalleryController::reloadFromDisk(bool /*relayout*/)
         m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(*paths.constBegin()).fileName()
+        ? QFileInfo(paths.constFirst()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });

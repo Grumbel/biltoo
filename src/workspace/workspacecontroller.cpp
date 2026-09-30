@@ -778,12 +778,9 @@ void WorkspaceController::reloadFromDisk()
     }
 
     // Always clear process caches (even when source fingerprint is unchanged).
-    QSet<QString> done;
+    // paths is already a QSet — no second dedup pass (avoids QSet iterator
+    // null-deref warnings from *constBegin() under GCC).
     for (const QString &path : paths) {
-        if (done.contains(path)) {
-            continue;
-        }
-        done.insert(path);
         ImageCache::remove(path);
         {
             QSize discarded;
@@ -806,7 +803,7 @@ void WorkspaceController::reloadFromDisk()
     }
     m_view->hostDisplayPipeline().ensureWorkspaceQualityClimb();
     const QString detail = (paths.size() == 1)
-        ? QFileInfo(*paths.constBegin()).fileName()
+        ? QFileInfo(paths.constFirst()).fileName()
         : ImageView::tr("%1 paths").arg(paths.size());
     m_view->hostHud().showFlash(ImageView::tr("Reload"), detail,
         [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
