@@ -851,6 +851,8 @@ private:
     QAction *m_lowerAct = nullptr;
     QAction *m_raiseAct = nullptr;
     QAction *m_reorderSessionAct = nullptr;
+    /** Opt-in: filmstrip left-drag reorders session rows. */
+    QAction *m_filmstripReorderAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortPathAct = nullptr;
     QAction *m_sortAspectAct = nullptr;

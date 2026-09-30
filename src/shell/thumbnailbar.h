@@ -12,6 +12,7 @@
 #include <QListWidget>
 
 #include <memory>
+#include <optional>
 #include <QHash>
 
 namespace tilelod { class TileLodController; }
@@ -170,6 +171,26 @@ public:
     /** Session cursor row (may differ from multi-select). */
     int cursorIndex() const { return m_cursorIndex; }
     void setCursorIndex(int index);
+    /**
+     * When true, left-drag on the strip can reorder session rows (internal
+     * drop). Default false — reorder is rare and conflicts with strip pan /
+     * open-focus. Workspace placement drag still works in multi-select modes.
+     */
+    void setSessionReorderEnabled(bool on);
+    bool sessionReorderEnabled() const { return m_sessionReorderEnabled; }
+
+    /**
+     * Painted image rect inside the cell (letterbox content), in viewport
+     * coordinates. Empty if the row is invalid. Used for open-focus norms.
+     */
+    [[nodiscard]] QRect contentVisualRect(int row) const;
+    /**
+     * Map a viewport point to content-normalized [0,1]×[0,1] for @p row.
+     * nullopt if outside the painted content (or invalid row).
+     */
+    [[nodiscard]] std::optional<QPointF> focusNormAt(const QPoint &viewportPos,
+                                                     int row) const;
+
     /**
      * Visible camera rect on the cursor page, normalised to content
      * [0,1]×[0,1] (empty = no overlay). Filmstrip paints an amber frame.
@@ -435,6 +456,10 @@ private:
     QPoint m_middleScrollPos;
     bool m_pressActive = false;
     bool m_dragStarted = false;
+    /** Left-drag pans the strip (reorder mode off, Image mode). */
+    bool m_leftStripScrollActive = false;
+    /** Opt-in internal session reorder via strip drag-drop. */
+    bool m_sessionReorderEnabled = false;
     /** Insertion slot while dragging rows over the strip; -1 = none. */
     int m_dropInsertIndex = -1;
     Qt::KeyboardModifiers m_pressModifiers;

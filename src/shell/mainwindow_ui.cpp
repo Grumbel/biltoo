@@ -918,6 +918,18 @@ void MainWindow::createActions()
         tr("Manually reorder images in the session (drag or Move buttons)"));
     connect(m_reorderSessionAct, &QAction::triggered, this, &MainWindow::showSessionReorderDialog);
 
+    m_filmstripReorderAct = new QAction(tr("Filmstrip &Reorder"), this);
+    m_filmstripReorderAct->setCheckable(true);
+    m_filmstripReorderAct->setChecked(false);
+    m_filmstripReorderAct->setStatusTip(
+        tr("When on, drag filmstrip rows to reorder the session. "
+           "When off (default), left-drag pans the strip; double-click opens at the click point."));
+    connect(m_filmstripReorderAct, &QAction::toggled, this, [this](bool on) {
+        if (m_thumbnailBar) {
+            m_thumbnailBar->setSessionReorderEnabled(on);
+        }
+    });
+
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
@@ -1263,6 +1275,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_duplicateAct);
     m_editMenu->addSeparator();
     m_editMenu->addAction(m_reorderSessionAct);
+    m_editMenu->addAction(m_filmstripReorderAct);
     m_editMenu->addAction(m_prepareTileCacheAct);
     // Sort Session lives under Gallery + toolbar (not duplicated here).
     m_editMenu->addSeparator();
@@ -2614,6 +2627,11 @@ void MainWindow::populateActionHelpTexts()
         "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
     setHelp(m_reorderSessionAct, tr(
         "<p>Open a dialog to reorder the session list. Drag rows or use Move Up/Down/Start/End. Changes are undoable.</p>"));
+    setHelp(m_filmstripReorderAct, tr(
+        "<p>Opt-in mode for reordering by dragging filmstrip thumbnails. "
+        "Off by default so left-drag pans the strip and click position can open "
+        "Image mode focused on that point (like Gallery). "
+        "Workspace placement drag is unchanged.</p>"));
     setHelp(m_sortNameAct, tr("<p>Sort the session by file name and re-pack Gallery if active.</p>"));
     setHelp(m_sortPathAct, tr(
         "<p>Sort by full path — useful when the session spans several folders or archives.</p>"));

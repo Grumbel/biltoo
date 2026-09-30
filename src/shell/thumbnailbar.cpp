@@ -542,8 +542,8 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     if (viewport()) {
         viewport()->setAcceptDrops(true);
     }
-    setStatusTip(tr("Drag to reorder on the strip, or onto the Workspace canvas; "
-                    "double-click or Enter opens the image"));
+    setStatusTip(tr("Double-click opens Image at the click point; middle/left-drag pans the strip. "
+                    "Enable Filmstrip Reorder to drag rows; Workspace still accepts drops."));
     updateInteractionToolTip();
 
     QFont captionFont = font();
@@ -2332,6 +2332,7 @@ void ThumbnailBar::clearPressState()
     m_pressActive = false;
     m_pressItem = nullptr;
     m_dragStarted = false;
+    m_leftStripScrollActive = false;
     m_pressSelectedRows.clear();
 }
 
@@ -2720,12 +2721,71 @@ void ThumbnailBar::updateInteractionToolTip()
     if (m_multiSelect) {
         setToolTip(tr(
             "Click: select page · Ctrl+click: toggle · Shift+click: range\n"
-            "Drag: reorder · Double-click: open in Image"));
+            "Drag: place on Workspace canvas · Double-click: open in Image at click point\n"
+            "Filmstrip Reorder mode: drag rows to reorder the session"));
     } else {
         setToolTip(tr(
-            "Click: go to page (cursor) · Ctrl/Shift+click: multi-select when enabled\n"
-            "Drag: reorder · Double-click: open"));
+            "Click: go to page at click point · Double-click: open Image at click point\n"
+            "Left-drag: pan the strip · Middle-drag: pan the strip\n"
+            "Filmstrip Reorder mode: drag rows to reorder the session"));
     }
+}
+
+void ThumbnailBar::setSessionReorderEnabled(bool on)
+{
+    if (m_sessionReorderEnabled == on) {
+        return;
+    }
+    m_sessionReorderEnabled = on;
+    updateInteractionToolTip();
+}
+
+QRect ThumbnailBar::contentVisualRect(int row) const
+{
+    if (row < 0 || row >= count() || !m_delegate) {
+        return {};
+    }
+    QListWidgetItem *it = item(row);
+    if (!it) {
+        return {};
+    }
+    const QModelIndex idx = indexFromItem(it);
+    const QRect cell = visualRect(idx);
+    if (cell.width() < 2 || cell.height() < 2) {
+        return {};
+    }
+    const int labelBand = m_delegate->labelBandHeight(font());
+    const int cross = m_delegate->cellPad();
+    const int flow = m_delegate->flowPad();
+    const Qt::Orientation orient = m_orientation;
+    QRect inner;
+    if (orient == Qt::Horizontal) {
+        inner = cell.adjusted(flow, cross, -flow, -(cross + labelBand));
+    } else {
+        inner = cell.adjusted(cross, flow, -cross, -(flow + labelBand));
+    }
+    if (inner.width() < 1 || inner.height() < 1) {
+        return {};
+    }
+    const QSize contentSz = m_delegate->logicalContentSize(idx);
+    const QSize fitted = FilmstripGeometry::fitContentInInner(contentSz, inner.size());
+    return QRect(
+        inner.x() + (inner.width() - fitted.width()) / 2,
+        inner.y() + (inner.height() - fitted.height()) / 2,
+        fitted.width(),
+        fitted.height());
+}
+
+std::optional<QPointF> ThumbnailBar::focusNormAt(const QPoint &viewportPos, int row) const
+{
+    const QRect content = contentVisualRect(row);
+    if (content.width() < 2 || content.height() < 2) {
+        return std::nullopt;
+    }
+    // Clamp to content so clicks on the pad still give a usable focus.
+    const qreal nx = qBound(0.0, (viewportPos.x() - content.x()) / qreal(content.width()), 1.0);
+    const qreal ny = qBound(0.0, (viewportPos.y() - content.y()) / qreal(content.height()), 1.0);
+    return QPointF(nx, ny);
 }
 
 void ThumbnailBar::setCursorIndex(int index)
@@ -3402,7 +3462,8 @@ void ThumbnailBar::setDropInsertIndex(int index)
 
 void ThumbnailBar::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()
+    if (m_sessionReorderEnabled
+        && event->mimeData()
         && event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
         && event->source() == this) {
         event->setDropAction(Qt::MoveAction);
@@ -3415,7 +3476,8 @@ void ThumbnailBar::dragEnterEvent(QDragEnterEvent *event)
 
 void ThumbnailBar::dragMoveEvent(QDragMoveEvent *event)
 {
-    if (event->mimeData()
+    if (m_sessionReorderEnabled
+        && event->mimeData()
         && event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
         && event->source() == this) {
         event->setDropAction(Qt::MoveAction);
@@ -3434,7 +3496,8 @@ void ThumbnailBar::dragLeaveEvent(QDragLeaveEvent *event)
 
 void ThumbnailBar::dropEvent(QDropEvent *event)
 {
-    if (!event->mimeData()
+    if (!m_sessionReorderEnabled
+        || !event->mimeData()
         || !event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
         || event->source() != this) {
         event->ignore();
@@ -3559,7 +3622,8 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_middleScrollActive && (event->buttons() & Qt::MiddleButton)) {
+    if ((m_middleScrollActive && (event->buttons() & Qt::MiddleButton))
+        || (m_leftStripScrollActive && (event->buttons() & Qt::LeftButton))) {
         const QPoint delta = event->pos() - m_middleScrollPos;
         m_middleScrollPos = event->pos();
         if (QScrollBar *h = horizontalScrollBar()) {
@@ -3581,7 +3645,17 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
         && m_pressItem) {
         const int dist = (event->pos() - m_pressPos).manhattanLength();
         if (dist >= QApplication::startDragDistance()) {
-            // AUDIT M19: drag selected thumbs as files in every mode (no dead gesture).
+            // Reorder mode off + Image mode: left-drag pans the strip (same as
+            // middle-drag). Avoids starting a session reorder gesture.
+            if (!m_sessionReorderEnabled && !m_multiSelect) {
+                m_dragStarted = true;
+                m_leftStripScrollActive = true;
+                m_middleScrollPos = event->pos();
+                setCursor(Qt::ClosedHandCursor);
+                event->accept();
+                return;
+            }
+            // Gallery/Workspace, or reorder mode: drag thumbs (place / reorder).
             m_dragStarted = true;
             // Multi-reorder payload: prefer rows selected at press when the
             // press is on one of them. Fall back to live selection, then press.
@@ -3630,6 +3704,30 @@ void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
         unsetCursor();
         event->accept();
         return;
+    }
+    if (event->button() == Qt::LeftButton && m_leftStripScrollActive) {
+        m_leftStripScrollActive = false;
+        unsetCursor();
+        clearPressState();
+        event->accept();
+        return;
+    }
+    // Image mode: plain click sets open-focus norms from the painted content
+    // rect (same as Gallery double-click). Emit before navigation so sticky
+    // pan is ready when the host switches index — including same-index re-click.
+    if (!m_multiSelect && event->button() == Qt::LeftButton
+        && m_pressActive && !m_dragStarted && m_pressItem) {
+        const int r = row(m_pressItem);
+        if (r >= 0) {
+            if (const auto n = focusNormAt(m_pressPos, r)) {
+                emit openFocusNormRequested(n->x(), n->y());
+            }
+            // Same row: onCurrentRowChanged will not fire — still navigate so
+            // the host can restoreStickyPan for the new focus.
+            if (r == currentRow()) {
+                emit indexNavigated(r);
+            }
+        }
     }
     if (m_multiSelect && event->button() == Qt::LeftButton
         && m_pressActive && !m_dragStarted) {
@@ -3696,13 +3794,10 @@ void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
         event->accept();
         return;
     }
-    // Open focus: map click within the strip cell to content-normalized coords.
-    // visualRect takes QModelIndex (Qt6), not QListWidgetItem*.
-    const QRect cell = visualRect(indexFromItem(hit));
-    if (cell.width() > 1 && cell.height() > 1) {
-        const qreal nx = qBound(0.0, (event->pos().x() - cell.x()) / qreal(cell.width()), 1.0);
-        const qreal ny = qBound(0.0, (event->pos().y() - cell.y()) / qreal(cell.height()), 1.0);
-        emit openFocusNormRequested(nx, ny);
+    // Open focus: map click within the *painted* content (letterbox), not the
+    // full cell (pads/label would skew norms vs Gallery scene bounds).
+    if (const auto n = focusNormAt(event->pos(), row(hit))) {
+        emit openFocusNormRequested(n->x(), n->y());
     }
     // Open in Image mode — never toggle Workspace canvas membership.
     emit indexActivated(row(hit));

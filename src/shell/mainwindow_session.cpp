@@ -504,6 +504,13 @@ bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
             || m_imageView->hostImage().classicPath() != path) {
             m_imageView->hostDisplayPipeline().loadImage(path);
         }
+        // Filmstrip/Gallery open-focus: same index still needs sticky pan
+        // (onCurrentRowChanged does not fire; norms were set on the click).
+        if (m_imageView->hostFraming().hasStickyPan()) {
+            if (ImageItem *item = m_imageView->targetItem()) {
+                m_imageView->hostImage().restoreStickyPanAnchor(item);
+            }
+        }
         return true;
     }
     if (isGalleryMode() && m_imageView && ensureGalleryVisible) {
