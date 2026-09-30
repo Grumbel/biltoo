@@ -2,18 +2,17 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2859.1-flow-layout-fix (on `ea477d6` + agent stack).
+**Tip:** biltoo-2860.1-flow-fill-columns (on `ea477d6` + agent stack).
 
-### 2859.1
-- **Flow** (was Contact Sheet): full rows fill width; **last row always left-aligned**
-  (no enlarge leftovers).
-- **Flow Rows** (was Strip Rows): restore uniform band-height wrap; last row
-  dangling; no progressive scale-to-the-right; optional flush only on non-final rows.
-- UI/help renamed to Flow / Flow Rows (enum values ContactSheet/StripRows kept).
+### 2860.1
+- **Flow Fill** (was Flow Rows / StripRows): driven by **Columns** (not Rows).
+  Row height from average aspect so ~Columns pages fill the width; last row
+  left-aligned; non-final rows may flush.
+- UI/help/preferences: "Flow Fill"; Columns spin for both Flow and Flow Fill.
 
 ### Prior
+- 2859.1 flow layout fix
 - 2858.1 F5 QStringList
-- 2857.1 contact sheet columns
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.

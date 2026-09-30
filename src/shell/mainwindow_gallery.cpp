@@ -545,12 +545,12 @@ void MainWindow::updateMasonryCountControl()
             || mode == LayoutMode::MasonryFill);
     const bool masonryRows = gallery
         && (mode == LayoutMode::MasonryRows
-            || mode == LayoutMode::MasonryRowsFill
-            || mode == LayoutMode::StripRows);
+            || mode == LayoutMode::MasonryRowsFill);
     const bool gridCols = gallery
                           && (mode == LayoutMode::Grid
                               || mode == LayoutMode::GridCrop
-                              || mode == LayoutMode::ContactSheet);
+                              || mode == LayoutMode::ContactSheet
+                              || mode == LayoutMode::StripRows);
     const bool show = masonryCols || masonryRows || gridCols;
     m_masonryCountAction->setVisible(show);
     if (!show || !m_masonryCountSpin) {

@@ -776,11 +776,11 @@ void MainWindow::createActions()
         tr("Flow: fixed columns of pages in reading order (book/PDF overview)"));
     connect(m_layoutContactSheetAct, &QAction::triggered, this, &MainWindow::setLayoutContactSheet);
 
-    m_layoutStripRowsAct = new QAction(tr("Layout Flow &Rows"), this);
+    m_layoutStripRowsAct = new QAction(tr("Layout Flow F&ill"), this);
     m_layoutStripRowsAct->setCheckable(true);
     m_layoutStripRowsAct->setIcon(resourceIcon(QStringLiteral("view-grid")));
     m_layoutStripRowsAct->setStatusTip(
-        tr("Flow Rows: uniform row height, pages wrap in reading order"));
+        tr("Flow Fill: uniform row height from Columns, pages wrap in reading order"));
     connect(m_layoutStripRowsAct, &QAction::triggered, this, &MainWindow::setLayoutStripRows);
 
     m_layoutFacingAct = new QAction(tr("Layout F&acing"), this);
@@ -1876,7 +1876,7 @@ void MainWindow::createToolBar()
         m_masonryCountSpin->setSingleStep(1);
         m_masonryCountSpin->setValue(3);
         m_masonryCountSpin->setToolTip(
-            tr("Columns (Grid / Flow / Masonry) or rows (Masonry Rows / Flow Rows)."));
+            tr("Columns (Grid / Flow / Flow Fill / Masonry) or rows (Masonry Rows)."));
         masonryCountLayout->addWidget(m_masonryCountLabel);
         masonryCountLayout->addWidget(m_masonryCountSpin);
         m_masonryCountAction = m_layoutToolBar->addWidget(masonryCountHost);
@@ -1888,12 +1888,12 @@ void MainWindow::createToolBar()
                     }
                     const auto mode = m_imageView->hostLayout().currentMode();
                     if (mode == LayoutMode::MasonryRows
-                        || mode == LayoutMode::MasonryRowsFill
-                        || mode == LayoutMode::StripRows) {
+                        || mode == LayoutMode::MasonryRowsFill) {
                         m_imageView->hostGallery().setMasonryRows(count);
                     } else if (mode == LayoutMode::Grid
                                || mode == LayoutMode::GridCrop
-                               || mode == LayoutMode::ContactSheet) {
+                               || mode == LayoutMode::ContactSheet
+                               || mode == LayoutMode::StripRows) {
                         m_imageView->hostGallery().setGridColumns(count);
                     } else {
                         m_imageView->hostGallery().setMasonryColumns(count);
@@ -2643,11 +2643,10 @@ void MainWindow::populateActionHelpTexts()
         "Relative page widths within a row are preserved. The <b>last row is left-aligned</b> "
         "with empty space — leftovers are not enlarged.</p>"));
     setHelp(m_layoutStripRowsAct, tr(
-        "<p><b>Flow Rows</b>: rows of uniform height (set by the Rows spin) for book/PDF "
-        "pages. Each page is scaled to the band height (wide landscapes become wider). "
-        "Pages wrap in reading order when the row is full. The <b>last row is left-aligned</b>; "
-        "earlier rows may be nudged flush to the right edge without changing left-to-right "
-        "relative scale within the row.</p>"));
+        "<p><b>Flow Fill</b>: like Flow, but every page in a row shares one <b>row height</b> "
+        "chosen so about <b>Columns</b> average-aspect pages fill the width (landscapes become "
+        "wider). Pages wrap in reading order. Full rows may flush to the right edge; the "
+        "<b>last row is left-aligned</b>.</p>"));
     setHelp(m_layoutFacingAct, tr(
         "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
     setHelp(m_reorderSessionAct, tr(
@@ -2853,7 +2852,7 @@ void MainWindow::populateActionHelpTexts()
         "Workspace; Free Form is the default free-canvas behaviour.</p>"));
     setHelp(m_galleryLayoutToolbarAct, tr(
         "<p>Enter <b>Gallery</b> mode using the last chosen Gallery layout. The toolbar "
-        "button’s menu (arrow) picks Grid, Masonry, Flow, Flow Rows, Facing, "
+        "button’s menu (arrow) picks Grid, Masonry, Flow, Flow Fill, Facing, "
         "before or while entering Gallery.</p>"));
     setHelp(m_slideshowSettingsAct, tr(
         "<p>Open slideshow settings: interval, transition style, dwell motion "

@@ -67,7 +67,7 @@ enum class Mode {
     MasonryRowsFill,
     /** Flow (CSS-like): fixed column count, pages wrap L→R; last row left-aligned. */
     ContactSheet,
-    /** Flow Rows: uniform row height bands; wrap by width; last row left-aligned. */
+    /** Flow Fill: uniform row height from Columns×avg aspect; wrap; last row left-aligned. */
     StripRows,
     /** Two-up spreads; page 1 alone as cover, then pairs (2–3), (4–5), … */
     Facing
@@ -461,22 +461,33 @@ inline QVector<PackPose> packPosesContactSheet(const QVector<QSizeF> &layoutSize
 }
 
 /**
- * Flow Rows (StripRows): order-preserving wrap with **uniform row height**.
- * Each page is scaled to the band height (landscapes become full height and
- * wider). Rows wrap at layout width; last row is left-aligned (never stretched).
- * Non-final rows that under-fill the width are scaled up once so the row is
- * flush — no progressive left-to-right growth.
- * @p masonryRows sets how many bands share @p availH.
+ * Flow Fill (StripRows): ordered wrap with **uniform row height** chosen so
+ * about @p gridColumns average-aspect pages fill the row width (same Columns
+ * control as Flow). Landscapes become wider at that height. Full rows may be
+ * scaled flush to the right edge; the last row is left-aligned.
  */
 inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
                                             qreal margin, qreal gap,
-                                            qreal availW, qreal availH,
-                                            int masonryRows)
+                                            qreal availW,
+                                            int gridColumns)
 {
     const int n = layoutSizes.size();
-    const int bands = resolvedBandCount(masonryRows, n > 0 ? n : 1);
-    const qreal baseRowH = cellAxisLength(availH, gap, bands);
+    const int cols = resolvedFlowColumns(gridColumns);
     const qreal layoutW = availW;
+
+    // Target row height from average aspect so ~cols pages fit in layoutW.
+    qreal sumAspect = 0.0; // width/height
+    int aspectN = 0;
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal h = ns.height() > 1.0 ? ns.height() : 1.0;
+        const qreal w = ns.width() > 1.0 ? ns.width() : 1.0;
+        sumAspect += w / h;
+        ++aspectN;
+    }
+    const qreal avgAspect = aspectN > 0 ? (sumAspect / qreal(aspectN)) : 1.0;
+    const qreal gaps = gap * qreal(cols > 1 ? cols - 1 : 0);
+    // cols * (avgAspect * rowH) + gaps ≈ layoutW
+    const qreal baseRowH = qMax(1.0, (layoutW - gaps) / qMax(0.05, qreal(cols) * avgAspect));
 
     struct Entry {
         QSizeF ns;
@@ -508,7 +519,6 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
         }
         if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
             flushRow();
-            // Recompute for a fresh row (may still be solo ultra-wide).
             scale = axisFillScale(baseRowH, ns.height());
             w = ns.width() * scale;
             h = ns.height() * scale;
@@ -523,16 +533,12 @@ inline QVector<PackPose> packPosesStripRows(const QVector<QSizeF> &layoutSizes,
     }
     flushRow();
 
-    // Justify non-final under-filled rows only (uniform scale on the whole row).
+    // Flush non-final under-filled rows (uniform scale); last row stays dangling.
     constexpr qreal kFillSlack = 1.0;
     for (int ri = 0; ri < rows.size(); ++ri) {
         QVector<Entry> &row = rows[ri];
-        if (row.isEmpty()) {
+        if (row.isEmpty() || (ri + 1 == rows.size())) {
             continue;
-        }
-        const bool lastRow = (ri + 1 == rows.size());
-        if (lastRow) {
-            continue; // leave last row dangling
         }
         qreal used = 0.0;
         for (int i = 0; i < row.size(); ++i) {
@@ -895,7 +901,7 @@ inline QVector<PackPose> packPosesForMode(Mode mode, const QVector<QSizeF> &layo
     case Mode::ContactSheet:
         return packPosesContactSheet(layoutSizes, margin, gap, availW, params.gridColumns);
     case Mode::StripRows:
-        return packPosesStripRows(layoutSizes, margin, gap, availW, availH, params.masonryRows);
+        return packPosesStripRows(layoutSizes, margin, gap, availW, params.gridColumns);
     case Mode::Facing:
         return packPosesFacing(layoutSizes, margin, gap, availW, availH);
     }

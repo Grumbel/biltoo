@@ -62,7 +62,7 @@ enum class LayoutMode {
     MasonryRowsFill,
     /** Flow: fixed columns, ordered page wrap (book/PDF overview). */
     ContactSheet,
-    /** Flow Rows: uniform row height, ordered wrap (book/PDF strip). */
+    /** Flow Fill: uniform row height from Columns; ordered wrap (book/PDF). */
     StripRows,
     /** Two-up spreads; cover page alone, then pairs. */
     Facing
@@ -94,7 +94,7 @@ inline bool layoutIsGridFamily(LayoutMode mode)
     return mode == LayoutMode::Grid || mode == LayoutMode::GridCrop;
 }
 
-/** Flow family (Flow / Flow Rows — ContactSheet / StripRows enum names). */
+/** Flow family (Flow / Flow Fill — ContactSheet / StripRows enum names). */
 inline bool layoutIsFlowFamily(LayoutMode mode)
 {
     return mode == LayoutMode::ContactSheet || mode == LayoutMode::StripRows;

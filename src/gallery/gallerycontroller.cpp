@@ -2542,8 +2542,7 @@ void GalleryController::setMasonryRows(int rows)
         return;
     }
     const auto mode = m_layout.currentMode();
-    if ((mode == LayoutMode::MasonryRows || mode == LayoutMode::MasonryRowsFill
-         || mode == LayoutMode::StripRows)
+    if ((mode == LayoutMode::MasonryRows || mode == LayoutMode::MasonryRowsFill)
         && !m_view->liveItems().isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
