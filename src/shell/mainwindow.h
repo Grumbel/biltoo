@@ -46,6 +46,7 @@ class TextToSpeechController;
 class LayoutPanel;
 class TocPanel;
 class HelpPanel;
+class KeyboardShortcutsPanel;
 class QToolBar;
 class QAction;
 class QActionGroup;
@@ -671,6 +672,8 @@ private:
     TocPanel *m_tocPanel = nullptr;
     HelpPanel *m_helpPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_helpDock = nullptr;
+    KeyboardShortcutsPanel *m_shortcutsPanel = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_shortcutsDock = nullptr;
     QToolBar *m_toolBar = nullptr;
     QToolBar *m_workspaceToolBar = nullptr;
     QLabel *m_statusLabel = nullptr;

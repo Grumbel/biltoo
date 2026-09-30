@@ -32,8 +32,8 @@ HelpPanel::HelpPanel(QWidget *parent)
     m_shortcuts->setStyleSheet(QStringLiteral("color: palette(mid);"));
 
     m_showAllShortcutsBtn = new QToolButton(this);
-    m_showAllShortcutsBtn->setText(tr("Keyboard Shortcuts…"));
-    m_showAllShortcutsBtn->setToolTip(tr("Open the keyboard shortcuts table"));
+    m_showAllShortcutsBtn->setText(tr("Keyboard Shortcuts"));
+    m_showAllShortcutsBtn->setToolTip(tr("Show the keyboard shortcuts panel"));
     m_showAllShortcutsBtn->setAutoRaise(true);
     m_showAllShortcutsBtn->setCursor(Qt::PointingHandCursor);
     m_showAllShortcutsBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -84,7 +84,7 @@ void HelpPanel::clear()
         "detailed help here.</p>"
         "<p>Disabled commands still show help when you hover them, including "
         "why they are unavailable when that reason is known.</p>"
-        "<p>Use <b>Keyboard Shortcuts…</b> at the bottom of this panel for a table of "
+        "<p>Use <b>Keyboard Shortcuts</b> at the bottom of this panel for a table of "
         "every bound key — select a row for Help, double-click or Enter to run it.</p>"
         "<p>Guides for Image, Gallery, Workspace, Filmstrip, and Session are under "
         "<b>Help → Guides</b>.</p>"));

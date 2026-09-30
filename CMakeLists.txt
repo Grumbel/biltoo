@@ -467,8 +467,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/tocpanel.h
   src/shell/helppanel.cpp
   src/shell/helppanel.h
-  src/shell/keyboardshortcutsdialog.cpp
-  src/shell/keyboardshortcutsdialog.h
+  src/shell/keyboardshortcutspanel.cpp
+  src/shell/keyboardshortcutspanel.h
   src/shell/layoutpanel.h
   src/shell/defaultapps.cpp
   src/shell/defaultapps.h

@@ -1142,7 +1142,7 @@ void MainWindow::createActions()
     m_preferencesAct->setStatusTip(tr("Application preferences"));
     connect(m_preferencesAct, &QAction::triggered, this, &MainWindow::showPreferences);
 
-    m_keyboardShortcutsAct = new QAction(tr("&Keyboard Shortcuts…"), this);
+    m_keyboardShortcutsAct = new QAction(tr("&Keyboard Shortcuts"), this);
     m_keyboardShortcutsAct->setShortcut(Qt::Key_F1);
     m_keyboardShortcutsAct->setIcon(themeIcon(QStringLiteral("help-contents"), QStyle::SP_DialogHelpButton));
     m_keyboardShortcutsAct->setStatusTip(tr("List of keyboard shortcuts"));

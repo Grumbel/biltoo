@@ -10,7 +10,7 @@
 #include "text/textsearchpolicy.h"
 #include "shell/dualimageshell.h"
 #include "session/sessionopen.h"
-#include "shell/keyboardshortcutsdialog.h"
+#include "shell/keyboardshortcutspanel.h"
 #include "version.h"
 #include "thumtoo/version.hpp"
 #include "imageitem.h"
@@ -853,12 +853,41 @@ connect(m_tocPanel, &TocPanel::navigateToPage, this, &MainWindow::navigateDocume
     addDockWidget(m_helpDock, KDDockWidgets::Location_OnRight);
     m_helpDock->close();
 
+    m_shortcutsPanel = new KeyboardShortcutsPanel(this);
+    m_shortcutsDock = new DockWidget(QStringLiteral("ShortcutsDock"));
+    m_shortcutsDock->setTitle(tr("Keyboard Shortcuts"));
+    m_shortcutsDock->setWidget(m_shortcutsPanel);
+    addDockWidget(m_shortcutsDock, KDDockWidgets::Location_OnRight);
+    m_shortcutsDock->close();
+    connect(m_shortcutsPanel, &KeyboardShortcutsPanel::actionHighlighted, this,
+            [this](QAction *act) {
+                if (m_helpPanel && act) {
+                    if (m_helpDock && !dockIsOpen(m_helpDock)) {
+                        m_helpDock->open();
+                    }
+                    m_helpPanel->showAction(act);
+                }
+            });
+    connect(m_shortcutsPanel, &KeyboardShortcutsPanel::actionActivated, this,
+            [this](QAction *act) {
+                if (!act) {
+                    return;
+                }
+                if (m_helpPanel) {
+                    m_helpPanel->showAction(act);
+                }
+                if (act->isEnabled()) {
+                    act->trigger();
+                }
+            });
+
     // Group tool panels as tabs on the right / left (less chrome than stacked docks).
     tabDockOnto(m_metadataDock, m_adjustmentsDock);
     tabDockOnto(m_metadataDock, m_cropDock);
     tabDockOnto(m_metadataDock, m_ocrDock);
     tabDockOnto(m_metadataDock, m_textDock);
     tabDockOnto(m_metadataDock, m_helpDock);
+    tabDockOnto(m_metadataDock, m_shortcutsDock);
     tabDockOnto(m_layoutDock, m_tocDock);
 
     // Now that other docks exist in the layout, preferred filmstrip extent is honoured.
@@ -3225,29 +3254,15 @@ void MainWindow::showKeyboardShortcuts()
         addAct(m_fullscreenAct, tr("View"));
     }
 
-    KeyboardShortcutsDialog dlg(actions, categories, this);
-    connect(&dlg, &KeyboardShortcutsDialog::actionHighlighted, this, [this](QAction *act) {
-        if (m_helpPanel && act) {
-            if (m_helpDock && !dockIsOpen(m_helpDock)) {
-                m_helpDock->open();
-            }
-            m_helpPanel->showAction(act);
-        }
-    });
-    connect(&dlg, &KeyboardShortcutsDialog::actionActivated, this, [this](QAction *act) {
-        if (!act) {
-            return;
-        }
-        if (m_helpPanel) {
-            m_helpPanel->showAction(act);
-        }
-        if (act->isEnabled()) {
-            act->trigger();
-        }
-    });
-    dlg.exec();
+    if (m_shortcutsPanel) {
+        m_shortcutsPanel->setActions(actions, categories);
+    }
     if (m_fullscreenAct) {
         m_fullscreenAct->setShortcuts(fullscreenShortcutsSaved);
+    }
+    if (m_shortcutsDock) {
+        setDockOpen(m_shortcutsDock, true);
+        m_shortcutsDock->raise();
     }
 }
 
@@ -4385,6 +4400,7 @@ void MainWindow::updateFullscreenUi()
         setDockOpen(m_layoutDock, false);
         setDockOpen(m_adjustmentsDock, false);
         setDockOpen(m_helpDock, false);
+        setDockOpen(m_shortcutsDock, false);
         setDockOpen(m_ocrDock, false);
         setDockOpen(m_cropDock, false);
         setDockOpen(m_annotationDock, false);
@@ -5183,6 +5199,7 @@ void MainWindow::resetDockLayout()
         m_toggleMetadataAct->setChecked(true);
     }
     redock(m_helpDock, KDDockWidgets::Location_OnRight, false);
+    redock(m_shortcutsDock, KDDockWidgets::Location_OnRight, false);
     if (m_toggleHelpAct) {
         m_toggleHelpAct->setChecked(false);
     }
@@ -5221,6 +5238,7 @@ void MainWindow::resetDockLayout()
     tabDockOnto(m_metadataDock, m_ocrDock);
     tabDockOnto(m_metadataDock, m_textDock);
     tabDockOnto(m_metadataDock, m_helpDock);
+    tabDockOnto(m_metadataDock, m_shortcutsDock);
     tabDockOnto(m_layoutDock, m_tocDock);
 
     if (m_thumbnailBar) {
