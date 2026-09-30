@@ -2,7 +2,7 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2837.2-mark-selection-shortcut (on 2837.1 stack).
+**Tip:** biltoo-2837.3-slideshow-tilelod-public (on 2837.2 stack).
 
 ### Stopping point
 Tool unification lean path for text markup is complete: Exclusive radio,
@@ -38,6 +38,10 @@ rotation vs content orient — not blocking.
 
 ### 2837.2
 - Mark selection shortcut **Ctrl+Shift+M** + Image menu action (same path as panel).
+
+### 2837.3
+- `SlideshowController::tickSlideshowTileLod` is **public** (called from
+  `DisplayPipelineController::tickPrimaryTileLod`). Fix private-access build error.
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)
