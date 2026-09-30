@@ -17,10 +17,24 @@ Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](d
 
 See [TODO.md](TODO.md) for the roadmap and open questions. Vocabulary: [GLOSSARY.md](GLOSSARY.md).
 Latest agent handoff: **TODO.md** + [docs/IMAGEVIEW_SURFACE.md](docs/IMAGEVIEW_SURFACE.md).
-Latest tip: **biltoo-2624** — ImageView peel plateau (pure forwards done; host surface stays).
-**Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
-Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
-**thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
+Latest tip: see **[TODO.md](TODO.md)** (do not hard-code tip numbers here — they rot).
+**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md); Gallery pixels: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md);
+Slideshow: [SLIDESHOW.md](SLIDESHOW.md); Tools: [docs/TOOL_UNIFICATION.md](docs/TOOL_UNIFICATION.md).
+Requires **thumtoo** matching **TODO.md** (Store-only + page LQIP; see ENVIRONMENT);
+**thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100).
+
+### Documentation roles
+
+| Role | Examples |
+|------|----------|
+| **Live tip / open work** | [TODO.md](TODO.md) |
+| **Normative contracts** | SIZE, IDENTITY, THUMTOO_HOST_CONTRACT, TILE_LOD, GALLERY_PIXELS, CONTENT_PIPELINE, TOOL_UNIFICATION, SLIDESHOW |
+| **Product policy** | KILL_SOFT, DOMAIN |
+| **Design / brainstorm** | ACTIVITY, FEATURE_BRAINSTORM, SCRIPTING, … — not APIs |
+| **Archived** | AUDIT, SESSION narrative, TILE_DRAW_INVESTIGATION, ECS_GUI_BYPASSES, PIXEL_PIPELINE_REDESIGN, INVESTIGATION_MODE_EMPTY — historical; do not drive new code |
+
+Stub redirects (old links): GALLERY_SOFT, IMAGECACHE_PUT_AUDIT, RESEARCH_TILE_OVERLAP.
+
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.
 **Settings:** dock layout uses version-gated `dockLayoutState` + `dockLayoutVersion`
 (`kDockLayoutStateVersion` in `mainwindow.cpp`). If a saved blob crashes on
@@ -35,7 +49,7 @@ Content vs variant layers: [CONTENT-VARIANT.md](CONTENT-VARIANT.md).
 
 **Slideshow:** [SLIDESHOW.md](SLIDESHOW.md) — pure-clock vs live fade, handoff/preload rules, anti-patterns (read before touching transitions).
 
-**Handoff:** [SESSION.md](SESSION.md) — SessionImageId model, what shipped
+**Handoff:** [TODO.md](TODO.md) (live). Historical notes: [SESSION.md](SESSION.md). Identity: [IDENTITY.md](IDENTITY.md) — what shipped
 in the chrome/identity series, residual risks, and how to continue.
 
 **Portability:** [PORTABILITY.md](PORTABILITY.md) — Linuxisms vs portable Qt core;

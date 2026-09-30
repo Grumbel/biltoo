@@ -44,7 +44,7 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 | Paint | Exclusive source UV; dest may stretch trailing edge to content AABB |
 
 Independent JPEG per cell still limits seam quality (especially upscaled
-coarse scales). See [RESEARCH_TILE_OVERLAP.md](RESEARCH_TILE_OVERLAP.md).
+coarse scales). Overlap experiments retired (exclusive ≤256² cells).
 
 Dimension at scale (same as thumtoo `dim_at_tile_scale`): successive
 **integer floor-half**, not `ceil(n / 2^scale)`:
@@ -961,4 +961,5 @@ not re-copy or re-grade every frame. Soft underlay remains pre-graded from mater
 
 ## See also
 
-- Investigation / hardening plan: [TILE_DRAW_INVESTIGATION.md](TILE_DRAW_INVESTIGATION.md)
+- Archived investigation log: [TILE_DRAW_INVESTIGATION.md](TILE_DRAW_INVESTIGATION.md)
+- Slideshow pure-phase tile climb: [SLIDESHOW.md](../SLIDESHOW.md) (`tickSlideshowTileLod`)

@@ -1,3 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+> **Archived.** Historical code audit inventory. **Not a current bug tracker.**
+Prefer tests, git history, and [TODO.md](TODO.md) for open work.
+
+
 # Biltoo full audit
 
 **Date:** 2026-08-30  

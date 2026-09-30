@@ -11,7 +11,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Status: **ideas only** — not a commitment or implementation plan. Capture
 trade-offs against biltoo + thumtoo as they exist today.
 
-Related: [PERFORMANCE.md](PERFORMANCE.md), [PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md),
+Related: [PERFORMANCE.md](PERFORMANCE.md), [PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md) (archived),
 [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md), [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md),
 [TEXT_OVERLAY.md](TEXT_OVERLAY.md), project/session docs.
 
@@ -253,7 +253,7 @@ simple own path structs first; Qt paths) before full Inkscape-class editing.
 
 ## See also
 
-- Pixel ladder and tiles: [PERFORMANCE.md](PERFORMANCE.md), [PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md)
+- Pixel ladder and tiles: [PERFORMANCE.md](PERFORMANCE.md), [PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md) (archived)
 - Text overlay: [TEXT_OVERLAY.md](TEXT_OVERLAY.md)
 - TTS: [TEXT_TO_SPEECH.md](TEXT_TO_SPEECH.md)
 - Tools / selection: `TODO.md` (2712.x tool work)

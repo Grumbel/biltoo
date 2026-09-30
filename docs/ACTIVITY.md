@@ -4,7 +4,18 @@ Activity is **world** state: it continues regardless of canvas mode.
 Surfaces may highlight or summarize it; they do not own it.
 See [DOMAIN.md — World vs viewpoint](../DOMAIN.md#world-vs-viewpoint).
 
-**Status:** design only — no implementation required to read this doc.  
+**Status:** design target for a hierarchical ledger. **Partial implementation**
+exists today:
+
+| What ships | Where |
+|------------|--------|
+| Status badge Working / Ready | `PerformancePanel` + activity deltas |
+| Tile / probe / size queue counts | thumtoo `activity_snapshot` + host intent text |
+| Tile supersede finishes ledger | thumtoo `reply_cancelled_job` (queued→finished) |
+
+The full URI-keyed hierarchical stream in this document is **not** built yet.
+Do not treat the tables below as a live API.
+
 **Goal:** Whenever the machine is busy, the UI can answer *what* is working
 (archive / image / operation), *how far*, and *why* CPU is high.
 

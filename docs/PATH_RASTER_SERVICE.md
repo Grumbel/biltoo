@@ -88,5 +88,5 @@ display climb (Display band ≤2048). See contract §2 Full vs Display.
 - ImageView cold LoadReplace using bare `schedulePixels` (use `requestEscalateClimb`)
 
 Filmstrip and Image underlay no longer use soft PreferCache encode (see
-[FILMSTRIP_LAYOUT.md](FILMSTRIP_LAYOUT.md), [GALLERY_SOFT.md](GALLERY_SOFT.md)).
+[FILMSTRIP_LAYOUT.md](FILMSTRIP_LAYOUT.md), [KILL_SOFT.md](KILL_SOFT.md)).
 

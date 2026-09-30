@@ -13,8 +13,8 @@ Install policy is `DisplaySurface::decide`; consumers attach after evaluate.
 [PIXEL_HOST_CACHE.md](PIXEL_HOST_CACHE.md),
 [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md),
 [IDENTITY.md](../IDENTITY.md), [SIZE.md](../SIZE.md),
-[GALLERY_SOFT.md](GALLERY_SOFT.md),
-[PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md) (thumtoo lower layers).
+[KILL_SOFT.md](KILL_SOFT.md),
+[PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md) (archived historical plan).
 
 ---
 

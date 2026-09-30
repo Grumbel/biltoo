@@ -141,6 +141,8 @@ Related brainstorm: [docs/SCENE_LANGUAGE_BRAINSTORM.md](docs/SCENE_LANGUAGE_BRAI
 | **Tile / durable tile** | Cached pyramid cell (e.g. 256²) in thumtoo Store for zoomable display. |
 | **Tile pyramid** | Full durable multi-scale tile set for a path. |
 | **TileSynth** | PreferCache delivery synthesised from durable tiles. |
+| **CoverPaintArgs** | Shared host entry for Gallery virtual / filmstrip / slideshow tile cover paint (`prepare_and_paint_cover`). Optional `ContentXform` routes orient/crop through `paint_tiles_display`. |
+| **tickSlideshowTileLod** | Slideshow pure-phase tile climb (no ImageItem `tileLodWanted`). See SLIDESHOW.md. |
 | **PreferCache** | Thumtoo request mode: prefer cached/synthesised rasters over a cold full decode. |
 | **Full** | Near-native / full decode path when tiles/soft are insufficient. |
 | **ImageCache** | Process RAM map path → best sample held in the host. |

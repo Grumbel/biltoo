@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+> **Archived.** Investigation log (draw-plan hardening). **Not a live contract.**
+Authoritative tile paint/LOD: [TILE_LOD.md](TILE_LOD.md), [GALLERY_PIXELS.md](GALLERY_PIXELS.md).
+
+
 # Tile drawing & request path — investigation plan
 
 Status: **investigation in progress** — Phase 0 audit + underlay fixes done;

@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+> **Archived.** Historical redesign plan. **Not the day-to-day host contract.**
+Use [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md), [TILE_LOD.md](TILE_LOD.md), [KILL_SOFT.md](KILL_SOFT.md), [PATH_RASTER_SERVICE.md](PATH_RASTER_SERVICE.md).
+
+
 # Pixel pipeline redesign (thumtoo first)
 
 > **Historical note (2026-09):** Sections that assume durable schema-4 soft

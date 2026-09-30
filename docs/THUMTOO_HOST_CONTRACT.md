@@ -130,7 +130,7 @@ Gallery does **not** call `PathRasterService::ensure` for underlay. Pixels:
 - **Tiles** via TileLoadCoordinator + shared `TileLodRegistry` path cache
 
 See [GALLERY_PIXELS.md](GALLERY_PIXELS.md). Soft PreferCache underlay is removed
-([GALLERY_SOFT.md](GALLERY_SOFT.md)).
+([KILL_SOFT.md](KILL_SOFT.md)).
 
 ### EscalateToFull (Image mode, cold)
 

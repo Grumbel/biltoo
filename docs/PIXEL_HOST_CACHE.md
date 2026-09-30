@@ -52,3 +52,22 @@ ARGB32 KiB**, not entry count (hard entry ceiling 8192 only as a safety net).
 
 Survives Gallery↔Image↔Workspace mode switches. Cleared on session replace /
 process exit only.
+
+## ImageCache::put contract (host-raw)
+
+Values are **unoriented host** samples. Content bake is only via
+`installDisplayPixels` / `materializeDisplay` ([CONTENT_PIPELINE.md](CONTENT_PIPELINE.md)).
+
+| Site | Source | Rule |
+|------|--------|------|
+| `installDisplayPixels` | claimed host-raw | Callers must not pass appearance-baked |
+| Worker decode / quality jobs | disk | OK |
+| Gallery LQIP downscale of host | host scale | OK |
+| Crop decode | crop source host | OK if full decode |
+| Slideshow raster delivery | phase host | OK if host |
+| Filmstrip `makeThumbnail` | XDG for **cell paint only** | must **not** put |
+| `item->displayImage()` with applied ContentXform | oriented | **never** put |
+
+Never `ImageCache::put(path, item->displayImage())` when an applied ContentXform
+is set.
+

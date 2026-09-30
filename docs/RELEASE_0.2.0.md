@@ -1,6 +1,6 @@
 # Biltoo 0.2.0 — release notes and open work
 
-**Status:** `VERSION` is `0.2.0-dev`. This document is the product checklist
+**Status:** product checklist for the **0.2.0** tag. Tree `VERSION` may already be past 0.2.0-dev (e.g. `0.2.3-dev`); use `VERSION` + git tags as authority. This document is the product checklist
 for cutting **0.2.0** (tag / package), not a substitute for git history.
 Release may slip a few days for **source tree layout** (§3a) — intentional.
 

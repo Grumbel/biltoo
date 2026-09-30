@@ -3,6 +3,11 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+> **Archived.** Parallel-authority investigation (tips ~2175–2226). **Not ongoing guidance.**
+Live rules: [CONTENTXFORM_AUTHORITY.md](CONTENTXFORM_AUTHORITY.md), [IDENTITY.md](../IDENTITY.md), [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md).
+ImageCache put table: [PIXEL_HOST_CACHE.md](PIXEL_HOST_CACHE.md).
+
+
 # ECS ground truth vs GUI parallel authorities
 
 Investigation snapshot (tip 2175). Ground truth for **bound** session images:
@@ -155,7 +160,7 @@ durable dual-store.
 2. Workspace restore: content from ItemWorld, not `m_savedItems` content fields — **done 2194–2214 / 2222** (pose-only snapshot + Placement bridge).
 3. Ban incremental `bakeRotate90` when host exists; require host for content edit — **done 2200**.
 4. Filmstrip override: pure cache of `sessionAppearanceImage` after ItemWorld commit — **done 2179/2204**; placement flips accepted for Workspace display (residual #8 / 2224).
-5. Audit every `ImageCache::put` for baked samples — **done** (see IMAGECACHE_PUT_AUDIT.md).
+5. Audit every `ImageCache::put` for baked samples — **done** (see PIXEL_HOST_CACHE.md).
 6. Delete path-map content writes for bound session ids — **verified 2211**; `setPathState` no-ops when `sessionId` set.
 
 **Orient / Placement / path-XDG series closed (2205–2232).** Residuals #7–#11
@@ -185,7 +190,7 @@ closed or accepted. Path-XDG apply/fill + `hasOrientContent` covered by unit tes
 |---|--------|--------|
 | 1 | Image underlay trusts filmstrip displayReady | **2176/2202** host materialize; **2204** sampleForImageModePending never returns id override as displayReady |
 | 2 | Filmstrip pixel override parallel store | Override after rotate; **2179** cold paint; **2204** Image pending soft ignores id override |
-| 3 | ImageCache host-raw contract | **2176–2178** see IMAGECACHE_PUT_AUDIT.md |
+| 3 | ImageCache host-raw contract | **2176–2178** see PIXEL_HOST_CACHE.md |
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode; **2203** clearLiveContentMeta after flush (no applied on stash) |
 | 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194**/**2213** snapshot Placement-only (clearedContentOps); **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag; **2212**/**2222** updateWorkspaceSavedAppearance Placement-only (full pose bridge); **2214** pose merge via applyPlacementToState |
 | 6 | Incremental bakeRotate90 | **2178** disk host first; **2200** no incremental — clear pixels + async when host missing |

@@ -5,5 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile overlap research — retired
 
-The kTileOverlap=1 / 257 payload experiments are **removed**. Tiles are
-exclusive ≤256×256. This file is kept only so old links do not 404.
+`kTileOverlap` / 257-payload experiments are **removed**. Tiles are exclusive
+≤256×256. See [TILE_LOD.md](TILE_LOD.md).
+
+This file remains only so old links do not 404.

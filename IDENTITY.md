@@ -394,7 +394,7 @@ ownership table above).
   not bypass)
 - Treating `ImageItem::sessionIndex` as identity (list-order cache only)
 
-Latest tip / bundle index: [TODO.md](TODO.md). Broader session notes: [SESSION.md](SESSION.md).
+Latest tip / bundle index: [TODO.md](TODO.md). Historical session notes: [SESSION.md](SESSION.md) (archived).
 
 **Implementation status (2104–2125):** bound tiles use SessionImageId for
 placement, open/focus/remove/reveal, reorder, and path→index resolution.

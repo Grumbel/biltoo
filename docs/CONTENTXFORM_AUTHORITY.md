@@ -115,3 +115,5 @@ layout box while materialize used identity host pixels.
 
 Bound SessionImageId layout/paint content ops = ItemWorld only. Path XDG only
 for unbound path rows.
+
+Related: [PIXEL_HOST_CACHE.md](PIXEL_HOST_CACHE.md) (ImageCache holds host-raw only).

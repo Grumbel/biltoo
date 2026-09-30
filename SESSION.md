@@ -1,3 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+> **Archived handoff narrative.** Live tip, bundles, and open work: **[TODO.md](TODO.md)**.
+> Identity model: [IDENTITY.md](IDENTITY.md). Agents: [AGENTS.md](AGENTS.md).
+> The sections below are historical session notes (chrome / identity series).
+
 # Session handoff — identity, chrome, crop (bundles 001–024)
 
 **Tip ref (identity series):** `ae3043f` — see **Continuation handoff** below for later tip `b1fde01`  

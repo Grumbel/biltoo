@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
+> **Archived.** Forensic snapshot (tip **2160**). **Not a live bug list.**
+Current tip and open work: [TODO.md](../TODO.md).
+
+
 # Investigation: empty ImageView / Gallery tiles disappear
 
 Status: **2026-09-21** (tip **2160**). No guesswork — code paths only.

@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Biltoo structural refactor
 
-This document is the plan of record. It follows DOMAIN.md / IDENTITY.md / SESSION.md.
+This document is the plan of record. It follows DOMAIN.md / IDENTITY.md / TODO.md.
 Implementation must not invent a second domain model.
 
 ## Goals
@@ -512,7 +512,7 @@ them stayed on the view. This phase moves behaviour together with the state it
 owns, so `ImageView` becomes the shell AGENTS.md already describes — scene,
 mode dispatch, input router, paint sequencer — and nothing else.
 
-Follows DOMAIN.md / IDENTITY.md / SESSION.md. No new domain model.
+Follows DOMAIN.md / IDENTITY.md / TODO.md. No new domain model.
 
 ### Evidence (measured at 8427e69)
 

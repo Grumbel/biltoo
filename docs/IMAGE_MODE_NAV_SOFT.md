@@ -3,7 +3,7 @@
 This document is the **contract** for session Next/Prev in Image mode.
 Implementers and agents must read it before changing underlay, probe, or tile
 paths. Soft PreferCache / soft-ladder whole-frame encode for Image underlay is
-**removed** (same product decision as Gallery — see [GALLERY_SOFT.md](GALLERY_SOFT.md),
+**removed** (same product decision as Gallery — see [KILL_SOFT.md](KILL_SOFT.md),
 [GALLERY_PIXELS.md](GALLERY_PIXELS.md), [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md)).
 
 ## Product layers (do not invent soft)

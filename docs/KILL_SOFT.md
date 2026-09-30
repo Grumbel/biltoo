@@ -8,9 +8,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Status:** decided 2026-09-26. Soft ladder is **not** a product path.
 Phases **A–D** landed (rename, climb band, underlay cut, thumtoo PreferCache→tiles).
 
-Related: [GALLERY_SOFT.md](GALLERY_SOFT.md) (Gallery done), [TILE_LOD.md](TILE_LOD.md),
-[THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md), thumtoo
-`docs/PIXEL_AND_ARCHIVE_POLICY.md`, thumtoo `docs/EMBEDDED_PREVIEW.md`.
+Related: [GALLERY_PIXELS.md](GALLERY_PIXELS.md) (Gallery display stack),
+[TILE_LOD.md](TILE_LOD.md), [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md),
+thumtoo `docs/PIXEL_AND_ARCHIVE_POLICY.md`, thumtoo `docs/EMBEDDED_PREVIEW.md`.
+
+**Gallery bookkeeping** uses the **GalleryDecode** name (`gallerydecodesm`,
+`GalleryDecodeBook`, `GalleryDecodeState`) — not "soft".
 
 ## Decision
 

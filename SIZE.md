@@ -105,7 +105,7 @@ not treat ladder edges as geometry.
 
 ### Cross-refs
 
-- SESSION.md §5 PreferCache / thumtoo ladder table
+- THUMTOO_HOST_CONTRACT.md / PERFORMANCE.md PreferCache ladder
 - `ThumtooCache` façade in `thumtoocache.h`
 - Tile LOD owns display past soft max once durable tiles exist
 
