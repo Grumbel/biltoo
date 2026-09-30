@@ -2040,7 +2040,7 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     // (Previously only !fullyCovered; after last cell of a coarse step lands,
     // progressive advance issues finer keys — need another frame.)
     if (m_view->viewport()
-        && (lod->session() && lod->session()->request_scale_holding()
+        && ((lod->session() && lod->session()->request_scale_holding())
             || !lod->viewportFullyCovered())) {
         m_view->viewport()->update();
     }
