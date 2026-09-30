@@ -15,3 +15,6 @@
 
 ### Bundle policy
 Work-line base: `ea477d6`. Full stack in each tip bundle.
+
+### Perf reference
+Gallery multipage PDF TTFP baseline (~2400 pages, settled Store): **docs/TTFP.md § Baseline 2026-09-30** (biltoo `3907788` + thumtoo `d6a341f`, ~0.5 s first pixels).

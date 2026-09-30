@@ -9,6 +9,7 @@ Order-of-magnitude guidance for biltoo + thumtoo. Not lab microbenchmarks;
 use it to choose paths, not to quote absolute milliseconds.
 
 Related: [**THUMTOO_HOST_CONTRACT.md**](THUMTOO_HOST_CONTRACT.md) (normative request/delivery),
+[**TTFP.md**](TTFP.md) (time-to-first-pixel measure + **Baseline 2026-09-30** multipage PDF),
 [KILL_SOFT.md](KILL_SOFT.md), [PIXEL_PIPELINE_REDESIGN.md](PIXEL_PIPELINE_REDESIGN.md) (archived),
 [PATH_RASTER_SERVICE.md](PATH_RASTER_SERVICE.md), thumtoo `TILES.md`.
 
