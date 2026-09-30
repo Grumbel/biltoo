@@ -306,6 +306,28 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->setPen(QPen(QColor(0, 0, 0), 1));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(contentRect.adjusted(0, 0, -1, -1));
+        // Cached preview while library reported source unavailable (no exists()).
+        QString warnPath = index.data(ThumbnailBar::RolePath).toString();
+        if (warnPath.isEmpty()) {
+            if (ThumbnailBar *bar = qobject_cast<ThumbnailBar *>(parent())) {
+                if (const QListWidgetItem *it = bar->item(index.row())) {
+                    warnPath = it->data(ThumbnailBar::RolePath).toString();
+                }
+            }
+        }
+        if (ThumtooCache::isSourceUnavailable(warnPath)) {
+            const int s = qBound(8, contentRect.width() / 6, 16);
+            const QRect badge(contentRect.right() - s - 2, contentRect.top() + 2, s, s);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor(180, 40, 40, 220));
+            painter->drawEllipse(badge);
+            painter->setPen(QColor(255, 230, 220));
+            QFont bf = painter->font();
+            bf.setBold(true);
+            bf.setPointSizeF(qMax(7.0, s * 0.55));
+            painter->setFont(bf);
+            painter->drawText(badge, Qt::AlignCenter, QStringLiteral("!"));
+        }
     } else if (pm.isNull()) {
         // Loading / pending placeholder — subtle frame + busy mark.
         const QRect slot = inner;

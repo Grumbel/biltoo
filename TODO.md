@@ -2,7 +2,14 @@
 
 ## Status (2026-09-30)
 
-**Tip:** biltoo-2838.2-source-missing-chrome (on 2838.1 stack).
+**Tip:** biltoo-2838.3-probe-fail-source-memo (on 2838.2 stack).
+
+### Stopping point (2838 feature line complete)
+- Document live negative tile scales for PDF/DjVu/EPUB page refs.
+- SVG: no negative scales (not a document-page URI path in thumtoo).
+- Open/probe errors: library strings only; File not found; empty canvas.
+- Source unavailable memo + ImageItem banner + filmstrip ! badge; clear on sizeReady.
+
 
 ### Stopping point
 Tool unification lean path for text markup is complete: Exclusive radio,
@@ -56,6 +63,10 @@ rotation vs content orient — not blocking.
 - Source-unavailable process memo (`noteSourceUnavailable` / clear on sizeReady).
 - ImageItem banner: “Source missing — cached preview only” when memo set.
 - formatLoadErrorMessage notes unavailable on not-found classification.
+
+### 2838.3
+- Size probe miss (`!reply.size`) notes source unavailable.
+- Filmstrip cell badge when source unavailable with cached preview.
 
 ### Required thumtoo
 thumtoo-010.2-tile-supersede-activity-tests (includes 010.1)

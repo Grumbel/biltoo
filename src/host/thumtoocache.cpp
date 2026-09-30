@@ -836,6 +836,9 @@ void requestSizeAsync(const QString &path,
         }
         c->request_size(uri, [callback, path](std::string, thumtoo::SizeReply reply) {
             if (!reply.size) {
+                // Library could not resolve size (missing source, bad URI, …).
+                // No QFileInfo::exists — memo for cached-preview chrome only.
+                noteSourceUnavailable(path);
                 callback(false, QSize(), QImage());
                 return;
             }
@@ -2903,7 +2906,11 @@ void preparePaths(const QStringList &paths)
                     break;
                 }
             }
-            if (path.isEmpty() || !reply.size) {
+            if (path.isEmpty()) {
+                return;
+            }
+            if (!reply.size) {
+                noteSourceUnavailable(path);
                 return;
             }
             putEmbeddedOrLqipUnderlay(path, reply);
