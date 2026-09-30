@@ -979,6 +979,8 @@ Biltoo:
   `pdf_page_size_at_scale`).
 - Image-mode floor: `kDocumentLiveMinScale` (−4) for page refs so density can
   request live finer tiles when zoomed past 1:1 layout.
+- **Planner content stride** for `scale < 0` is `kTileSize / 2^{-scale}`
+  (not `kTileSize`). Using positive-scale stride skipped half the keys at −1.
 - **Slideshow** cover paint/tick: `min_scale` **0** only (shared
   `prepare_and_paint_cover`). Phase is cover-fit; negative live scales are
   Image-mode zoom territory. Mixing −4 paint with 0 tick produced incomplete

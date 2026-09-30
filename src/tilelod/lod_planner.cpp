@@ -49,8 +49,20 @@ PlannerOutput plan_visible_tiles(PlannerInput const& in)
     return out;
   }
 
-  int const factor = pow2i(s > 0 ? s : 0);
-  int const step = kTileSize * factor;
+  // Content-space stride of one tile cell at scale s.
+  // Positive s: kTileSize * 2^s. Scale 0: kTileSize.
+  // Negative s: kTileSize / 2^{-s}. Using kTileSize for s < 0 skipped half
+  // the keys at −1 (wrong clip / incomplete coverage).
+  int step = kTileSize;
+  if (s > 0) {
+    step = kTileSize * pow2i(s);
+  } else if (s < 0) {
+    int const div = pow2i(-s);
+    step = (div > 0) ? (kTileSize / div) : kTileSize;
+    if (step < 1) {
+      step = 1;
+    }
+  }
 
   // Inclusive tile index range covering the query rect.
   int x0 = static_cast<int>(std::floor(query.x / static_cast<double>(step)));

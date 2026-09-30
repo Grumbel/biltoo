@@ -153,6 +153,23 @@ void test_negative_scale_content_rect()
   CHECK_EQ(tilelod::tiles_across(512, -1), 4);
 }
 
+void test_planner_negative_scale_stride()
+{
+  // Content 512×512, scale −1: 4×4 cells of 128 content px. Full-page query
+  // must list all 16 keys (old step=256 only produced a 2×2 subset).
+  tilelod::PlannerInput in;
+  in.content_w = 512;
+  in.content_h = 512;
+  in.min_scale = -4;
+  in.max_scale = 4;
+  in.viewport.content_rect = {0, 0, 512, 512};
+  in.viewport.device_per_content = 2.0; // target scale −1
+  in.margin_content = 0;
+  auto out = tilelod::plan_visible_tiles(in);
+  CHECK_EQ(out.target_scale, -1);
+  CHECK_EQ(static_cast<int>(out.visible_keys.size()), 16);
+}
+
 void test_density_allows_negative_min()
 {
   // Zoom denser than 1:1 with document floor -4.
@@ -1014,6 +1031,7 @@ int main()
 {
   test_dim_at_tile_scale();
   test_negative_scale_content_rect();
+  test_planner_negative_scale_stride();
   test_density_allows_negative_min();
   test_max_scale_and_grid();
   test_planner_1to1();
