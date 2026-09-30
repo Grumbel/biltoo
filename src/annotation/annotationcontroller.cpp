@@ -76,6 +76,54 @@ QRectF mapRectThroughUnions(const QRectF &r, const QRectF &fromU, const QRectF &
                   qMax(1.0, nw * toU.width()), qMax(1.0, nh * toU.height()));
 }
 
+/**
+ * Rectangle / ellipse rubber in viewport pixels (Photoshop / Inkscape-style):
+ * - Shift: equal sides (square / circle)
+ * - Alt: drag from centre (origin is the centre)
+ * - Shift+Alt: both
+ */
+QRect constrainedShapeRubber(const QPoint &origin, const QPoint &current,
+                             Qt::KeyboardModifiers mods)
+{
+    QPoint end = current;
+    if (mods.testFlag(Qt::ShiftModifier)) {
+        const int dx = end.x() - origin.x();
+        const int dy = end.y() - origin.y();
+        const int side = qMax(qAbs(dx), qAbs(dy));
+        end = QPoint(origin.x() + (dx < 0 ? -side : side),
+                     origin.y() + (dy < 0 ? -side : side));
+    }
+    if (mods.testFlag(Qt::AltModifier)) {
+        const int dx = end.x() - origin.x();
+        const int dy = end.y() - origin.y();
+        return QRect(QPoint(origin.x() - dx, origin.y() - dy), end).normalized();
+    }
+    return QRect(origin, end).normalized();
+}
+
+/**
+ * Line endpoint in viewport pixels:
+ * - Shift: snap angle to nearest 45° (0, 45, 90, …)
+ */
+QPoint constrainedLineEnd(const QPoint &origin, const QPoint &current,
+                          Qt::KeyboardModifiers mods)
+{
+    if (!mods.testFlag(Qt::ShiftModifier)) {
+        return current;
+    }
+    const qreal dx = qreal(current.x() - origin.x());
+    const qreal dy = qreal(current.y() - origin.y());
+    const qreal len = qSqrt(dx * dx + dy * dy);
+    if (len < 1e-3) {
+        return current;
+    }
+    const qreal ang = qAtan2(dy, dx);
+    constexpr qreal kStep = M_PI / 4.0; // 45°
+    const qreal snapped = qRound(ang / kStep) * kStep;
+    return QPoint(origin.x() + int(qRound(qCos(snapped) * len)),
+                  origin.y() + int(qRound(qSin(snapped) * len)));
+}
+
 } // namespace
 
 AnnotationController::AnnotationController(ImageView *view)
@@ -1009,12 +1057,18 @@ bool AnnotationController::tryMouseMove(QMouseEvent *event)
             }
         }
         m_draftPoints.append(pagePt);
-    } else if (m_tool == Annotation::Tool::TextHighlighter
-               || m_tool == Annotation::Tool::Rect
-               || m_tool == Annotation::Tool::Ellipse
-               || m_tool == Annotation::Tool::Line) {
+    } else if (m_tool == Annotation::Tool::TextHighlighter) {
         m_shapeEndView = event->pos();
         m_rubberView = QRect(m_rubberOriginView, event->pos()).normalized();
+    } else if (m_tool == Annotation::Tool::Rect
+               || m_tool == Annotation::Tool::Ellipse) {
+        const Qt::KeyboardModifiers mods = event->modifiers();
+        m_shapeEndView = event->pos();
+        m_rubberView = constrainedShapeRubber(m_rubberOriginView, event->pos(), mods);
+    } else if (m_tool == Annotation::Tool::Line) {
+        const Qt::KeyboardModifiers mods = event->modifiers();
+        m_shapeEndView = constrainedLineEnd(m_rubberOriginView, event->pos(), mods);
+        m_rubberView = QRect(m_rubberOriginView, m_shapeEndView).normalized();
     } else if (m_tool == Annotation::Tool::Eraser) {
         eraseAtPagePoint(
             viewToPage(item, event->pos(), m_draftBounds, m_draftYUp, m_draftSourceSize),
@@ -1052,8 +1106,17 @@ bool AnnotationController::tryMouseRelease(QMouseEvent *event)
         finishTextHighlight();
     } else if (m_tool == Annotation::Tool::Rect
                || m_tool == Annotation::Tool::Ellipse) {
+        if (event) {
+            m_rubberView = constrainedShapeRubber(m_rubberOriginView, event->pos(),
+                                                  event->modifiers());
+            m_shapeEndView = event->pos();
+        }
         finishShape();
     } else if (m_tool == Annotation::Tool::Line) {
+        if (event) {
+            m_shapeEndView = constrainedLineEnd(m_rubberOriginView, event->pos(),
+                                                event->modifiers());
+        }
         finishLine();
     } else if (m_tool == Annotation::Tool::Select && m_resizing) {
         finishResizeSelection();

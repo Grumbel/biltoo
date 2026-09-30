@@ -454,18 +454,21 @@ void MainWindow::createActions()
     m_annotRectAct = new QAction(tr("&Rectangle"), this);
     m_annotRectAct->setIcon(resourceIcon(QStringLiteral("annot-rect")));
     m_annotRectAct->setCheckable(true);
-    m_annotRectAct->setStatusTip(tr("Draw a rectangle annotation"));
-    m_annotRectAct->setToolTip(tr("Rectangle"));
+    m_annotRectAct->setStatusTip(
+        tr("Draw a rectangle — Shift: square, Alt: from centre"));
+    m_annotRectAct->setToolTip(tr("Rectangle (Shift=square, Alt=centre)"));
     m_annotEllipseAct = new QAction(tr("Elli&pse"), this);
     m_annotEllipseAct->setIcon(resourceIcon(QStringLiteral("annot-ellipse")));
     m_annotEllipseAct->setCheckable(true);
-    m_annotEllipseAct->setStatusTip(tr("Draw an ellipse annotation"));
-    m_annotEllipseAct->setToolTip(tr("Ellipse"));
+    m_annotEllipseAct->setStatusTip(
+        tr("Draw an ellipse — Shift: circle, Alt: from centre"));
+    m_annotEllipseAct->setToolTip(tr("Ellipse (Shift=circle, Alt=centre)"));
     m_annotLineAct = new QAction(tr("&Line"), this);
     m_annotLineAct->setIcon(resourceIcon(QStringLiteral("annot-line")));
     m_annotLineAct->setCheckable(true);
-    m_annotLineAct->setStatusTip(tr("Draw a straight line annotation"));
-    m_annotLineAct->setToolTip(tr("Line"));
+    m_annotLineAct->setStatusTip(
+        tr("Draw a line — Shift: snap to 45° angles"));
+    m_annotLineAct->setToolTip(tr("Line (Shift=45° snap)"));
     m_annotStickyAct = new QAction(tr("S&ticky Note"), this);
     m_annotStickyAct->setIcon(resourceIcon(QStringLiteral("annot-sticky")));
     m_annotStickyAct->setCheckable(true);
@@ -2679,6 +2682,62 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_zoomToolAct, tr(
         "<p>Workspace tool: drag a region to zoom the view.</p>"));
 
+    // --- Annotation shape tools (viewport modifiers while dragging) ---
+    if (m_annotRectAct) {
+        setHelp(m_annotRectAct, tr(
+            "<p>Draw a <b>rectangle</b> annotation on the page (stroke colour and width "
+            "from the Annotations panel).</p>"
+            "<p><b>Modifiers while dragging</b> (same idea as Illustrator / Inkscape / "
+            "Photoshop shape tools):</p>"
+            "<ul>"
+            "<li><b>Shift</b> — constrain to a <b>square</b> (equal width and height).</li>"
+            "<li><b>Alt</b> — draw from the <b>centre</b> (press point is the centre).</li>"
+            "<li><b>Shift+Alt</b> — centred square.</li>"
+            "</ul>"));
+    }
+    if (m_annotEllipseAct) {
+        setHelp(m_annotEllipseAct, tr(
+            "<p>Draw an <b>ellipse</b> annotation on the page.</p>"
+            "<p><b>Modifiers while dragging</b>:</p>"
+            "<ul>"
+            "<li><b>Shift</b> — constrain to a <b>circle</b>.</li>"
+            "<li><b>Alt</b> — draw from the <b>centre</b>.</li>"
+            "<li><b>Shift+Alt</b> — centred circle.</li>"
+            "</ul>"));
+    }
+    if (m_annotLineAct) {
+        setHelp(m_annotLineAct, tr(
+            "<p>Draw a <b>straight line</b> annotation on the page.</p>"
+            "<p><b>Modifiers while dragging</b>:</p>"
+            "<ul>"
+            "<li><b>Shift</b> — snap the angle to the nearest <b>45°</b> "
+            "(horizontal, vertical, and diagonals).</li>"
+            "</ul>"));
+    }
+    if (m_annotHighlightAct) {
+        setHelp(m_annotHighlightAct, tr(
+            "<p>Freehand <b>highlighter</b> stroke (Multiply blend). Drag on the page. "
+            "Colour and width come from the Annotations panel. No Shift/Alt geometry "
+            "constraints — freehand only.</p>"));
+    }
+    if (m_annotTextHighlightAct) {
+        setHelp(m_annotTextHighlightAct, tr(
+            "<p>Drag a box over text to create a <b>text-snapped</b> highlight "
+            "(quads follow text layout when available).</p>"));
+    }
+    if (m_annotPenAct) {
+        setHelp(m_annotPenAct, tr(
+            "<p>Freehand <b>ink</b> stroke (opaque). Drag on the page. Colour and width "
+            "from the Annotations panel.</p>"));
+    }
+    if (m_annotSelectAct) {
+        setHelp(m_annotSelectAct, tr(
+            "<p>Select, move, and resize annotations on the current page. "
+            "<b>Shift</b> or <b>Ctrl</b> click to add to the selection. "
+            "Drag a selected shape by its body to move; drag corner handles to resize. "
+            "Delete removes the selection.</p>"));
+    }
+
     // --- Edit / misc ---
     setHelp(m_preferencesAct, tr(
         "<p>Application preferences: slideshow, background, HUD, thumbnail defaults, "
@@ -2689,8 +2748,7 @@ void MainWindow::populateActionHelpTexts()
         "watch progress, and cancel if needed. Small LQIP previews are filled "
         "automatically while tiles are written. Does not change your original files.</p>"));
     setHelp(m_keyboardShortcutsAct, tr(
-        "<p>Dialog listing main keyboard shortcuts. For longer per-command text, keep "
-        "the Help panel open and hover commands, or open Help → Guides.</p>"));
+        "<p>Open the <b>Keyboard Shortcuts</b> panel (dockable table of commands). For longer per-command text, keep the Help panel open and hover commands, or open Help → Guides.</p>"));
     setHelp(m_aboutAct, tr("<p>About Biltoo: version and brief project description.</p>"));
     setHelp(m_clearHistoryAct, tr(
         "<p>Remove every entry under <b>Recent Sessions</b>. Does not close the "
