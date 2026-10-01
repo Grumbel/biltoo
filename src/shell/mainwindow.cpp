@@ -3647,6 +3647,7 @@ void MainWindow::showPreferences()
     {
         const int layoutMode = dlg.defaultGalleryLayoutMode();
         m_galleryReturnLayout = static_cast<LayoutMode>(layoutMode);
+        m_session.setGalleryLayoutMode(static_cast<LayoutMode>(layoutMode));
         QSettings settings;
         settings.setValue(QStringLiteral("lastGalleryLayout"), layoutMode);
         if (m_imageView && m_imageView->isGalleryMode()) {
@@ -4912,6 +4913,12 @@ void MainWindow::readSettings()
         m_imageView->hostGallery().setMasonryColumns(masonryCols);
         m_imageView->hostGallery().setGridColumns(gridCols);
         m_imageView->hostGallery().setMasonryRows(masonryRows);
+        // App defaults seed the session until a project/session overrides them.
+        if (!m_session.hasGalleryLayoutMode()) {
+            m_session.setMasonryColumns(masonryCols);
+            m_session.setGridColumns(gridCols);
+            m_session.setMasonryRows(masonryRows);
+        }
     }
     if (m_masonryCountSpin) {
         const QSignalBlocker blocker(m_masonryCountSpin);
@@ -5286,6 +5293,7 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("slideshowFullscreen"), m_slideshowFullscreen);
     settings.setValue(QStringLiteral("slideshowLoop"), m_slideshowLoop);
     if (m_imageView) {
+        captureGalleryLayoutToSession();
         settings.setValue(QStringLiteral("masonryColumns"),
                           m_imageView->hostLayout().masonryColumnsValue());
         settings.setValue(QStringLiteral("masonryRows"),

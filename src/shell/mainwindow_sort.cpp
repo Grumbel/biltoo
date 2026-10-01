@@ -29,6 +29,7 @@
 #include <QHash>
 #include <QSet>
 #include <QDebug>
+#include <QSignalBlocker>
 
 #include <QClipboard>
 #include <QJsonArray>
@@ -55,10 +56,77 @@ bool MainWindow::sessionLooksLikePagedDocument(const QStringList &paths)
 
 LayoutMode MainWindow::initialGalleryLayoutForOpen() const
 {
+    // Session-owned layout wins (project load / user change this session).
+    if (m_session.hasGalleryLayoutMode()) {
+        return m_session.galleryLayoutMode();
+    }
     if (sessionLooksLikePagedDocument(m_session.paths())) {
         return LayoutMode::ContactSheet;
     }
     return m_galleryReturnLayout;
+}
+
+void MainWindow::captureGalleryLayoutToSession()
+{
+    if (m_imageView) {
+        const LayoutMode mode = m_imageView->hostLayout().isFreeForm()
+            ? m_galleryReturnLayout
+            : m_imageView->hostLayout().currentMode();
+        if (mode != LayoutMode::FreeForm) {
+            m_session.setGalleryLayoutMode(mode);
+            m_galleryReturnLayout = mode;
+        }
+        m_session.setMasonryColumns(m_imageView->hostLayout().masonryColumnsValue());
+        m_session.setGridColumns(m_imageView->hostLayout().gridColumnsValue());
+        m_session.setMasonryRows(m_imageView->hostLayout().masonryRowsValue());
+    } else if (m_galleryReturnLayout != LayoutMode::FreeForm) {
+        m_session.setGalleryLayoutMode(m_galleryReturnLayout);
+    }
+}
+
+void MainWindow::applyGalleryLayoutFromSession(bool relayoutIfGallery)
+{
+    if (!m_imageView) {
+        return;
+    }
+    if (m_session.hasGalleryLayoutMode()) {
+        const LayoutMode mode = m_session.galleryLayoutMode();
+        if (mode != LayoutMode::FreeForm) {
+            m_galleryReturnLayout = mode;
+            m_imageView->hostLayout().setMode(mode);
+        }
+    }
+    m_imageView->hostLayout().setMasonryColumns(m_session.masonryColumns());
+    m_imageView->hostLayout().setGridColumns(m_session.gridColumns());
+    m_imageView->hostLayout().setMasonryRows(m_session.masonryRows());
+    if (m_masonryCountSpin) {
+        const QSignalBlocker b(m_masonryCountSpin);
+        m_masonryCountSpin->setValue(m_session.masonryColumns());
+    }
+    if (m_session.hasGalleryLayoutMode()) {
+        syncGalleryLayoutUi(m_session.galleryLayoutMode());
+    }
+    if (relayoutIfGallery && m_imageView->isGalleryMode()
+        && m_session.hasGalleryLayoutMode()
+        && m_session.galleryLayoutMode() != LayoutMode::FreeForm) {
+        m_imageView->setLayoutMode(m_session.galleryLayoutMode());
+    }
+}
+
+void MainWindow::applyGalleryLayoutFromProject(const ProjectDocument &doc)
+{
+    if (!doc.hasGalleryLayout) {
+        return;
+    }
+    const auto mode = static_cast<LayoutMode>(doc.galleryLayoutMode);
+    if (mode != LayoutMode::FreeForm) {
+        m_session.setGalleryLayoutMode(mode);
+        m_galleryReturnLayout = mode;
+    }
+    m_session.setMasonryColumns(doc.masonryColumns);
+    m_session.setGridColumns(doc.gridColumns);
+    m_session.setMasonryRows(doc.masonryRows);
+    applyGalleryLayoutFromSession(false);
 }
 
 

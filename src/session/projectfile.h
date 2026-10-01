@@ -52,6 +52,12 @@ struct ProjectDocument {
      * legacy: array of page objects.
      */
     QJsonValue annotations;
+    /** Gallery pack policy when mode is gallery (or restored into Gallery). */
+    bool hasGalleryLayout = false;
+    int galleryLayoutMode = 5; /**< LayoutMode int; default Masonry. */
+    int masonryColumns = 3;
+    int gridColumns = 0;
+    int masonryRows = 3;
 };
 
 namespace ProjectFile {

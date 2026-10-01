@@ -508,6 +508,12 @@ private:
     static bool sessionLooksLikePagedDocument(const QStringList &paths);
     /** Flow for paged documents; otherwise last Gallery layout preference. */
     LayoutMode initialGalleryLayoutForOpen() const;
+    /** Push hostLayout / return layout into SessionDocument (session authority). */
+    void captureGalleryLayoutToSession();
+    /** Apply SessionDocument gallery layout into hostLayout, return layout, and UI. */
+    void applyGalleryLayoutFromSession(bool relayoutIfGallery = true);
+    /** Seed session from project gallery block, then apply. */
+    void applyGalleryLayoutFromProject(const ProjectDocument &doc);
     void readSettings();
     void writeSettings();
     /** Discard saved dock layout and restore built-in defaults. */

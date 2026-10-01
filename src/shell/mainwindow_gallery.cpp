@@ -453,6 +453,12 @@ void MainWindow::returnToGallery()
     }
 
     m_galleryReturnLayout = layout;
+    m_session.setGalleryLayoutMode(layout);
+    if (m_imageView) {
+        m_session.setMasonryColumns(m_imageView->hostLayout().masonryColumnsValue());
+        m_session.setGridColumns(m_imageView->hostLayout().gridColumnsValue());
+        m_session.setMasonryRows(m_imageView->hostLayout().masonryRowsValue());
+    }
     syncGalleryLayoutUi(layout);
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();

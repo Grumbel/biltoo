@@ -256,6 +256,14 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
     if (!doc.mode.isEmpty()) {
         root.insert(QStringLiteral("mode"), doc.mode);
     }
+    if (doc.hasGalleryLayout) {
+        QJsonObject gal;
+        gal.insert(QStringLiteral("layoutMode"), doc.galleryLayoutMode);
+        gal.insert(QStringLiteral("masonryColumns"), doc.masonryColumns);
+        gal.insert(QStringLiteral("gridColumns"), doc.gridColumns);
+        gal.insert(QStringLiteral("masonryRows"), doc.masonryRows);
+        root.insert(QStringLiteral("gallery"), gal);
+    }
 
     QJsonArray assets;
     for (const ProjectAsset &a : doc.assets) {
@@ -390,6 +398,15 @@ bool load(const QString &projectPath, ProjectDocument *doc, QString *error)
         return false;
     }
     doc->mode = root.value(QStringLiteral("mode")).toString();
+    doc->hasGalleryLayout = false;
+    if (root.contains(QStringLiteral("gallery"))) {
+        const QJsonObject gal = root.value(QStringLiteral("gallery")).toObject();
+        doc->hasGalleryLayout = true;
+        doc->galleryLayoutMode = gal.value(QStringLiteral("layoutMode")).toInt(5);
+        doc->masonryColumns = gal.value(QStringLiteral("masonryColumns")).toInt(3);
+        doc->gridColumns = gal.value(QStringLiteral("gridColumns")).toInt(0);
+        doc->masonryRows = gal.value(QStringLiteral("masonryRows")).toInt(3);
+    }
     doc->assets.clear();
     doc->images.clear();
 

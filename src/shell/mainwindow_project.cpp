@@ -304,6 +304,19 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
     ProjectDocument doc;
     doc.version = 2;
     doc.mode = currentProjectModeString();
+    captureGalleryLayoutToSession();
+    if (m_session.hasGalleryLayoutMode()
+        || m_session.masonryColumns() != 3
+        || m_session.gridColumns() != 0
+        || m_session.masonryRows() != 3) {
+        doc.hasGalleryLayout = true;
+        doc.galleryLayoutMode = static_cast<int>(
+            m_session.hasGalleryLayoutMode() ? m_session.galleryLayoutMode()
+                                             : m_galleryReturnLayout);
+        doc.masonryColumns = m_session.masonryColumns();
+        doc.gridColumns = m_session.gridColumns();
+        doc.masonryRows = m_session.masonryRows();
+    }
 
     QHash<QString, QString> pathToSha; // absolute path → sha256
     const QDir projDir = QFileInfo(projectPath).absoluteDir();
@@ -428,7 +441,10 @@ void MainWindow::enterProjectCanvasMode(
         }
     } else if (doc.mode == QLatin1String("gallery") || isGalleryMode()) {
         if (!isGalleryMode()) {
+            // Session already holds project gallery layout when present.
             enterGalleryMode(initialGalleryLayoutForOpen());
+        } else if (m_session.hasGalleryLayoutMode()) {
+            applyGalleryLayoutFromSession(true);
         }
         if (m_imageView) {
             m_imageView->hostWorkspace().setPaths(m_session.paths(), m_session.ids());
@@ -506,6 +522,9 @@ void MainWindow::installProjectSession(
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     }
     applyThumbnailVisibility();
+
+    // Gallery layout/columns are session + document state (not only app prefs).
+    applyGalleryLayoutFromProject(doc);
 
     enterProjectCanvasMode(paths, ids, appearanceByRow, rowHasPose, doc, poseCount);
     finishProjectInstall(missing);

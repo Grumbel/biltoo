@@ -11,6 +11,7 @@
 #include <QList>
 #include <QStringList>
 #include <QVector>
+#include <QtGlobal>
 
 /**
  * Snapshot of one session row for undoable remove/restore (IDENTITY: id + path +
@@ -117,6 +118,27 @@ public:
      */
     SessionSeedBook &seedBook() { return m_seedBook; }
     const SessionSeedBook &seedBook() const { return m_seedBook; }
+
+
+    // --- Gallery layout (session-owned; project file may persist) ---
+    LayoutMode galleryLayoutMode() const { return m_galleryLayoutMode; }
+    bool hasGalleryLayoutMode() const { return m_hasGalleryLayoutMode; }
+    void setGalleryLayoutMode(LayoutMode mode)
+    {
+        m_galleryLayoutMode = mode;
+        m_hasGalleryLayoutMode = true;
+    }
+    void clearGalleryLayoutMode() { m_hasGalleryLayoutMode = false; }
+
+    int masonryColumns() const { return m_masonryColumns; }
+    void setMasonryColumns(int columns) { m_masonryColumns = qBound(1, columns, 32); }
+
+    int gridColumns() const { return m_gridColumns; }
+    /** 0 = automatic for grid/flow. */
+    void setGridColumns(int columns) { m_gridColumns = qMax(0, columns); }
+
+    int masonryRows() const { return m_masonryRows; }
+    void setMasonryRows(int rows) { m_masonryRows = qBound(1, rows, 32); }
 
 private:
     QStringList m_paths;

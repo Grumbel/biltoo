@@ -1896,6 +1896,7 @@ void MainWindow::createToolBar()
                     } else {
                         m_imageView->hostGallery().setMasonryColumns(count);
                     }
+                    captureGalleryLayoutToSession();
                 });
     }
 
