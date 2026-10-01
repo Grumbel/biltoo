@@ -6723,14 +6723,25 @@ void MainWindow::runFaceDetectFromPanel()
         return;
     }
     ImageItem *item = nullptr;
+    const SessionImageId curSid = m_imageView->hostSessionId().currentIdValue();
     const auto items = m_imageView->liveItems();
-    if (!items.isEmpty()) {
-        item = items.first();
+    for (ImageItem *it : items) {
+        if (it && curSid != kInvalidSessionImageId && it->sessionId() == curSid) {
+            item = it;
+            break;
+        }
+    }
+    if (!item && !items.isEmpty()) {
+        // Image mode often has a single underlay; prefer classic path match.
+        const QString classic = m_imageView->hostImage().classicPath();
         for (ImageItem *it : items) {
-            if (it && it->sessionId() == m_imageView->hostSessionId().currentIdValue()) {
+            if (it && !classic.isEmpty() && it->path() == classic) {
                 item = it;
                 break;
             }
+        }
+        if (!item) {
+            item = items.first();
         }
     }
     if (!item) {
@@ -6743,13 +6754,27 @@ void MainWindow::runFaceDetectFromPanel()
     if (sample.isNull()) {
         sample = item->displayImage();
     }
+    // Soft / tile underlay may not hold full pixels yet — decode for detection.
+    if (sample.isNull()) {
+        const QString path = item->path().isEmpty()
+            ? m_imageView->hostImage().classicPath()
+            : item->path();
+        if (!path.isEmpty()) {
+            sample = ImageLoader::load(path);
+            if (sample.isNull()) {
+                sample = ImageLoader::loadThumbnail(path, 4000);
+            }
+        }
+    }
     if (sample.isNull()) {
         if (m_facePanel) {
             m_facePanel->setStatus(tr("Image pixels not loaded yet."));
         }
         return;
     }
-    m_faceCtrl->detectAsync(item->path(), sample);
+    const SessionImageId sid =
+        item->sessionId() != kInvalidSessionImageId ? item->sessionId() : curSid;
+    m_faceCtrl->detectAsync(item->path(), sample, sid);
 }
 
 void MainWindow::updateFacePanel()

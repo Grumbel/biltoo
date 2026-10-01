@@ -3,6 +3,8 @@
 #ifndef BILTOO_FACE_FACETYPES_H
 #define BILTOO_FACE_FACETYPES_H
 
+#include "imageview_types.h"
+
 #include <QPointF>
 #include <QRectF>
 #include <QString>
@@ -21,6 +23,7 @@ struct FaceBox {
 /** Result of a detection run (path is the session/image path that was analysed). */
 struct FaceDetectionResult {
     QString path;
+    SessionImageId sessionId = kInvalidSessionImageId;
     QSize imageSize; ///< Size of the sample that was analysed (for mapping).
     QVector<FaceBox> faces;
     QString backendId; ///< e.g. "yunet", "none".

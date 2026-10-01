@@ -45,12 +45,16 @@ public:
     void clearResults();
 
     /**
-     * Run detection on @p image for @p path (async). Emits detectionFinished
-     * when done. Concurrent runs are ignored while busy.
+     * Run detection on @p image for @p path (async). Supersedes any in-flight
+     * run. Emits detectionFinished when done.
      */
-    void detectAsync(const QString &path, const QImage &image);
+    void detectAsync(const QString &path, const QImage &image,
+                     SessionImageId sessionId = kInvalidSessionImageId);
 
-    /** Scene-space overlay for the current ImageView (boxes on matching path). */
+    /**
+     * Scene overlay only when the live item matches lastResult path/sessionId
+     * (never falls back to “whatever is on canvas”).
+     */
     void paintSceneOverlay(QPainter *painter, ImageView *view) const;
 
 signals:

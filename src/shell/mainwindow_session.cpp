@@ -686,6 +686,13 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         refreshSameCurrentIndex(ensureGalleryVisible);
         return;
     }
+    // Face overlay is path/session-scoped; drop stale boxes when navigating.
+    if (m_faceCtrl) {
+        m_faceCtrl->clearResults();
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    }
     if (m_imageView && m_imageView->hostCrop().active()) {
         m_imageView->hostCrop().cancelCrop();
     }

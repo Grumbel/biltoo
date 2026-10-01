@@ -8,6 +8,7 @@
 
 #include <QPen>
 #include <QtConcurrent>
+#include <QtMath>
 
 namespace biltoo::face {
 
@@ -70,35 +71,41 @@ void FaceController::setBusy(bool on)
     emit busyChanged(m_busy);
 }
 
-void FaceController::detectAsync(const QString &path, const QImage &image)
+void FaceController::detectAsync(const QString &path, const QImage &image,
+                                 SessionImageId sessionId)
 {
-    if (m_busy || !m_detector) {
+    if (!m_detector) {
         return;
     }
     if (image.isNull()) {
+        ++m_generation;
         FaceDetectionResult r;
         r.path = path;
+        r.sessionId = sessionId;
         r.backendId = m_detector->info().id;
         r.error = QStringLiteral("No image pixels available for face detection.");
         m_last = r;
+        setBusy(false);
         emit detectionFinished();
         return;
     }
 
-    setBusy(true);
+    // Supersede any in-flight detection (page switch or re-run).
     const int gen = ++m_generation;
+    setBusy(true);
     const float thr = m_scoreThreshold;
-    // Copy for worker (QImage is implicitly shared; detach via copy).
     const QImage sample = image.copy();
     FaceDetector *detector = m_detector.get();
 
-    (void)QtConcurrent::run([this, gen, path, sample, thr, detector]() {
+    (void)QtConcurrent::run([this, gen, path, sessionId, sample, thr, detector]() {
         FaceDetectionResult r = detector->detect(sample, thr);
         r.path = path;
+        r.sessionId = sessionId;
         QMetaObject::invokeMethod(
             this,
             [this, gen, r]() {
                 if (gen != m_generation) {
+                    // A newer run or clearResults owns busy state.
                     return;
                 }
                 m_last = r;
@@ -118,18 +125,20 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
         return;
     }
 
+    // Strict match only — never paint on a different page/item.
     ImageItem *item = nullptr;
     for (ImageItem *it : view->liveItems()) {
-        if (it && it->path() == m_last.path) {
+        if (!it) {
+            continue;
+        }
+        if (m_last.sessionId != kInvalidSessionImageId
+            && it->sessionId() == m_last.sessionId) {
             item = it;
             break;
         }
-    }
-    if (!item) {
-        // Fall back to primary / first live item when path matches classic path.
-        const auto items = view->liveItems();
-        if (items.size() == 1) {
-            item = items.first();
+        if (!m_last.path.isEmpty() && it->path() == m_last.path) {
+            item = it;
+            break;
         }
     }
     if (!item) {
@@ -147,7 +156,6 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
     painter->setTransform(item->sceneTransform(), true);
 
     QPen boxPen(QColor(0, 220, 120, 220));
-    boxPen.setWidthF(0);
     boxPen.setCosmetic(true);
     boxPen.setWidth(2);
     painter->setPen(boxPen);
@@ -160,16 +168,22 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
                        face.rect.height() * sy);
         painter->drawRect(r);
 
-        if (m_showLandmarks) {
-            QPen lmPen(QColor(255, 80, 80, 230));
-            lmPen.setWidth(2);
+        if (m_showLandmarks && !face.landmarks.isEmpty()) {
+            // Radius tracks face size so markers stay visible on large photos
+            // (fixed 2.5 local units vanish on multi-megapixel pages).
+            const qreal faceMin = qMin(r.width(), r.height());
+            const qreal rad = qBound(4.0, faceMin * 0.035, 28.0);
+            QPen lmPen(QColor(255, 60, 60, 240));
             lmPen.setCosmetic(true);
+            lmPen.setWidth(2);
             painter->setPen(lmPen);
+            painter->setBrush(QColor(255, 80, 80, 180));
             for (const QPointF &lp : face.landmarks) {
                 const QPointF p(content.left() + lp.x() * sx,
                                 content.top() + lp.y() * sy);
-                painter->drawEllipse(p, 2.5, 2.5);
+                painter->drawEllipse(p, rad, rad);
             }
+            painter->setBrush(Qt::NoBrush);
             painter->setPen(boxPen);
         }
     }

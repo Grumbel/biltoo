@@ -2,7 +2,12 @@
 
 ## Status (2026-10-01)
 
-**Tip:** biltoo-2889.3-yunet-flake-model (linear stack on `e345338`).
+**Tip:** biltoo-2889.4-face-switch-overlay (linear stack on `e345338`).
+
+### 2889.4
+- Clear face results on session index change; paint only when path/sessionId
+  matches (no single-item fallback). Supersede in-flight detect; ImageLoader
+  fallback when underlay has no pixels. Landmark radius scales with face size.
 
 ### 2889.3
 - Flake `fetchurl` for YuNet ONNX; `BILTOO_FACE_YUNET_MODEL` in develop +
