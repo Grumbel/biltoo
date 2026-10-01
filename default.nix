@@ -42,6 +42,7 @@
 , libraw
 , openjpeg
 , libhwy
+, pipewire  # Qt Multimedia dlopen(libpipewire-0.3) for audio (TTS)
 , version ? "0.1.0-dev"
   # When true (flake .#biltoo.withCcache): require ccacheStdenv + shared host
   # CCACHE_DIR. Default false so plain `nix build .#biltoo` needs no host cache.
@@ -62,7 +63,13 @@ stdenv.mkDerivation (finalAttrs: {
 
   # TTS: piper-server on PATH so PiperServerManager finds it without --piper-socket.
   # MODELS points at the bundled voice when provided by the flake.
-  qtWrapperArgs = lib.optionals (piperServer != null) [
+  # pipewire: Qt Multimedia resolves libpipewire-0.3 via dlopen (not a link
+  # dependency). Without it on the wrapper LD_LIBRARY_PATH, startup logs
+  #   qt.multimedia.symbolsresolver: Couldn't load pipewire-0.3 library
+  # Speech still uses QAudioSink and may fall back; the message is noisy under Nix.
+  qtWrapperArgs = [
+    "--prefix" "LD_LIBRARY_PATH" ":" "${pipewire}/lib"
+  ] ++ lib.optionals (piperServer != null) [
     "--prefix" "PATH" ":" "${piperServer}/bin"
   ] ++ lib.optionals (piperModelsDir != null) [
     "--set-default" "TEXT2SPRECH_PIPER_MODELS" piperModelsDir
@@ -74,6 +81,7 @@ stdenv.mkDerivation (finalAttrs: {
     qt6.qtsvg
     qt6.qttools
     qt6.qtmultimedia
+    pipewire
     vips
     exiv2
     glib

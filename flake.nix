@@ -396,6 +396,7 @@
               # by hand; under `nix develop -c` the process ends either way.
               export PATH="${piperServerFull}/bin:$PATH"
               export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+              export LD_LIBRARY_PATH="${pkgs.pipewire}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
@@ -419,6 +420,7 @@
               # Inherit QT_PLUGIN_PATH / XDG_DATA_DIRS from shellHook.
               export PATH="${piperServerFull}/bin:$PATH"
               export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+              export LD_LIBRARY_PATH="${pkgs.pipewire}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               # -q: less banner noise. -ex run: start biltoo without typing "run".
               # Pagination off so long backtraces are not blocked on a pager.
               # debuginfod off: avoid the "supports auto-downloading" banner.
@@ -504,6 +506,8 @@ except Exception:
             # iconengines (svg) + imageformats from the same Qt the package uses.
             # (qtPluginPrefix is not always present on qtbase/qtsvg in current nixpkgs.)
             export QT_PLUGIN_PATH="${qtPluginPath}''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+            # Qt Multimedia dlopens libpipewire-0.3 (TTS / QAudioSink path).
+            export LD_LIBRARY_PATH="${pkgs.pipewire}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
             # Out-of-tree build dir (override with BILTOO_BUILD_DIR=...).
             export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"

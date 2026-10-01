@@ -103,6 +103,28 @@ with `QT_QPA_PLATFORM=offscreen` (override if needed). Extra args are passed to
 See also [AGENT-ENV.md](../AGENT-ENV.md) and [AGENTS.md](../AGENTS.md).
 
 
+
+## Qt Multimedia / PipeWire (TTS)
+
+Qt Multimedia probes `libpipewire-0.3` via **dlopen** when anything touches the
+audio stack (Speak uses `QAudioSink` / `QMediaDevices`). Under Nix the library
+is often not on the default search path of an unwrapped or lightly wrapped
+binary, which prints:
+
+```text
+qt.multimedia.symbolsresolver: Couldn't load pipewire-0.3 library
+qt.multimedia.symbolsresolver: Couldn't resolve pipewire-0.3 symbols
+```
+
+**Fix in packaging:** `pipewire` is a `buildInput` and
+`qtWrapperArgs` prefixes `LD_LIBRARY_PATH` with `${pipewire}/lib` so
+`nix build` / `nix run` wrappers resolve the library. The `nix develop`
+shell and `biltoo-run` / `biltoo-run-gdb` set the same path for out-of-tree
+binaries.
+
+Cosmetic only if audio already works (Pulse/ALSA fallback). Host still needs
+a working PipeWire or Pulse session for real output.
+
 ## THUMTOO_STORE_ONLY
 
 **Ignored** in thumtoo ≥262 (and permanently after ≥272): Client is always
