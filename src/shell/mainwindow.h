@@ -72,6 +72,13 @@ public:
     /** Replace the current session with the expanded paths. */
     void loadFiles(const QStringList &paths, int startAt = 0);
 
+    /**
+     * Load the most recent File → History entry (same paths as last session).
+     * Used at startup when no CLI files are given.
+     * @return true if a non-empty history entry was passed to loadFiles.
+     */
+    bool openLastSession();
+
     /** External piper-server socket (CLI --piper-socket); not stopped on quit. */
     void setPiperSocketPath(const QString &path);
 

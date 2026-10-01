@@ -476,8 +476,16 @@ int main(int argc, char *argv[])
                 window.startSlideshow();
             }
         }
-    } else if (!cliMode.isEmpty()) {
-        window.applyCliViewMode(cliMode);
+    } else {
+        // No CLI files: restore the last session (File → History head).
+        // History was loaded in MainWindow::readSettings during construction.
+        window.openLastSession();
+        if (!cliMode.isEmpty()) {
+            window.applyCliViewMode(cliMode);
+        }
+        if (parser.isSet(slideshowOption)) {
+            window.startSlideshow();
+        }
     }
 
     const int rc = app.exec();

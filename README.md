@@ -58,6 +58,10 @@ view a gallery overview, or arrange pages on the workspace.
 biltoo [options] [files-or-dirs…]
 ```
 
+With no files or directories, biltoo opens the **last session** from
+File → History (if any). Pass paths or a `.biltoo` project to start with that
+content instead.
+
 | Option | Meaning |
 |--------|---------|
 | `--fullscreen` | Start fullscreen |

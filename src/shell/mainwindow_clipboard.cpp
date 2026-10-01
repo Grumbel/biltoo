@@ -277,6 +277,20 @@ void MainWindow::openHistoryEntry()
     loadFiles(paths);
 }
 
+bool MainWindow::openLastSession()
+{
+    if (m_sessionHistory.isEmpty()) {
+        return false;
+    }
+    const QStringList paths = m_sessionHistory.first();
+    if (paths.isEmpty()) {
+        return false;
+    }
+    // Copy paths — loadFiles will reshuffle history.
+    loadFiles(paths);
+    return true;
+}
+
 void MainWindow::clearSessionHistory()
 {
     m_sessionHistory.clear();
