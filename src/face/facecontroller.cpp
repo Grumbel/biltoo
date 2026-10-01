@@ -6,6 +6,8 @@
 #include "imageitem.h"
 #include "imageview.h"
 
+#include <QFont>
+#include <QFontMetrics>
 #include <QPen>
 #include <QtConcurrent>
 #include <QtMath>
@@ -15,12 +17,19 @@ namespace biltoo::face {
 FaceController::FaceController(QObject *parent)
     : QObject(parent)
     , m_detector(FaceDetector::createDefaultDetector())
+    , m_embedder(FaceEmbedder::createDefaultEmbedder())
 {
+    m_gallery.load();
 }
 
-FaceDetectorInfo FaceController::detectorInfo() const
+FaceBackendInfo FaceController::detectorInfo() const
 {
     return m_detector ? m_detector->info() : FaceDetector::createNullDetector()->info();
+}
+
+FaceBackendInfo FaceController::embedderInfo() const
+{
+    return m_embedder ? m_embedder->info() : FaceEmbedder::createNullEmbedder()->info();
 }
 
 void FaceController::setDetector(std::unique_ptr<FaceDetector> detector)
@@ -31,9 +40,22 @@ void FaceController::setDetector(std::unique_ptr<FaceDetector> detector)
     }
 }
 
+void FaceController::setEmbedder(std::unique_ptr<FaceEmbedder> embedder)
+{
+    m_embedder = std::move(embedder);
+    if (!m_embedder) {
+        m_embedder = FaceEmbedder::createNullEmbedder();
+    }
+}
+
 void FaceController::setScoreThreshold(float t)
 {
     m_scoreThreshold = qBound(0.05f, t, 0.99f);
+}
+
+void FaceController::setMatchThreshold(float t)
+{
+    m_matchThreshold = qBound(0.05f, t, 0.99f);
 }
 
 void FaceController::setOverlayVisible(bool on)
@@ -58,6 +80,7 @@ void FaceController::clearResults()
 {
     ++m_generation;
     m_last = FaceDetectionResult{};
+    m_lastImage = QImage();
     setBusy(false);
     emit detectionFinished();
 }
@@ -69,6 +92,33 @@ void FaceController::setBusy(bool on)
     }
     m_busy = on;
     emit busyChanged(m_busy);
+}
+
+void FaceController::recognizeInPlace(FaceDetectionResult &result, const QImage &image) const
+{
+    if (!m_embedder || !m_embedder->info().available || image.isNull()) {
+        return;
+    }
+    result.embedBackendId = m_embedder->info().id;
+    const QString modelId = m_embedder->info().id;
+    for (FaceBox &face : result.faces) {
+        face.embedding = m_embedder->embed(image, face);
+        face.embeddingModelId = modelId;
+        if (face.embedding.isEmpty()) {
+            continue;
+        }
+        float score = 0.f;
+        const int idx = m_gallery.bestMatch(face.embedding, modelId, &score);
+        if (idx >= 0 && score >= m_matchThreshold) {
+            face.matchScore = score;
+            face.matchId = m_gallery.identities().at(idx).id;
+            face.matchLabel = m_gallery.identities().at(idx).label;
+        } else {
+            face.matchScore = score;
+            face.matchId.clear();
+            face.matchLabel.clear();
+        }
+    }
 }
 
 void FaceController::detectAsync(const QString &path, const QImage &image,
@@ -85,12 +135,12 @@ void FaceController::detectAsync(const QString &path, const QImage &image,
         r.backendId = m_detector->info().id;
         r.error = QStringLiteral("No image pixels available for face detection.");
         m_last = r;
+        m_lastImage = QImage();
         setBusy(false);
         emit detectionFinished();
         return;
     }
 
-    // Supersede any in-flight detection (page switch or re-run).
     const int gen = ++m_generation;
     setBusy(true);
     const float thr = m_scoreThreshold;
@@ -101,19 +151,47 @@ void FaceController::detectAsync(const QString &path, const QImage &image,
         FaceDetectionResult r = detector->detect(sample, thr);
         r.path = path;
         r.sessionId = sessionId;
+        recognizeInPlace(r, sample);
         QMetaObject::invokeMethod(
             this,
-            [this, gen, r]() {
+            [this, gen, r, sample]() {
                 if (gen != m_generation) {
-                    // A newer run or clearResults owns busy state.
                     return;
                 }
                 m_last = r;
+                m_lastImage = sample;
                 setBusy(false);
                 emit detectionFinished();
             },
             Qt::QueuedConnection);
     });
+}
+
+bool FaceController::enrollFace(int faceIndex, const QString &label)
+{
+    if (label.trimmed().isEmpty() || faceIndex < 0 || faceIndex >= m_last.faces.size()) {
+        return false;
+    }
+    FaceBox &face = m_last.faces[faceIndex];
+    if (face.embedding.isEmpty() && m_embedder && m_embedder->info().available
+        && !m_lastImage.isNull()) {
+        face.embedding = m_embedder->embed(m_lastImage, face);
+        face.embeddingModelId = m_embedder->info().id;
+    }
+    if (face.embedding.isEmpty()) {
+        return false;
+    }
+    FaceIdentity id;
+    id.label = label.trimmed();
+    id.embedding = face.embedding;
+    id.embeddingModelId = face.embeddingModelId;
+    const QString stored = m_gallery.upsert(id);
+    face.matchId = stored;
+    face.matchLabel = id.label;
+    face.matchScore = 1.f;
+    emit galleryChanged();
+    emit detectionFinished();
+    return true;
 }
 
 void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
@@ -125,7 +203,6 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
         return;
     }
 
-    // Strict match only — never paint on a different page/item.
     ImageItem *item = nullptr;
     for (ImageItem *it : view->liveItems()) {
         if (!it) {
@@ -161,6 +238,11 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
     painter->setPen(boxPen);
     painter->setBrush(Qt::NoBrush);
 
+    QFont font = painter->font();
+    font.setPointSizeF(10);
+    font.setBold(true);
+    painter->setFont(font);
+
     for (const FaceBox &face : m_last.faces) {
         const QRectF r(content.left() + face.rect.x() * sx,
                        content.top() + face.rect.y() * sy,
@@ -168,9 +250,22 @@ void FaceController::paintSceneOverlay(QPainter *painter, ImageView *view) const
                        face.rect.height() * sy);
         painter->drawRect(r);
 
+        if (!face.matchLabel.isEmpty()) {
+            const QString tag =
+                QStringLiteral("%1 (%2)").arg(face.matchLabel).arg(face.matchScore, 0, 'f', 2);
+            const QFontMetrics fm(painter->font());
+            const QRect tr = fm.boundingRect(tag).adjusted(-3, -2, 3, 2);
+            QRectF bg(r.left(), r.top() - tr.height() - 2, tr.width(), tr.height());
+            if (bg.top() < content.top()) {
+                bg.moveTop(r.bottom() + 2);
+            }
+            painter->fillRect(bg, QColor(0, 0, 0, 160));
+            painter->setPen(QColor(255, 255, 255));
+            painter->drawText(bg, Qt::AlignCenter, tag);
+            painter->setPen(boxPen);
+        }
+
         if (m_showLandmarks && !face.landmarks.isEmpty()) {
-            // Radius tracks face size so markers stay visible on large photos
-            // (fixed 2.5 local units vanish on multi-megapixel pages).
             const qreal faceMin = qMin(r.width(), r.height());
             const qreal rad = qBound(4.0, faceMin * 0.035, 28.0);
             QPen lmPen(QColor(255, 60, 60, 240));

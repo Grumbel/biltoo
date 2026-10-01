@@ -594,24 +594,32 @@ m_ocrPanel = new OcrPanel(this);
     }
     m_facePanel = new FacePanel(this);
     m_faceDock = new DockWidget(QStringLiteral("FaceDock"));
-    m_faceDock->setTitle(tr("Face Detection"));
+    m_faceDock->setTitle(tr("Faces"));
     m_faceDock->setWidget(m_facePanel);
     addDockWidget(m_faceDock, KDDockWidgets::Location_OnRight);
     m_faceDock->close();
     {
-        const auto info = m_faceCtrl->detectorInfo();
+        const auto det = m_faceCtrl->detectorInfo();
+        const auto emb = m_faceCtrl->embedderInfo();
         m_facePanel->setBackendSummary(
-            tr("Backend: %1 — %2").arg(info.displayName, info.detail));
+            tr("Detect: %1 — %2\nEmbed: %3 — %4")
+                .arg(det.displayName, det.detail, emb.displayName, emb.detail));
         QSettings settings;
         m_facePanel->setScoreThreshold(
             settings.value(QStringLiteral("face/scoreThreshold"), 0.6).toFloat());
+        m_facePanel->setMatchThreshold(
+            settings.value(QStringLiteral("face/matchThreshold"), 0.363).toFloat());
         m_facePanel->setOverlayVisible(
             settings.value(QStringLiteral("face/overlay"), true).toBool());
         m_facePanel->setShowLandmarks(
             settings.value(QStringLiteral("face/landmarks"), true).toBool());
         m_faceCtrl->setScoreThreshold(m_facePanel->scoreThreshold());
+        m_faceCtrl->setMatchThreshold(m_facePanel->matchThreshold());
         m_faceCtrl->setOverlayVisible(m_facePanel->overlayVisible());
         m_faceCtrl->setShowLandmarks(m_facePanel->showLandmarks());
+        m_facePanel->setGallerySummary(
+            tr("Gallery: %n identity(ies)", nullptr,
+               m_faceCtrl->gallery().identities().size()));
     }
     connect(m_facePanel, &FacePanel::detectRequested, this, &MainWindow::runFaceDetectFromPanel);
     connect(m_facePanel, &FacePanel::clearRequested, this, [this]() {
@@ -622,12 +630,43 @@ m_ocrPanel = new OcrPanel(this);
             m_imageView->viewport()->update();
         }
     });
+    connect(m_facePanel, &FacePanel::enrollRequested, this, [this]() {
+        if (!m_faceCtrl || !m_facePanel) {
+            return;
+        }
+        const int idx = m_facePanel->selectedFaceIndex();
+        const QString name = m_facePanel->enrollName();
+        if (idx < 0) {
+            m_facePanel->setStatus(tr("Select a face in the list first."));
+            return;
+        }
+        if (name.trimmed().isEmpty()) {
+            m_facePanel->setStatus(tr("Enter a name to enroll."));
+            return;
+        }
+        if (m_faceCtrl->enrollFace(idx, name)) {
+            m_facePanel->setStatus(tr("Enrolled “%1”.").arg(name.trimmed()));
+            updateFacePanel();
+            if (m_imageView && m_imageView->viewport()) {
+                m_imageView->viewport()->update();
+            }
+        } else {
+            m_facePanel->setStatus(tr("Enroll failed (need embedding / SFace model)."));
+        }
+    });
     connect(m_facePanel, &FacePanel::scoreThresholdChanged, this, [this](float t) {
         if (m_faceCtrl) {
             m_faceCtrl->setScoreThreshold(t);
         }
         QSettings settings;
         settings.setValue(QStringLiteral("face/scoreThreshold"), t);
+    });
+    connect(m_facePanel, &FacePanel::matchThresholdChanged, this, [this](float t) {
+        if (m_faceCtrl) {
+            m_faceCtrl->setMatchThreshold(t);
+        }
+        QSettings settings;
+        settings.setValue(QStringLiteral("face/matchThreshold"), t);
     });
     connect(m_facePanel, &FacePanel::overlayVisibleChanged, this, [this](bool on) {
         if (m_faceCtrl) {
@@ -6773,14 +6812,19 @@ void MainWindow::updateFacePanel()
     if (!m_facePanel || !m_faceCtrl) {
         return;
     }
-    const auto info = m_faceCtrl->detectorInfo();
+    const auto det = m_faceCtrl->detectorInfo();
+    const auto emb = m_faceCtrl->embedderInfo();
     m_facePanel->setBackendSummary(
-        tr("Backend: %1 — %2").arg(info.displayName, info.detail));
+        tr("Detect: %1 — %2\nEmbed: %3 — %4")
+            .arg(det.displayName, det.detail, emb.displayName, emb.detail));
+    m_facePanel->setGallerySummary(
+        tr("Gallery: %n identity(ies)", nullptr,
+           m_faceCtrl->gallery().identities().size()));
     const auto &r = m_faceCtrl->lastResult();
     if (!r.error.isEmpty()) {
         m_facePanel->setStatus(r.error);
     } else if (r.faces.isEmpty() && r.path.isEmpty()) {
-        m_facePanel->setStatus(tr("Idle — detect faces on the current image."));
+        m_facePanel->setStatus(tr("Idle — detect / recognize the current image."));
     } else if (r.faces.isEmpty()) {
         m_facePanel->setStatus(
             tr("No faces detected on %1").arg(QFileInfo(r.path).fileName()));
@@ -6793,11 +6837,19 @@ void MainWindow::updateFacePanel()
     QStringList lines;
     for (int i = 0; i < r.faces.size(); ++i) {
         const auto &f = r.faces.at(i);
-        lines.append(tr("#%1  score %2  %3×%4")
-                         .arg(i + 1)
-                         .arg(f.score, 0, 'f', 2)
-                         .arg(int(f.rect.width()))
-                         .arg(int(f.rect.height())));
+        QString line = tr("#%1  det %2  %3×%4")
+                           .arg(i + 1)
+                           .arg(f.score, 0, 'f', 2)
+                           .arg(int(f.rect.width()))
+                           .arg(int(f.rect.height()));
+        if (!f.matchLabel.isEmpty()) {
+            line += tr("  → %1 (%2)").arg(f.matchLabel).arg(f.matchScore, 0, 'f', 2);
+        } else if (!f.embedding.isEmpty()) {
+            line += tr("  (emb %1-d, best %2)")
+                        .arg(f.embedding.size())
+                        .arg(f.matchScore, 0, 'f', 2);
+        }
+        lines.append(line);
     }
     m_facePanel->setFacesSummary(lines);
 }

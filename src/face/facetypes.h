@@ -18,6 +18,15 @@ struct FaceBox {
     float score = 0.f;     ///< Detector confidence in [0, 1].
     /** Five landmarks when available: right eye, left eye, nose, mouth right, mouth left. */
     QVector<QPointF> landmarks;
+
+    /** Filled after embedding (optional). */
+    QVector<float> embedding;
+    QString embeddingModelId;
+
+    /** Best gallery match after recognition (optional). */
+    QString matchLabel;
+    QString matchId;
+    float matchScore = 0.f; ///< Cosine similarity (SFace); higher = closer.
 };
 
 /** Result of a detection run (path is the session/image path that was analysed). */
@@ -27,15 +36,27 @@ struct FaceDetectionResult {
     QSize imageSize; ///< Size of the sample that was analysed (for mapping).
     QVector<FaceBox> faces;
     QString backendId; ///< e.g. "yunet", "none".
+    QString embedBackendId; ///< e.g. "sface", "none".
     QString error;     ///< Non-empty if the run failed.
 };
 
-/** Capability / identity of a FaceDetector implementation. */
-struct FaceDetectorInfo {
-    QString id;          ///< Stable id: "yunet", "null".
+/** Capability / identity of a FaceDetector / FaceEmbedder implementation. */
+struct FaceBackendInfo {
+    QString id;          ///< Stable id: "yunet", "sface", "null".
     QString displayName;
     bool available = false;
     QString detail;      ///< Model path, missing dep message, etc.
+};
+
+/** @deprecated alias kept for existing detector headers. */
+using FaceDetectorInfo = FaceBackendInfo;
+
+/** One enrolled identity in the local gallery. */
+struct FaceIdentity {
+    QString id;    ///< Stable UUID.
+    QString label; ///< User-facing name.
+    QVector<float> embedding;
+    QString embeddingModelId;
 };
 
 } // namespace biltoo::face

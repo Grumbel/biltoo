@@ -22,6 +22,7 @@
 , piperServer ? null  # text2sprech piper-server (bin/piper-server on PATH)
 , piperModelsDir ? null  # TEXT2SPRECH_PIPER_MODELS (bundled voice directory)
 , yunetModel ? null  # OpenCV Zoo YuNet ONNX (BILTOO_FACE_YUNET_MODEL)
+, sfaceModel ? null  # OpenCV Zoo SFace ONNX (BILTOO_FACE_SFACE_MODEL)
 , sqlite
 , libjxl
 , kddockwidgets
@@ -77,6 +78,8 @@ stdenv.mkDerivation (finalAttrs: {
     "--set-default" "TEXT2SPRECH_PIPER_MODELS" piperModelsDir
   ] ++ lib.optionals (yunetModel != null) [
     "--set-default" "BILTOO_FACE_YUNET_MODEL" yunetModel
+  ] ++ lib.optionals (sfaceModel != null) [
+    "--set-default" "BILTOO_FACE_SFACE_MODEL" sfaceModel
   ];
 
 
@@ -211,10 +214,16 @@ stdenv.mkDerivation (finalAttrs: {
 
   # Ship YuNet next to the binary so non-wrapper launches still find it via
   # $out/share/biltoo/models/… (yunetSearchPaths in facedetector_yunet.cpp).
-  postInstall = lib.optionalString (yunetModel != null) ''
+  postInstall = lib.optionalString (yunetModel != null || sfaceModel != null) ''
     mkdir -p "$out/share/biltoo/models"
-    cp -v ${yunetModel} \
-      "$out/share/biltoo/models/face_detection_yunet_2023mar.onnx"
+    ${lib.optionalString (yunetModel != null) ''
+      cp -v ${yunetModel} \
+        "$out/share/biltoo/models/face_detection_yunet_2023mar.onnx"
+    ''}
+    ${lib.optionalString (sfaceModel != null) ''
+      cp -v ${sfaceModel} \
+        "$out/share/biltoo/models/face_recognition_sface_2021dec.onnx"
+    ''}
   '';
 
   meta = with lib; {

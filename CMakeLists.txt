@@ -443,6 +443,11 @@ set(BILTOO_LIB_SOURCES
   src/face/facedetector.h
   src/face/facedetector_null.cpp
   src/face/facedetector_yunet.cpp
+  src/face/faceembedder.h
+  src/face/faceembedder_null.cpp
+  src/face/faceembedder_sface.cpp
+  src/face/facegallery.h
+  src/face/facegallery.cpp
   src/face/facecontroller.h
   src/face/facecontroller.cpp
   src/shell/messagelogwidget.cpp

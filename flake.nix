@@ -119,6 +119,13 @@
         hash = "sha256-jyOD5N08+7RVPqhxgQf8BCMhDclk+fQoBgSATtJVL6Q=";
       };
 
+      sfaceModel = pkgs.fetchurl {
+        name = "face_recognition_sface_2021dec.onnx";
+        url =
+          "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx";
+        hash = "sha256-C6n7+gG1JwyWYnxO94TahZkx4C8EQZyCnoNIQIfDTnk=";
+      };
+
       biltooArgs = pkgsSet:
         let
           # Force pinned MuPDF into the pkgs view used for thumtoo deps *and*
@@ -138,7 +145,7 @@
         piperServer = piperServerFull;
         piperModelsDir = piperVoiceDir;
         # Face detection: YuNet ONNX path (BILTOO_FACE_YUNET_MODEL).
-        inherit yunetModel;
+        inherit yunetModel sfaceModel;
       };
 
       # Default package: stock stdenv, no ccache requirement.
