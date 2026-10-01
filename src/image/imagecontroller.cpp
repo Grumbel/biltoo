@@ -539,17 +539,28 @@ void ImageController::applySpreadLayout(const QStringList &paths,
     for (int i = 0; i < items.size() && i < layout.memberSlots.size(); ++i) {
         ImageItem *item = items.at(i);
         ItemComponents::Placement pl = item->placement();
-        pl.pos = layout.memberSlots.at(i).rect.topLeft();
+        // ImageItem content is centred on pos (setOffset -w/2,-h/2). Slot
+        // rects from layoutSpread are top-left based — place at slot centre
+        // so height-matched pages sit side-by-side without a corner offset.
+        const QRectF slot = layout.memberSlots.at(i).rect;
+        pl.pos = slot.center();
         pl.scale = 1.0;
         pl.scaleY = 1.0;
         pl.rotation = 0.0;
         const QRectF local = item->displayContentRect();
-        if (local.height() > 1.0 && layout.memberSlots.at(i).rect.height() > 1.0) {
-            const qreal s = layout.memberSlots.at(i).rect.height() / local.height();
-            if (s > 0.01 && s < 100.0 && qAbs(s - 1.0) > 0.001) {
-                pl.scale = s;
-                pl.scaleY = s;
+        // layoutSpread(heightMatch) already equalised cross-axis size in the
+        // slot; scale uniformly so the item fills the slot.
+        qreal s = 1.0;
+        if (direction == SpreadDirection::Vertical) {
+            if (local.width() > 1.0 && slot.width() > 1.0) {
+                s = slot.width() / local.width();
             }
+        } else if (local.height() > 1.0 && slot.height() > 1.0) {
+            s = slot.height() / local.height();
+        }
+        if (s > 0.01 && s < 100.0) {
+            pl.scale = s;
+            pl.scaleY = s;
         }
         item->applyPlacement(pl);
     }

@@ -2,13 +2,18 @@
 
 ## Status (2026-10-01)
 
-**Tip:** biltoo-2881.2-pipewire-qt-multimedia (on `e345338` + this stack).
+**Tip:** biltoo-2882.1-spread-equal-height-center (linear stack on `e345338`).
+
+### 2882.1
+- Double view / spread: place pages at slot **centre** (ImageItem is
+  centre-origin) and always apply height-match scale so unequal pages sit
+  side-by-side at equal height. See `ImageController::applySpreadLayout` and
+  [docs/SPREAD.md](docs/SPREAD.md) §4.2.
 
 ### 2881.2
-- Silence Qt Multimedia `Couldn't load pipewire-0.3` under Nix: add `pipewire`
+- Silence Qt Multimedia `Couldn't load pipewire-0.3` under Nix: `pipewire`
   buildInput + `LD_LIBRARY_PATH` via `qtWrapperArgs`, `nix develop` shellHook,
-  and `biltoo-run` / `biltoo-run-gdb`. Documented in
-  [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+  and `biltoo-run` / `biltoo-run-gdb`. [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
 ### 2881.1
 - [docs/GALLERY_IMAGE_MODE_SWITCH.md](docs/GALLERY_IMAGE_MODE_SWITCH.md) —
@@ -22,5 +27,5 @@
 - 2878.1 dock/toolbar chrome
 
 ### Bundle policy
-Work-line base: `e345338` (upstream tip at start of this stack). Full stack in
-each tip bundle.
+Work-line base: `e345338`. **No parallel histories.** Each tip bundle is
+`e345338..HEAD` (full stack). New tip supersedes previous tip bundle files.

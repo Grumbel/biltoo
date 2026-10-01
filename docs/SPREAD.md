@@ -136,6 +136,11 @@ layoutSpread(
 Slot placement is applied as item transforms/positions on the scene; each item
 keeps its own ContentXform (crop/orient) in page space.
 
+**Pose mapping:** `ImageItem` content is centred on `pos` (`setOffset(-w/2,-h/2)`).
+`applySpreadLayout` must set `pos` to each slot’s **centre** (not top-left) and
+uniform scale so the item fills the height-matched (or width-matched vertical)
+slot. Using top-left made unequal pages look shifted and stacked oddly.
+
 ### 4.3 Hit-testing
 
 Scene point → item under cursor → map into page/source space with existing
