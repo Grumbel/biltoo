@@ -6722,59 +6722,50 @@ void MainWindow::runFaceDetectFromPanel()
     if (!m_faceCtrl || !m_imageView) {
         return;
     }
-    ImageItem *item = nullptr;
-    const SessionImageId curSid = m_imageView->hostSessionId().currentIdValue();
-    const auto items = m_imageView->liveItems();
-    for (ImageItem *it : items) {
-        if (it && curSid != kInvalidSessionImageId && it->sessionId() == curSid) {
-            item = it;
-            break;
+    // Prefer the session cursor — underlay ImageItem pixels lag on page change
+    // and caused detections against the previous page (or garbage soft previews).
+    if (m_currentIndex < 0 || m_currentIndex >= m_session.paths().size()) {
+        if (m_facePanel) {
+            m_facePanel->setStatus(tr("No image in session."));
         }
+        return;
     }
-    if (!item && !items.isEmpty()) {
-        // Image mode often has a single underlay; prefer classic path match.
-        const QString classic = m_imageView->hostImage().classicPath();
-        for (ImageItem *it : items) {
-            if (it && !classic.isEmpty() && it->path() == classic) {
-                item = it;
+    const QString path = m_session.paths().at(m_currentIndex);
+    const SessionImageId sid = m_session.idAt(m_currentIndex);
+
+    if (m_facePanel) {
+        m_facePanel->setStatus(tr("Loading %1…").arg(QFileInfo(path).fileName()));
+    }
+
+    // Fresh decode for the current path only (not canvas underlay).
+    QImage sample = ImageLoader::load(path);
+    if (sample.isNull()) {
+        sample = ImageLoader::loadThumbnail(path, 2048);
+    }
+    // Last resort: current underlay if it is bound to the same path/session.
+    if (sample.isNull()) {
+        for (ImageItem *it : m_imageView->liveItems()) {
+            if (!it) {
+                continue;
+            }
+            if ((sid != kInvalidSessionImageId && it->sessionId() == sid)
+                || (!path.isEmpty() && it->path() == path)) {
+                sample = it->sourceImage();
+                if (sample.isNull()) {
+                    sample = it->displayImage();
+                }
                 break;
             }
         }
-        if (!item) {
-            item = items.first();
-        }
-    }
-    if (!item) {
-        if (m_facePanel) {
-            m_facePanel->setStatus(tr("No image on canvas."));
-        }
-        return;
-    }
-    QImage sample = item->sourceImage();
-    if (sample.isNull()) {
-        sample = item->displayImage();
-    }
-    // Soft / tile underlay may not hold full pixels yet — decode for detection.
-    if (sample.isNull()) {
-        const QString path = item->path().isEmpty()
-            ? m_imageView->hostImage().classicPath()
-            : item->path();
-        if (!path.isEmpty()) {
-            sample = ImageLoader::load(path);
-            if (sample.isNull()) {
-                sample = ImageLoader::loadThumbnail(path, 4000);
-            }
-        }
     }
     if (sample.isNull()) {
         if (m_facePanel) {
-            m_facePanel->setStatus(tr("Image pixels not loaded yet."));
+            m_facePanel->setStatus(
+                tr("Could not load pixels for %1.").arg(QFileInfo(path).fileName()));
         }
         return;
     }
-    const SessionImageId sid =
-        item->sessionId() != kInvalidSessionImageId ? item->sessionId() : curSid;
-    m_faceCtrl->detectAsync(item->path(), sample, sid);
+    m_faceCtrl->detectAsync(path, sample, sid);
 }
 
 void MainWindow::updateFacePanel()
