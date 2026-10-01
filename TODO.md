@@ -2,7 +2,11 @@
 
 ## Status (2026-10-01)
 
-**Tip:** biltoo-2889.1-face-detection-yunet (linear stack on `e345338`).
+**Tip:** biltoo-2889.2-yunet-objdetect-include (linear stack on `e345338`).
+
+### 2889.2
+- Fix YuNet build: `#include <opencv2/objdetect.hpp>` and CMake component
+  `objdetect` (`FaceDetectorYN` is not in `dnn` alone).
 
 ### 2889.1
 - Optional OpenCV **YuNet** face detection (`src/face/`), isolated from UI.

@@ -90,7 +90,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport Multimedia Network Concurrent)
-find_package(OpenCV QUIET COMPONENTS core imgproc dnn)
+find_package(OpenCV QUIET COMPONENTS core imgproc dnn objdetect)
 find_package(PkgConfig)
 
 # Treat third-party include dirs as SYSTEM (-isystem) so GCC/Clang do not

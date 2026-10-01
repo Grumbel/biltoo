@@ -13,6 +13,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
+// FaceDetectorYN lives in objdetect (OpenCV ≥ 4.5.3), not dnn alone.
+#include <opencv2/objdetect.hpp>
 #endif
 
 namespace biltoo::face {
