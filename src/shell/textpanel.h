@@ -56,6 +56,9 @@ public:
     void setVoices(const QStringList &voices, const QString &current);
     void setSpeed(double speed);
     void setVolumePercent(int percent); // 0..150
+    /** Whether Image mode should navigate to the page of the active speech span. */
+    void setFollowSpeechPagesChecked(bool on);
+    bool followSpeechPagesChecked() const;
 
 signals:
     void selectionRegionsChanged(const QVector<int> &regionIndices);
@@ -70,6 +73,8 @@ signals:
     void voiceChosen(const QString &voice);
     void speedChosen(double speed);
     void volumeChosen(int percent); // 0..150
+    /** User toggled “turn pages while speaking” (default off). */
+    void followSpeechPagesToggled(bool on);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -87,6 +92,7 @@ private:
     QCheckBox *m_outlines = nullptr;
     QPushButton *m_speakBtn = nullptr;
     QPushButton *m_stopSpeechBtn = nullptr;
+    QCheckBox *m_followSpeechPages = nullptr;
     QComboBox *m_voiceCombo = nullptr;
     QDoubleSpinBox *m_speedSpin = nullptr;
     QSlider *m_volumeSlider = nullptr;

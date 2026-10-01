@@ -112,7 +112,8 @@ public:
     /**
      * UTF-16 offset into @p plan for the current text selection (earliest
      * selected region, plus optional mid-region bias from the last click).
-     * Returns 0 when nothing is selected.
+     * Returns -1 when nothing is selected or no span matches (callers must
+     * not treat that as document start).
      */
     int speakAnchorOffset(const SpeakPlan &plan) const;
 

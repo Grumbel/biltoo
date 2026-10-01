@@ -73,6 +73,19 @@ TextPanel::TextPanel(QWidget *parent)
     connect(m_speakBtn, &QPushButton::clicked, this, &TextPanel::speakRequested);
     connect(m_stopSpeechBtn, &QPushButton::clicked, this, &TextPanel::stopSpeechRequested);
 
+    m_followSpeechPages = new QCheckBox(tr("Turn pages while speaking"), this);
+    m_followSpeechPages->setToolTip(
+        tr("When enabled, Image mode navigates to the page of the sentence currently "
+           "being read. Off by default — speech continues without changing the page."));
+    m_followSpeechPages->setChecked(false);
+    layout->addWidget(m_followSpeechPages);
+    connect(m_followSpeechPages, &QCheckBox::toggled, this, [this](bool on) {
+        if (m_blockSpeechUi) {
+            return;
+        }
+        emit followSpeechPagesToggled(on);
+    });
+
     auto *voiceRow = new QHBoxLayout;
     voiceRow->addWidget(new QLabel(tr("Voice"), this));
     m_voiceCombo = new QComboBox(this);
@@ -451,4 +464,19 @@ void TextPanel::setVolumePercent(int percent)
         m_volumeLabel->setText(tr("%1%").arg(m_volumeSlider->value()));
     }
     m_blockSpeechUi = false;
+}
+
+void TextPanel::setFollowSpeechPagesChecked(bool on)
+{
+    if (!m_followSpeechPages) {
+        return;
+    }
+    m_blockSpeechUi = true;
+    m_followSpeechPages->setChecked(on);
+    m_blockSpeechUi = false;
+}
+
+bool TextPanel::followSpeechPagesChecked() const
+{
+    return m_followSpeechPages && m_followSpeechPages->isChecked();
 }

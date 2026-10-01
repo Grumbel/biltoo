@@ -6,7 +6,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Text-to-speech (TTS) plan
 
 Status: **Document speak** — full session continuous prose; selection is a start
-anchor (mid-box approximate via click X); selection change seeks while speaking. Relates to the text overlay /
+anchor (mid-box approximate via click X); non-empty selection change seeks while
+speaking. **Page follow is optional** (`speech/followPages`, Text panel
+“Turn pages while speaking”, **default off**). Relates to the text overlay /
 selection stack ([TEXT_OVERLAY.md](TEXT_OVERLAY.md), `TextSelection` in
 `src/text/textselection.h`) and the external project
 [text2sprech](https://github.com/Grumbel/text2sprech).
@@ -15,7 +17,11 @@ selection stack ([TEXT_OVERLAY.md](TEXT_OVERLAY.md), `TextSelection` in
 ## Implementation notes (Phase A + controls)
 
 - Text panel: **Voice** combo, **Tempo** spin (0.5–5×), **Vol** slider (0–150%; >100% amplifies PCM).
+- Text panel: **Turn pages while speaking** checkbox (default off). When off,
+  speech continues across pages without calling `setCurrentIndex`.
 - Page overlay: green **speaking** highlight on region boxes; progress clips the active box LTR.
+- Selection seek during speech: only when `speakAnchorOffset` finds a matching
+  span (returns −1 for empty/unmatched — does **not** seek to document start).
 
 ## Implementation notes (Phase A)
 
@@ -274,8 +280,9 @@ No full text2sprech player bar in v1.
 - “Read from search hit”.
 - Export WAV (text2sprech export patterns).
 - Continuous multi-page read with optional auto page advance.
-  **Shipped:** `SpeakScope::FullDocument`, page-follow on `sentenceStarted`,
-  `seekToTextOffset` on selection change, click X → mid-region bias.
+  **Shipped:** `SpeakScope::FullDocument`; optional page-follow on
+  `sentenceStarted` (gated by `speech/followPages`, default off);
+  `seekToTextOffset` on non-empty selection change; click X → mid-region bias.
 
 ---
 

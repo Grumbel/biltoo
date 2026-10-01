@@ -657,6 +657,8 @@ private:
     QVector<int> m_ttsSpeakRegions;
     int m_ttsSentenceStart = 0;
     int m_ttsSentenceEnd = 0;
+    /** When true, Image mode navigates to the page of the active speech span. Default off. */
+    bool m_ttsFollowPages = false;
     QString m_piperSocketPath;
     QAction *m_speakAct = nullptr;
     QAction *m_stopSpeechAct = nullptr;

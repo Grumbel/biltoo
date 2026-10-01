@@ -5197,6 +5197,12 @@ void MainWindow::readSettings()
             m_doubleViewAct->setText(tr("Spread vie&w (%1 pages)").arg(m_spreadFixedN));
         }
     }
+
+    m_ttsFollowPages =
+        settings.value(QStringLiteral("speech/followPages"), false).toBool();
+    if (m_textPanel) {
+        m_textPanel->setFollowSpeechPagesChecked(m_ttsFollowPages);
+    }
 }
 
 void MainWindow::writeSettings()
@@ -5273,6 +5279,7 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("spread/direction"), dir);
         settings.setValue(QStringLiteral("spread/fixedN"), m_spreadFixedN);
     }
+    settings.setValue(QStringLiteral("speech/followPages"), m_ttsFollowPages);
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     if (m_imageView) {
         settings.setValue(QStringLiteral("slideshowTransition"),
@@ -6058,10 +6065,10 @@ void MainWindow::connectTextPanel()
         if (m_annotationDock && dockIsOpen(m_annotationDock)) {
             updateAnnotationPanel();
         }
-        // While speaking the document, a new selection jumps the playhead.
+        // While speaking the document, a new non-empty selection seeks the playhead.
+        // Empty / unmatched selection must not seek to offset 0 (document start).
         if (m_tts && m_tts->isSpeaking() && !m_ttsSpeakSpans.isEmpty()) {
             TextLayerController::SpeakPlan plan;
-            plan.text = QString(); // offsets from stored spans
             plan.spans = m_ttsSpeakSpans;
             // Rebuild minimal plan text length from last span end for anchor helper.
             int maxEnd = 0;
@@ -6070,7 +6077,9 @@ void MainWindow::connectTextPanel()
             }
             plan.text = QString(maxEnd, QLatin1Char(' '));
             const int anchor = m_imageView->hostText().speakAnchorOffset(plan);
-            m_tts->seekToTextOffset(anchor);
+            if (anchor >= 0) {
+                m_tts->seekToTextOffset(anchor);
+            }
         }
     });
     connect(m_textPanel, &TextPanel::selectionMultiChanged, this,
@@ -6140,6 +6149,10 @@ void MainWindow::connectTextPanel()
 
     connect(m_textPanel, &TextPanel::speakRequested, this, &MainWindow::speakSelectionOrPage);
     connect(m_textPanel, &TextPanel::stopSpeechRequested, this, &MainWindow::stopSpeech);
+    connect(m_textPanel, &TextPanel::followSpeechPagesToggled, this, [this](bool on) {
+        m_ttsFollowPages = on;
+    });
+    m_textPanel->setFollowSpeechPagesChecked(m_ttsFollowPages);
     if (m_tts) {
         connect(m_textPanel, &TextPanel::voiceChosen, m_tts, &TextToSpeechController::setVoice);
         connect(m_textPanel, &TextPanel::speedChosen, m_tts, &TextToSpeechController::setSpeed);
@@ -6276,8 +6289,10 @@ void MainWindow::connectTextToSpeech()
                 m_ttsSentenceStart = start;
                 m_ttsSentenceEnd = end;
                 text.setSpeakingHighlight(speakSid, regions, 0.0);
-                // Document-wide speak: follow the page of the active span.
-                if (speakSid != kInvalidSessionImageId && m_imageView->isImageMode()) {
+                // Optional: navigate Image mode to the page of the active span.
+                // Off by default (speech/followPages); user enables via Text panel.
+                if (m_ttsFollowPages && speakSid != kInvalidSessionImageId
+                    && m_imageView->isImageMode()) {
                     const int sidx = m_session.indexOfId(speakSid);
                     if (sidx >= 0) {
                         const QString p = m_session.pathAt(sidx);

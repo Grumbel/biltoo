@@ -1182,9 +1182,10 @@ QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
 int TextLayerController::speakAnchorOffset(const SpeakPlan &plan) const
 {
     if (plan.spans.isEmpty()) {
-        return 0;
+        return -1;
     }
     int anchor = plan.text.size();
+    bool found = false;
     const auto &multi = m_session.multiSelection;
     const auto &sel = m_session.selectedRegionsRef();
     auto consider = [&](SessionImageId sid, int regionIndex) {
@@ -1207,6 +1208,7 @@ int TextLayerController::speakAnchorOffset(const SpeakPlan &plan) const
                 off = sp.start + qBound(0, m_speakRegionCharBias, qMax(0, spanLen - 1));
             }
             anchor = qMin(anchor, off);
+            found = true;
             break;
         }
     };
@@ -1220,8 +1222,9 @@ int TextLayerController::speakAnchorOffset(const SpeakPlan &plan) const
             consider(sid, ri);
         }
     }
-    if (anchor >= plan.text.size()) {
-        return 0;
+    // No matching selection → -1 (do not treat as offset 0 / document start).
+    if (!found || anchor >= plan.text.size()) {
+        return -1;
     }
     return anchor;
 }
