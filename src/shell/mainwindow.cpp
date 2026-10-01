@@ -6268,13 +6268,10 @@ void MainWindow::connectTextToSpeech()
                     return;
                 }
                 TextLayerController &text = m_imageView->hostText();
-                // Region indices belong to the Speak plan path; spread keeps
-                // multiple underlays so only clear when classic path left Image.
-                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath
-                    && m_imageView->itemCount() <= 1) {
-                    text.clearSpeakingHighlight();
-                    return;
-                }
+                // Map sentence → regions/sid. Paint filters by session id on the
+                // visible underlay; do not require classicPath == m_ttsSpeakPath
+                // (follow-pages off, or start mid-document, would clear the
+                // highlight and never set it again).
                 QVector<int> regions;
                 SessionImageId speakSid = kInvalidSessionImageId;
                 for (const auto &sp : m_ttsSpeakSpans) {
@@ -6289,16 +6286,18 @@ void MainWindow::connectTextToSpeech()
                 m_ttsSentenceStart = start;
                 m_ttsSentenceEnd = end;
                 text.setSpeakingHighlight(speakSid, regions, 0.0);
-                // Optional: navigate Image mode to the page of the active span.
-                // Off by default (speech/followPages); user enables via Text panel.
-                if (m_ttsFollowPages && speakSid != kInvalidSessionImageId
-                    && m_imageView->isImageMode()) {
+                // Track the page currently being spoken (gallery chrome + path).
+                if (speakSid != kInvalidSessionImageId) {
                     const int sidx = m_session.indexOfId(speakSid);
                     if (sidx >= 0) {
                         const QString p = m_session.pathAt(sidx);
-                        if (!p.isEmpty() && p != m_imageView->hostImage().classicPath()) {
+                        if (!p.isEmpty()) {
                             m_ttsSpeakPath = p;
-                            setCurrentIndex(sidx);
+                            // Optional navigate — off by default (speech/followPages).
+                            if (m_ttsFollowPages && m_imageView->isImageMode()
+                                && p != m_imageView->hostImage().classicPath()) {
+                                setCurrentIndex(sidx);
+                            }
                         }
                     }
                 }
@@ -6323,11 +6322,8 @@ void MainWindow::connectTextToSpeech()
                     return;
                 }
                 TextLayerController &text = m_imageView->hostText();
-                if (m_imageView->hostImage().classicPath() != m_ttsSpeakPath
-                    && m_imageView->itemCount() <= 1) {
-                    text.clearSpeakingHighlight();
-                    return;
-                }
+                // Always update highlight state; paint only draws when the
+                // speaking page is on-canvas (session id match).
                 // Map audio fraction → char offset in the SpeakPlan captured at Speak.
                 const double frac = double(pos) / double(dur);
                 const int spanLen = qMax(1, m_ttsSentenceEnd - m_ttsSentenceStart);
@@ -6357,6 +6353,15 @@ void MainWindow::connectTextToSpeech()
                     localProg = 1.0;
                 }
                 text.setSpeakingHighlight(activeSid, {activeRi}, localProg);
+                if (activeSid != kInvalidSessionImageId) {
+                    const int sidx = m_session.indexOfId(activeSid);
+                    if (sidx >= 0) {
+                        const QString p = m_session.pathAt(sidx);
+                        if (!p.isEmpty()) {
+                            m_ttsSpeakPath = p;
+                        }
+                    }
+                }
                 if (activeSid != kInvalidSessionImageId && m_imageView->isGalleryMode()) {
                     const int idx = m_session.indexOfId(activeSid);
                     if (idx >= 0) {
@@ -6430,11 +6435,24 @@ void MainWindow::speakSelectionOrPage()
         }
     }
     m_ttsSpeakSpans = plan.spans;
-    // Prefer path of the start span (selection anchor), else classic path.
+    // Path of the page that will speak first (anchor), not spans.first()
+    // (document head) — that broke highlights when classicPath differed.
     m_ttsSpeakPath = m_imageView->hostImage().classicPath();
-    if (!plan.spans.isEmpty()) {
-        const SessionImageId sid0 = plan.spans.first().sessionId;
-        const int sidx = (sid0 != kInvalidSessionImageId) ? m_session.indexOfId(sid0) : -1;
+    {
+        SessionImageId startSid = kInvalidSessionImageId;
+        if (anchor >= 0) {
+            for (const auto &sp : plan.spans) {
+                if (sp.end > anchor && sp.start <= anchor) {
+                    startSid = sp.sessionId;
+                    break;
+                }
+            }
+        }
+        if (startSid == kInvalidSessionImageId && !plan.spans.isEmpty()) {
+            startSid = plan.spans.first().sessionId;
+        }
+        const int sidx =
+            (startSid != kInvalidSessionImageId) ? m_session.indexOfId(startSid) : -1;
         if (sidx >= 0) {
             m_ttsSpeakPath = m_session.pathAt(sidx);
         }

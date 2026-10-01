@@ -2,20 +2,23 @@
 
 ## Status (2026-10-01)
 
-**Tip:** biltoo-2887.1-open-last-session-on-startup (linear stack on `e345338`).
+**Tip:** biltoo-2888.1-tts-speaking-highlight (linear stack on `e345338`).
+
+### 2888.1
+- TTS speaking highlight: stop clearing when `classicPath != m_ttsSpeakPath`.
+  Paint already filters by session id. Init `m_ttsSpeakPath` from the anchor
+  page, not `spans.first()`. Track active speaking page; only
+  `setCurrentIndex` when `speech/followPages` is on.
 
 ### 2887.1
-- Startup with no CLI files/dirs opens the last session (File → History head)
-  via **public** `MainWindow::openLastSession()` (next to `loadFiles`). Empty
-  history → empty window. README notes the behaviour.
+- Startup with no CLI files opens last session (`openLastSession` public).
 
 ### 2886.1
-- TTS: page follow optional (`speech/followPages`, default off); selection seek
-  only when `speakAnchorOffset` matches (no jump to document start).
+- TTS page follow optional; selection seek only on matching anchor.
 
 ### 2885.1
-- CoverAlone single-page spread: `applySpreadLayout` accepts N≥1.
+- CoverAlone single-page spread layout.
 
 ### Bundle policy
 Work-line base: `e345338`. Full stack `e345338..HEAD`. No parallel histories.
-Each tip bundle must `git pull --ff-only` onto `origin/master` at build time.
+Each tip bundle must `git pull --ff-only` onto current `origin/master`.
