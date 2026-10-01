@@ -53,9 +53,10 @@ public:
 
     /**
      * Detect, then embed + match against the gallery (async).
-     * Keeps the analysed QImage for later enroll of face index.
+     * If @p image is null, loads @p path on a worker thread (ImageLoader must
+     * not run on the GUI thread). Keeps the analysed QImage for enroll.
      */
-    void detectAsync(const QString &path, const QImage &image,
+    void detectAsync(const QString &path, const QImage &image = QImage(),
                      SessionImageId sessionId = kInvalidSessionImageId);
 
     /**

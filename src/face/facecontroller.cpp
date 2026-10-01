@@ -5,6 +5,7 @@
 
 #include "imageitem.h"
 #include "imageview.h"
+#include "host/imageloader.h"
 
 #include <QFont>
 #include <QFontMetrics>
@@ -127,13 +128,12 @@ void FaceController::detectAsync(const QString &path, const QImage &image,
     if (!m_detector) {
         return;
     }
-    if (image.isNull()) {
+    if (path.isEmpty() && image.isNull()) {
         ++m_generation;
         FaceDetectionResult r;
-        r.path = path;
         r.sessionId = sessionId;
         r.backendId = m_detector->info().id;
-        r.error = QStringLiteral("No image pixels available for face detection.");
+        r.error = QStringLiteral("No path or image for face detection.");
         m_last = r;
         m_lastImage = QImage();
         setBusy(false);
@@ -144,14 +144,31 @@ void FaceController::detectAsync(const QString &path, const QImage &image,
     const int gen = ++m_generation;
     setBusy(true);
     const float thr = m_scoreThreshold;
-    const QImage sample = image.copy();
+    // Optional preloaded sample (underlay); never ImageLoader on GUI.
+    const QImage preloaded = image.isNull() ? QImage() : image.copy();
     FaceDetector *detector = m_detector.get();
 
-    (void)QtConcurrent::run([this, gen, path, sessionId, sample, thr, detector]() {
-        FaceDetectionResult r = detector->detect(sample, thr);
+    (void)QtConcurrent::run([this, gen, path, sessionId, preloaded, thr, detector]() {
+        QImage sample = preloaded;
+        if (sample.isNull() && !path.isEmpty()) {
+            // Worker thread — ImageLoader asserts if called on the GUI thread.
+            sample = ImageLoader::load(path);
+            if (sample.isNull()) {
+                sample = ImageLoader::loadThumbnail(path, 2048);
+            }
+        }
+        FaceDetectionResult r;
         r.path = path;
         r.sessionId = sessionId;
-        recognizeInPlace(r, sample);
+        r.backendId = detector->info().id;
+        if (sample.isNull()) {
+            r.error = QStringLiteral("Could not load pixels for face detection.");
+        } else {
+            r = detector->detect(sample, thr);
+            r.path = path;
+            r.sessionId = sessionId;
+            recognizeInPlace(r, sample);
+        }
         QMetaObject::invokeMethod(
             this,
             [this, gen, r, sample]() {

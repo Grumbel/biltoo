@@ -6761,8 +6761,6 @@ void MainWindow::runFaceDetectFromPanel()
     if (!m_faceCtrl || !m_imageView) {
         return;
     }
-    // Prefer the session cursor — underlay ImageItem pixels lag on page change
-    // and caused detections against the previous page (or garbage soft previews).
     if (m_currentIndex < 0 || m_currentIndex >= m_session.paths().size()) {
         if (m_facePanel) {
             m_facePanel->setStatus(tr("No image in session."));
@@ -6773,36 +6771,24 @@ void MainWindow::runFaceDetectFromPanel()
     const SessionImageId sid = m_session.idAt(m_currentIndex);
 
     if (m_facePanel) {
-        m_facePanel->setStatus(tr("Loading %1…").arg(QFileInfo(path).fileName()));
+        m_facePanel->setStatus(tr("Detecting on %1…").arg(QFileInfo(path).fileName()));
     }
 
-    // Fresh decode for the current path only (not canvas underlay).
-    QImage sample = ImageLoader::load(path);
-    if (sample.isNull()) {
-        sample = ImageLoader::loadThumbnail(path, 2048);
-    }
-    // Last resort: current underlay if it is bound to the same path/session.
-    if (sample.isNull()) {
-        for (ImageItem *it : m_imageView->liveItems()) {
-            if (!it) {
-                continue;
-            }
-            if ((sid != kInvalidSessionImageId && it->sessionId() == sid)
-                || (!path.isEmpty() && it->path() == path)) {
-                sample = it->sourceImage();
-                if (sample.isNull()) {
-                    sample = it->displayImage();
-                }
-                break;
-            }
+    // Optional underlay pixels only (already on GUI). ImageLoader::load asserts
+    // off-GUI — FaceController loads the path on a worker when sample is null.
+    QImage sample;
+    for (ImageItem *it : m_imageView->liveItems()) {
+        if (!it) {
+            continue;
         }
-    }
-    if (sample.isNull()) {
-        if (m_facePanel) {
-            m_facePanel->setStatus(
-                tr("Could not load pixels for %1.").arg(QFileInfo(path).fileName()));
+        if ((sid != kInvalidSessionImageId && it->sessionId() == sid)
+            || (!path.isEmpty() && it->path() == path)) {
+            sample = it->sourceImage();
+            if (sample.isNull()) {
+                sample = it->displayImage();
+            }
+            break;
         }
-        return;
     }
     m_faceCtrl->detectAsync(path, sample, sid);
 }
