@@ -144,7 +144,7 @@
         # TTS: hard-wire piper-server + default voice so Speak works out of the box.
         piperServer = piperServerFull;
         piperModelsDir = piperVoiceDir;
-        # Face detection: YuNet ONNX path (BILTOO_FACE_YUNET_MODEL).
+        # Face: YuNet + SFace ONNX paths (BILTOO_FACE_YUNET_MODEL / _SFACE_MODEL).
         inherit yunetModel sfaceModel;
       };
 
@@ -414,6 +414,8 @@
               # by hand; under `nix develop -c` the process ends either way.
               export PATH="${piperServerFull}/bin:$PATH"
               export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+              export BILTOO_FACE_YUNET_MODEL="${yunetModel}"
+              export BILTOO_FACE_SFACE_MODEL="${sfaceModel}"
               export LD_LIBRARY_PATH="${pkgs.pipewire}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
@@ -426,6 +428,8 @@
           biltooRunGdb = pkgs.writeShellScriptBin "biltoo-run-gdb" (
             biltooDevPreamble
             + ''
+              export BILTOO_FACE_YUNET_MODEL="${yunetModel}"
+              export BILTOO_FACE_SFACE_MODEL="${sfaceModel}"
               biltoo-build || exit 1
               if [ ! -x "$BILTOO_BUILD_DIR/biltoo" ]; then
                 echo "biltoo-run-gdb: $BILTOO_BUILD_DIR/biltoo missing after build" >&2
@@ -561,8 +565,10 @@ except Exception:
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
             export BILTOO_FACE_YUNET_MODEL="${yunetModel}"
+            export BILTOO_FACE_SFACE_MODEL="${sfaceModel}"
             echo "  TTS: piper-server on PATH; voices → $TEXT2SPRECH_PIPER_MODELS"
-            echo "  Face: YuNet model → $BILTOO_FACE_YUNET_MODEL"
+            echo "  Face: YuNet → $BILTOO_FACE_YUNET_MODEL"
+            echo "  Face: SFace → $BILTOO_FACE_SFACE_MODEL"
             echo "  biltoo-run-gdb [args]  # build + gdb -q -ex run; quit on normal exit"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"
