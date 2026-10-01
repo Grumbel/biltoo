@@ -2,24 +2,17 @@
 
 ## Status (2026-10-01)
 
-**Tip:** biltoo-2889.2-yunet-objdetect-include (linear stack on `e345338`).
+**Tip:** biltoo-2889.3-yunet-flake-model (linear stack on `e345338`).
+
+### 2889.3
+- Flake `fetchurl` for YuNet ONNX; `BILTOO_FACE_YUNET_MODEL` in develop +
+  qtWrapperArgs; install under `$out/share/biltoo/models/`.
 
 ### 2889.2
-- Fix YuNet build: `#include <opencv2/objdetect.hpp>` and CMake component
-  `objdetect` (`FaceDetectorYN` is not in `dnn` alone).
+- `#include <opencv2/objdetect.hpp>` + CMake `objdetect` component.
 
 ### 2889.1
-- Optional OpenCV **YuNet** face detection (`src/face/`), isolated from UI.
-- **Panels → Face Detection**: detect current image, score threshold, overlay /
-  landmarks, result list. Scene overlay via `FaceController::paintSceneOverlay`.
-- Null backend when OpenCV or model missing. Docs: [docs/FACE_DETECTION.md](docs/FACE_DETECTION.md).
-- Nix: `opencv` in `default.nix` buildInputs.
-
-### 2888.1
-- TTS speaking highlight without path-gate / wrong start page.
-
-### 2887.1
-- Open last session on empty CLI.
+- Optional OpenCV YuNet face detection + Face Detection panel.
 
 ### Bundle policy
 Work-line base: `e345338`. Full stack `e345338..HEAD`. No parallel histories.

@@ -21,6 +21,7 @@
 , thumtooBuildInputs ? [ ]  # from thumtoo.lib.mkBuildInputs (libunarr, …)
 , piperServer ? null  # text2sprech piper-server (bin/piper-server on PATH)
 , piperModelsDir ? null  # TEXT2SPRECH_PIPER_MODELS (bundled voice directory)
+, yunetModel ? null  # OpenCV Zoo YuNet ONNX (BILTOO_FACE_YUNET_MODEL)
 , sqlite
 , libjxl
 , kddockwidgets
@@ -74,6 +75,8 @@ stdenv.mkDerivation (finalAttrs: {
     "--prefix" "PATH" ":" "${piperServer}/bin"
   ] ++ lib.optionals (piperModelsDir != null) [
     "--set-default" "TEXT2SPRECH_PIPER_MODELS" piperModelsDir
+  ] ++ lib.optionals (yunetModel != null) [
+    "--set-default" "BILTOO_FACE_YUNET_MODEL" yunetModel
   ];
 
 
@@ -204,6 +207,14 @@ stdenv.mkDerivation (finalAttrs: {
     # Nix builder HOME is /homeless-shelter (not writable). Point the XDG cache
     # root at a sandbox temp dir so thumtoo can create $XDG_CACHE_HOME/thumtoo.
     export XDG_CACHE_HOME="''${TMPDIR:-/tmp}/thumtoo-cache"
+  '';
+
+  # Ship YuNet next to the binary so non-wrapper launches still find it via
+  # $out/share/biltoo/models/… (yunetSearchPaths in facedetector_yunet.cpp).
+  postInstall = lib.optionalString (yunetModel != null) ''
+    mkdir -p "$out/share/biltoo/models"
+    cp -v ${yunetModel} \
+      "$out/share/biltoo/models/face_detection_yunet_2023mar.onnx"
   '';
 
   meta = with lib; {

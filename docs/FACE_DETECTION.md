@@ -26,7 +26,17 @@ Embeddings / recognition are **not** implemented yet; the same `FaceDetector` se
 YuNet ONNX from [OpenCV Zoo](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
 (`face_detection_yunet_2023mar.onnx`).
 
-Search order:
+### Nix flake
+
+The flake **fetches** the model (`yunetModel = fetchurl { … }`) and:
+
+- sets **`BILTOO_FACE_YUNET_MODEL`** in `nix develop` and on the
+  `nix run` / `nix build` wrapper (`qtWrapperArgs`);
+- installs a copy under `$out/share/biltoo/models/` for path-based lookup.
+
+No manual download is required for flake builds.
+
+### Search order (runtime)
 
 1. `BILTOO_FACE_YUNET_MODEL` (absolute path)
 2. `$app/../share/biltoo/models/…`
@@ -42,7 +52,8 @@ cmake -B build -S . -DTHUMTOO_SOURCE_DIR=…
 # STATUS: biltoo: OpenCV face detection enabled (…)
 ```
 
-Nix: `opencv` is a `buildInputs` entry in `default.nix`.
+Nix: `opencv` in `default.nix` `buildInputs`; YuNet weights via flake
+`fetchurl` (see above).
 
 Without OpenCV, biltoo still builds; the panel shows the null backend message.
 

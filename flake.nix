@@ -110,6 +110,15 @@
       piperVoiceDir =
         "${t2sPkgs.piper-voice-en_US-lessac-medium}/share/piper/voices";
 
+      # OpenCV Zoo YuNet face detector weights (zoo Apache-2.0 / MIT).
+      # Fixed-output derivation so nix run / biltoo-run need no manual download.
+      yunetModel = pkgs.fetchurl {
+        name = "face_detection_yunet_2023mar.onnx";
+        url =
+          "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx";
+        hash = "sha256-jyOD5N08+7RVPqhxgQf8BCMhDclk+fQoBgSATtJVL6Q=";
+      };
+
       biltooArgs = pkgsSet:
         let
           # Force pinned MuPDF into the pkgs view used for thumtoo deps *and*
@@ -128,6 +137,8 @@
         # TTS: hard-wire piper-server + default voice so Speak works out of the box.
         piperServer = piperServerFull;
         piperModelsDir = piperVoiceDir;
+        # Face detection: YuNet ONNX path (BILTOO_FACE_YUNET_MODEL).
+        inherit yunetModel;
       };
 
       # Default package: stock stdenv, no ccache requirement.
@@ -542,7 +553,9 @@ except Exception:
             echo "  biltoo-build       # incremental cmake --build (picks up thumtoo .cpp edits)"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             export TEXT2SPRECH_PIPER_MODELS="${piperVoiceDir}"
+            export BILTOO_FACE_YUNET_MODEL="${yunetModel}"
             echo "  TTS: piper-server on PATH; voices → $TEXT2SPRECH_PIPER_MODELS"
+            echo "  Face: YuNet model → $BILTOO_FACE_YUNET_MODEL"
             echo "  biltoo-run-gdb [args]  # build + gdb -q -ex run; quit on normal exit"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"
