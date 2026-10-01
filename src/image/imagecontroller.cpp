@@ -458,7 +458,9 @@ void ImageController::applySpreadLayout(const QStringList &paths,
                                         SpreadDirection direction,
                                         bool forceFit)
 {
-    if (!m_view || !m_view->isImageMode() || paths.size() < 2) {
+    // CoverAlone on the first page yields a single member; still prune extras
+    // and place via layoutSpread (N=1 is valid). Reject only empty membership.
+    if (!m_view || !m_view->isImageMode() || paths.isEmpty()) {
         return;
     }
 
@@ -526,7 +528,7 @@ void ImageController::applySpreadLayout(const QStringList &paths,
         sizes.append(sz);
         items.append(item);
     }
-    if (items.size() < 2) {
+    if (items.isEmpty()) {
         return;
     }
 

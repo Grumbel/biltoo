@@ -78,7 +78,9 @@ public:
     void hardReloadFromDisk();
     /** Place Image-mode items for spread members (docs/SPREAD.md P0). */
     /**
-     * Place Image-mode items for spread members.
+     * Place Image-mode items for spread members (N ≥ 1).
+     * CoverAlone on the first page yields a single member; still prunes
+     * non-members and runs layoutSpread + fit. Empty @p paths is a no-op.
      * @p forceFit when true always fitInView; when false, keep the current
      * view transform if membership (paths) is unchanged (user zoom/pan).
      */

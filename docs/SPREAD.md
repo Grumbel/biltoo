@@ -67,8 +67,10 @@ SpreadState {
 - `anchor ∈ members` when `members` non-empty; otherwise anchor is unset and
   Image uses the normal current session row.
 - N = `members.len()`. N=0 means “no spread” (classic single-page Image driven
-  only by current index). N=1 is allowed (explicit single from a 1-item
-  selection).
+  only by current index). N=1 is allowed (CoverAlone on the first page, or a
+  1-item selection). `applySpreadLayout` prunes non-members and places via
+  `layoutSpread` for N≥1; it must not early-out at N=1 or leftover pages from
+  a prior pair stay on the canvas (cover stuck at 0,0 while 2–3 remain).
 
 Paths are **derived** from session rows when binding items; never stored as the
 primary key of membership.
