@@ -6050,6 +6050,20 @@ void MainWindow::connectTextPanel()
         if (m_annotationDock && dockIsOpen(m_annotationDock)) {
             updateAnnotationPanel();
         }
+        // While speaking the document, a new selection jumps the playhead.
+        if (m_tts && m_tts->isSpeaking() && !m_ttsSpeakSpans.isEmpty()) {
+            TextLayerController::SpeakPlan plan;
+            plan.text = QString(); // offsets from stored spans
+            plan.spans = m_ttsSpeakSpans;
+            // Rebuild minimal plan text length from last span end for anchor helper.
+            int maxEnd = 0;
+            for (const auto &sp : m_ttsSpeakSpans) {
+                maxEnd = qMax(maxEnd, sp.end);
+            }
+            plan.text = QString(maxEnd, QLatin1Char(' '));
+            const int anchor = m_imageView->hostText().speakAnchorOffset(plan);
+            m_tts->seekToTextOffset(anchor);
+        }
     });
     connect(m_textPanel, &TextPanel::selectionMultiChanged, this,
             [this](const TextSelection &bag) {
@@ -6254,6 +6268,17 @@ void MainWindow::connectTextToSpeech()
                 m_ttsSentenceStart = start;
                 m_ttsSentenceEnd = end;
                 text.setSpeakingHighlight(speakSid, regions, 0.0);
+                // Document-wide speak: follow the page of the active span.
+                if (speakSid != kInvalidSessionImageId && m_imageView->isImageMode()) {
+                    const int sidx = m_session.indexOfId(speakSid);
+                    if (sidx >= 0) {
+                        const QString p = m_session.pathAt(sidx);
+                        if (!p.isEmpty() && p != m_imageView->hostImage().classicPath()) {
+                            m_ttsSpeakPath = p;
+                            setCurrentIndex(sidx);
+                        }
+                    }
+                }
                 // Emphasize the active member tile in Gallery while spread speaks.
                 if (speakSid != kInvalidSessionImageId && m_imageView->isGalleryMode()) {
                     const int idx = m_session.indexOfId(speakSid);
@@ -6356,8 +6381,8 @@ void MainWindow::speakSelectionOrPage()
     }
 
     TextLayerController &text = m_imageView->hostText();
-    // Full page or full spread; selection is a start anchor only.
-    const auto plan = text.buildSpeakPlan(/*pageOnly=*/true);
+    // Full session document; selection is only a start anchor (incl. mid-box bias).
+    const auto plan = text.buildSpeakPlan(TextLayerController::SpeakScope::FullDocument);
     if (plan.text.trimmed().isEmpty()) {
         const QString msg = tr("No text to speak (load a text/OCR layer)");
         if (m_textPanel) {
@@ -6370,48 +6395,45 @@ void MainWindow::speakSelectionOrPage()
     }
 
     int startSentence = 0;
-    const auto &sel = text.session().selectedRegionsRef();
-    const auto &multi = text.session().multiSelection;
-    if ((!sel.isEmpty() || !multi.isEmpty()) && !plan.spans.isEmpty()) {
-        // Earliest SpeakPlan offset among selected regions (top of selection).
-        int anchor = plan.text.size();
-        if (!multi.isEmpty()) {
-            for (const TextSelRef &ref : multi.refs()) {
-                for (const auto &sp : plan.spans) {
-                    if (sp.regionIndex == ref.regionIndex
-                        && (ref.sessionId == kInvalidSessionImageId
-                            || sp.sessionId == kInvalidSessionImageId
-                            || sp.sessionId == ref.sessionId)) {
-                        anchor = qMin(anchor, sp.start);
-                        break;
-                    }
-                }
-            }
-        } else {
-            for (int ri : sel) {
-                for (const auto &sp : plan.spans) {
-                    if (sp.regionIndex == ri) {
-                        anchor = qMin(anchor, sp.start);
-                        break;
-                    }
-                }
+    const int anchor = text.speakAnchorOffset(plan);
+    if (anchor > 0) {
+        const QVector<Sentence> sentences =
+            SentenceSplitter::split(plan.text, /*startId=*/0);
+        for (int i = 0; i < sentences.size(); ++i) {
+            if (sentences.at(i).end > anchor) {
+                startSentence = i;
+                break;
             }
         }
-        if (anchor < plan.text.size()) {
-            const QVector<Sentence> sentences =
-                SentenceSplitter::split(plan.text, /*startId=*/0);
-            for (int i = 0; i < sentences.size(); ++i) {
-                if (sentences.at(i).end > anchor) {
-                    startSentence = i;
-                    break;
+    }
+    m_ttsSpeakSpans = plan.spans;
+    // Prefer path of the start span (selection anchor), else classic path.
+    m_ttsSpeakPath = m_imageView->hostImage().classicPath();
+    if (!plan.spans.isEmpty()) {
+        const SessionImageId sid0 = plan.spans.first().sessionId;
+        const int sidx = (sid0 != kInvalidSessionImageId) ? m_session.indexOfId(sid0) : -1;
+        if (sidx >= 0) {
+            m_ttsSpeakPath = m_session.pathAt(sidx);
+        }
+    }
+    QStringList speakPaths;
+    {
+        QSet<SessionImageId> seen;
+        for (const auto &sp : plan.spans) {
+            if (sp.sessionId == kInvalidSessionImageId || seen.contains(sp.sessionId)) {
+                continue;
+            }
+            seen.insert(sp.sessionId);
+            const int sidx = m_session.indexOfId(sp.sessionId);
+            if (sidx >= 0) {
+                const QString p = m_session.pathAt(sidx);
+                if (!p.isEmpty() && !speakPaths.contains(p)) {
+                    speakPaths.append(p);
                 }
             }
         }
     }
-    m_ttsSpeakPath = m_imageView->hostImage().classicPath();
-    m_ttsSpeakSpans = plan.spans;
-    QStringList speakPaths;
-    if (m_imageView->itemCount() > 1) {
+    if (speakPaths.isEmpty() && m_imageView->itemCount() > 1) {
         for (ImageItem *item : m_imageView->liveItems()) {
             if (item && !item->path().isEmpty() && !speakPaths.contains(item->path())) {
                 speakPaths.append(item->path());

@@ -5,7 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Text-to-speech (TTS) plan
 
-Status: **Phase A implemented** (speak selection/page + Stop; no live region highlight yet). Relates to the text overlay /
+Status: **Document speak** — full session continuous prose; selection is a start
+anchor (mid-box approximate via click X); selection change seeks while speaking. Relates to the text overlay /
 selection stack ([TEXT_OVERLAY.md](TEXT_OVERLAY.md), `TextSelection` in
 `src/text/textselection.h`) and the external project
 [text2sprech](https://github.com/Grumbel/text2sprech).
@@ -273,6 +274,8 @@ No full text2sprech player bar in v1.
 - “Read from search hit”.
 - Export WAV (text2sprech export patterns).
 - Continuous multi-page read with optional auto page advance.
+  **Shipped:** `SpeakScope::FullDocument`, page-follow on `sentenceStarted`,
+  `seekToTextOffset` on selection change, click X → mid-region bias.
 
 ---
 

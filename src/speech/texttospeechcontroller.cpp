@@ -224,6 +224,8 @@ void TextToSpeechController::speakText(const QString &text, int startSentence)
             return;
         }
         m_playback->stop();
+        m_activeSpeakText = trimmed;
+        m_activeSentences = sentences;
         m_playback->loadSentences(sentences);
         const int idx = qBound(0, m_pendingStartSentence, sentences.size() - 1);
         m_pendingStartSentence = 0;
@@ -270,9 +272,42 @@ bool TextToSpeechController::isPaused() const
     return m_playback && m_playback->isPaused();
 }
 
+void TextToSpeechController::seekToTextOffset(int utf16Offset)
+{
+    if (!m_playback || !m_speaking || m_activeSentences.isEmpty()) {
+        return;
+    }
+    const int off = qMax(0, utf16Offset);
+    int idx = 0;
+    for (int i = 0; i < m_activeSentences.size(); ++i) {
+        if (m_activeSentences.at(i).end > off) {
+            idx = i;
+            break;
+        }
+        idx = i;
+    }
+    // Mid-sentence: fraction within the sentence for PlaybackController.
+    double frac = 0.0;
+    const Sentence &s = m_activeSentences.at(idx);
+    const int len = qMax(1, s.end - s.start);
+    if (off > s.start && off < s.end) {
+        frac = double(off - s.start) / double(len);
+    }
+    // seekToSentence resumes synthesis for the new index when already playing.
+    const bool wasPaused = m_playback->isPaused();
+    m_playback->seekToSentence(idx, frac);
+    if (wasPaused) {
+        m_playback->pause();
+    } else {
+        m_playback->play();
+    }
+}
+
 void TextToSpeechController::stop()
 {
     m_pendingSpeak.clear();
+    m_activeSpeakText.clear();
+    m_activeSentences.clear();
     m_pendingStartSentence = 0;
     disarmSynthWatchdog();
     if (m_playback) {

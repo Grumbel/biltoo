@@ -10,6 +10,8 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVector>
+#include "Sentence.h"
 
 class PiperServerManager;
 class QTimer;
@@ -39,6 +41,11 @@ public:
 public slots:
     /** @p startSentence 0-based index into SentenceSplitter output. */
     void speakText(const QString &text, int startSentence = 0);
+    /**
+     * Jump within the active speakText() string to the sentence containing
+     * @p utf16Offset (selection change while speaking). No-op if idle.
+     */
+    void seekToTextOffset(int utf16Offset);
     void pause();
     void resume();
     void stop();
@@ -102,6 +109,9 @@ private:
     bool m_connectPending = false;
     bool m_awaitingFirstAudio = false;
     QString m_pendingSpeak;
+    /** Last text handed to the splitter while speaking (for seekToTextOffset). */
+    QString m_activeSpeakText;
+    QVector<Sentence> m_activeSentences;
     int m_pendingStartSentence = 0;
     QString m_status;
     QStringList m_voices;

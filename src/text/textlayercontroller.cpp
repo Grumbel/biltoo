@@ -4,6 +4,8 @@
 // Page text / link regions, search, rubber-band selection (owned by TextLayerController).
 
 #include "text/textlayercontroller.h"
+#include <cmath>
+#include "session/sessiondocument.h"
 #include "shell/chromecolors.h"
 #include "content/contentxform.h"
 #include "imageview.h"
@@ -620,11 +622,35 @@ int TextLayerController::regionIndexAtViewPos(const QPoint &viewPos) const
 
 void TextLayerController::selectRegionAtViewPos(const QPoint &viewPos)
 {
+    auto setCharBias = [this](SessionImageId sid, int idx, const QRectF &img,
+                              const QPointF &imgPt, const QString &text) {
+        m_speakRegionCharBiasSid = sid;
+        m_speakRegionCharBiasIndex = idx;
+        if (img.width() > 1.0 && !text.isEmpty()) {
+            const qreal t = qBound(0.0, (imgPt.x() - img.left()) / img.width(), 1.0);
+            m_speakRegionCharBias = int(std::lround(t * double(qMax(0, text.size() - 1))));
+        } else {
+            m_speakRegionCharBias = 0;
+        }
+    };
+
     if (!isMultiUnderlay()) {
         const int idx = regionIndexAtViewPos(viewPos);
         if (idx < 0) {
+            m_speakRegionCharBias = -1;
+            m_speakRegionCharBiasIndex = -1;
+            m_speakRegionCharBiasSid = kInvalidSessionImageId;
             setSelectedRegions({});
             return;
+        }
+        // Approximate mid-box start for TTS from horizontal click fraction.
+        if (m_view && m_view->primaryItem() && idx < m_session.regionCount()) {
+            const auto &r = m_session.regionAt(idx);
+            const QRectF img = regionImageRect(r);
+            const QPointF scene = m_view->mapToScene(viewPos);
+            const QPointF local = m_view->primaryItem()->mapFromScene(scene);
+            const QPointF imgPt = local - m_view->primaryItem()->offset();
+            setCharBias(currentSessionId(), idx, img, imgPt, r.text);
         }
         setSelectedRegions(QVector<int>{idx});
         return;
@@ -671,6 +697,11 @@ void TextLayerController::selectRegionAtViewPos(const QPoint &viewPos)
         }
         QVector<int> ids{best};
         QVector<QString> texts{layer->regions.at(best).text};
+        {
+            const auto &r = layer->regions.at(best);
+            const QRectF img = regionImageRectFor(item, path, *layer, r);
+            setCharBias(sid, best, img, imgPt, r.text);
+        }
         m_session.multiSelection.setForSession(sid, ids, texts);
         if (item == primary) {
             primarySelected = ids;
@@ -920,6 +951,11 @@ QString TextLayerController::pageTextInReadingOrder() const
 
 TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly) const
 {
+    return buildSpeakPlan(pageOnly ? SpeakScope::FullPage : SpeakScope::SelectionOrPage);
+}
+
+TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(SpeakScope scope) const
+{
     SpeakPlan plan;
 
     auto appendJoined = [&](SessionImageId sid, int idx, const QString &rawText, int block,
@@ -988,13 +1024,20 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
             const auto &r = layer.regions.at(idx);
             appendJoined(sid, idx, r.text, r.blockId, cursor, prevBlock, havePrev);
         }
+        // Page break → paragraph break so the splitter does not glue last/first
+        // sentences across pages into one utterance.
+        if (havePrev && !plan.text.endsWith(QStringLiteral("\n\n"))) {
+            plan.text += QStringLiteral("\n\n");
+            cursor = plan.text.size();
+            prevBlock = -999;
+        }
     };
 
     int cursor = 0;
     int prevBlock = -999;
     bool havePrev = false;
 
-    if (!pageOnly && !m_session.multiSelection.isEmpty()) {
+    if (scope == SpeakScope::SelectionOrPage && !m_session.multiSelection.isEmpty()) {
         const_cast<TextLayerController *>(this)->ensureMemberLayers();
         for (const TextSelRef &ref : m_session.multiSelection.refs()) {
             if (ref.regionIndex < 0) {
@@ -1027,6 +1070,50 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
         }
     }
 
+    if (scope == SpeakScope::FullDocument && m_view) {
+        SessionDocument *doc = m_view->sessionDocument();
+        if (doc && !doc->paths().isEmpty()) {
+            const QStringList paths = doc->paths();
+            const QVector<SessionImageId> ids = doc->ids();
+            for (int i = 0; i < paths.size(); ++i) {
+                const QString &path = paths.at(i);
+                if (path.isEmpty()) {
+                    continue;
+                }
+                SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
+                ThumtooCache::PageTextLayer layer;
+                if (sid != kInvalidSessionImageId && m_memberLayers.contains(sid)
+                    && m_memberPaths.value(sid) == path) {
+                    layer = m_memberLayers.value(sid);
+                } else if (path == m_session.layerPathRef() && m_session.pageBoundsValid()) {
+                    layer = m_session.layerRef();
+                    if (sid != kInvalidSessionImageId) {
+                        const_cast<TextLayerController *>(this)->m_memberLayers.insert(sid, layer);
+                        const_cast<TextLayerController *>(this)->m_memberPaths.insert(sid, path);
+                    }
+                } else {
+                    layer = TextLayerResolve::load(path, m_session.layerPreferValue());
+                    if (sid != kInvalidSessionImageId && layer.pageBounds.isValid()) {
+                        const_cast<TextLayerController *>(this)->m_memberLayers.insert(sid, layer);
+                        const_cast<TextLayerController *>(this)->m_memberPaths.insert(sid, path);
+                    }
+                }
+                if (layer.regions.isEmpty()) {
+                    continue;
+                }
+                appendLayerOrder(sid, layer, cursor, prevBlock, havePrev);
+            }
+            // Trim trailing page-break padding.
+            while (plan.text.endsWith(QLatin1Char('\n'))) {
+                plan.text.chop(1);
+            }
+            if (!plan.spans.isEmpty()) {
+                // cursor may sit past last span after padding; spans stay valid.
+            }
+            return plan;
+        }
+    }
+
     if (isMultiUnderlay()) {
         const_cast<TextLayerController *>(this)->ensureMemberLayers();
         for (ImageItem *item : m_view->liveItems()) {
@@ -1043,6 +1130,9 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
             }
             appendLayerOrder(sid, *layer, cursor, prevBlock, havePrev);
         }
+        while (plan.text.endsWith(QLatin1Char('\n'))) {
+            plan.text.chop(1);
+        }
         return plan;
     }
 
@@ -1051,7 +1141,7 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
     }
 
     QVector<int> order;
-    if (!pageOnly
+    if (scope == SpeakScope::SelectionOrPage
         && (!m_session.multiSelection.isEmpty() || !m_session.selectedRegionsRef().isEmpty())) {
         order = m_session.selectedRegionsRef();
         if (order.isEmpty() && !m_session.multiSelection.isEmpty()) {
@@ -1059,31 +1149,81 @@ TextLayerController::SpeakPlan TextLayerController::buildSpeakPlan(bool pageOnly
         }
     }
     if (order.isEmpty()) {
-        appendLayerOrder(currentSessionId(), m_session.layerRef(),
-                         cursor, prevBlock, havePrev);
-        return plan;
-    }
-    for (int idx : order) {
-        if (idx < 0 || idx >= m_session.regionCount()) {
-            continue;
+        appendLayerOrder(currentSessionId(), m_session.layerRef(), cursor, prevBlock, havePrev);
+    } else {
+        for (int idx : order) {
+            if (idx < 0 || idx >= m_session.regionCount()) {
+                continue;
+            }
+            const auto &r = m_session.regionAt(idx);
+            appendJoined(currentSessionId(), idx, r.text, r.blockId, cursor, prevBlock, havePrev);
         }
-        const auto &r = m_session.regionAt(idx);
-        appendJoined(currentSessionId(), idx, r.text, r.blockId, cursor, prevBlock, havePrev);
+    }
+    while (plan.text.endsWith(QLatin1Char('\n'))) {
+        plan.text.chop(1);
     }
     return plan;
 }
 
 QString TextLayerController::speakableText() const
 {
-    // Full page — same plan Speak uses (selection is only a start anchor).
-    return buildSpeakPlan(/*pageOnly=*/true).text;
+    // Prefer full document when a session is bound; selection is only an anchor.
+    return buildSpeakPlan(SpeakScope::FullDocument).text;
 }
 
 QVector<TextLayerController::SpeakSpan> TextLayerController::speakSpans() const
 {
     // Must match speakableText() / Speak offsets. pageOnly=false would rebuild a
     // selection-only plan whose start/end no longer match the playing audio.
-    return buildSpeakPlan(/*pageOnly=*/true).spans;
+    return buildSpeakPlan(SpeakScope::FullDocument).spans;
+}
+
+
+int TextLayerController::speakAnchorOffset(const SpeakPlan &plan) const
+{
+    if (plan.spans.isEmpty()) {
+        return 0;
+    }
+    int anchor = plan.text.size();
+    const auto &multi = m_session.multiSelection;
+    const auto &sel = m_session.selectedRegionsRef();
+    auto consider = [&](SessionImageId sid, int regionIndex) {
+        for (const auto &sp : plan.spans) {
+            if (sp.regionIndex != regionIndex) {
+                continue;
+            }
+            if (sid != kInvalidSessionImageId && sp.sessionId != kInvalidSessionImageId
+                && sid != sp.sessionId) {
+                continue;
+            }
+            int off = sp.start;
+            if (m_speakRegionCharBias >= 0
+                && m_speakRegionCharBiasIndex == regionIndex
+                && (m_speakRegionCharBiasSid == kInvalidSessionImageId
+                    || m_speakRegionCharBiasSid == sp.sessionId
+                    || sid == kInvalidSessionImageId
+                    || sid == m_speakRegionCharBiasSid)) {
+                const int spanLen = qMax(0, sp.end - sp.start);
+                off = sp.start + qBound(0, m_speakRegionCharBias, qMax(0, spanLen - 1));
+            }
+            anchor = qMin(anchor, off);
+            break;
+        }
+    };
+    if (!multi.isEmpty()) {
+        for (const TextSelRef &ref : multi.refs()) {
+            consider(ref.sessionId, ref.regionIndex);
+        }
+    } else {
+        const SessionImageId sid = currentSessionId();
+        for (int ri : sel) {
+            consider(sid, ri);
+        }
+    }
+    if (anchor >= plan.text.size()) {
+        return 0;
+    }
+    return anchor;
 }
 
 void TextLayerController::setSpeakingHighlight(const QVector<int> &regionIndices, double progress)

@@ -83,20 +83,38 @@ public:
         QString text;
         QVector<SpeakSpan> spans;
     };
+    /** What buildSpeakPlan joins into continuous prose. */
+    enum class SpeakScope {
+        /** Selection regions only; if empty, falls back to FullPage. */
+        SelectionOrPage = 0,
+        /** Current page, or all live underlays when a spread is shown. */
+        FullPage = 1,
+        /**
+         * Entire session document in session order (page breaks become
+         * paragraph breaks). Missing text layers are skipped.
+         */
+        FullDocument = 2,
+    };
     /**
-     * @p pageOnly true: always full-page reading order (selection is only an
-     * anchor for start offset, not the spoken range).
-     * false: selection if any, else full page.
+     * Continuous prose + span map. Selection never shrinks FullPage /
+     * FullDocument range — use selection only as a start anchor.
+     * @p pageOnly true → FullPage (legacy); false → SelectionOrPage.
      */
     SpeakPlan buildSpeakPlan(bool pageOnly = false) const;
+    SpeakPlan buildSpeakPlan(SpeakScope scope) const;
     /**
-     * Full-page SpeakPlan text (same as buildSpeakPlan(true)).
-     * Selection does not shrink this — Speak uses the full page; selection is
-     * only a start anchor.
+     * Full-document SpeakPlan text when a session document is bound;
+     * otherwise FullPage. Selection does not shrink this.
      */
     QString speakableText() const;
-    /** Spans into speakableText() — always full-page plan offsets. */
+    /** Spans matching speakableText(). */
     QVector<SpeakSpan> speakSpans() const;
+    /**
+     * UTF-16 offset into @p plan for the current text selection (earliest
+     * selected region, plus optional mid-region bias from the last click).
+     * Returns 0 when nothing is selected.
+     */
+    int speakAnchorOffset(const SpeakPlan &plan) const;
 
     /** Highlight region(s) currently being spoken; progress 0..1 within the active span. */
     void setSpeakingHighlight(const QVector<int> &regionIndices, double progress);
@@ -148,6 +166,11 @@ private:
     SessionImageId m_speakingSessionId = kInvalidSessionImageId;
     double m_speakingProgress = 0.0;
     TextLayerSession m_session;
+    /** Approximate char index within the last clicked region (-1 = region start). */
+    int m_speakRegionCharBias = -1;
+    SessionImageId m_speakRegionCharBiasSid = kInvalidSessionImageId;
+    int m_speakRegionCharBiasIndex = -1;
+
     /** Spread member layers keyed by SessionImageId (primary also in m_session). */
     QHash<SessionImageId, ThumtooCache::PageTextLayer> m_memberLayers;
     QHash<SessionImageId, QString> m_memberPaths;
