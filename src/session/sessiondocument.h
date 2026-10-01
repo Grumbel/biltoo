@@ -145,6 +145,11 @@ private:
     QVector<SessionImageId> m_ids;
     SessionImageId m_nextId = 1;
     SessionSeedBook m_seedBook;
+    LayoutMode m_galleryLayoutMode = LayoutMode::Masonry;
+    bool m_hasGalleryLayoutMode = false;
+    int m_masonryColumns = 3;
+    int m_gridColumns = 0;
+    int m_masonryRows = 3;
 };
 
 
