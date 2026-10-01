@@ -6767,30 +6767,19 @@ void MainWindow::runFaceDetectFromPanel()
         }
         return;
     }
+    // Always the session cursor path — never canvas underlay pixels. In Image
+    // mode the underlay item can keep the previous page's QImage after the path
+    // / sessionId has already advanced, which made detect "only work" on the
+    // first image.
     const QString path = m_session.paths().at(m_currentIndex);
     const SessionImageId sid = m_session.idAt(m_currentIndex);
 
     if (m_facePanel) {
         m_facePanel->setStatus(tr("Detecting on %1…").arg(QFileInfo(path).fileName()));
     }
-
-    // Optional underlay pixels only (already on GUI). ImageLoader::load asserts
-    // off-GUI — FaceController loads the path on a worker when sample is null.
-    QImage sample;
-    for (ImageItem *it : m_imageView->liveItems()) {
-        if (!it) {
-            continue;
-        }
-        if ((sid != kInvalidSessionImageId && it->sessionId() == sid)
-            || (!path.isEmpty() && it->path() == path)) {
-            sample = it->sourceImage();
-            if (sample.isNull()) {
-                sample = it->displayImage();
-            }
-            break;
-        }
-    }
-    m_faceCtrl->detectAsync(path, sample, sid);
+    // Empty QImage → FaceController loads path on a worker (ImageLoader is
+    // GUI-forbidden).
+    m_faceCtrl->detectAsync(path, QImage(), sid);
 }
 
 void MainWindow::updateFacePanel()

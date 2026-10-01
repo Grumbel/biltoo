@@ -149,13 +149,18 @@ void FaceController::detectAsync(const QString &path, const QImage &image,
     FaceDetector *detector = m_detector.get();
 
     (void)QtConcurrent::run([this, gen, path, sessionId, preloaded, thr, detector]() {
-        QImage sample = preloaded;
-        if (sample.isNull() && !path.isEmpty()) {
-            // Worker thread — ImageLoader asserts if called on the GUI thread.
+        QImage sample;
+        // Prefer a fresh path decode so detection tracks the session cursor, not
+        // a recycled underlay's stale pixels. Fall back to preloaded only when
+        // path is empty (caller-supplied buffer).
+        if (!path.isEmpty()) {
             sample = ImageLoader::load(path);
             if (sample.isNull()) {
                 sample = ImageLoader::loadThumbnail(path, 2048);
             }
+        }
+        if (sample.isNull()) {
+            sample = preloaded;
         }
         FaceDetectionResult r;
         r.path = path;
