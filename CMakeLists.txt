@@ -89,7 +89,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport Multimedia Network)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport Multimedia Network Concurrent)
+find_package(OpenCV QUIET COMPONENTS core imgproc dnn)
 find_package(PkgConfig)
 
 # Treat third-party include dirs as SYSTEM (-isystem) so GCC/Clang do not
@@ -436,6 +437,14 @@ set(BILTOO_LIB_SOURCES
   src/shell/annotationpanel.h
   src/shell/ocrpanel.cpp
   src/shell/ocrpanel.h
+  src/shell/facepanel.cpp
+  src/shell/facepanel.h
+  src/face/facetypes.h
+  src/face/facedetector.h
+  src/face/facedetector_null.cpp
+  src/face/facedetector_yunet.cpp
+  src/face/facecontroller.h
+  src/face/facecontroller.cpp
   src/shell/messagelogwidget.cpp
   src/shell/messagelogwidget.h
   src/shell/messagelogpanel.cpp
@@ -595,6 +604,7 @@ target_link_libraries(biltoo_lib PUBLIC
   Qt6::PrintSupport
   Qt6::Multimedia
   Qt6::Network
+  Qt6::Concurrent
 )
 
 # Force -isystem ahead of -I for Qt headers (GCC suppresses warnings only when
@@ -608,6 +618,7 @@ biltoo_consume_system_includes(biltoo_lib
   Qt6::PrintSupport
   Qt6::Multimedia
   Qt6::Network
+  Qt6::Concurrent
 )
 message(STATUS "Biltoo: Qt includes marked SYSTEM BEFORE for biltoo_lib")
 
@@ -625,6 +636,18 @@ set(BILTOO_FEATURE_THUMTOO_MUPDF 0)
 set(BILTOO_FEATURE_THUMTOO_DJVU 0)
 set(BILTOO_FEATURE_THUMTOO_CURL 0)
 set(BILTOO_FEATURE_THUMTOO_TESSERACT 0)
+set(BILTOO_FEATURE_OPENCV 0)
+
+# OpenCV (optional) — face detection (YuNet) / future embeddings (SFace).
+if(OpenCV_FOUND)
+  target_link_libraries(biltoo_lib PUBLIC ${OpenCV_LIBS})
+  target_include_directories(biltoo_lib SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
+  target_compile_definitions(biltoo_lib PUBLIC BILTOO_HAVE_OPENCV=1)
+  set(BILTOO_FEATURE_OPENCV 1)
+  message(STATUS "biltoo: OpenCV face detection enabled (${OpenCV_VERSION})")
+else()
+  message(STATUS "biltoo: OpenCV not found — face detection backend is null")
+endif()
 
 if(PkgConfig_FOUND)
   # libvips — host ImageLoader extras (HEIF/AVIF buffer path, autorot, attention
@@ -740,12 +763,14 @@ biltoo_feature_status(BILTOO_FEATURE_THUMTOO_MUPDF _st_mupdf)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_DJVU _st_djvu)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_CURL _st_curl)
 biltoo_feature_status(BILTOO_FEATURE_THUMTOO_TESSERACT _st_tesseract)
+biltoo_feature_status(BILTOO_FEATURE_OPENCV _st_opencv)
 
 message(STATUS "")
 message(STATUS "Biltoo ${PROJECT_VERSION_FULL} — build summary")
 message(STATUS "  Qt6 .............. required ≥ 6.9 (Core Gui Widgets Svg OpenGLWidgets PrintSupport)")
 message(STATUS "  libvips .......... ${_st_vips}  (extra image codecs, autorot, attention Pan&Zoom)")
 message(STATUS "  libexiv2 ......... ${_st_exiv2}  (Exif/IPTC/XMP metadata panel)")
+message(STATUS "  OpenCV ........... ${_st_opencv}  (YuNet face detection)")
 message(STATUS "  archives ......... ${_st_archive}  (via thumtoo; zip/tar/7z/rar/…)")
 message(STATUS "  gio-unix-2.0 ..... ${_st_gio}  (default-application Preferences)")
 message(STATUS "  thumtoo .......... ${_st_thumtoo}  (durable size index + display ladder)")

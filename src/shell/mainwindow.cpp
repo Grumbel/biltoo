@@ -588,6 +588,91 @@ m_ocrPanel = new OcrPanel(this);
     connect(m_ocrPanel, &OcrPanel::runRequested, this, &MainWindow::runOcrFromPanel);
     connect(m_ocrPanel, &OcrPanel::cancelRequested, this, &MainWindow::cancelOcrBatch);
 
+    m_faceCtrl = new biltoo::face::FaceController(this);
+    if (m_imageView) {
+        m_imageView->setFaceController(m_faceCtrl);
+    }
+    m_facePanel = new FacePanel(this);
+    m_faceDock = new DockWidget(QStringLiteral("FaceDock"));
+    m_faceDock->setTitle(tr("Face Detection"));
+    m_faceDock->setWidget(m_facePanel);
+    addDockWidget(m_faceDock, KDDockWidgets::Location_OnRight);
+    m_faceDock->close();
+    {
+        const auto info = m_faceCtrl->detectorInfo();
+        m_facePanel->setBackendSummary(
+            tr("Backend: %1 — %2").arg(info.displayName, info.detail));
+        QSettings settings;
+        m_facePanel->setScoreThreshold(
+            settings.value(QStringLiteral("face/scoreThreshold"), 0.6).toFloat());
+        m_facePanel->setOverlayVisible(
+            settings.value(QStringLiteral("face/overlay"), true).toBool());
+        m_facePanel->setShowLandmarks(
+            settings.value(QStringLiteral("face/landmarks"), true).toBool());
+        m_faceCtrl->setScoreThreshold(m_facePanel->scoreThreshold());
+        m_faceCtrl->setOverlayVisible(m_facePanel->overlayVisible());
+        m_faceCtrl->setShowLandmarks(m_facePanel->showLandmarks());
+    }
+    connect(m_facePanel, &FacePanel::detectRequested, this, &MainWindow::runFaceDetectFromPanel);
+    connect(m_facePanel, &FacePanel::clearRequested, this, [this]() {
+        if (m_faceCtrl) {
+            m_faceCtrl->clearResults();
+        }
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    });
+    connect(m_facePanel, &FacePanel::scoreThresholdChanged, this, [this](float t) {
+        if (m_faceCtrl) {
+            m_faceCtrl->setScoreThreshold(t);
+        }
+        QSettings settings;
+        settings.setValue(QStringLiteral("face/scoreThreshold"), t);
+    });
+    connect(m_facePanel, &FacePanel::overlayVisibleChanged, this, [this](bool on) {
+        if (m_faceCtrl) {
+            m_faceCtrl->setOverlayVisible(on);
+        }
+        QSettings settings;
+        settings.setValue(QStringLiteral("face/overlay"), on);
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    });
+    connect(m_facePanel, &FacePanel::showLandmarksChanged, this, [this](bool on) {
+        if (m_faceCtrl) {
+            m_faceCtrl->setShowLandmarks(on);
+        }
+        QSettings settings;
+        settings.setValue(QStringLiteral("face/landmarks"), on);
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    });
+    connect(m_faceCtrl, &biltoo::face::FaceController::busyChanged, this, [this](bool busy) {
+        if (m_facePanel) {
+            m_facePanel->setBusy(busy);
+        }
+    });
+    connect(m_faceCtrl, &biltoo::face::FaceController::detectionFinished, this, [this]() {
+        updateFacePanel();
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+        const auto &r = m_faceCtrl->lastResult();
+        if (!r.error.isEmpty() && statusBar()) {
+            statusBar()->showMessage(r.error, 6000);
+        } else if (statusBar()) {
+            statusBar()->showMessage(
+                tr("Detected %n face(s).", nullptr, r.faces.size()), 4000);
+        }
+    });
+    connect(m_faceCtrl, &biltoo::face::FaceController::overlaySettingsChanged, this, [this]() {
+        if (m_imageView && m_imageView->viewport()) {
+            m_imageView->viewport()->update();
+        }
+    });
+
     m_textPanel = new TextPanel(this);
     m_textDock = new DockWidget(QStringLiteral("TextDock"));
     m_textDock->setTitle(tr("Text"));
@@ -6630,6 +6715,75 @@ void MainWindow::runOcrFromPanel()
     } else {
         startOcrCurrentPage();
     }
+}
+
+void MainWindow::runFaceDetectFromPanel()
+{
+    if (!m_faceCtrl || !m_imageView) {
+        return;
+    }
+    ImageItem *item = nullptr;
+    const auto items = m_imageView->liveItems();
+    if (!items.isEmpty()) {
+        item = items.first();
+        for (ImageItem *it : items) {
+            if (it && it->sessionId() == m_imageView->hostSessionId().currentIdValue()) {
+                item = it;
+                break;
+            }
+        }
+    }
+    if (!item) {
+        if (m_facePanel) {
+            m_facePanel->setStatus(tr("No image on canvas."));
+        }
+        return;
+    }
+    QImage sample = item->sourceImage();
+    if (sample.isNull()) {
+        sample = item->displayImage();
+    }
+    if (sample.isNull()) {
+        if (m_facePanel) {
+            m_facePanel->setStatus(tr("Image pixels not loaded yet."));
+        }
+        return;
+    }
+    m_faceCtrl->detectAsync(item->path(), sample);
+}
+
+void MainWindow::updateFacePanel()
+{
+    if (!m_facePanel || !m_faceCtrl) {
+        return;
+    }
+    const auto info = m_faceCtrl->detectorInfo();
+    m_facePanel->setBackendSummary(
+        tr("Backend: %1 — %2").arg(info.displayName, info.detail));
+    const auto &r = m_faceCtrl->lastResult();
+    if (!r.error.isEmpty()) {
+        m_facePanel->setStatus(r.error);
+    } else if (r.faces.isEmpty() && r.path.isEmpty()) {
+        m_facePanel->setStatus(tr("Idle — detect faces on the current image."));
+    } else if (r.faces.isEmpty()) {
+        m_facePanel->setStatus(
+            tr("No faces detected on %1").arg(QFileInfo(r.path).fileName()));
+    } else {
+        m_facePanel->setStatus(
+            tr("%1 face(s) on %2")
+                .arg(r.faces.size())
+                .arg(QFileInfo(r.path).fileName()));
+    }
+    QStringList lines;
+    for (int i = 0; i < r.faces.size(); ++i) {
+        const auto &f = r.faces.at(i);
+        lines.append(tr("#%1  score %2  %3×%4")
+                         .arg(i + 1)
+                         .arg(f.score, 0, 'f', 2)
+                         .arg(int(f.rect.width()))
+                         .arg(int(f.rect.height())));
+    }
+    m_facePanel->setFacesSummary(lines);
 }
 
 void MainWindow::updateOcrPanel()

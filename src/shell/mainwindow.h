@@ -14,6 +14,7 @@ class SessionListStore;
 #include "session/sessionsort.h"
 #include "imageview_types.h"
 #include "session/projectfile.h"
+#include "face/facecontroller.h"
 
 #include <kddockwidgets/qtwidgets/MainWindow.h>
 #include <kddockwidgets/qtwidgets/DockWidget.h>
@@ -39,6 +40,7 @@ class AdjustmentsPanel;
 class CropPanel;
 class AnnotationPanel;
 class OcrPanel;
+class FacePanel;
 class MessageLogPanel;
 class PerformancePanel;
 class TextPanel;
@@ -429,6 +431,8 @@ private slots:
     void updateAnnotationPanel();
     void updateOcrPanel();
     void runOcrFromPanel();
+    void runFaceDetectFromPanel();
+    void updateFacePanel();
     void updateTextPanel();
     void connectTextPanel();
     void connectTextToSpeech();
@@ -649,6 +653,10 @@ private:
     OcrPanel *m_ocrPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_ocrDock = nullptr;
     QAction *m_toggleOcrAct = nullptr;
+    FacePanel *m_facePanel = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_faceDock = nullptr;
+    QAction *m_toggleFaceAct = nullptr;
+    biltoo::face::FaceController *m_faceCtrl = nullptr;
     TextPanel *m_textPanel = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_textDock = nullptr;
     MessageLogPanel *m_messageLogPanel = nullptr;

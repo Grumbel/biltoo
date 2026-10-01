@@ -22,6 +22,8 @@
 #include "shell/annotationpanel.h"
 #include "annotation/annotationtypes.h"
 #include "shell/ocrpanel.h"
+#include "shell/facepanel.h"
+#include "face/facecontroller.h"
 #include "shell/textpanel.h"
 #include "speech/texttospeechcontroller.h"
 #include "SentenceSplitter.h"

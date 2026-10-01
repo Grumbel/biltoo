@@ -40,6 +40,7 @@
 #include "image/toolpolicy.h"
 #include "image/toolcursors.h"
 #include "display/displaypipelinecontroller.h"
+#include "face/facecontroller.h"
 
 #include <QMouseEvent>
 #include <QEvent>
@@ -634,6 +635,9 @@ void ViewShellChrome::paintForeground(QPainter *painter, const QRectF &rect)
     // Annotations: page→source→display→scene (same space as text overlays).
     // Must run before resetTransform — paintOverlay draws scene coordinates.
     m_view->hostAnnot().paintOverlay(*painter);
+    if (m_view->faceController()) {
+        m_view->faceController()->paintSceneOverlay(painter, m_view);
+    }
     // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
     // is not invalidated on select or scroll (was painted inside ImageItem::paint).
     if (m_view->isGalleryMode()) {

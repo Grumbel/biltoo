@@ -17,6 +17,11 @@
 #include "item/iteminteractsession.h"
 #include "view/viewframing.h"
 #include "text/textlayercontroller.h"
+
+namespace biltoo::face {
+class FaceController;
+}
+
 #include "slideshow/zoomregiongesture.h"
 #include "gallery/layoutprefs.h"
 #include "view/viewshellchrome.h"

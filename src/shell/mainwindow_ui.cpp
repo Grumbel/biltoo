@@ -1075,6 +1075,17 @@ void MainWindow::createActions()
             }
         });
     }
+    if (m_faceDock) {
+        m_toggleFaceAct = m_faceDock->toggleAction();
+        m_toggleFaceAct->setText(tr("Show &Face Detection"));
+        m_toggleFaceAct->setStatusTip(tr("Show or hide the face detection panel"));
+        connect(m_faceDock, &KDDockWidgets::QtWidgets::DockWidget::isOpenChanged, this,
+                [this](bool visible) {
+                    if (visible) {
+                        updateFacePanel();
+                    }
+                });
+    }
     if (m_textDock) {
         m_toggleTextAct = m_textDock->toggleAction();
         m_toggleTextAct->setText(tr("Show Te&xt Panel"));
@@ -1443,6 +1454,9 @@ void MainWindow::createMenus()
     }
     if (m_toggleOcrAct) {
         m_panelsMenu->addAction(m_toggleOcrAct);
+    }
+    if (m_toggleFaceAct) {
+        m_panelsMenu->addAction(m_toggleFaceAct);
     }
     if (m_toggleTextAct) {
         m_panelsMenu->addAction(m_toggleTextAct);

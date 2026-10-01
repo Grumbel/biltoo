@@ -105,6 +105,9 @@
     const AnnotationController &hostAnnot() const { return m_annotCtrl; }
     AttentionController &hostAttention() { return m_attentionCtrl; }
     const AttentionController &hostAttention() const { return m_attentionCtrl; }
+    /** Optional face-detection overlay (owned by MainWindow; non-owning here). */
+    void setFaceController(biltoo::face::FaceController *c) { m_faceCtrl = c; }
+    biltoo::face::FaceController *faceController() const { return m_faceCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */
     TextLayerSession &hostTextLayer() override { return m_textCtrl.session(); }
     const TextLayerSession &hostTextLayer() const override { return m_textCtrl.session(); }

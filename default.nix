@@ -6,6 +6,7 @@
 , wrapQtAppsHook
 , vips
 , exiv2
+, opencv
 , glib
 , libsysprof-capture
 , fftw
@@ -84,6 +85,7 @@ stdenv.mkDerivation (finalAttrs: {
     pipewire
     vips
     exiv2
+    opencv
     glib
     # glib Requires.private: sysprof-capture-4 — needed so pkg-config probes of
     # vips / gio-unix-2.0 do not spam "Package sysprof-capture-4 was not found".

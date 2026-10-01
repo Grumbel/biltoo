@@ -246,6 +246,8 @@
     CropController m_cropCtrl;
     AnnotationController m_annotCtrl;
     AttentionController m_attentionCtrl;
+    /** Face detection overlay; owned by MainWindow when set. */
+    biltoo::face::FaceController *m_faceCtrl = nullptr;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;
     /** Shared Select/Pan/Zoom tool across Image / Gallery / Workspace. */
