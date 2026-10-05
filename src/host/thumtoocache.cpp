@@ -756,6 +756,16 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
+bool denserLiveDenied(const QString &path)
+{
+    return ProcessMemos::instance().denserLiveDenied(path);
+}
+
+void noteDenserLiveDenied(const QString &path)
+{
+    ProcessMemos::instance().noteDenserLiveDenied(path);
+}
+
 void forgetCachedSize(const QString &path)
 {
     if (!path.isEmpty()) {

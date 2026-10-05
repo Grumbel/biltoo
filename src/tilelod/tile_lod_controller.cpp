@@ -106,6 +106,16 @@ int TileLodController::tick(int requestBudget)
   // issue_requests(0) — that recorded early=2 and looked like denser starvation.
   if (requestBudget > 0) {
     m_session->issue_requests(requestBudget);
+    // Thumtoo rejects denser (scale<0) on image-heavy PDF pages (scans). Once
+    // every denser visible cell Failed, memo so prepare floors min_scale at 0.
+    if (m_session && !m_path.isEmpty()
+        && m_session->target_scale() < 0) {
+      auto const cov = m_session->coverage();
+      if (cov.visible > 0 && cov.in_flight == 0 && cov.missing == 0
+          && cov.exact_succeeded == 0 && cov.failed >= cov.visible) {
+        ThumtooCache::noteDenserLiveDenied(m_path);
+      }
+    }
   }
   return applied;
 }

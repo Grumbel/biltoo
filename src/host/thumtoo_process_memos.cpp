@@ -111,6 +111,7 @@ void ProcessMemos::clearDurablePath(const QString &path)
     m_durableYes.remove(path);
     m_durableMinScale.remove(path);
     m_durableNoUntilMs.remove(path);
+    m_denserLiveDenied.remove(path);
 }
 
 void ProcessMemos::clearSessionReplaceDurable()
@@ -122,3 +123,31 @@ void ProcessMemos::clearSessionReplaceDurable()
 }
 
 } // namespace ThumtooCache
+
+bool ProcessMemos::denserLiveDenied(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    std::lock_guard lock(m_mu);
+    return m_denserLiveDenied.contains(path);
+}
+
+void ProcessMemos::noteDenserLiveDenied(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(m_mu);
+    m_denserLiveDenied.insert(path);
+}
+
+void ProcessMemos::clearDenserLiveDenied(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(m_mu);
+    m_denserLiveDenied.remove(path);
+}
+

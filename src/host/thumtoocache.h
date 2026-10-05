@@ -354,6 +354,10 @@ bool hasDurableTiles(const QString &path);
  * or negative. Never opens the Store — safe on GUI hot paths.
  */
 bool hasDurableTilesKnown(const QString &path);
+
+/** True after denser (scale<0) tiles all Failed — thumtoo image-heavy page. */
+bool denserLiveDenied(const QString &path);
+void noteDenserLiveDenied(const QString &path);
 /**
  * Worker: Store has_tile for @p path (deduped). Emits durableTilesReady on first yes.
  * GUI-safe. Use when filmstrip/Gallery need warm TileSynth but process memo is unknown.

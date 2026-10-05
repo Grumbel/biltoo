@@ -382,8 +382,12 @@ void ImageItem::prepareTileLodPlan()
     // document-page URI path exists.
     const bool documentLiveTiles =
         PagePath::isPageRef(m_path) || PagePath::isTextForceRef(m_path);
+    // Thumtoo: image-heavy PDF pages refuse scale < 0 (nullopt → all Failed).
+    // After one denser wipe, floor at 0 for the process (see noteDenserLiveDenied).
     const int scaleFloor =
-        documentLiveTiles ? tilelod::kDocumentLiveMinScale : 0;
+        (documentLiveTiles && !ThumtooCache::denserLiveDenied(m_path))
+            ? tilelod::kDocumentLiveMinScale
+            : 0;
     int minScale = scaleFloor;
     bool galleryLayout = !m_galleryCellSize.isEmpty();
     if (!galleryLayout && scene() && !scene()->views().isEmpty()) {
