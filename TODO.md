@@ -2,15 +2,15 @@
 
 ## Status (2026-10-05)
 
-**Tip:** biltoo-2892.3-pdf-tile-native-size (linear stack on `a889409`).
+**Tip:** biltoo-2892.4-denser-gen-storm (linear stack on `a889409`).
+
+### 2892.4
+- PDF denser stuck PARENT + gen spin: warm RAM skipped progressive climb to
+  −3 (15 InFlight); visSource subpixel jitter bumped generation every frame.
+  Progressive denser from 0; quantize viewport; calmer wake re-arm.
 
 ### 2892.3
-- PDF/page/archive: `tileNativeSize()` never uses soft `imageSize()`; wait for
-  ProcessMemos/SizeReply. Soft size as grid caused Failed denser + PARENT.
-- TileSession: backoff `min_scale` when all denser (scale<0) cells Failed.
-
-### 2892.1–2892.2
-- Tile climb wake; slideshow wake null warning.
+- tileNativeSize never soft size for page/archive; denser Failed backoff.
 
 ### Bundle policy
 Work-line base: `a889409`. Full stack `a889409..HEAD`.
