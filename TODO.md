@@ -2,16 +2,15 @@
 
 ## Status (2026-10-05)
 
-**Tip:** biltoo-2892.1-tile-climb-wake (linear stack on `a889409`).
+**Tip:** biltoo-2892.2-slideshow-wake-null (linear stack on `a889409`).
+
+### 2892.2
+- Slideshow tile wake: tick via `QPointer<SlideshowController>` +
+  `tickSlideshowTileLod` (no `hostDisplayPipeline` null-deref warning).
 
 ### 2892.1
-- ImageView stuck on coarse tiles: `prepareTileLodPlan` early-return skipped
-  `set_wake`; always install wake; re-arm while holding / in-flight.
-- Slideshow stuck coarse on dwell: phase wake only updated the viewport —
-  now `tickPrimaryTileLod` then update.
-
-### 2891.x
-- Open With… feature and fixes (see prior commits).
+- Image/Slideshow coarse-tile climb: always install wake; slideshow pumps
+  on completion.
 
 ### Bundle policy
 Work-line base: `a889409`. Full stack `a889409..HEAD`.
