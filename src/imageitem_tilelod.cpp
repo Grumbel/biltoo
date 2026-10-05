@@ -22,6 +22,7 @@
 #include "view/viewtransform.h"
 #include "imageview.h"
 #include "host/pagepath.h"
+#include "host/archivepath.h"
 
 #include <QDebug>
 #include <QFileInfo>
@@ -237,6 +238,14 @@ QSize ImageItem::tileNativeSize() const
     if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
         return cached;
     }
+    // PDF/EPUB/DjVu page refs and archive members: never use soft/ladder
+    // imageSize() as the tile grid. Thumtoo keys cells by authoritative page
+    // size; a PreferCache sample (~512 long edge) as "native" yields wrong
+    // (x,y) at every scale → Failed denser cells and PARENT-only paint.
+    if (PagePath::isPageRef(m_path) || PagePath::isTextForceRef(m_path)
+        || PagePath::isPdfImageRef(m_path) || ArchivePath::isArchiveRef(m_path)) {
+        return {};
+    }
     // Layout imageSize() is *oriented* / post-crop content size. Tile grid is
     // always file-native. Orient or crop makes layout ≠ native (UV / density
     // mismatch → squished tiles in a correct crop box).
@@ -246,7 +255,9 @@ QSize ImageItem::tileNativeSize() const
         || (x.hasCrop && !x.cropRect.isEmpty())) {
         return {};
     }
-    // Identity xform only: layout size matches native probe.
+    // Raster identity xform only: layout size matches native probe.
+    // Soft/ladder samples are still possible here — callers that need a hard
+    // guarantee should wait for ProcessMemos / sizeReady.
     return imageSize();
 }
 

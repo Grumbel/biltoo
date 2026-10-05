@@ -432,6 +432,54 @@ int TileSession::pump()
   return applied;
 }
 
+
+bool TileSession::backoff_failed_denser()
+{
+  // Live denser PDF/DjVu/EPUB tiles (scale < 0) can all miss when the host
+  // grid size disagrees with thumtoo or the source cannot encode that density.
+  // Leaving Failed no-spam keys stuck the view on PARENT/LQIP forever.
+  if (m_target_scale >= 0 || m_content_w <= 0) {
+    return false;
+  }
+  Coverage const cov = coverage();
+  if (cov.visible <= 0 || cov.in_flight > 0 || cov.missing > 0) {
+    return false;
+  }
+  if (cov.exact_succeeded > 0 || cov.failed < cov.visible) {
+    return false;
+  }
+  // Raise the floor to just above the failed denser target (never above 0).
+  int raised = m_target_scale + 1;
+  if (raised > 0) {
+    raised = 0;
+  }
+  if (raised <= m_min_scale) {
+    return false;
+  }
+  m_min_scale = raised;
+  if (m_desired_scale < m_min_scale) {
+    m_desired_scale = m_min_scale;
+  }
+  if (m_stable_scale < m_min_scale) {
+    m_stable_scale = m_min_scale;
+  }
+  m_reached_desired = (m_stable_scale <= m_desired_scale);
+  ++m_generation;
+  PlannerInput in;
+  in.content_w = m_content_w;
+  in.content_h = m_content_h;
+  in.min_scale = m_stable_scale;
+  in.max_scale = m_stable_scale;
+  in.viewport = m_viewport;
+  in.margin_content = 0;
+  PlannerOutput const out = plan_visible_tiles(in);
+  m_target_scale = out.target_scale;
+  m_visible_keys = out.visible_keys;
+  cancel_obsolete();
+  m_draw_plan_dirty = true;
+  return true;
+}
+
 int TileSession::issue_requests(int budget)
 {
   if (!m_source || budget <= 0 || m_content_w <= 0) {
@@ -440,6 +488,7 @@ int TileSession::issue_requests(int budget)
 
   // Climb one level if the current plan is fully settled.
   (void)advance_progressive_scale();
+  (void)backoff_failed_denser();
 
   // Issue only keys in the current plan (m_visible_keys at m_target_scale).
   // Coarser parents are drawn as stand-ins via draw_plan; requesting every

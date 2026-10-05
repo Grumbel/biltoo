@@ -192,6 +192,8 @@ private:
   bool visible_keys_settled() const;
   /** Step held scale toward desired once visible keys at held scale settled. */
   bool advance_progressive_scale();
+  /** When every denser (scale<0) visible cell Failed, raise min_scale. */
+  bool backoff_failed_denser();
 
   TileMemoryCache m_owned_cache;
   TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache
