@@ -494,6 +494,16 @@ void ImageItem::prepareTileLodPlan()
         visSource = visSource.intersected(
             QRectF(0, 0, native.width(), native.height()));
     }
+
+    // Quantize content-space visibility to whole pixels. Subpixel jitter from
+    // view transforms otherwise changes tile index edges every frame →
+    // generation storms, perpetual InFlight denser cells, PARENT-only paint.
+    visSource = QRectF(QRect(visSource.toAlignedRect())).intersected(
+        QRectF(0, 0, native.width(), native.height()));
+    if (visSource.isEmpty()) {
+        visSource = QRectF(0, 0, native.width(), native.height());
+    }
+
     // Completions arrive off the GUI; without a wake, pump never runs until the
     // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
     // Install on *every* prepare — including the static-viewport early return —
@@ -510,10 +520,9 @@ void ImageItem::prepareTileLodPlan()
                     return;
                 }
                 const int applied = tileLodBag().controller->tick(12);
-                Q_UNUSED(applied);
-                // Progressive climb / remaining inbox: schedule another pump if
-                // the viewport is not yet fully covered at the desired scale.
-                // Caps via singleShot(0) + coverage check (Failed settle stops).
+                // Pump remaining inbox / progressive climb without a paint storm.
+                // singleShot(0) every completion while inflight was regenerating
+                // the tile plan every frame (generation spin, denser stuck).
                 if (alive && *alive && tileLodBag().controller
                     && !tileLodBag().controller->viewportFullyCovered()) {
                     auto *session = tileLodBag().controller->session();
@@ -521,21 +530,25 @@ void ImageItem::prepareTileLodPlan()
                         && (session->request_scale_holding()
                             || session->coverage().in_flight > 0
                             || applied > 0)) {
-                        QTimer::singleShot(0, QCoreApplication::instance(),
+                        QTimer::singleShot(16, QCoreApplication::instance(),
                                            [this, alive]() {
                             if (!alive || !*alive || !tileLodBag().controller) {
                                 return;
                             }
-                            tileLodBag().controller->tick(12);
-                            update();
+                            const int more = tileLodBag().controller->tick(12);
+                            if (more > 0) {
+                                update();
+                            }
                         });
                     }
                 }
-                update();
-                if (scene()) {
-                    for (QGraphicsView *v : scene()->views()) {
-                        if (v && v->viewport()) {
-                            v->viewport()->update();
+                if (applied > 0) {
+                    update();
+                    if (scene()) {
+                        for (QGraphicsView *v : scene()->views()) {
+                            if (v && v->viewport()) {
+                                v->viewport()->update();
+                            }
                         }
                     }
                 }

@@ -134,9 +134,19 @@ int TileSession::stable_request_scale(int desired_scale)
     // Warm shared cache: density target immediately.
     // Cold: at most *one* coarser step than desired — full max_scale walks
     // left Gallery stuck on LQIP for many coordinator ticks (2 cells/tick).
-    if (has_any_succeeded_tile()) {
+    if (has_any_succeeded_tile() && desired_scale >= 0) {
+      // Warm positive-scale RAM: jump to density target.
       m_stable_scale = desired_scale;
       m_reached_desired = true;
+    } else if (desired_scale < 0) {
+      // Live denser (PDF/DjVu/EPUB scale < 0): always progressive from 0 (or
+      // one step above desired). Warm layout tiles must not skip straight to
+      // −3 (15 InFlight encode storm, generation churn, PARENT-only paint).
+      m_stable_scale = 0;
+      if (m_stable_scale < desired_scale) {
+        m_stable_scale = desired_scale;
+      }
+      m_reached_desired = (m_stable_scale <= desired_scale);
     } else if (m_max_scale > desired_scale) {
       m_stable_scale = desired_scale + 1;
       m_reached_desired = false;
@@ -274,6 +284,18 @@ bool TileSession::advance_progressive_scale()
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
 {
   m_viewport = vp;
+  // Integer content pixels — subpixel rect noise must not reshuffle tile keys.
+  {
+    RectF &r = m_viewport.content_rect;
+    int const x0 = static_cast<int>(std::floor(r.x));
+    int const y0 = static_cast<int>(std::floor(r.y));
+    int const x1 = static_cast<int>(std::ceil(r.x + r.w));
+    int const y1 = static_cast<int>(std::ceil(r.y + r.h));
+    r.x = static_cast<double>(x0);
+    r.y = static_cast<double>(y0);
+    r.w = static_cast<double>(std::max(0, x1 - x0));
+    r.h = static_cast<double>(std::max(0, y1 - y0));
+  }
 
   PlannerInput in;
   in.content_w = m_content_w;
