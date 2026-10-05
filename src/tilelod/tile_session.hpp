@@ -116,12 +116,16 @@ public:
   struct DebugSnapshot {
     int target_scale = 0;
     int desired_scale = 0;
+    int stable_scale = 0;
     int min_scale = 0;
     int max_scale = 0;
     int visible = 0;
     int exact_succeeded = 0;
     int in_flight = 0;
+    int failed = 0;
+    int missing = 0;
     int cache_succeeded = 0;
+    int scale0_ok = 0;  // 1 if any Succeeded cell at exact scale 0
     /// Draw-plan command histogram (visible keys only).
     int plan_exact = 0;
     int plan_parent = 0;
