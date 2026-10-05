@@ -120,9 +120,8 @@ void ProcessMemos::clearSessionReplaceDurable()
     m_durableYes.clear();
     m_durableMinScale.clear();
     m_durableNoUntilMs.clear();
+    m_denserLiveDenied.clear();
 }
-
-} // namespace ThumtooCache
 
 bool ProcessMemos::denserLiveDenied(const QString &path) const
 {
@@ -151,3 +150,4 @@ void ProcessMemos::clearDenserLiveDenied(const QString &path)
     m_denserLiveDenied.remove(path);
 }
 
+} // namespace ThumtooCache
