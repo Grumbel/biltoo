@@ -4,6 +4,7 @@
 #include "tilelod/tile_lod_controller.hpp"
 
 #include "display/displayquality.h"
+#include "host/thumtoocache.h"
 
 #include <QPainter>
 
