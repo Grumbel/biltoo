@@ -30,6 +30,7 @@
 #include <QScreen>
 #include <QStatusBar>
 #include <QMessageBox>
+#include <QMenu>
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
