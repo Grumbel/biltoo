@@ -543,13 +543,39 @@ bool TileSession::backoff_failed_denser()
 
 int TileSession::issue_requests(int budget)
 {
-  if (!m_source || budget <= 0 || m_content_w <= 0) {
+  IssueDiag d{};
+  d.budget = budget;
+  d.content_w = m_content_w;
+  d.content_h = m_content_h;
+  d.target = m_target_scale;
+  d.gen = m_generation;
+  d.s0 = has_succeeded_at_scale(0) ? 1 : 0;
+  d.vis = static_cast<int>(m_visible_keys.size());
+
+  if (!m_source) {
+    d.early = 1;
+    m_last_issue = d;
+    return 0;
+  }
+  if (budget <= 0) {
+    d.early = 2;
+    m_last_issue = d;
+    return 0;
+  }
+  if (m_content_w <= 0) {
+    d.early = 3;
+    m_last_issue = d;
     return 0;
   }
 
   // Climb one level if the current plan is fully settled.
   (void)advance_progressive_scale();
   // Do NOT backoff before issue — missing denser keys must be requested first.
+  // Re-sample after possible progressive replan.
+  d.target = m_target_scale;
+  d.gen = m_generation;
+  d.vis = static_cast<int>(m_visible_keys.size());
+  d.s0 = has_succeeded_at_scale(0) ? 1 : 0;
 
   // Issue only keys in the current plan (m_visible_keys at m_target_scale).
   // Coarser parents are drawn as stand-ins via draw_plan; requesting every
@@ -573,9 +599,11 @@ int TileSession::issue_requests(int budget)
     CacheEntry const* e = m_cache->find(key);
     if (e && (e->state == TileState::Succeeded ||
               e->state == TileState::InFlight)) {
+      ++d.skip_ok;
       continue;
     }
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
+      ++d.skip_fail;
       continue;
     }
     // Raster pyramids (min_scale >= 0): require a coarser success before
@@ -584,12 +612,14 @@ int TileSession::issue_requests(int budget)
     // (never issue 0 → never denser; hold forever with exact=0 inflight=0).
     if (key.scale == 0 && m_min_scale >= 0 && m_max_scale > 0
         && !has_succeeded_scale_ge(1)) {
+      ++d.skip_s0gate;
       continue;
     }
     // Denser live cells need **exact scale 0** success first. Coarser-only
     // pathRam (s=1,2) used to pass has_succeeded_scale_ge(0) and leave tgt=-1
     // with exact=0 inflight=0 forever (denser gated, progressive already past 0).
     if (key.scale < 0 && !has_succeeded_at_scale(0)) {
+      ++d.skip_denser;
       continue;
     }
     RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
@@ -600,6 +630,7 @@ int TileSession::issue_requests(int budget)
     missing.push_back({key, dx * dx + dy * dy});
   }
 
+  d.cand = static_cast<int>(missing.size());
   std::sort(missing.begin(), missing.end(),
             [](Scored const& a, Scored const& b) { return a.dist2 < b.dist2; });
 
@@ -619,6 +650,9 @@ int TileSession::issue_requests(int budget)
     m_cache->set_in_flight(s.key, gen);
     batch.push_back(s.key);
   }
+
+  d.batched = static_cast<int>(batch.size());
+  m_last_issue = d;
 
   if (batch.empty()) {
     if (m_target_scale < 0 && m_content_w > 0) {
@@ -796,6 +830,7 @@ TileSession::DebugSnapshot TileSession::debug_snapshot() const
   s.holding = request_scale_holding();
   s.reached_desired = m_reached_desired;
   s.generation = m_generation;
+  s.issue = m_last_issue;
   s.has_lqip = m_has_lqip;
   s.scale0_ok = has_succeeded_at_scale(0) ? 1 : 0;
   Coverage const c = coverage();

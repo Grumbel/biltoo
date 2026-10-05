@@ -112,6 +112,24 @@ public:
   };
   Coverage coverage() const;
 
+  /** Counts from the last issue_requests() call (BILTOO_TILE_DEBUG). */
+  struct IssueDiag {
+    int early = 0;       // 0=ran, 1=no source, 2=budget, 3=no content
+    int vis = 0;
+    int skip_ok = 0;     // already Succeeded/InFlight
+    int skip_fail = 0;   // Failed this generation
+    int skip_s0gate = 0; // scale0 needs coarser
+    int skip_denser = 0; // denser needs exact s=0
+    int cand = 0;        // scored for issue
+    int batched = 0;     // set_in_flight + handed to source
+    int content_w = 0;
+    int content_h = 0;
+    int target = 0;
+    int budget = 0;
+    std::uint64_t gen = 0;
+    int s0 = 0;
+  };
+
   /** Lightweight snapshot for BILTOO_TILE_DEBUG host logs. */
   struct DebugSnapshot {
     int target_scale = 0;
@@ -136,8 +154,11 @@ public:
     bool holding = false;
     bool reached_desired = false;
     std::uint64_t generation = 0;
+    IssueDiag issue;
   };
   DebugSnapshot debug_snapshot() const;
+  IssueDiag const& last_issue_diag() const { return m_last_issue; }
+
 
   void set_byte_budget(std::size_t bytes) { m_byte_budget = bytes; }
 
@@ -184,6 +205,7 @@ private:
   int m_desired_scale = 0;
   std::vector<TileKey> m_visible_keys;
   std::uint64_t m_generation = 0;
+  IssueDiag m_last_issue{};
 
   // Debounce adjacent scale steps during continuous zoom (Galapix lesson).
   bool m_have_stable_scale = false;

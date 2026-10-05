@@ -719,10 +719,13 @@ QString ImageItem::tileLodDebugLine() const
     const tilelod::TileSession::DebugSnapshot s =
         tileLodBag().controller->session()->debug_snapshot();
     // plan=E/P/U/H: Exact / Parent / Underlay / Hole counts for visible keys.
+    const auto &iss = s.issue;
     return QStringLiteral(
                "%1 tgt=%2 des=%3 st=%4 min=%5 max=%6 vis=%7 exact=%8 miss=%9 "
                "fail=%10 inflight=%11 cacheOk=%12 s0=%13 plan=%14/%15/%16/%17 "
-               "lqip=%18 hold=%19 reached=%20 gen=%21 pathRam=%22 disp=%23")
+               "lqip=%18 hold=%19 reached=%20 gen=%21 pathRam=%22 disp=%23 | "
+               "issue early=%24 vis=%25 cand=%26 bat=%27 skipOk=%28 skipFail=%29 "
+               "skipS0g=%30 skipDen=%31 bud=%32 cw=%33x%34 iss0=%35")
         .arg(name)
         .arg(s.target_scale)
         .arg(s.desired_scale)
@@ -745,5 +748,17 @@ QString ImageItem::tileLodDebugLine() const
         .arg(s.reached_desired ? 1 : 0)
         .arg(static_cast<qulonglong>(s.generation))
         .arg(pathRam)
-        .arg(displayPixelLongEdge());
+        .arg(displayPixelLongEdge())
+        .arg(iss.early)
+        .arg(iss.vis)
+        .arg(iss.cand)
+        .arg(iss.batched)
+        .arg(iss.skip_ok)
+        .arg(iss.skip_fail)
+        .arg(iss.skip_s0gate)
+        .arg(iss.skip_denser)
+        .arg(iss.budget)
+        .arg(iss.content_w)
+        .arg(iss.content_h)
+        .arg(iss.s0);
 }
