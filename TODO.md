@@ -2,15 +2,11 @@
 
 ## Status (2026-10-05)
 
-**Tip:** biltoo-2892.4-denser-gen-storm (linear stack on `a889409`).
+**Tip:** biltoo-2892.5-denser-scale0-deadlock (linear stack on `a889409`).
 
-### 2892.4
-- PDF denser stuck PARENT + gen spin: warm RAM skipped progressive climb to
-  −3 (15 InFlight); visSource subpixel jitter bumped generation every frame.
-  Progressive denser from 0; quantize viewport; calmer wake re-arm.
-
-### 2892.3
-- tileNativeSize never soft size for page/archive; denser Failed backoff.
+### 2892.5
+- Denser hold stuck exact=0 inflight=0: scale-0 issue gate deadlocked document
+  progressive climb; backoff denser when no exact hits and nothing in flight.
 
 ### Bundle policy
 Work-line base: `a889409`. Full stack `a889409..HEAD`.
