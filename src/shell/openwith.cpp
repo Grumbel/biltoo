@@ -8,10 +8,10 @@
 #include <gio/gdesktopappinfo.h>
 #endif
 
-#include "openwith.h"
+#include "shell/openwith.h"
 
-#include "archivepath.h"
-#include "pagepath.h"
+#include "host/archivepath.h"
+#include "host/pagepath.h"
 
 #include <QAction>
 #include <QDesktopServices>
