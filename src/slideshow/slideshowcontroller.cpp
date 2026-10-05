@@ -1927,16 +1927,19 @@ bool SlideshowController::tickSlideshowTileLod(int budget)
             lod->setPath(path);
         }
         if (lod->session() && m_view) {
+            // Prefer QPointer to this controller (QObject) over hostDisplayPipeline:
+            // the latter asserts on a null pipeline and trips -Wnull-dereference
+            // when the ImageView capture is only checked at the call site.
+            QPointer<SlideshowController> self(this);
             QPointer<ImageView> view(m_view);
-            lod->session()->set_wake([view]() {
-                QTimer::singleShot(0, QCoreApplication::instance(), [view]() {
-                    if (!view) {
-                        return;
+            lod->session()->set_wake([self, view]() {
+                QTimer::singleShot(0, QCoreApplication::instance(), [self, view]() {
+                    if (self) {
+                        // Pump progressive climb; update-only left inbox tiles
+                        // unapplied until the next slideshow timer tick.
+                        (void)self->tickSlideshowTileLod(32);
                     }
-                    // Pump progressive climb; update-only left inbox tiles unapplied
-                    // until the next slideshow timer tick (dwell can sit idle).
-                    view->hostDisplayPipeline().tickPrimaryTileLod(32);
-                    if (view->viewport()) {
+                    if (view && view->viewport()) {
                         view->viewport()->update();
                     }
                 });
@@ -2009,14 +2012,15 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     // phase sessions never did — without it, new tiles only appear on the next
     // progress tick (or never if the timer is idle). Always rebind wake here.
     if (lod->session() && m_view) {
+        QPointer<SlideshowController> self(
+            const_cast<SlideshowController *>(this));
         QPointer<ImageView> view(m_view);
-        lod->session()->set_wake([view]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [view]() {
-                if (!view) {
-                    return;
+        lod->session()->set_wake([self, view]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [self, view]() {
+                if (self) {
+                    (void)self->tickSlideshowTileLod(32);
                 }
-                view->hostDisplayPipeline().tickPrimaryTileLod(32);
-                if (view->viewport()) {
+                if (view && view->viewport()) {
                     view->viewport()->update();
                 }
             });
