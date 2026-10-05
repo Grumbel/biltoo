@@ -66,19 +66,6 @@ QStringList xdgDataDirs()
     return dirs;
 }
 
-QStringList mimeappsListPaths()
-{
-    QStringList out;
-    const QString config = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
-    out << (config + QStringLiteral("/mimeapps.list"));
-    out << (QDir::homePath() + QStringLiteral("/.config/mimeapps.list"));
-    for (const QString &d : xdgDataDirs()) {
-        out << (d + QStringLiteral("/applications/mimeapps.list"));
-        out << (d + QStringLiteral("/applications/mimeinfo.cache"));
-    }
-    return out;
-}
-
 QString findDesktopFile(const QString &id)
 {
     if (id.isEmpty()) {
@@ -114,35 +101,6 @@ QString findDesktopFile(const QString &id)
         }
     }
     return {};
-}
-
-App parseDesktopFile(const QString &path)
-{
-    App app;
-    if (path.isEmpty()) {
-        return app;
-    }
-    QSettings ini(path, QSettings::IniFormat);
-    // QSettings treats .desktop as INI; group is "Desktop Entry".
-    ini.beginGroup(QStringLiteral("Desktop Entry"));
-    if (ini.value(QStringLiteral("NoDisplay")).toBool()
-        || ini.value(QStringLiteral("Hidden")).toBool()) {
-        return app;
-    }
-    const QString type = ini.value(QStringLiteral("Type")).toString();
-    if (!type.isEmpty() && type != QLatin1String("Application")) {
-        return app;
-    }
-    app.id = QFileInfo(path).fileName();
-    app.name = ini.value(QStringLiteral("Name")).toString();
-    app.icon = ini.value(QStringLiteral("Icon")).toString();
-    // Exec is not stored on App; launch_desktop uses path lookup by id.
-    Q_UNUSED(ini.value(QStringLiteral("Exec")));
-    ini.endGroup();
-    if (app.name.isEmpty()) {
-        app = App{};
-    }
-    return app;
 }
 
 QString desktopExecLine(const QString &desktopPath)
@@ -226,6 +184,47 @@ bool launchDesktopId(const QString &desktopId, const QString &localPath)
     return QProcess::startDetached(tokens.first(), tokens.mid(1));
 }
 
+#ifndef BILTOO_HAVE_GIO
+QStringList mimeappsListPaths()
+{
+    QStringList out;
+    const QString config = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    out << (config + QStringLiteral("/mimeapps.list"));
+    out << (QDir::homePath() + QStringLiteral("/.config/mimeapps.list"));
+    for (const QString &d : xdgDataDirs()) {
+        out << (d + QStringLiteral("/applications/mimeapps.list"));
+        out << (d + QStringLiteral("/applications/mimeinfo.cache"));
+    }
+    return out;
+}
+App parseDesktopFile(const QString &path)
+{
+    App app;
+    if (path.isEmpty()) {
+        return app;
+    }
+    QSettings ini(path, QSettings::IniFormat);
+    // QSettings treats .desktop as INI; group is "Desktop Entry".
+    ini.beginGroup(QStringLiteral("Desktop Entry"));
+    if (ini.value(QStringLiteral("NoDisplay")).toBool()
+        || ini.value(QStringLiteral("Hidden")).toBool()) {
+        return app;
+    }
+    const QString type = ini.value(QStringLiteral("Type")).toString();
+    if (!type.isEmpty() && type != QLatin1String("Application")) {
+        return app;
+    }
+    app.id = QFileInfo(path).fileName();
+    app.name = ini.value(QStringLiteral("Name")).toString();
+    app.icon = ini.value(QStringLiteral("Icon")).toString();
+    // Exec is not stored on App; launch_desktop uses path lookup by id.
+    Q_UNUSED(ini.value(QStringLiteral("Exec")));
+    ini.endGroup();
+    if (app.name.isEmpty()) {
+        app = App{};
+    }
+    return app;
+}
 QStringList desktopIdsFromMimeapps(const QString &mimeType)
 {
     QStringList ids;
@@ -260,7 +259,7 @@ QStringList desktopIdsFromMimeapps(const QString &mimeType)
     return ids;
 }
 
-/** Scan applications/*.desktop for MimeType= containing @p mimeType. */
+/** Scan applications/ for .desktop files whose MimeType= lists @p mimeType. */
 QStringList desktopIdsFromDesktopScan(const QString &mimeType)
 {
     QStringList ids;
@@ -332,6 +331,8 @@ QVector<App> appsForMimeFallback(const QString &mimeType)
     });
     return out;
 }
+
+#endif // !BILTOO_HAVE_GIO
 
 #ifdef BILTOO_HAVE_GIO
 QVector<App> appsForMimeGio(const QString &mimeType)
