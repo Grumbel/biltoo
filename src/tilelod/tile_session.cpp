@@ -237,12 +237,10 @@ bool TileSession::visible_keys_settled() const
   int success = 0;
   int failed = 0;
   int inflight = 0;
-  int missing = 0;
   for (TileKey const& key : m_visible_keys) {
     CacheEntry const* e = m_cache->find(key);
     if (!e) {
-      ++missing;
-      continue;
+      continue;  // unissued — counts against the 75% terminal bar
     }
     if (e->state == TileState::InFlight) {
       ++inflight;
@@ -250,8 +248,6 @@ bool TileSession::visible_keys_settled() const
       ++success;
     } else if (e->state == TileState::Failed) {
       ++failed;
-    } else {
-      ++missing;
     }
   }
   if (inflight > 0) {
