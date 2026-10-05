@@ -487,6 +487,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/layoutpanel.h
   src/shell/defaultapps.cpp
   src/shell/defaultapps.h
+  src/shell/openwith.cpp
+  src/shell/openwith.h
   src/tilelod/lod_planner.cpp
   src/tilelod/draw_plan.cpp
   src/tilelod/tile_memory_cache.cpp
