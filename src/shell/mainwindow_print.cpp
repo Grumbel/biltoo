@@ -526,6 +526,8 @@ void MainWindow::updateOpenWithMenu()
         m_openContainingFolderAct->setEnabled(ok);
     }
     m_openWithMenu->setEnabled(ok);
+    // populateMenu is a no-op when the path is unchanged and already filled,
+    // so frequent updateStatus calls do not wipe a visible submenu.
     OpenWith::populateMenu(m_openWithMenu, ok ? local : QString(), this);
 }
 

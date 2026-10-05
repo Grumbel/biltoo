@@ -545,27 +545,18 @@ void populateMenu(QMenu *menu, const QString &localPath, QWidget *parent)
     if (menu == nullptr) {
         return;
     }
+
+    const QString prevPath = menu->property("biltoo_open_with_path").toString();
+    const bool pathChanged = (prevPath != localPath);
     menu->setProperty("biltoo_open_with_path", localPath);
-    // Invalidate any previously built app list when the path changes.
-    menu->setProperty("biltoo_open_with_filled", false);
-    menu->clear();
-
-    if (localPath.isEmpty() || !QFileInfo::exists(localPath)) {
-        auto *none = menu->addAction(QObject::tr("No file to open"));
-        none->setEnabled(false);
-        return;
-    }
-
-    auto *placeholder = menu->addAction(QObject::tr("…"));
-    placeholder->setEnabled(false);
 
     // Install the deferred builder once per QMenu instance.
     if (!menu->property("biltoo_open_with_hooked").toBool()) {
         menu->setProperty("biltoo_open_with_hooked", true);
         QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, parent] {
-            if (menu->property("biltoo_open_with_filled").toBool()) {
-                return;
-            }
+            // Always rebuild from the current path property on show so a
+            // path change while the parent menu was open is picked up.
+            // Never leave a stale filled flag blocking a needed rebuild.
             menu->setProperty("biltoo_open_with_filled", true);
             menu->clear();
 
@@ -587,19 +578,45 @@ void populateMenu(QMenu *menu, const QString &localPath, QWidget *parent)
                         act->setIcon(QIcon::fromTheme(app.icon));
                     }
                     const App captured = app;
-                    QObject::connect(act, &QAction::triggered, menu, [captured, path] {
-                        launch(captured, path);
+                    const QString pathCopy = path;
+                    QObject::connect(act, &QAction::triggered, menu, [captured, pathCopy] {
+                        launch(captured, pathCopy);
                     });
                 }
                 menu->addSeparator();
             }
 
             QAction *other = menu->addAction(QObject::tr("Other Application…"));
-            QObject::connect(other, &QAction::triggered, menu, [parent, path] {
-                openWithCommandDialog(parent, path);
+            const QString pathCopy = path;
+            QObject::connect(other, &QAction::triggered, menu, [parent, pathCopy] {
+                openWithCommandDialog(parent, pathCopy);
             });
         });
     }
+
+    // Path unchanged and we already have a built list: leave the menu alone
+    // (updateStatus was clearing a live submenu back to "…").
+    if (!pathChanged && menu->property("biltoo_open_with_filled").toBool()) {
+        return;
+    }
+
+    // Path changed or never filled: reset to placeholder; aboutToShow rebuilds.
+    // Do not clear while the submenu is already visible — that flashes "…".
+    if (menu->isVisible()) {
+        // Keep showing whatever is on screen; next aboutToShow rebuilds.
+        menu->setProperty("biltoo_open_with_filled", false);
+        return;
+    }
+
+    menu->setProperty("biltoo_open_with_filled", false);
+    menu->clear();
+    if (localPath.isEmpty() || !QFileInfo::exists(localPath)) {
+        auto *none = menu->addAction(QObject::tr("No file to open"));
+        none->setEnabled(false);
+        return;
+    }
+    auto *placeholder = menu->addAction(QObject::tr("…"));
+    placeholder->setEnabled(false);
 }
 
 bool openContainingFolder(const QString &localPath)
