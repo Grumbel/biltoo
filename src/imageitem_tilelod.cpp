@@ -483,6 +483,55 @@ void ImageItem::prepareTileLodPlan()
         visSource = visSource.intersected(
             QRectF(0, 0, native.width(), native.height()));
     }
+    // Completions arrive off the GUI; without a wake, pump never runs until the
+    // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
+    // Install on *every* prepare — including the static-viewport early return —
+    // so a rebound session / slideshow phase controller is never left without a
+    // wake while density is unchanged.
+    auto installTileWake = [this]() {
+        if (!tileLodBag().controller || !tileLodBag().controller->session()) {
+            return;
+        }
+        std::shared_ptr<bool> alive = tileLodBag().alive;
+        tileLodBag().controller->session()->set_wake([this, alive]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
+                if (!alive || !*alive || !tileLodBag().controller) {
+                    return;
+                }
+                const int applied = tileLodBag().controller->tick(12);
+                Q_UNUSED(applied);
+                // Progressive climb / remaining inbox: schedule another pump if
+                // the viewport is not yet fully covered at the desired scale.
+                // Caps via singleShot(0) + coverage check (Failed settle stops).
+                if (alive && *alive && tileLodBag().controller
+                    && !tileLodBag().controller->viewportFullyCovered()) {
+                    auto *session = tileLodBag().controller->session();
+                    if (session
+                        && (session->request_scale_holding()
+                            || session->coverage().in_flight > 0
+                            || applied > 0)) {
+                        QTimer::singleShot(0, QCoreApplication::instance(),
+                                           [this, alive]() {
+                            if (!alive || !*alive || !tileLodBag().controller) {
+                                return;
+                            }
+                            tileLodBag().controller->tick(12);
+                            update();
+                        });
+                    }
+                }
+                update();
+                if (scene()) {
+                    for (QGraphicsView *v : scene()->views()) {
+                        if (v && v->viewport()) {
+                            v->viewport()->update();
+                        }
+                    }
+                }
+            });
+        });
+    };
+
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
     // Progressive climb advances in TileSession::pump/issue (tick path), not here.
@@ -493,6 +542,7 @@ void ImageItem::prepareTileLodPlan()
         && qAbs(visSource.y() - tileLodBag().lastVisSource.y()) < 0.5
         && qAbs(visSource.width() - tileLodBag().lastVisSource.width()) < 0.5
         && qAbs(visSource.height() - tileLodBag().lastVisSource.height()) < 0.5) {
+        installTileWake();
         return;
     }
     tileLodBag().lastDpc = dpc;
@@ -519,28 +569,7 @@ void ImageItem::prepareTileLodPlan()
     // ring of cells; not a full off-screen ring (that multiplies issue work).
     const double margin = 256.0 / qMax(1e-6, dpc);
     tileLodBag().controller->updateViewport(visSource, dpc, margin);
-    // Completions arrive off the GUI; without a wake, pump never runs until the
-    // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
-    if (tileLodBag().controller->session()) {
-        std::shared_ptr<bool> alive = tileLodBag().alive;
-        tileLodBag().controller->session()->set_wake([this, alive]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
-                if (!alive || !*alive || !tileLodBag().controller) {
-                    return;
-                }
-                const int applied = tileLodBag().controller->tick(12);
-                Q_UNUSED(applied);
-                update();
-                if (scene()) {
-                    for (QGraphicsView *v : scene()->views()) {
-                        if (v && v->viewport()) {
-                            v->viewport()->update();
-                        }
-                    }
-                }
-            });
-        });
-    }
+    installTileWake();
 }
 
 void ImageItem::prepareTileLod()

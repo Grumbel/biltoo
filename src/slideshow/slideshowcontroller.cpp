@@ -1926,12 +1926,18 @@ bool SlideshowController::tickSlideshowTileLod(int budget)
         if (lod->path() != path) {
             lod->setPath(path);
         }
-        if (lod->session() && m_view->viewport()) {
-            QPointer<QWidget> vp(m_view->viewport());
-            lod->session()->set_wake([vp]() {
-                QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
-                    if (vp) {
-                        vp->update();
+        if (lod->session() && m_view) {
+            QPointer<ImageView> view(m_view);
+            lod->session()->set_wake([view]() {
+                QTimer::singleShot(0, QCoreApplication::instance(), [view]() {
+                    if (!view) {
+                        return;
+                    }
+                    // Pump progressive climb; update-only left inbox tiles unapplied
+                    // until the next slideshow timer tick (dwell can sit idle).
+                    view->hostDisplayPipeline().tickPrimaryTileLod(32);
+                    if (view->viewport()) {
+                        view->viewport()->update();
                     }
                 });
             });
@@ -2002,12 +2008,16 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     // Completions arrive off the GUI. ImageItem installs wake in prepareTileLodPlan;
     // phase sessions never did — without it, new tiles only appear on the next
     // progress tick (or never if the timer is idle). Always rebind wake here.
-    if (lod->session() && m_view->viewport()) {
-        QPointer<QWidget> vp(m_view->viewport());
-        lod->session()->set_wake([vp]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
-                if (vp) {
-                    vp->update();
+    if (lod->session() && m_view) {
+        QPointer<ImageView> view(m_view);
+        lod->session()->set_wake([view]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [view]() {
+                if (!view) {
+                    return;
+                }
+                view->hostDisplayPipeline().tickPrimaryTileLod(32);
+                if (view->viewport()) {
+                    view->viewport()->update();
                 }
             });
         });
