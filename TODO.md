@@ -2,7 +2,11 @@
 
 ## Status (2026-10-05)
 
-**Tip:** biltoo-2891.1-open-with-xdg (linear stack on `origin/master` / `a889409`).
+**Tip:** biltoo-2891.2-open-with-includes (linear stack on `origin/master` / `a889409`).
+
+### 2891.2
+- Fix openwith.cpp includes: `host/archivepath.h`, `host/pagepath.h`,
+  `shell/openwith.h` (match tree-wide include style).
 
 ### 2891.1
 - **Open With…** (File menu + canvas context menu): list *all* XDG-associated
@@ -19,7 +23,3 @@
 ### Bundle policy
 Work-line base: `a889409` (`origin/master` at start of this sequence).
 Full stack `a889409..HEAD`.
-
-### Prior tip notes (2890.4)
-- Never use canvas underlay for face detect; always ImageLoader path on worker.
-- Export BILTOO_FACE_SFACE_MODEL in develop / biltoo-run.
