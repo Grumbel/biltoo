@@ -501,23 +501,20 @@ int TileSession::pump()
 
 bool TileSession::backoff_failed_denser()
 {
-  // Live denser PDF/DjVu/EPUB tiles (scale < 0) can all miss when the host
-  // grid size disagrees with thumtoo or the source cannot encode that density.
-  // Leaving Failed no-spam keys stuck the view on PARENT/LQIP forever.
-  // Also fires when hold is stuck with nothing in flight and no exact hits
-  // (issue returned empty — e.g. denser gated, or all terminal Failed).
+  // Only after denser keys were actually attempted and all terminal-Failed.
+  // Never treat *missing* (not yet issued) as failure — that aborted denser
+  // every tick (miss=N inflight=0) and left PARENT-only paint.
   if (m_target_scale >= 0 || m_content_w <= 0) {
     return false;
   }
   Coverage const cov = coverage();
-  if (cov.visible <= 0 || cov.in_flight > 0) {
+  if (cov.visible <= 0 || cov.in_flight > 0 || cov.missing > 0) {
     return false;
   }
   if (cov.exact_succeeded > 0) {
     return false;
   }
-  // All terminal Failed, or nothing issued (missing) while holding denser.
-  if (cov.failed < cov.visible && cov.missing == 0) {
+  if (cov.failed < cov.visible) {
     return false;
   }
   // Stop denser climb at the last good layout scale (usually 0). Do **not**
@@ -552,7 +549,7 @@ int TileSession::issue_requests(int budget)
 
   // Climb one level if the current plan is fully settled.
   (void)advance_progressive_scale();
-  (void)backoff_failed_denser();
+  // Do NOT backoff before issue — missing denser keys must be requested first.
 
   // Issue only keys in the current plan (m_visible_keys at m_target_scale).
   // Coarser parents are drawn as stand-ins via draw_plan; requesting every
@@ -645,11 +642,11 @@ int TileSession::issue_requests(int budget)
           m_visible_keys = out.visible_keys;
           cancel_obsolete();
           m_draw_plan_dirty = true;
-          // Fall through is impossible (return); caller ticks again.
           return 0;
         }
-        // Layout exists but denser batch empty → Failed no-spam or empty plan.
-        if (request_scale_holding()) {
+        // All denser keys terminal-Failed (not merely unissued missing).
+        if (cov.missing == 0 && cov.failed >= cov.visible
+            && request_scale_holding()) {
           (void)backoff_failed_denser();
         }
       }
