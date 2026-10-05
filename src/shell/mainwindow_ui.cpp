@@ -68,6 +68,24 @@ void MainWindow::createActions()
         tr("Open a path or URI (file, PDF/EPUB/DjVu page ref, archive member)"));
     connect(m_openLocationAct, &QAction::triggered, this, &MainWindow::openLocation);
 
+    m_openWithMenu = new QMenu(tr("Open &With"), this);
+    m_openWithMenu->setStatusTip(
+        tr("Open the current file (or document/archive container) with another application"));
+    m_openContainingFolderAct = new QAction(tr("Open Containing &Folder"), this);
+    m_openContainingFolderAct->setIcon(
+        themeIcon(QStringLiteral("folder"), QStyle::SP_DirIcon));
+    m_openContainingFolderAct->setStatusTip(
+        tr("Open the directory that contains the current file in the file manager"));
+    connect(m_openContainingFolderAct, &QAction::triggered, this, [this]() {
+        if (m_session.isEmpty() || m_currentIndex < 0
+            || m_currentIndex >= m_session.size()) {
+            return;
+        }
+        const QString local =
+            OpenWith::openableLocalPath(m_session.pathAt(m_currentIndex));
+        OpenWith::openContainingFolder(local);
+    });
+
     m_reloadAct = new QAction(tr("&Reload"), this);
     m_reloadAct->setShortcut(Qt::Key_F5);
     m_reloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
@@ -1235,6 +1253,12 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_openDirAct);
     if (m_openSelectionNewWindowAct) {
         m_fileMenu->addAction(m_openSelectionNewWindowAct);
+    }
+    if (m_openWithMenu) {
+        m_fileMenu->addMenu(m_openWithMenu);
+    }
+    if (m_openContainingFolderAct) {
+        m_fileMenu->addAction(m_openContainingFolderAct);
     }
     m_fileMenu->addAction(m_reloadAct);
     m_fileMenu->addAction(m_hardReloadAct);

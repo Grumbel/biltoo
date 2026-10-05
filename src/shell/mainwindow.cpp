@@ -4392,6 +4392,7 @@ void MainWindow::updateStatus()
     }
 
     updateNavigationActions();
+    updateOpenWithMenu();
     updateFilmstripChrome();
     updateMetadataPanel();
     updateAdjustmentsPanel();
@@ -4560,6 +4561,19 @@ void MainWindow::showContextMenu(const QPoint &pos)
     menu.addAction(m_addAct);
     if (m_openSelectionNewWindowAct) {
         menu.addAction(m_openSelectionNewWindowAct);
+    }
+    {
+        QString local;
+        if (!m_session.isEmpty() && m_currentIndex >= 0
+            && m_currentIndex < m_session.size()) {
+            local = OpenWith::openableLocalPath(m_session.pathAt(m_currentIndex));
+        }
+        auto *openWith = menu.addMenu(tr("Open With"));
+        OpenWith::populateMenu(openWith, local, this);
+        openWith->setEnabled(!local.isEmpty() && QFileInfo::exists(local));
+        if (m_openContainingFolderAct) {
+            menu.addAction(m_openContainingFolderAct);
+        }
     }
     menu.addSeparator();
     if (isImageMode()) {

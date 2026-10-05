@@ -408,6 +408,8 @@ private slots:
     /** Apply Layout dock visibility/enablement for the current view mode. */
     void updateLayoutPanelForMode();
     void updateFileExportActions();
+    /** Refresh Open With… submenu for the current session path. */
+    void updateOpenWithMenu();
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
     /** Sync exclusive layout action checks + toolbar combo icon/tooltip. */
@@ -752,6 +754,9 @@ private:
     QAction *m_reloadAct = nullptr;
     QAction *m_hardReloadAct = nullptr;
     QAction *m_openLocationAct = nullptr;
+    /** Open current page/image with a chosen XDG application (submenu). */
+    QMenu *m_openWithMenu = nullptr;
+    QAction *m_openContainingFolderAct = nullptr;
     QAction *m_showLocationBarAct = nullptr;
     QToolBar *m_locationBar = nullptr;
     QLineEdit *m_locationEdit = nullptr;

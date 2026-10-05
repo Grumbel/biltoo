@@ -7,6 +7,7 @@
 #include "imageitem.h"
 #include "shell/thumbnailbar.h"
 #include "session/sessionexport.h"
+#include "shell/openwith.h"
 
 #include <QFileDialog>
 #include <QDialog>
@@ -506,6 +507,25 @@ void MainWindow::updateFileExportActions()
     if (m_printPreviewAct) {
         m_printPreviewAct->setEnabled(hasSession || workspace);
     }
+    updateOpenWithMenu();
+}
+
+void MainWindow::updateOpenWithMenu()
+{
+    if (!m_openWithMenu) {
+        return;
+    }
+    QString local;
+    if (!m_session.isEmpty() && m_currentIndex >= 0
+        && m_currentIndex < m_session.size()) {
+        local = OpenWith::openableLocalPath(m_session.pathAt(m_currentIndex));
+    }
+    const bool ok = !local.isEmpty() && QFileInfo::exists(local);
+    if (m_openContainingFolderAct) {
+        m_openContainingFolderAct->setEnabled(ok);
+    }
+    m_openWithMenu->setEnabled(ok);
+    OpenWith::populateMenu(m_openWithMenu, ok ? local : QString(), this);
 }
 
 void MainWindow::exportSessionImages()

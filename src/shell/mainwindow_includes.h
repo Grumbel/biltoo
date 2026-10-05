@@ -33,6 +33,7 @@
 #include "shell/layoutpanel.h"
 #include "shell/tocpanel.h"
 #include "shell/helppanel.h"
+#include "shell/openwith.h"
 #include "host/thumtoocache.h"
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
