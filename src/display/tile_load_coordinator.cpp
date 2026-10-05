@@ -237,6 +237,7 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     if (issueTargets.isEmpty()) {
+        // Pump-only for settled/covered candidates — do not issue_requests(0).
         for (const Cand &c : cands) {
             if (wall.elapsed() >= kWallMs) {
                 break;
@@ -248,6 +249,30 @@ void TileLoadCoordinator::tick(int globalBudget)
         return;
     }
 
+    const int n = issueTargets.size();
+    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 24) : globalBudget);
+    // Image focus: allow larger batches so denser grids (50+ cells) can climb.
+    const int perCellCap = gallery ? 4 : qMax(12, globalBudget);
+    for (int i = 0; i < n; ++i) {
+        if (wall.elapsed() >= kWallMs) {
+            break;
+        }
+        ImageItem *item = issueTargets.at(i);
+        if (!item) {
+            continue;
+        }
+        const int left = n - i;
+        const int share = remaining > 0
+            ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
+            : 0;
+        m_pipeline->tickItemTileLod(item, share);
+        remaining -= share;
+        if (wall.elapsed() >= kWallMs) {
+            break;
+        }
+    }
+
+    // Sample AFTER issue so IssueDiag matches this tick (not a prior budget-0 pass).
     if (const char *td = std::getenv("BILTOO_TILE_DEBUG");
         td && td[0] && td[0] != '0') {
         static qint64 s_last = 0;
@@ -279,31 +304,6 @@ void TileLoadCoordinator::tick(int globalBudget)
                 ++samples;
             }
             std::fflush(stderr);
-        }
-    }
-
-    const int n = issueTargets.size();
-    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 24) : globalBudget);
-    for (int i = 0; i < n; ++i) {
-        if (wall.elapsed() >= kWallMs) {
-            break;
-        }
-        ImageItem *item = issueTargets.at(i);
-        if (!item) {
-            continue;
-        }
-        // Gallery: small overview cells. Image: spend most of the budget on the
-        // focus item so progressive scale climb is not starved at 4 keys/tick.
-        const int left = n - i;
-        const int perCellCap = gallery ? 4 : 12;
-        const int share = remaining > 0
-            ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
-            : 0;
-        m_pipeline->tickItemTileLod(item, share);
-        remaining -= share;
-        // If one item already ate the wall, stop — do not start the next.
-        if (wall.elapsed() >= kWallMs) {
-            break;
         }
     }
 }

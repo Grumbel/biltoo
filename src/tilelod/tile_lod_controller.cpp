@@ -102,7 +102,11 @@ int TileLodController::tick(int requestBudget)
   if (applied > 0 && !m_path.isEmpty()) {
     TileLodRegistry::instance().touch(m_path);
   }
-  m_session->issue_requests(requestBudget);
+  // budget<=0 is pump-only (coordinator "covered" pass). Never call
+  // issue_requests(0) — that recorded early=2 and looked like denser starvation.
+  if (requestBudget > 0) {
+    m_session->issue_requests(requestBudget);
+  }
   return applied;
 }
 
