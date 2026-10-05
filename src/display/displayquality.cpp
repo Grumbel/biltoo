@@ -7,6 +7,10 @@
 
 #include <atomic>
 
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+#include <thumtoo/pdf.hpp>
+#endif
+
 namespace DisplayQuality {
 
 namespace {
@@ -16,6 +20,10 @@ std::atomic<bool> g_smoothScaling{true};
 void setSmoothScaling(bool on)
 {
     g_smoothScaling.store(on, std::memory_order_relaxed);
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    // MuPDF image scale filter for denser PDF/DjVu/EPUB tiles (scan upscales).
+    thumtoo::set_smooth_image_scaling(on);
+#endif
 }
 
 bool smoothScaling()

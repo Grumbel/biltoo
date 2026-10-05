@@ -16,6 +16,7 @@
 #include "version.h"
 #include "thumtoo/version.hpp"
 #include "imageitem.h"
+#include "tilelod/tile_lod_registry.hpp"
 #include "display/displayquality.h"
 #include <QPainter>
 #include "slideshow/slideshowclocks.h"
@@ -2157,6 +2158,9 @@ void MainWindow::toggleSmoothScaling()
 {
     const bool on = m_smoothScalingAct && m_smoothScalingAct->isChecked();
     DisplayQuality::setSmoothScaling(on);
+    // Denser PDF tiles were rasterized with the previous MuPDF scale filter;
+    // drop path RAM so the next tick re-requests with the new setting.
+    tilelod::TileLodRegistry::instance().invalidateAll();
     if (!m_imageView) {
         return;
     }
