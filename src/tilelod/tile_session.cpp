@@ -192,6 +192,18 @@ int TileSession::stable_request_scale(int desired_scale)
   // Steady state: adjacent zoom-in debounce (Galapix lesson).
   int const delta = m_stable_scale - desired_scale;
   if (delta > 1) {
+    // Denser / already at layout: one step only. Jumping 0 → −3 reintroduced
+    // the encode storm and skipped progressive denser climb.
+    if (desired_scale < 0 || m_stable_scale <= 0) {
+      m_stable_scale = m_stable_scale - 1;
+      if (m_stable_scale < desired_scale) {
+        m_stable_scale = desired_scale;
+      }
+      m_reached_desired = (m_stable_scale <= desired_scale);
+      m_pending_scale = desired_scale;
+      m_pending_since = clock::now();
+      return m_stable_scale;
+    }
     m_stable_scale = desired_scale;
     m_reached_desired = true;
     m_pending_scale = desired_scale;
@@ -222,21 +234,39 @@ bool TileSession::visible_keys_settled() const
   if (m_visible_keys.empty()) {
     return false;
   }
-  bool any_success = false;
+  int success = 0;
+  int failed = 0;
+  int inflight = 0;
+  int missing = 0;
   for (TileKey const& key : m_visible_keys) {
     CacheEntry const* e = m_cache->find(key);
     if (!e) {
-      return false;  // not requested yet
+      ++missing;
+      continue;
     }
     if (e->state == TileState::InFlight) {
-      return false;
-    }
-    if (e->state == TileState::Succeeded && e->bitmap.valid()) {
-      any_success = true;
+      ++inflight;
+    } else if (e->state == TileState::Succeeded && e->bitmap.valid()) {
+      ++success;
+    } else if (e->state == TileState::Failed) {
+      ++failed;
+    } else {
+      ++missing;
     }
   }
-  // Require at least one success — all-Failed must not climb (spam finer scales).
-  return any_success;
+  if (inflight > 0) {
+    return false;
+  }
+  // At least one exact success required — all-Failed must not climb denser.
+  if (success <= 0) {
+    return false;
+  }
+  // Do not require 100% of the margin ring. A few unissued edge cells used to
+  // block progressive denser forever (stuck at s=0 with PARENT fill).
+  int const vis = static_cast<int>(m_visible_keys.size());
+  int const terminal = success + failed;
+  int const need = std::max(1, (vis * 3 + 3) / 4);  // ≥75%
+  return terminal >= need;
 }
 
 bool TileSession::advance_progressive_scale()
@@ -476,28 +506,20 @@ bool TileSession::backoff_failed_denser()
   if (cov.failed < cov.visible && cov.missing == 0) {
     return false;
   }
-  // Raise the floor to just above the failed denser target (never above 0).
-  int raised = m_target_scale + 1;
-  if (raised > 0) {
-    raised = 0;
-  }
-  if (raised <= m_min_scale) {
-    return false;
-  }
-  m_min_scale = raised;
-  if (m_desired_scale < m_min_scale) {
-    m_desired_scale = m_min_scale;
-  }
-  if (m_stable_scale < m_min_scale) {
-    m_stable_scale = m_min_scale;
-  }
-  m_reached_desired = (m_stable_scale <= m_desired_scale);
+  // Stop denser climb at the last good layout scale (usually 0). Do **not**
+  // raise m_min_scale permanently — that clamped desired to 0 for the rest of
+  // the session ("stuck on s=0, never denser").
+  int const fallback = std::max(0, m_target_scale + 1);
+  m_stable_scale = fallback;
+  m_desired_scale = fallback;
+  m_reached_desired = true;
+  m_pending_scale = fallback;
   ++m_generation;
   PlannerInput in;
   in.content_w = m_content_w;
   in.content_h = m_content_h;
-  in.min_scale = m_stable_scale;
-  in.max_scale = m_stable_scale;
+  in.min_scale = fallback;
+  in.max_scale = fallback;
   in.viewport = m_viewport;
   in.margin_content = 0;
   PlannerOutput const out = plan_visible_tiles(in);
