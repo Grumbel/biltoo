@@ -460,14 +460,20 @@ bool TileSession::backoff_failed_denser()
   // Live denser PDF/DjVu/EPUB tiles (scale < 0) can all miss when the host
   // grid size disagrees with thumtoo or the source cannot encode that density.
   // Leaving Failed no-spam keys stuck the view on PARENT/LQIP forever.
+  // Also fires when hold is stuck with nothing in flight and no exact hits
+  // (issue returned empty — e.g. denser gated, or all terminal Failed).
   if (m_target_scale >= 0 || m_content_w <= 0) {
     return false;
   }
   Coverage const cov = coverage();
-  if (cov.visible <= 0 || cov.in_flight > 0 || cov.missing > 0) {
+  if (cov.visible <= 0 || cov.in_flight > 0) {
     return false;
   }
-  if (cov.exact_succeeded > 0 || cov.failed < cov.visible) {
+  if (cov.exact_succeeded > 0) {
+    return false;
+  }
+  // All terminal Failed, or nothing issued (missing) while holding denser.
+  if (cov.failed < cov.visible && cov.missing == 0) {
     return false;
   }
   // Raise the floor to just above the failed denser target (never above 0).
@@ -539,9 +545,17 @@ int TileSession::issue_requests(int budget)
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
       continue;
     }
-    // scale 0 = full-res: require at least one coarser success first
-    // (unless the pyramid is single-level).
-    if (key.scale == 0 && m_max_scale > 0 && !has_succeeded_scale_ge(1)) {
+    // Raster pyramids (min_scale >= 0): require a coarser success before
+    // scale 0 so overview arrives first. Document live denser (min_scale < 0)
+    // starts progressive at 0 without coarser — the old gate deadlocked
+    // (never issue 0 → never denser; hold forever with exact=0 inflight=0).
+    if (key.scale == 0 && m_min_scale >= 0 && m_max_scale > 0
+        && !has_succeeded_scale_ge(1)) {
+      continue;
+    }
+    // Denser live cells: need at least one layout-scale success so PARENT
+    // stand-ins exist; otherwise issue −1 first while scale 0 never ran.
+    if (key.scale < 0 && !has_succeeded_scale_ge(0) && m_max_scale >= 0) {
       continue;
     }
     RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
@@ -573,6 +587,15 @@ int TileSession::issue_requests(int budget)
   }
 
   if (batch.empty()) {
+    // Stuck progressive denser: hold at target < 0 with nothing loading and no
+    // exact hits (PARENT-only). Raise min_scale so we stop requesting denser
+    // and can settle on layout tiles / PreferCache.
+    if (m_target_scale < 0 && request_scale_holding()) {
+      Coverage const cov = coverage();
+      if (cov.visible > 0 && cov.in_flight == 0 && cov.exact_succeeded == 0) {
+        (void)backoff_failed_denser();
+      }
+    }
     return 0;
   }
 
