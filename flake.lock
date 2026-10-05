@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "benchtoo": {
+      "inputs": {
+        "nixpkgs": [
+          "thumtoo",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790844045,
+        "narHash": "sha256-DBdA57umI7I+8Ka+cl1GasUPEz1oE1mzEEwjVzH6BT8=",
+        "owner": "Grumbel",
+        "repo": "benchtoo",
+        "rev": "6379815f6808892fc4e416ee7cd824b2df688dca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Grumbel",
+        "repo": "benchtoo",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -20,11 +41,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1790689126,
-        "narHash": "sha256-ilerN1WLSvF+HMjziC/Wv99J5y02maDH+6hZPwsORKg=",
+        "lastModified": 1791048980,
+        "narHash": "sha256-KgItSKML8Xvte0B7/uGnBDsYzSnnKHcOaiUbgWBXLXw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b4fd65b198c599cbe814fcb9f42d25d021595ec9",
+        "rev": "a7868a727837f3c09cee2ce0ca671c76b1589fed",
         "type": "github"
       },
       "original": {
@@ -121,14 +142,15 @@
     },
     "thumtoo": {
       "inputs": {
+        "benchtoo": "benchtoo",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1790793349,
-        "narHash": "sha256-38D5tCAuxwVZaT8U3y0KbFPculbxG/rmv/xrYd4I2EU=",
+        "lastModified": 1791205552,
+        "narHash": "sha256-PBZ1VkVGh1EKoUSdK4LS/hkMDKVmzHtsZb6p7tEXxtg=",
         "owner": "Grumbel",
         "repo": "thumtoo",
-        "rev": "702a260ef7897c178bccf535e392adb48ea683e1",
+        "rev": "dea7522283af8482bd907445165137586cb57d69",
         "type": "github"
       },
       "original": {
