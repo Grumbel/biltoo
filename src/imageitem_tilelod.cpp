@@ -720,17 +720,22 @@ QString ImageItem::tileLodDebugLine() const
         tileLodBag().controller->session()->debug_snapshot();
     // plan=E/P/U/H: Exact / Parent / Underlay / Hole counts for visible keys.
     return QStringLiteral(
-               "%1 tgt=%2 des=%3 max=%4 vis=%5 exact=%6 inflight=%7 "
-               "cacheOk=%8 plan=%9/%10/%11/%12 lqip=%13 hold=%14 reached=%15 "
-               "gen=%16 pathRam=%17 disp=%18")
+               "%1 tgt=%2 des=%3 st=%4 min=%5 max=%6 vis=%7 exact=%8 miss=%9 "
+               "fail=%10 inflight=%11 cacheOk=%12 s0=%13 plan=%14/%15/%16/%17 "
+               "lqip=%18 hold=%19 reached=%20 gen=%21 pathRam=%22 disp=%23")
         .arg(name)
         .arg(s.target_scale)
         .arg(s.desired_scale)
+        .arg(s.stable_scale)
+        .arg(s.min_scale)
         .arg(s.max_scale)
         .arg(s.visible)
         .arg(s.exact_succeeded)
+        .arg(s.missing)
+        .arg(s.failed)
         .arg(s.in_flight)
         .arg(s.cache_succeeded)
+        .arg(s.scale0_ok)
         .arg(s.plan_exact)
         .arg(s.plan_parent)
         .arg(s.plan_underlay)

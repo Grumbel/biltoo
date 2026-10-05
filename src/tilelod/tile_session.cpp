@@ -173,8 +173,12 @@ int TileSession::stable_request_scale(int desired_scale)
   if (!m_reached_desired && m_stable_scale > desired_scale) {
     m_pending_scale = desired_scale;
     if (visible_keys_settled()) {
-      m_stable_scale = m_stable_scale - 1;
-      m_pending_since = clock::now();
+      // Block denser step until layout (s=0) exists in this session cache.
+      if (!(m_stable_scale <= 0 && desired_scale < 0
+            && !has_succeeded_at_scale(0))) {
+        m_stable_scale = m_stable_scale - 1;
+        m_pending_since = clock::now();
+      }
     }
     if (m_stable_scale <= desired_scale) {
       m_stable_scale = desired_scale;
@@ -195,6 +199,15 @@ int TileSession::stable_request_scale(int desired_scale)
     // Denser / already at layout: one step only. Jumping 0 → −3 reintroduced
     // the encode storm and skipped progressive denser climb.
     if (desired_scale < 0 || m_stable_scale <= 0) {
+      if (m_stable_scale <= 0 && desired_scale < 0
+          && !has_succeeded_at_scale(0)) {
+        // Stay at layout until s=0 cells land.
+        m_stable_scale = 0;
+        m_reached_desired = false;
+        m_pending_scale = desired_scale;
+        m_pending_since = clock::now();
+        return m_stable_scale;
+      }
       m_stable_scale = m_stable_scale - 1;
       if (m_stable_scale < desired_scale) {
         m_stable_scale = desired_scale;
@@ -275,6 +288,11 @@ bool TileSession::advance_progressive_scale()
     return false;
   }
   if (!visible_keys_settled()) {
+    return false;
+  }
+  // Never enter denser (scale < 0) without exact layout cells in this cache.
+  if (m_stable_scale <= 0 && m_desired_scale < 0
+      && !has_succeeded_at_scale(0)) {
     return false;
   }
   int const prev = m_stable_scale;
@@ -571,9 +589,10 @@ int TileSession::issue_requests(int budget)
         && !has_succeeded_scale_ge(1)) {
       continue;
     }
-    // Denser live cells: need at least one layout-scale success so PARENT
-    // stand-ins exist; otherwise issue −1 first while scale 0 never ran.
-    if (key.scale < 0 && !has_succeeded_scale_ge(0) && m_max_scale >= 0) {
+    // Denser live cells need **exact scale 0** success first. Coarser-only
+    // pathRam (s=1,2) used to pass has_succeeded_scale_ge(0) and leave tgt=-1
+    // with exact=0 inflight=0 forever (denser gated, progressive already past 0).
+    if (key.scale < 0 && !has_succeeded_at_scale(0)) {
       continue;
     }
     RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
@@ -605,13 +624,34 @@ int TileSession::issue_requests(int budget)
   }
 
   if (batch.empty()) {
-    // Stuck progressive denser: hold at target < 0 with nothing loading and no
-    // exact hits (PARENT-only). Raise min_scale so we stop requesting denser
-    // and can settle on layout tiles / PreferCache.
-    if (m_target_scale < 0 && request_scale_holding()) {
+    if (m_target_scale < 0 && m_content_w > 0) {
       Coverage const cov = coverage();
-      if (cov.visible > 0 && cov.in_flight == 0 && cov.exact_succeeded == 0) {
-        (void)backoff_failed_denser();
+      if (cov.in_flight == 0 && cov.exact_succeeded == 0) {
+        if (!has_succeeded_at_scale(0)) {
+          // Progressive overshot to denser without layout cells in *this*
+          // session cache. Drop hold back to s=0 and re-plan (keep desired).
+          m_stable_scale = 0;
+          m_reached_desired = false;
+          ++m_generation;
+          PlannerInput in;
+          in.content_w = m_content_w;
+          in.content_h = m_content_h;
+          in.min_scale = 0;
+          in.max_scale = 0;
+          in.viewport = m_viewport;
+          in.margin_content = 0;
+          PlannerOutput const out = plan_visible_tiles(in);
+          m_target_scale = out.target_scale;
+          m_visible_keys = out.visible_keys;
+          cancel_obsolete();
+          m_draw_plan_dirty = true;
+          // Fall through is impossible (return); caller ticks again.
+          return 0;
+        }
+        // Layout exists but denser batch empty → Failed no-spam or empty plan.
+        if (request_scale_holding()) {
+          (void)backoff_failed_denser();
+        }
       }
     }
     return 0;
@@ -711,6 +751,20 @@ bool TileSession::has_succeeded_scale_ge(int min_scale) const
   return false;
 }
 
+bool TileSession::has_succeeded_at_scale(int scale) const
+{
+  if (!m_cache) {
+    return false;
+  }
+  for (auto const& [k, e] : m_cache->map()) {
+    if (k.scale == scale && e.state == TileState::Succeeded
+        && e.bitmap.valid()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 TileSession::Coverage TileSession::coverage() const
 {
   Coverage c;
@@ -739,16 +793,20 @@ TileSession::DebugSnapshot TileSession::debug_snapshot() const
   DebugSnapshot s;
   s.target_scale = m_target_scale;
   s.desired_scale = m_desired_scale;
+  s.stable_scale = m_stable_scale;
   s.min_scale = m_min_scale;
   s.max_scale = m_max_scale;
   s.holding = request_scale_holding();
   s.reached_desired = m_reached_desired;
   s.generation = m_generation;
   s.has_lqip = m_has_lqip;
+  s.scale0_ok = has_succeeded_at_scale(0) ? 1 : 0;
   Coverage const c = coverage();
   s.visible = c.visible;
   s.exact_succeeded = c.exact_succeeded;
   s.in_flight = c.in_flight;
+  s.failed = c.failed;
+  s.missing = c.missing;
   for (auto const& [k, e] : m_cache->map()) {
     (void)k;
     if (e.state == TileState::Succeeded && e.bitmap.valid()) {
