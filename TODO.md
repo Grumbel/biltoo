@@ -2,15 +2,16 @@
 
 ## Status (2026-10-05)
 
-**Tip:** biltoo-2891.6-open-with-stable-menu (linear stack on `a889409`).
+**Tip:** biltoo-2892.1-tile-climb-wake (linear stack on `a889409`).
 
-### 2891.6
-- Open With submenu stayed on "…" after a brief app flash: `updateStatus` →
-  `populateMenu` cleared a live submenu. Rebuild only on path change /
-  when not visible; `aboutToShow` fills from the path property.
+### 2892.1
+- ImageView stuck on coarse tiles: `prepareTileLodPlan` early-return skipped
+  `set_wake`; always install wake; re-arm while holding / in-flight.
+- Slideshow stuck coarse on dwell: phase wake only updated the viewport —
+  now `tickPrimaryTileLod` then update.
 
-### 2891.1–2891.5
-- Open With feature, includes, QMenu, warning guards.
+### 2891.x
+- Open With… feature and fixes (see prior commits).
 
 ### Bundle policy
 Work-line base: `a889409`. Full stack `a889409..HEAD`.
