@@ -756,14 +756,14 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
-bool denserLiveDenied(const QString &path)
+int denserScaleFloor(const QString &path)
 {
-    return ProcessMemos::instance().denserLiveDenied(path);
+    return ProcessMemos::instance().denserScaleFloor(path);
 }
 
-void noteDenserLiveDenied(const QString &path)
+bool noteDenserScaleUnavailable(const QString &path, int scale)
 {
-    ProcessMemos::instance().noteDenserLiveDenied(path);
+    return ProcessMemos::instance().noteDenserScaleUnavailable(path, scale);
 }
 
 void forgetCachedSize(const QString &path)

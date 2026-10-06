@@ -356,9 +356,15 @@ bool hasDurableTiles(const QString &path);
  */
 bool hasDurableTilesKnown(const QString &path);
 
-/** True after denser (scale<0) tiles all Failed — thumtoo image-heavy page. */
-bool denserLiveDenied(const QString &path);
-void noteDenserLiveDenied(const QString &path);
+/**
+ * Finest live denser scale (scale < 0) thumtoo renders for a document page,
+ * learned from Unavailable answers (image-heavy pages need a full-page raster
+ * within thumtoo's pixel budget). INT_MIN = no limit known yet.
+ */
+int denserScaleFloor(const QString &path);
+/** thumtoo answered Unavailable for every visible cell at @p scale (< 0). */
+/** @return true when the floor was raised (caller should re-plan). */
+bool noteDenserScaleUnavailable(const QString &path, int scale);
 /**
  * Worker: Store has_tile for @p path (deduped). Emits durableTilesReady on first yes.
  * GUI-safe. Use when filmstrip/Gallery need warm TileSynth but process memo is unknown.

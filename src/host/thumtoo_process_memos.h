@@ -71,9 +71,10 @@ public:
      * coverage). After a denser plan all-Fails, memo so biltoo stops requesting
      * −1/−2 and floors min_scale at 0.
      */
-    bool denserLiveDenied(const QString &path) const;
-    void noteDenserLiveDenied(const QString &path);
-    void clearDenserLiveDenied(const QString &path);
+    /** Finest live denser scale thumtoo renders for @p path (INT_MIN = no limit known). */
+    int denserScaleFloor(const QString &path) const;
+    /** @p scale was refused (Unavailable): floor becomes at least scale + 1. */
+    bool noteDenserScaleUnavailable(const QString &path, int scale);
 
 private:
     ProcessMemos() = default;
@@ -83,7 +84,7 @@ private:
     QSet<QString> m_durableYes;
     QHash<QString, int> m_durableMinScale;
     QHash<QString, qint64> m_durableNoUntilMs;
-    QSet<QString> m_denserLiveDenied;
+    QHash<QString, int> m_denserFloor;
 };
 
 } // namespace ThumtooCache

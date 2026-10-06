@@ -1113,23 +1113,22 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     // Source unavailable (library error memo) but tiles/LQIP may still paint.
     if (ThumtooCache::isSourceUnavailable(m_path) && r.width() > 8.0 && r.height() > 8.0) {
+        // Device pixels: fixed on-screen size at any zoom (a clamped 1/zoom
+        // point size scaled with the view outside its clamp range).
+        const QRectF rDev = painter->transform().mapRect(r);
         painter->save();
+        painter->resetTransform();
         painter->setOpacity(1.0);
-        const qreal inv = 1.0 / ViewTransform::floorScale(screenScale());
         QFont f = painter->font();
-        // ~2× previous on-screen size (was ~11pt class).
-        f.setPointSizeF(qBound(12.0, 22.0 * inv, 28.0));
+        f.setPixelSize(18);
         f.setBold(true);
         painter->setFont(f);
         const QString line = QCoreApplication::translate(
             "ImageItem", "Source missing — cached preview only");
         const QFontMetricsF fm(f);
         const QRectF textBox = fm.boundingRect(line).adjusted(-10, -6, 10, 6);
-        QRectF bar(r.left(), r.top(), r.width(),
-                   qMin(r.height() * 0.4, textBox.height() + 16));
-        if (bar.height() < textBox.height() + 8) {
-            bar.setHeight(textBox.height() + 8);
-        }
+        const QRectF bar(rDev.left(), rDev.top(), rDev.width(),
+                         qMin(rDev.height(), textBox.height() + 16));
         painter->fillRect(bar, QColor(40, 20, 20, 210));
         painter->setPen(QColor(255, 200, 180));
         painter->drawText(bar, Qt::AlignCenter | Qt::TextWordWrap, line);
@@ -1143,7 +1142,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         && tileLodBag().controller->path() == m_path && r.width() > 8.0
         && r.height() > 8.0) {
         const tilelod::TileSession::Phase phase = tileLodBag().controller->phase();
-        const qreal screenH = r.height() * screenScale();
+        const qreal screenH = painter->transform().mapRect(r).height();
         if ((phase == tilelod::TileSession::Phase::Degraded
              || phase == tilelod::TileSession::Phase::Error)
             && screenH >= 120.0) {
@@ -1158,13 +1157,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 : QCoreApplication::translate("ImageItem",
                                               "Showing lower resolution");
             const QString line = why.isEmpty() ? head : head + QStringLiteral(": ") + why;
-            painter->save();
-            painter->setOpacity(1.0);
-            const qreal inv = 1.0 / ViewTransform::floorScale(screenScale());
-            QFont f = painter->font();
-            f.setPointSizeF(qBound(4.0, 10.0 * inv, 400.0));
-            painter->setFont(f);
-            const QFontMetricsF fm(f);
             // Bottom of the *visible* part (deep zoom: image bottom is off-screen).
             QRectF vis = r;
             if (scene() && !scene()->views().isEmpty()) {
@@ -1176,11 +1168,26 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     vis = hit;
                 }
             }
-            const qreal barH = qMin(vis.height() * 0.3, fm.height() * 2.6);
-            const QRectF bar(vis.left(), vis.bottom() - barH, vis.width(), barH);
-            painter->fillRect(bar, QColor(50, 35, 10, 200));
+            // Draw in device pixels so the text has a fixed on-screen size at
+            // any zoom (a 1/zoom font size clamped to a range scaled with the
+            // view at deep / far zoom).
+            const QRectF visDev = painter->transform().mapRect(vis);
+            painter->save();
+            painter->resetTransform();
+            painter->setOpacity(1.0);
+            QFont f = painter->font();
+            f.setPixelSize(13);
+            painter->setFont(f);
+            const QFontMetricsF fm(f);
+            const qreal pad = 8.0;
+            const QRectF textBounds = fm.boundingRect(
+                QRectF(0, 0, qMax(40.0, visDev.width() - 2 * pad), 1e6),
+                Qt::AlignCenter | Qt::TextWordWrap, line);
+            const qreal barH = qMin(visDev.height(), textBounds.height() + 2 * pad);
+            const QRectF bar(visDev.left(), visDev.bottom() - barH, visDev.width(), barH);
+            painter->fillRect(bar, QColor(50, 35, 10, 210));
             painter->setPen(QColor(255, 210, 140));
-            painter->drawText(bar.adjusted(6.0 * inv, 0, -6.0 * inv, 0),
+            painter->drawText(bar.adjusted(pad, 0, -pad, 0),
                               Qt::AlignCenter | Qt::TextWordWrap, line);
             painter->restore();
         }

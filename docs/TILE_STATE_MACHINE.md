@@ -127,6 +127,10 @@ Rules:
   tick, filmstrip renew timer, slideshow tick, prefetch tick). A view that
   disappears without saying so stops renewing and its cells get cancelled.
   A lapsed view re-publishes on its next renew.
+- Refused denser scales (image-heavy PDF page whose full-page raster exceeds
+  thumtoo's budget) come back **Unavailable** before any render. When the
+  whole visible target is Unavailable, the controller raises the page's
+  denser floor one step and re-plans (`denserScaleFloor`).
 - **Passive** sessions (Gallery virtual-slot peek) plan and draw but never
   publish demand, so creating or destroying them cannot affect loading.
 

@@ -960,10 +960,14 @@ Biltoo:
   `pdf_page_size_at_scale`).
 - Image-mode floor: `kDocumentLiveMinScale` (−4) for page refs so density can
   request live finer tiles when zoomed past 1:1 layout.
-- **Image-heavy pages** (thumtoo: image XObject coverage ≥ 0.45, typical scans):
-  live denser (`scale < 0`) returns miss for every cell. Biltoo memos
-  `denserLiveDenied` after an all-Failed denser plan and floors `min_scale` at
-  **0** so the UI settles on layout-dpi tiles instead of `FAILED N/N live denser`.
+- **Image-heavy pages** (thumtoo: image XObject coverage ≥ 0.45, typical
+  scans) render denser scales only from a full-page raster within
+  `kTileMaxSourcePixels` (100 MP). Larger scales answer **Unavailable** with
+  the raster size in the reason. When every visible cell at the target is
+  Unavailable, biltoo raises a per-page floor one step
+  (`ThumtooCache::noteDenserScaleUnavailable` / `denserScaleFloor`) and
+  re-plans immediately, so it settles on the finest scale that renders
+  (e.g. −2 on a Letter scan) instead of retrying or dropping to 0.
 - **Planner content stride** for `scale < 0` is `kTileSize / 2^{-scale}`
   (not `kTileSize`). Using positive-scale stride skipped half the keys at −1.
 - **Slideshow** cover paint/tick: `min_scale` **0** only (shared

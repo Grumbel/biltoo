@@ -129,14 +129,21 @@ bool TileLodController::refresh()
     // Visible paths stay preferred under global idle/byte LRU.
     TileLodRegistry::instance().touch(m_path);
   }
-  // thumtoo answers Unavailable for denser cells it refuses (image-heavy
-  // scans). When every visible denser cell is Unavailable, memo it so the
-  // next prepare floors min_scale at the layout scale instead of showing
-  // parents forever.
+  // thumtoo answers Unavailable for denser scales it refuses (image-heavy
+  // pages whose full-page raster exceeds its budget). When every visible
+  // cell at the target is Unavailable, raise the page's denser floor one
+  // step; the next prepare plans at the finest scale that renders instead
+  // of showing parents with an error forever.
   if (m_session->target_scale() < 0) {
     auto const cov = m_session->coverage();
-    if (cov.visible > 0 && cov.unavailable >= cov.visible) {
-      ThumtooCache::noteDenserLiveDenied(m_path);
+    if (cov.visible > 0 && cov.unavailable >= cov.visible
+        && ThumtooCache::noteDenserScaleUnavailable(m_path,
+                                                    m_session->target_scale())
+        && m_on_change) {
+      // The view is settled (parents cover), so nothing else would re-plan:
+      // ask the host to repaint → prepare picks up the raised floor now.
+      m_on_change();
+      return true;
     }
   }
   return m_session->phase() == TileSession::Phase::Loading;
