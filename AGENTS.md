@@ -140,17 +140,31 @@ Do **not** reintroduce host-side TILE text on plan cells.
 
 - Commits are small and task-focused.
 - Author: `Ingo Ruhnke <grumbel@gmail.com>`
-- Always add the trailer:
+- Always add a `Co-authored-by:` trailer naming the **actual model** that
+  did the work (not a hard-coded name), e.g.:
   ```
+  Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
   Co-authored-by: Grok <grok@x.ai>
   ```
+
+### Delivery by environment
+
+| Agent | Repo access | Delivery |
+|-------|-------------|----------|
+| **Claude Code** (local, in the human’s checkout) | Direct | Commit directly on the current branch. No bundles. Do not push unless asked. |
+| **Grok Web** (remote sandbox) | None to the human’s tree/remotes | Sequential **git bundles** — see below |
+
+### Bundle handovers (Grok Web only)
+
+The rest of this section applies **only** to sandboxed agents (Grok Web) that
+cannot write to the human’s repository. Agents with direct repo access commit
+in place and skip bundles entirely.
+
 - Deliverables are sequential **git bundles** (`biltoo-NNN-short-slug.bundle`)
   that stack cleanly on the previous tip and use `HEAD` as the ref.
   Bundle numbers never repeat.
 
-### Bundle handovers (agents)
-
-Agents often work in a sandbox **without** write access to the user’s real
+Sandboxed agents often work in a sandbox **without** write access to the user’s real
 git remotes. The reliable handoff is a **git bundle that fast-forwards from
 the human’s current tip**.
 
@@ -601,7 +615,9 @@ applies the size. Native size probe is the no-thumtoo fallback only.
 
 ## Agent sandbox / environment
 
-Lessons from automated sessions (do not assume the opposite):
+Lessons from **sandboxed** automated sessions (Grok Web). Local agents such as
+Claude Code run in the human’s checkout with the Nix dev shell and can build,
+test and commit directly:
 
 | Capability | Typical agent sandbox | Human / Nix flake |
 |------------|----------------------|-------------------|
@@ -612,7 +628,7 @@ Lessons from automated sessions (do not assume the opposite):
 | Downloadable artifacts | Use `/home/workdir/artifacts/*.bundle` when available | `git pull` bundle |
 | `make -k` / compile-all-errors | Not default in Nix/cmake; ask for `-k` if needed | Optional |
 
-- Prefer **static review + bundle delivery** when the sandbox cannot link Qt.
+- Sandbox: prefer **static review + bundle delivery** when it cannot link Qt.
 - Never claim “builds clean” unless a real compile was run in that environment.
 - Nested **thumtoo** source is often a flake input; biltoo compile errors in
   `thumtoo/` mean the **thumtoo tip** must advance first.
