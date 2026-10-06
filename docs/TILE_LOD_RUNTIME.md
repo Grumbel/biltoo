@@ -25,12 +25,12 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 
 1. **Fit** — soft underlay only; no tile spam in `THUMTOO_DEBUG` (screen long edge ≤ ~512).
 2. **Zoom in** past soft (~512 on-screen long edge) — tiles request at target scale; soft stays underlay until cells arrive.
-3. **Continuous wheel zoom** — no full intermediate grids every notch (scale hold ~150ms); large jumps still commit immediately.
+3. **Continuous wheel zoom** — demand changes coalesce for 24 ms before issue; cells of abandoned intermediate scales are cancelled (Queued → Cancelled → Missing), never left InFlight.
 4. **Pan** while zoomed (after the view was fully covered) — neighbouring cells request without needing another zoom; margin prefetch; obsolete in-flight cancelled.
 5. **Scrollbar drag** while zoomed — same as pan (visible set updates).
 6. **Retina / DPR > 1** — finer scales requested than on a 1× display at the same logical zoom.
 7. PreferCache whole-frame climb should **not** run while in the tile band (`m_tileLodPreferCancelled`).
-8. **Failed cells** (missing pyramid levels) — no continuous re-request spam on a stable viewport; a plan change (pan/zoom) may retry.
+8. **Failed cells** — retried after 0.5 s and 1 s, then a 30 s cooldown; the item shows "Showing lower resolution: <reason>" (parents cover) or "Tiles failed: <reason>" (holes). `Unavailable` cells (outside grid, refused denser) are never retried. A stall (no reply in 45 s) logs `biltoo/tile: STALL`.
 9. **Zoom out** below soft max — tile requests stop; PreferCache may resume.
 10. **A→B→A path switch** (Image ←/→) — tiles for A remain in the global path cache
     after leaving A; returning to A should paint from RAM without a full rebuild
@@ -85,7 +85,7 @@ should wake the tile tick without requiring a zoom gesture.
 
 ```bash
 export THUMTOO_DEBUG=1
-export BILTOO_TILE_DEBUG=1   # path / covered / active per tile tick
+export BILTOO_TILE_DEBUG=1   # tile-sched per pump + tile-coord item phase/counts/error
 # optional: biltoo load traces
 export BILTOO_LOAD_DEBUG=1
 ```

@@ -1,36 +1,27 @@
 # Tile load coordinator
 
-**Sole issuer** of grid-tile requests for an `ImageView`.
+Keeps visible items' tile **plans and demand leases** current. It does **not**
+issue requests — `tilelod::TileScheduler` is the sole issuer (global cap,
+priority across paths). Normative: [TILE_STATE_MACHINE.md](TILE_STATE_MACHINE.md).
 
 ## Ownership
 
 | Component | Role |
 |-----------|------|
-| `TileLoadCoordinator` | Global priority + budget; only place that calls `tickTileLod(budget>0)` |
-| `ImageItem` / `TileLodController` | Viewport plan, paint, pump completions |
-| `ImageView::tickPrimaryTileLod` | Forwards to coordinator |
+| `TileLoadCoordinator` | Collect visible tile-band items; `tickItemTileLod` each (plan + lease renew); cancel PreferCache once per path entering the band |
+| `ImageItem` / `TileLodController` | Viewport plan, demand, paint, change hook → repaint |
+| `DisplayPipelineController::tickPrimaryTileLod` | Runs the coordinator; re-arms at 250 ms only while a visible item is Loading |
+| `TileScheduler` | Issue / cancel / retry / stall watchdog (event-driven) |
 
-## Priority (visible first)
+## Order
 
-1. On-screen cells with **no tiles yet** (need any coverage)
-2. On-screen **incomplete** exact coverage
-3. Fully covered cells (upres) **only when** no in-view cell still needs coverage
-
-`hasAnyTile` is true when the item has a live session with Succeeded tiles **or**
-`tileLodHasPathRam()` (process-wide `TileLodRegistry` still holds Succeeded tiles
-for the path). A→B→A and Gallery restore after Image mode are not treated as
-cold zero-tile cells.
-
-Off-screen speculative tile issue is not done here; soft/idle policy is separate.
-Neighbor overview fill is `TileNeighborPrefetch` (Image-mode nav settle).
+Visible items are sorted (in view, zero-tile first, larger on screen first)
+only so that the most needy renew first if the wall budget runs out on huge
+galleries. **Every** visible item is refreshed — the old one-target limit
+starved Workspace items.
 
 ## Non-goals
 
-- ImageItem must not start PreferCache/tile storms on its own for global policy
-- Paint path must not issue requests (plan + draw only)
-
-## Issue order (TileSession)
-
-Always **coarsest → finest**: parent scales before exact target. Scale 0
-(full-res) only after at least one coarser tile has succeeded. Display is
-instant overview, then progressive refinement.
+- Paint path must not issue requests (plan + draw only; demand publishing is
+  idempotent and never issues by itself).
+- No per-item issue budgets: priority classes on demand decide order.

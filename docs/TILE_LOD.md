@@ -5,6 +5,14 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile level-of-detail (LOD) — host display path
 
+> **Loading / scheduling is normative in [TILE_STATE_MACHINE.md](TILE_STATE_MACHINE.md)**
+> (TileLoader cell states, demand leases, TileScheduler, thumtoo
+> `request_tile_cells`). Sections below about TileSession progressive climb,
+> scale hold, generations, per-session InFlight, coverage heartbeat, scale-0 /
+> denser gates and coordinator budgets are **history** (tips ≤ 2892) — they
+> describe the design that rewrite replaced. Geometry, planner, draw plan,
+> orient/crop paint and colour grade remain current.
+
 Normative rules for **viewport-driven grid tiles** in biltoo (and any host that
 shares the same core). thumtoo remains the durable tile store; this document
 defines the **host-side planner, RAM cache, session, and draw plan**.
@@ -161,41 +169,14 @@ Lesson from Galapix: mixing “mark ancestors needed” with cancel produced stu
 - Session may expose `has_any_tile()` so the host can drop global LQIP underlay
   after the first successful tile for the current viewport generation.
 
-## TileSession (state machine)
+## TileSession / TileLoader / TileScheduler
 
-Per open image (URI / content id):
-
-| Host call | Effect |
-|-----------|--------|
-| `set_content_size(W,H)` | Computes `max_scale`, grid dims; required before viewport |
-| `set_lqip(...)` | Optional base underlay (opaque blob / bitmap handle) |
-| `set_viewport(vp, device_per_content)` | Recomputes `target_scale` + visible set |
-| `pump(completions)` | Integrate arrivals; clear in-flight; bump generation as needed |
-| `issue_requests(budget)` | Start up to N missing **exact** keys (center-first priority) |
-| `draw_plan()` | List of `{dst_content_rect, src_key, src_uv, kind}` |
-| `cancel_obsolete()` | Best-effort cancel in-flight keys no longer visible |
-| `trim_cache(...)` | Optional LRU / far-scale drop |
-
-Completions may arrive on a worker thread; `pump` is called from the host frame
-tick and applies them under session ownership.
-
-**Generation:** each `set_viewport` that changes the visible set may bump a
-generation counter; late completions for obsolete keys are ignored.
-
-## TileSource (async interface)
-
-```text
-request(keys[], on_each(key, optional<TileBitmap>))
-cancel(keys[])   // best-effort
-max_scale / min_scale / content size from probe
-```
-
-Production: thumtoo `get_tile` / `request_tiles`. Tests: fake solid-color or
-checkerboard tiles keyed by `(s,x,y)`.
-
-Decode JPEG → RGBA happens in the source/worker path (or stays compressed for
-the painter); the core stores opaque `TileBitmap` (width, height, pixels or
-encoded bytes + codec).
+See [TILE_STATE_MACHINE.md](TILE_STATE_MACHINE.md). In short: `TileSession`
+(per view) plans and publishes **demand**; `TileLoader` (per path) owns every
+cell's state (Missing → Queued → Ready / Failed / Unavailable) and the only
+outstanding request per key; `TileScheduler` (process) is the sole issuer.
+thumtoo answers every cell exactly once (Ok / Cancelled / Failed /
+Unavailable + reason).
 
 ## Integration phases (biltoo)
 

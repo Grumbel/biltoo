@@ -18,7 +18,7 @@ Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](d
 See [TODO.md](TODO.md) for the roadmap and open questions. Vocabulary: [GLOSSARY.md](GLOSSARY.md).
 Latest agent handoff: **TODO.md** + [docs/IMAGEVIEW_SURFACE.md](docs/IMAGEVIEW_SURFACE.md).
 Latest tip: see **[TODO.md](TODO.md)** (do not hard-code tip numbers here — they rot).
-**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md); Gallery pixels: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md);
+**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md); **tile loading state machine (normative):** [docs/TILE_STATE_MACHINE.md](docs/TILE_STATE_MACHINE.md); Gallery pixels: [docs/GALLERY_PIXELS.md](docs/GALLERY_PIXELS.md);
 Slideshow: [SLIDESHOW.md](SLIDESHOW.md); Tools: [docs/TOOL_UNIFICATION.md](docs/TOOL_UNIFICATION.md).
 Requires **thumtoo** matching **TODO.md** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100).
@@ -28,7 +28,7 @@ Requires **thumtoo** matching **TODO.md** (Store-only + page LQIP; see ENVIRONME
 | Role | Examples |
 |------|----------|
 | **Live tip / open work** | [TODO.md](TODO.md) |
-| **Normative contracts** | SIZE, IDENTITY, THUMTOO_HOST_CONTRACT, TILE_LOD, GALLERY_PIXELS, CONTENT_PIPELINE, TOOL_UNIFICATION, SLIDESHOW |
+| **Normative contracts** | SIZE, IDENTITY, THUMTOO_HOST_CONTRACT, TILE_STATE_MACHINE, TILE_LOD, GALLERY_PIXELS, CONTENT_PIPELINE, TOOL_UNIFICATION, SLIDESHOW |
 | **Product policy** | KILL_SOFT, DOMAIN |
 | **Design / brainstorm** | ACTIVITY, FEATURE_BRAINSTORM, SCRIPTING, … — not APIs |
 | **Archived** | AUDIT, SESSION narrative, TILE_DRAW_INVESTIGATION, ECS_GUI_BYPASSES, PIXEL_PIPELINE_REDESIGN, INVESTIGATION_MODE_EMPTY — historical; do not drive new code |
