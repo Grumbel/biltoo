@@ -163,32 +163,42 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     }
 
     const tilelod::TileSession::Coverage cov = session->coverage();
+    const tilelod::TileSession::Phase phase = session->phase();
     // Three lines so "s=N" is not glued to TILE (easier to read at large size).
     QStringList summary;
     summary << QStringLiteral("TILE");
     summary << QStringLiteral("s=%1").arg(target);
-    if (cov.fully_covered()) {
+    switch (phase) {
+    case tilelod::TileSession::Phase::Complete:
         summary << QStringLiteral("COMPLETE");
-    } else if (cov.in_flight > 0) {
-        summary << QStringLiteral("LOADING %1/%2")
-                       .arg(cov.exact_succeeded)
+        break;
+    case tilelod::TileSession::Phase::Loading:
+        summary << QStringLiteral("LOADING %1/%2").arg(cov.ready).arg(cov.visible);
+        summary << QStringLiteral("queued %1 retry %2").arg(cov.queued).arg(cov.retrying);
+        break;
+    case tilelod::TileSession::Phase::Degraded:
+    case tilelod::TileSession::Phase::Error: {
+        summary << QStringLiteral("%1 %2/%3 ready")
+                       .arg(phase == tilelod::TileSession::Phase::Error
+                                ? QStringLiteral("ERROR")
+                                : QStringLiteral("DEGRADED"))
+                       .arg(cov.ready)
                        .arg(cov.visible);
-    } else if (cov.settled() && cov.failed > 0) {
-        // Failed = tile request returned miss (encode deny, cancel, source
-        // error). Negative s is live denser-than-layout (PDF/DjVu/EPUB).
-        summary << QStringLiteral("FAILED %1/%2")
+        summary << QStringLiteral("failed %1 unavailable %2")
                        .arg(cov.failed)
-                       .arg(cov.visible);
-        if (target < 0) {
-            summary << QStringLiteral("live denser");
+                       .arg(cov.unavailable);
+        QString why = QString::fromStdString(session->first_error());
+        if (why.size() > 72) {
+            why = why.left(69) + QStringLiteral("...");
         }
-        if (cov.exact_succeeded == 0 && cov.failed == cov.visible) {
-            summary << QStringLiteral("no cells");
+        if (!why.isEmpty()) {
+            summary << why;
         }
-    } else {
-        summary << QStringLiteral("WAITING %1/%2")
-                       .arg(cov.exact_succeeded)
-                       .arg(cov.visible);
+        break;
+    }
+    case tilelod::TileSession::Phase::Idle:
+        summary << QStringLiteral("IDLE");
+        break;
     }
     // EMB/LQIP in the summary only when the plan still has underlay holes —
     // not when every visible cell is EXACT (underlay may still sit under tiles

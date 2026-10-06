@@ -89,7 +89,14 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         if (existing) {
             continue;
         }
-        const QSize sz = m_host->logicalSizeForPath(path);
+        // Tile grid = authoritative native size only. A logical/soft size
+        // here used to differ from the live view's and wiped the path's
+        // shared tiles on every bind.
+        const QSize sz = ThumtooCache::cachedSize(path);
+        if (!sz.isValid()) {
+            ThumtooCache::scheduleProbe(path);
+            continue;
+        }
         if (sz.width() < 256 || sz.height() < 1) {
             continue;
         }
@@ -112,13 +119,14 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         Slot slot;
         slot.path = path;
         slot.controller = std::make_unique<tilelod::TileLodController>();
+        slot.controller->setPriority(tilelod::TileLodController::kPrioritySpeculative);
         slot.controller->setPath(path);
         slot.controller->setContentSize(sz.width(), sz.height());
         slot.controller->updateViewport(QRectF(0.0, 0.0, sz.width(), sz.height()),
                                         dpc);
         slot.ticksLeft = kPrefetchMaxTicks;
         slot.budgetPerTick = budgetPerPath;
-        (void)slot.controller->tick(slot.budgetPerTick);
+        (void)slot.controller->refresh();
         // Bound concurrent off-canvas controllers (global RAM still retains).
         // Evict the slot closest to completion timeout (lowest ticksLeft).
         while (static_cast<int>(m_slots.size()) >= kPrefetchMaxSlots) {
@@ -165,17 +173,10 @@ void TileNeighborPrefetch::tick()
             it = m_slots.erase(it);
             continue;
         }
-        (void)it->controller->tick(it->budgetPerTick);
+        // Renew the demand lease; the scheduler loads at speculative priority.
+        const bool loading = it->controller->refresh();
         --it->ticksLeft;
-        bool done = it->controller->viewportFullyCovered() || it->ticksLeft <= 0;
-        if (!done && it->controller->session()) {
-            auto const snap = it->controller->session()->debug_snapshot();
-            if (snap.in_flight == 0 && snap.visible > 0
-                && snap.exact_succeeded + snap.cache_succeeded > 0
-                && !it->controller->session()->request_scale_holding()) {
-                done = true;
-            }
-        }
+        const bool done = !loading || it->ticksLeft <= 0;
         if (done) {
             if (!it->path.isEmpty()) {
                 reg.touch(it->path);

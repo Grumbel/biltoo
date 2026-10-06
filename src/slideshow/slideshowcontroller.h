@@ -99,6 +99,8 @@ public:
      * @return true if either arm still needs coverage (caller should re-arm LOD timer).
      */
     bool tickSlideshowTileLod(int budget);
+    /** Repaint the viewport when phase tile cells change. */
+    void installSlideshowTileHook(tilelod::TileLodController *lod) const;
     /** Viewport resized while dwell motion is active. */
     void onViewResizedDuringDwell();
     /** Pointer left the viewport: hide seekbar when not dragging. */

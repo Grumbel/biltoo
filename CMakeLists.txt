@@ -491,13 +491,15 @@ set(BILTOO_LIB_SOURCES
   src/shell/openwith.h
   src/tilelod/lod_planner.cpp
   src/tilelod/draw_plan.cpp
-  src/tilelod/tile_memory_cache.cpp
+  src/tilelod/tile_loader.cpp
+  src/tilelod/tile_scheduler.cpp
+  src/tilelod/tile_scheduler_qt.cpp
   src/tilelod/tile_session.cpp
   src/tilelod/tile_painter.cpp
   src/tilelod/tile_cover_paint.cpp
   src/tilelod/tile_plan_debug_overlay.cpp
   src/tilelod/tile_display_paint.cpp
-  src/tilelod/thumtoo_tile_source.cpp
+  src/tilelod/thumtoo_tile_backend.cpp
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp
   src/shell/icons.qrc
@@ -1127,7 +1129,8 @@ add_executable(biltoo-tilelod-test
   tests/tilelod_test.cpp
   src/tilelod/lod_planner.cpp
   src/tilelod/draw_plan.cpp
-  src/tilelod/tile_memory_cache.cpp
+  src/tilelod/tile_loader.cpp
+  src/tilelod/tile_scheduler.cpp
   src/tilelod/tile_session.cpp
 )
 target_include_directories(biltoo-tilelod-test PRIVATE src)

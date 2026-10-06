@@ -468,6 +468,9 @@ private:
     PathRasterService *m_pathRaster = nullptr;
     /** Path → LOD controller for tile cover paint (mutable: used from const schedule). */
     mutable QHash<QString, std::shared_ptr<tilelod::TileLodController>> m_filmstripLod;
+    /** Renews filmstrip tile demand leases while any cell is still loading. */
+    mutable QTimer *m_filmstripRenewTimer = nullptr;
+    void renewFilmstripTiles() const;
 };
 
 

@@ -15,6 +15,7 @@
 #include <atomic>
 #include <functional>
 #include <optional>
+#include "tilelod/tile_backend.hpp"
 #include "tilelod/tile_types.hpp"
 
 /**
@@ -472,24 +473,32 @@ void warmUris(const QStringList &paths);
 
 /**
  * Grid tiles (tilelod / Image zoom). Scale 0 = full res; +1 halves.
- * Callback may run on thumtoo worker — decode already performed into RGBA QImage.
- * No-op when thumtoo unavailable.
  */
 struct TileCoord {
     int scale = 0;
     int x = 0;
     int y = 0;
 };
-/** Drop queued interactive tiles for specific cells (scroll cancel). */
-int cancelTileCells(const QString &path, const QVector<TileCoord> &coords);
 /**
- * Async tile cells as rgba8 TileBitmap (no QImage round-trip).
- * nullopt = miss/fail for that index.
+ * Cancel interactive cells (no longer demanded by any view). Each cancelled
+ * cell still answers with FetchStatus::Cancelled (thumtoo cell contract).
  */
-using TileBitmapCellCallback =
-    std::function<void(std::size_t index, std::optional<tilelod::TileBitmap> tile)>;
-void requestTiles(const QString &path, const QVector<TileCoord> &coords,
-                  TileBitmapCellCallback on_cell);
+int cancelTileCells(const QString &path, const QVector<TileCoord> &coords);
+
+/** One cell outcome from thumtoo request_tile_cells (rgba8 when Ok). */
+struct TileCellResult {
+    tilelod::FetchStatus status = tilelod::FetchStatus::Failed;
+    std::optional<tilelod::TileBitmap> tile;
+    std::string error;
+};
+using TileCellResultCallback = std::function<void(std::size_t index, TileCellResult)>;
+/**
+ * Async interactive tile cells via thumtoo request_tile_cells: exactly one
+ * callback per index (Ok / Cancelled / Failed / Unavailable + reason), on the
+ * GUI thread. Without thumtoo every cell fails immediately with a reason.
+ */
+void requestTileCells(const QString &path, const QVector<TileCoord> &coords,
+                      TileCellResultCallback on_cell);
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();
 

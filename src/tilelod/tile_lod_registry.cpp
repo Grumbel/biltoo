@@ -3,7 +3,11 @@
 
 #include "tilelod/tile_lod_registry.hpp"
 
-#include "host/thumtoocache.h"
+#include "tilelod/thumtoo_tile_backend.hpp"
+#include "tilelod/tile_scheduler.hpp"
+#include "tilelod/tile_scheduler_qt.hpp"
+
+#include <QCoreApplication>
 
 #include <QString>
 #include <QByteArray>
@@ -14,43 +18,6 @@
 #include <vector>
 
 namespace tilelod {
-namespace {
-
-ThumtooTileSource::FetchFn makeFetch(QString path)
-{
-  return [path](std::string const& /*uri*/,
-                std::vector<ThumtooTileSource::TileCoord> const& coords,
-                std::function<void(std::size_t, std::optional<TileBitmap>)> on_cell) {
-    QVector<ThumtooCache::TileCoord> qcoords;
-    qcoords.reserve(static_cast<int>(coords.size()));
-    for (auto const& c : coords) {
-      qcoords.push_back({c.scale, c.x, c.y});
-    }
-    // TileBitmap delivered directly (decode once in ThumtooCache::requestTiles).
-    ThumtooCache::requestTiles(path, qcoords, on_cell);
-  };
-}
-
-ThumtooTileSource::CancelFn makeCancel(QString path)
-{
-  return [path](std::string const& /*uri*/,
-                std::vector<ThumtooTileSource::TileCoord> const& coords) {
-    // Full-path cancel (empty coords): drop every queued EnsureTiles for uri.
-    if (coords.empty()) {
-      (void)ThumtooCache::cancelTilesForPath(path);
-      return;
-    }
-    // Per-cell cancel on scroll: only those cells (not the whole path).
-    QVector<ThumtooCache::TileCoord> qcoords;
-    qcoords.reserve(static_cast<int>(coords.size()));
-    for (auto const& c : coords) {
-      qcoords.push_back({c.scale, c.x, c.y});
-    }
-    (void)ThumtooCache::cancelTileCells(path, qcoords);
-  };
-}
-
-}  // namespace
 
 TileLodRegistry& TileLodRegistry::instance()
 {
@@ -68,8 +35,8 @@ std::size_t TileLodRegistry::total_approx_bytes_locked() const
   std::size_t n = 0;
   for (auto const& [k, shared] : m_by_path) {
     (void)k;
-    if (shared && shared->cache) {
-      n += shared->cache->approx_bytes();
+    if (shared && shared->loader) {
+      n += shared->loader->ready_bytes();
     }
   }
   return n;
@@ -118,6 +85,10 @@ void TileLodRegistry::trim_idle_locked()
       std::fprintf(stderr, "biltoo/tile-reg: trim idle path=%s\n", key.c_str());
       std::fflush(stderr);
     }
+    if (auto it = m_by_path.find(key); it != m_by_path.end() && it->second
+        && it->second->loader) {
+      it->second->loader->cancel_outstanding();
+    }
     m_by_path.erase(key);
   }
 }
@@ -137,11 +108,17 @@ std::shared_ptr<SharedPathTiles> TileLodRegistry::acquire(QString const& path)
   }
   // Make room for a new path before inserting (prefer dropping idle first).
   trim_idle_locked();
+  // Lazily install the GUI timer driver for the scheduler (any host —
+  // app, tests, tools — gets event-driven pumping without extra wiring).
+  if (!m_driver_installed && QCoreApplication::instance()) {
+    installTileSchedulerQtDriver(QCoreApplication::instance());
+    m_driver_installed = true;
+  }
   auto shared = std::make_shared<SharedPathTiles>();
   shared->path = path;
-  shared->cache = std::make_shared<TileMemoryCache>();
-  shared->source = std::make_shared<ThumtooTileSource>(
-      std::string{"path"}, makeFetch(path), makeCancel(path));
+  shared->loader = std::make_shared<TileLoader>(
+      std::make_shared<ThumtooTileBackend>(path));
+  TileScheduler::instance().register_loader(shared->loader);
   shared->refcount = 1;
   touch_locked(*shared);
   m_by_path.emplace(key, shared);
@@ -169,14 +146,14 @@ void TileLodRegistry::release(QString const& path)
   }
   // Idle: keep Succeeded tiles for A→B→A. Session dtor should already have
   // erased InFlight; clear any residual so we never retain a pure-InFlight shell.
-  if (it->second->cache) {
-    for (TileKey const& tile_key : it->second->cache->in_flight_keys()) {
-      it->second->cache->erase(tile_key);
-    }
-  }
+  // No view holds demand any more: the loader cancels its Queued cells on
+  // the next pump (or on destruction when erased below).
   bool const has_tiles =
-      it->second->cache && it->second->cache->approx_bytes() > 0;
+      it->second->loader && it->second->loader->has_ready();
   if (!has_tiles) {
+    if (it->second->loader) {
+      it->second->loader->cancel_outstanding();
+    }
     m_by_path.erase(it);
     return;
   }
@@ -189,47 +166,50 @@ void TileLodRegistry::invalidate(QString const& path)
     return;
   }
   std::string const key = path.toStdString();
-  std::lock_guard<std::mutex> lock(m_mu);
-  auto it = m_by_path.find(key);
-  if (it == m_by_path.end()) {
-    return;
-  }
-  // Cancel in-flight fetches and clear Succeeded tiles in place so every
-  // live controller sharing this SharedPathTiles stops painting stale cells.
-  // Erase only when idle; active holders keep the empty shell until release.
-  if (it->second) {
-    if (it->second->source) {
-      it->second->source->cancel_all();
+  std::shared_ptr<TileLoader> loader;
+  {
+    std::lock_guard<std::mutex> lock(m_mu);
+    auto it = m_by_path.find(key);
+    if (it == m_by_path.end()) {
+      return;
     }
-    if (it->second->cache) {
-      it->second->cache->clear();
-    }
-    if (it->second->refcount == 0) {
+    if (it->second) {
+      loader = it->second->loader;
+      if (it->second->refcount == 0) {
+        m_by_path.erase(it);
+      }
+    } else {
       m_by_path.erase(it);
     }
-  } else {
-    m_by_path.erase(it);
+  }
+  // Outside the lock: invalidate notifies views (repaint hooks).
+  if (loader) {
+    loader->invalidate("reload");
   }
 }
 
 void TileLodRegistry::invalidateAll()
 {
-  std::lock_guard<std::mutex> lock(m_mu);
-  // Cancel + clear every entry first so any remaining holders (stashed items)
-  // cannot paint Succeeded tiles from the previous session after the map drop.
-  for (auto& [key, shared] : m_by_path) {
-    (void)key;
-    if (!shared) {
-      continue;
-    }
-    if (shared->source) {
-      shared->source->cancel_all();
-    }
-    if (shared->cache) {
-      shared->cache->clear();
+  std::vector<std::shared_ptr<TileLoader>> loaders;
+  {
+    std::lock_guard<std::mutex> lock(m_mu);
+    for (auto it = m_by_path.begin(); it != m_by_path.end();) {
+      if (it->second && it->second->loader) {
+        loaders.push_back(it->second->loader);
+      }
+      // Keep entries live controllers still hold: erasing them made a later
+      // release() decrement a *new* entry for the same path (refcount drift,
+      // two loaders for one path).
+      if (!it->second || it->second->refcount == 0) {
+        it = m_by_path.erase(it);
+      } else {
+        ++it;
+      }
     }
   }
-  m_by_path.clear();
+  for (auto const& l : loaders) {
+    l->invalidate("session replace");
+  }
 }
 
 bool TileLodRegistry::has_succeeded_tiles(QString const& path) const
@@ -245,10 +225,10 @@ std::size_t TileLodRegistry::path_succeeded_count(QString const& path) const
   std::string const key = path.toStdString();
   std::lock_guard<std::mutex> lock(m_mu);
   auto it = m_by_path.find(key);
-  if (it == m_by_path.end() || !it->second || !it->second->cache) {
+  if (it == m_by_path.end() || !it->second || !it->second->loader) {
     return 0;
   }
-  return it->second->cache->succeeded_count();
+  return it->second->loader->ready_count();
 }
 
 std::size_t TileLodRegistry::idle_path_count() const
@@ -272,10 +252,10 @@ std::size_t TileLodRegistry::path_approx_bytes(QString const& path) const
   std::string const key = path.toStdString();
   std::lock_guard<std::mutex> lock(m_mu);
   auto it = m_by_path.find(key);
-  if (it == m_by_path.end() || !it->second || !it->second->cache) {
+  if (it == m_by_path.end() || !it->second || !it->second->loader) {
     return 0;
   }
-  return it->second->cache->approx_bytes();
+  return it->second->loader->ready_bytes();
 }
 
 void TileLodRegistry::touch(QString const& path)
@@ -356,11 +336,17 @@ QString TileLodRegistry::debug_summary() const
   }
   const double mib =
       static_cast<double>(total_approx_bytes_locked()) / (1024.0 * 1024.0);
-  return QStringLiteral("regPaths=%1 idle=%2 ramMiB=%3 maxIdle=%4")
+  TileScheduler::Stats const st = TileScheduler::instance().stats();
+  return QStringLiteral("regPaths=%1 idle=%2 ramMiB=%3 maxIdle=%4 sched{loaders=%5 "
+                        "queued=%6 waiting=%7 issued=%8}")
       .arg(m_by_path.size())
       .arg(idle)
       .arg(mib, 0, 'f', 1)
-      .arg(m_max_idle_paths);
+      .arg(m_max_idle_paths)
+      .arg(st.loaders)
+      .arg(st.queued)
+      .arg(st.issuable)
+      .arg(static_cast<qulonglong>(st.issued_total));
 }
 
 void TileLodRegistry::apply_environment_overrides()

@@ -281,7 +281,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                     args.native = native;
                     args.dest = QRectF(contentRect);
                     args.underlay = pm.isNull() ? QImage() : pm.toImage();
-                    args.tick = false; // surface tick issues tiles
+                    args.tick = false; // scheduleFilmstripTiles renews demand
                     args.min_scale = 0;
                     SessionImageId sid = kInvalidSessionImageId;
                     const QVariant sidVar = index.data(ThumbnailBar::RoleSessionId);
@@ -1477,18 +1477,17 @@ tilelod::TileLodController *ThumbnailBar::filmstripLodFor(const QString &path) c
         slot = std::make_shared<tilelod::TileLodController>();
     }
     if (needBind) {
-        slot->setPath(path);
-        // One wake per bind — tile completions repaint the strip.
-        if (slot->session() && viewport()) {
+        // Cell changes repaint the strip; loading is TileScheduler's job.
+        slot->setPriority(tilelod::TileLodController::kPriorityStrip);
+        if (viewport()) {
             QPointer<QWidget> vp(viewport());
-            slot->session()->set_wake([vp]() {
-                QTimer::singleShot(0, QCoreApplication::instance(), [vp]() {
-                    if (vp) {
-                        vp->update();
-                    }
-                });
+            slot->setOnChange([vp]() {
+                if (vp) {
+                    vp->update();
+                }
             });
         }
+        slot->setPath(path);
     }
     return slot.get();
 }
@@ -1516,7 +1515,33 @@ void ThumbnailBar::scheduleFilmstripTiles(const QString &path, int edge) const
     const double dpc =
         tilelod::cover_device_per_content(QSizeF(edge, edge), native);
     lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
-    (void)lod->tick(8);
+    if (lod->refresh()) {
+        if (!m_filmstripRenewTimer) {
+            auto *self = const_cast<ThumbnailBar *>(this);
+            m_filmstripRenewTimer = new QTimer(self);
+            m_filmstripRenewTimer->setInterval(1000);
+            connect(m_filmstripRenewTimer, &QTimer::timeout, self,
+                    [self]() { self->renewFilmstripTiles(); });
+        }
+        if (!m_filmstripRenewTimer->isActive()) {
+            m_filmstripRenewTimer->start();
+        }
+    }
+}
+
+void ThumbnailBar::renewFilmstripTiles() const
+{
+    // Demand is a lease (TileLoader): visible strip cells that are still
+    // loading must renew it or the loader cancels them as abandoned.
+    bool loading = false;
+    for (auto it = m_filmstripLod.cbegin(); it != m_filmstripLod.cend(); ++it) {
+        if (it.value() && it.value()->refresh()) {
+            loading = true;
+        }
+    }
+    if (!loading && m_filmstripRenewTimer) {
+        m_filmstripRenewTimer->stop();
+    }
 }
 
 

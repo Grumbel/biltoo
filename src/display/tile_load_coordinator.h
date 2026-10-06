@@ -14,19 +14,15 @@ class ImageItem;
 class DisplayPipelineController;
 
 /**
- * Sole owner of Gallery/Image tile *load* policy for a display pipeline host.
- *
- * All tile issue / progressive climb / per-item tick routing goes through here.
- * DisplayPipelineController::tickItemTileLod is the per-item entry (forwards to
- * ImageItem::tickTileLod: prepare + pump + issue + repaint). Paint only draws
- * the current DrawPlan — no scheduling.
+ * Keeps visible items' tile plans and demand leases current for a display
+ * pipeline host. It does **not** issue requests: tilelod::TileScheduler owns
+ * issue order and the global in-flight cap (docs/TILE_STATE_MACHINE.md).
  *
  *   1. Collect viewport hits (gallery screen-edge or tileLodWanted).
- *   2. Prioritize cells with zero tiles (LQIP/blank) before upres.
- *   3. Split budget; call pipeline tickItemTileLod(item, share).
+ *   2. Cancel PreferCache once per path entering the tile band.
+ *   3. tickItemTileLod(item) → ImageItem::tickTileLod: plan + demand renew.
  *
  * GUI thread only (DisplayPipelineController::tickPrimaryTileLod).
- * Dual ImageView Stage 2a: bound to DisplayPipelineController (host via pipe).
  */
 class TileLoadCoordinator
 {
@@ -40,10 +36,7 @@ public:
 
     explicit TileLoadCoordinator(DisplayPipelineController *pipeline);
 
-    /**
-     * Issue up to @p globalBudget tile requests across visible need.
-     * Completions are still pumped per-item (share may be 0).
-     */
+    /** Refresh plan + demand for visible items (budget ignored; kept for callers). */
     void tick(int globalBudget);
 
     /** Drop PreferCache cancel marks (session Open / wipe). */
@@ -67,7 +60,6 @@ private:
     static void sortByPolicy(QList<Cand> &cands);
 
     DisplayPipelineController *m_pipeline = nullptr; // not owned
-    qint64 m_lastTickMs = 0;
     /** Paths whose PreferCache climb was cancelled for tile issue this session. */
     QSet<QString> m_preferCancelled;
 };

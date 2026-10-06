@@ -2268,16 +2268,23 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
         const QSize native = m_view->hostSizeBook().known(slot.path);
         bool drewTiles = false;
 
+        // Tile grid = authoritative native size (the size book may hold a
+        // provisional aspect; a mismatched grid would reset the path's loader).
+        const QSize tileNative = slot.path.isEmpty()
+            ? QSize() : ThumtooCache::cachedSize(slot.path);
         if (!slot.path.isEmpty()
-            && native.width() > 1 && native.height() > 1
+            && tileNative.width() > 1 && tileNative.height() > 1
             && tilelod::TileLodRegistry::instance().has_succeeded_tiles(slot.path)) {
             // Keep this path preferred under process LRU while on-screen.
             tilelod::TileLodRegistry::instance().touch(slot.path);
+            // Paint-only peek at retained cells: passive, so it never publishes
+            // demand (and going away cannot cancel the live cell's loading).
             tilelod::TileLodController lod;
+            lod.setPassive(true);
             lod.setPath(slot.path);
             tilelod::CoverPaintArgs args;
             args.lod = &lod;
-            args.native = native;
+            args.native = tileNative;
             args.dest = r;
             args.tick = false;
             args.min_scale = ThumtooCache::durableTileMinScale(slot.path);

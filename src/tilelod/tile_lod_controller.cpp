@@ -28,9 +28,9 @@ bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongE
 
 void TileLodController::unbind()
 {
-  // Destroy the per-item session first (viewport / generation / inbox).
-  // release() only drops registry interest; Succeeded tiles stay in the
-  // path entry until global LRU eviction.
+  // Destroy the per-view session first (withdraws its demand). release()
+  // only drops registry interest; Ready tiles stay in the path loader until
+  // global LRU eviction.
   m_session.reset();
   if (m_shared) {
     QString const p = m_shared->path;
@@ -41,12 +41,14 @@ void TileLodController::unbind()
 
 void TileLodController::bindSession()
 {
-  if (!m_shared || !m_shared->source || !m_shared->cache) {
+  if (!m_shared || !m_shared->loader) {
     m_session.reset();
     return;
   }
-  m_session = std::make_unique<TileSession>(m_shared->source.get(),
-                                            m_shared->cache.get());
+  m_session = std::make_unique<TileSession>(m_shared->loader);
+  m_session->set_priority_class(m_priority);
+  m_session->set_passive(m_passive);
+  m_session->set_on_change(m_on_change);
 }
 
 void TileLodController::setPath(QString path)
@@ -62,6 +64,30 @@ void TileLodController::setPath(QString path)
   // Re-acquire may return a zero-ref retained entry with tiles still warm.
   m_shared = TileLodRegistry::instance().acquire(m_path);
   bindSession();
+}
+
+void TileLodController::setOnChange(std::function<void()> cb)
+{
+  m_on_change = std::move(cb);
+  if (m_session) {
+    m_session->set_on_change(m_on_change);
+  }
+}
+
+void TileLodController::setPriority(int cls)
+{
+  m_priority = cls;
+  if (m_session) {
+    m_session->set_priority_class(cls);
+  }
+}
+
+void TileLodController::setPassive(bool on)
+{
+  m_passive = on;
+  if (m_session) {
+    m_session->set_passive(on);
+  }
 }
 
 void TileLodController::setContentSize(int w, int h, int minScale)
@@ -93,37 +119,32 @@ void TileLodController::updateViewport(QRectF const& contentVisible,
   m_session->set_viewport(vp, marginContent);
 }
 
-int TileLodController::tick(int requestBudget)
+bool TileLodController::refresh()
 {
-  if (!m_session || !m_enabled) {
-    return 0;
+  if (!m_session) {
+    return false;
   }
-  int const applied = m_session->pump();
-  // Completions keep the path preferred under global idle/byte LRU.
-  if (applied > 0 && !m_path.isEmpty()) {
+  m_session->renew();
+  if (!m_path.isEmpty()) {
+    // Visible paths stay preferred under global idle/byte LRU.
     TileLodRegistry::instance().touch(m_path);
   }
-  // budget<=0 is pump-only (coordinator "covered" pass). Never call
-  // issue_requests(0) — that recorded early=2 and looked like denser starvation.
-  if (requestBudget > 0) {
-    m_session->issue_requests(requestBudget);
-    // Thumtoo rejects denser (scale<0) on image-heavy PDF pages (scans). Once
-    // every denser visible cell Failed, memo so prepare floors min_scale at 0.
-    if (m_session && !m_path.isEmpty()
-        && m_session->target_scale() < 0) {
-      auto const cov = m_session->coverage();
-      if (cov.visible > 0 && cov.in_flight == 0 && cov.missing == 0
-          && cov.exact_succeeded == 0 && cov.failed >= cov.visible) {
-        ThumtooCache::noteDenserLiveDenied(m_path);
-      }
+  // thumtoo answers Unavailable for denser cells it refuses (image-heavy
+  // scans). When every visible denser cell is Unavailable, memo it so the
+  // next prepare floors min_scale at the layout scale instead of showing
+  // parents forever.
+  if (m_session->target_scale() < 0) {
+    auto const cov = m_session->coverage();
+    if (cov.visible > 0 && cov.unavailable >= cov.visible) {
+      ThumtooCache::noteDenserLiveDenied(m_path);
     }
   }
-  return applied;
+  return m_session->phase() == TileSession::Phase::Loading;
 }
 
 bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) const
 {
-  if (!painter || !m_session || !m_enabled) {
+  if (!painter || !m_session) {
     return false;
   }
   DrawPlan plan = m_session->draw_plan();
@@ -136,9 +157,10 @@ bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) con
   args.lqip = lqipUnderlay;
   args.smooth = DisplayQuality::smoothScaling();
   args.device_per_content = m_device_per_content;
-  args.resolve = [this](TileKey const& key, TileBitmap const&) -> QImage {
-    CacheEntry const* e = m_session->cache().find(key);
-    if (!e || e->state != TileState::Succeeded || !e->bitmap.valid()) {
+  TileSession const* session = m_session.get();
+  args.resolve = [session](TileKey const& key, TileBitmap const&) -> QImage {
+    TileCell const* e = session->find(key);
+    if (!e || !e->ready()) {
       return {};
     }
     return tile_bitmap_to_qimage(e->bitmap);
@@ -150,26 +172,40 @@ bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) con
 
 bool TileLodController::hasAnyTile() const
 {
-  return m_session && m_session->has_any_succeeded_tile();
+  return m_session && m_session->has_any_ready();
 }
 
 bool TileLodController::hasRetainedTiles() const
 {
-  if (m_shared && m_shared->cache) {
-    return m_shared->cache->has_succeeded();
+  if (m_shared && m_shared->loader) {
+    return m_shared->loader->has_ready();
   }
   return hasAnyTile();
 }
 
 bool TileLodController::viewportFullyCovered() const
 {
-  return m_session && m_session->coverage().fully_covered()
-         && !m_session->request_scale_holding();
+  return m_session && m_session->coverage().fully_covered();
 }
 
 bool TileLodController::viewportSettled() const
 {
-  return m_session && m_session->coverage().settled();
+  return m_session && m_session->phase() != TileSession::Phase::Loading;
+}
+
+bool TileLodController::isLoading() const
+{
+  return m_session && m_session->phase() == TileSession::Phase::Loading;
+}
+
+TileSession::Phase TileLodController::phase() const
+{
+  return m_session ? m_session->phase() : TileSession::Phase::Idle;
+}
+
+std::string TileLodController::statusLine() const
+{
+  return m_session ? m_session->status_line() : std::string{};
 }
 
 int TileLodController::targetScale() const

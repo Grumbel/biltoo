@@ -23,6 +23,17 @@
 namespace tilelod {
 
 struct ItemBag {
+  ItemBag() = default;
+  ItemBag(ItemBag const&) = delete;
+  ItemBag& operator=(ItemBag const&) = delete;
+  /// Queued repaint lambdas hold `alive`; the item may be gone after this.
+  ~ItemBag()
+  {
+    if (alive) {
+      *alive = false;
+    }
+  }
+
   std::unique_ptr<TileLodController> controller;
   /** Crop-draft (and similar) freeze: no tile requests or paint. */
   bool suppressed = false;

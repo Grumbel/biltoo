@@ -4,8 +4,7 @@
 #ifndef BILTOO_TILELOD_TILE_LOD_REGISTRY_HPP
 #define BILTOO_TILELOD_TILE_LOD_REGISTRY_HPP
 
-#include "tilelod/tile_memory_cache.hpp"
-#include "tilelod/thumtoo_tile_source.hpp"
+#include "tilelod/tile_loader.hpp"
 
 #include <QString>
 #include <cstddef>
@@ -17,19 +16,17 @@
 namespace tilelod {
 
 /**
- * Shared tile backend + RAM cache for one session path.
- * Multiple ImageItems (Workspace duplicates) share Succeeded tiles.
- * Each item keeps its own TileSession (viewport / request budget).
+ * Shared TileLoader (request state machine + RAM cells) for one session path.
+ * Every view of the path (ImageItem, filmstrip, slideshow, prefetch, Gallery
+ * peek) holds a TileSession on this loader; the loader alone issues/cancels.
  *
- * Lifetime is **not** tied to active controllers: when the last
- * TileLodController releases a path, the entry stays in the process-wide
- * registry until global LRU eviction (or explicit invalidate). Image ←/→
- * and mode switches therefore keep Succeeded tiles for paths still inside
- * the budget.
+ * Lifetime is **not** tied to active controllers: when the last controller
+ * releases a path, the entry stays in the process-wide registry until global
+ * LRU eviction (or explicit invalidate). Image ←/→ and mode switches
+ * therefore keep Ready tiles for paths still inside the budget.
  */
 struct SharedPathTiles {
-  std::shared_ptr<ThumtooTileSource> source;
-  std::shared_ptr<TileMemoryCache> cache;
+  std::shared_ptr<TileLoader> loader;
   QString path;
   /** Controllers currently bound to this path (acquire/release). */
   int refcount = 0;
@@ -59,37 +56,38 @@ public:
   /**
    * Drop one reference. Does **not** destroy the path entry when count hits
    * zero; idle paths are retained for LRU reuse until global budget trim.
-   * Empty idle entries (no Succeeded tiles) are dropped immediately. Residual
-   * InFlight keys are cleared on the last release.
+   * Empty idle entries (no Ready tiles) are dropped immediately; the loader's
+   * outstanding work is cancelled when it dies.
    */
   void release(QString const& path);
 
   /**
-   * Force-remove a path entry regardless of refcount (e.g. file replaced).
-   * Cancels outstanding tile work via source destruction.
+   * File replaced / reload: TileLoader::invalidate (cancel, drop cells, bump
+   * epoch so late results are ignored). Live entries stay bound; idle ones
+   * are erased.
    */
   void invalidate(QString const& path);
 
   /**
-   * Drop every path entry (session replace / new archive). Live controllers
-   * must re-acquire; retained idle tiles from the previous session must not
-   * paint under a new path list.
+   * Session replace / new archive: invalidate every loader and erase idle
+   * entries. Entries still held by controllers stay in the map (cleared) so
+   * their later release() balances the right refcount.
    */
   void invalidateAll();
 
   int path_refcount(QString const& path) const;
 
   /**
-   * True if the path entry exists and holds at least one Succeeded tile.
+   * True if the path entry exists and holds at least one Ready tile.
    * Does not acquire (refcount unchanged). Used to skip redundant prefetch
    * when A→B→A retained tiles are already warm.
    */
   bool has_succeeded_tiles(QString const& path) const;
 
-  /** Succeeded tile count for one path (0 if absent). O(1) per path cache. */
+  /** Ready tile count for one path (0 if absent). O(1) per path cache. */
   std::size_t path_succeeded_count(QString const& path) const;
 
-  /** Succeeded payload bytes for one path (0 if absent). */
+  /** Ready payload bytes for one path (0 if absent). */
   std::size_t path_approx_bytes(QString const& path) const;
 
   /** Paths with refcount == 0 still retained for LRU. */
@@ -104,11 +102,11 @@ public:
   /** Number of path entries currently in the registry (active + idle retained). */
   std::size_t path_count() const;
 
-  /** Sum of Succeeded tile payload bytes across all path caches. */
+  /** Sum of Ready tile payload bytes across all path caches. */
   std::size_t total_approx_bytes() const;
 
   /**
-   * Cap on total Succeeded tile RAM retained process-wide (active + idle).
+   * Cap on total Ready tile RAM retained process-wide (active + idle).
    * Default ~768 MiB. When over budget, oldest zero-ref path entries are
    * dropped whole; active paths rely on per-session trim_to_budget.
    */
@@ -151,6 +149,7 @@ private:
   std::uint64_t m_clock = 0;
   std::size_t m_global_budget = kDefaultGlobalBudgetBytes;
   std::size_t m_max_idle_paths = kDefaultMaxIdlePaths;
+  bool m_driver_installed = false;
 };
 
 }  // namespace tilelod

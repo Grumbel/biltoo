@@ -7,743 +7,231 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <set>
 
 namespace tilelod {
 
-TileSession::TileSession(TileSource* source, TileMemoryCache* shared_cache)
-    : m_source(source)
-    , m_cache(shared_cache ? shared_cache : &m_owned_cache)
-    , m_inbox(std::make_shared<CompletionInbox>())
+namespace {
+
+// Priority layout (higher issues first):
+//   class (view importance) ≫ coarseness (overview before detail) ≫ distance.
+constexpr std::int64_t kClassWeight = 1'000'000'000'000LL;
+constexpr std::int64_t kLevelWeight = 1'000'000'000LL;
+constexpr std::int64_t kMaxDistance = kLevelWeight - 1;
+
+}  // namespace
+
+TileSession::TileSession(std::shared_ptr<TileLoader> loader)
+    : m_loader(std::move(loader))
 {
+  std::weak_ptr<bool> alive = m_alive;
+  m_view = m_loader->add_view([this, alive]() {
+    if (auto a = alive.lock(); a && *a) {
+      on_loader_change();
+    }
+  });
 }
 
 TileSession::~TileSession()
 {
-  if (m_inbox) {
-    m_inbox->alive.store(false);
+  *m_alive = false;
+  m_loader->remove_view(m_view);
+}
+
+void TileSession::on_loader_change()
+{
+  m_draw_plan_dirty = true;
+  if (m_on_change) {
+    m_on_change();
   }
-  if (m_source && m_cache) {
-    std::vector<TileKey> inflight = m_cache->in_flight_keys();
-    if (!inflight.empty()) {
-      m_source->cancel(inflight);
-      // Shared caches: drop InFlight so peer sessions of the same path can
-      // re-request. Completions for this session are already dropped (inbox).
-      // Succeeded tiles are left intact.
-      for (TileKey const& key : inflight) {
-        CacheEntry const* e = m_cache->find(key);
-        if (e && e->state == TileState::InFlight) {
-          m_cache->erase(key);
-        }
-      }
-    }
+}
+
+void TileSession::set_priority_class(int cls)
+{
+  cls = std::clamp(cls, 0, 9);
+  if (cls == m_priority_class) {
+    return;
   }
-  if (m_inbox) {
-    std::lock_guard<std::mutex> lock(m_inbox->mu);
-    m_inbox->pending.clear();
+  m_priority_class = cls;
+  publish_demand();
+}
+
+void TileSession::set_passive(bool on)
+{
+  if (on == m_passive) {
+    return;
+  }
+  m_passive = on;
+  if (m_passive) {
+    clear_demand();
+  } else {
+    publish_demand();
   }
 }
 
 void TileSession::set_content_size(int width, int height, int min_scale)
 {
-  // prepareTileLod calls this every paint/tick with the same native size.
-  // Always resetting cleared visible_keys and bumped generation, so
-  // set_viewport always saw a plan change and failed no-spam never held.
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+  // Binding first: a content change in the loader drops cells for every view.
+  (void)m_loader->set_content_size(width, height);
   if (m_content_w == width && m_content_h == height && m_min_scale == min_scale) {
     return;
   }
-
-  // Durable memo often arrives *after* open (min_scale 0 → N). Raising the
-  // floor must not wipe progressive climb / Succeeded cache state.
-  // Lowering the floor (Image mode min_scale 0 after a Gallery durable floor)
-  // must re-open progressive climb so density can target finer scales.
-  if (m_content_w == width && m_content_h == height && min_scale != m_min_scale) {
-    int const old_min = m_min_scale;
-    m_min_scale = min_scale;
-    m_max_scale = max_scale_for_size(width, height);
-    if (m_max_scale < m_min_scale) {
-      m_max_scale = m_min_scale;
-    }
-    if (min_scale < old_min) {
-      // Floor lowered: allow climb below previous durable floor.
-      m_reached_desired = false;
-      m_have_stable_scale = false;
-      m_visible_keys.clear();
-      ++m_generation;
-      m_draw_plan_dirty = true;
-      return;
-    }
-    if (m_stable_scale < m_min_scale) {
-      m_stable_scale = m_min_scale;
-    }
-    if (m_desired_scale < m_min_scale) {
-      m_desired_scale = m_min_scale;
-    }
-    if (m_target_scale < m_min_scale) {
-      m_target_scale = m_min_scale;
-      m_visible_keys.clear();
-      ++m_generation;
-      m_draw_plan_dirty = true;
-    }
-    return;
-  }
-
-  // Dimension change (not first open, not min_scale-only): shared path RAM may
-  // still hold Succeeded cells planned for the old content size. Painting those
-  // with a new tile_content_rect stretches/misplaces every cell (wrong scale
-  // look). Drop the grid so issue_requests rebuilds for the new native size.
-  // First bind (0×0 → real) keeps any retained path tiles from a prior open of
-  // the same file — those were encoded for the same native dimensions.
-  bool const sizeChanged =
-      (m_content_w > 0 && m_content_h > 0)
-      && (m_content_w != width || m_content_h != height);
-  if (sizeChanged && m_cache) {
-    m_cache->clear();
-  }
-
   m_content_w = width;
   m_content_h = height;
   m_min_scale = min_scale;
-  m_max_scale = max_scale_for_size(width, height);
-  if (m_max_scale < m_min_scale) {
-    m_max_scale = m_min_scale;
-  }
-  ++m_generation;
-  m_visible_keys.clear();
-  m_target_scale = m_max_scale;
-  m_desired_scale = m_max_scale;
-  m_have_stable_scale = false;
-  m_reached_desired = false;
+  m_max_scale = std::max(max_scale_for_size(width, height), m_min_scale);
   m_draw_plan_dirty = true;
-}
-
-
-int TileSession::stable_request_scale(int desired_scale)
-{
-  using clock = std::chrono::steady_clock;
-  if (desired_scale < m_min_scale) {
-    desired_scale = m_min_scale;
+  // Geometry changed: the plan must follow now, not on the next viewport
+  // change (static viewports used to keep the old floor forever).
+  if (m_have_viewport) {
+    replan();
   }
-  if (desired_scale > m_max_scale) {
-    desired_scale = m_max_scale;
-  }
-  m_desired_scale = desired_scale;
-
-  if (!m_have_stable_scale) {
-    m_have_stable_scale = true;
-    // Warm shared cache: density target immediately.
-    // Cold: at most *one* coarser step than desired — full max_scale walks
-    // left Gallery stuck on LQIP for many coordinator ticks (2 cells/tick).
-    if (has_any_succeeded_tile() && desired_scale >= 0) {
-      // Warm positive-scale RAM: jump to density target.
-      m_stable_scale = desired_scale;
-      m_reached_desired = true;
-    } else if (desired_scale < 0) {
-      // Live denser (PDF/DjVu/EPUB scale < 0): always progressive from 0 (or
-      // one step above desired). Warm layout tiles must not skip straight to
-      // −3 (15 InFlight encode storm, generation churn, PARENT-only paint).
-      m_stable_scale = 0;
-      if (m_stable_scale < desired_scale) {
-        m_stable_scale = desired_scale;
-      }
-      m_reached_desired = (m_stable_scale <= desired_scale);
-    } else if (m_max_scale > desired_scale) {
-      m_stable_scale = desired_scale + 1;
-      m_reached_desired = false;
-    } else {
-      m_stable_scale = desired_scale;
-      m_reached_desired = true;
-    }
-    m_pending_scale = desired_scale;
-    m_pending_since = clock::now();
-    return m_stable_scale;
-  }
-
-  // Zoom out (coarser): commit immediately. Leaves progressive mode.
-  if (desired_scale > m_stable_scale) {
-    m_stable_scale = desired_scale;
-    m_reached_desired = true;
-    m_pending_scale = desired_scale;
-    m_pending_since = clock::now();
-    return m_stable_scale;
-  }
-
-  // Cold progressive climb toward desired — only until first arrival at desired.
-  // Must not run after zoom-out/in or adjacent hold is destroyed.
-  if (!m_reached_desired && m_stable_scale > desired_scale) {
-    m_pending_scale = desired_scale;
-    if (visible_keys_settled()) {
-      // Block denser step until layout (s=0) exists in this session cache.
-      if (!(m_stable_scale <= 0 && desired_scale < 0
-            && !has_succeeded_at_scale(0))) {
-        m_stable_scale = m_stable_scale - 1;
-        m_pending_since = clock::now();
-      }
-    }
-    if (m_stable_scale <= desired_scale) {
-      m_stable_scale = desired_scale;
-      m_reached_desired = true;
-    }
-    return m_stable_scale;
-  }
-
-  if (desired_scale == m_stable_scale) {
-    m_reached_desired = true;
-    m_pending_scale = desired_scale;
-    return m_stable_scale;
-  }
-
-  // Steady state: adjacent zoom-in debounce (Galapix lesson).
-  int const delta = m_stable_scale - desired_scale;
-  if (delta > 1) {
-    // Denser / already at layout: one step only. Jumping 0 → −3 reintroduced
-    // the encode storm and skipped progressive denser climb.
-    if (desired_scale < 0 || m_stable_scale <= 0) {
-      if (m_stable_scale <= 0 && desired_scale < 0
-          && !has_succeeded_at_scale(0)) {
-        // Stay at layout until s=0 cells land.
-        m_stable_scale = 0;
-        m_reached_desired = false;
-        m_pending_scale = desired_scale;
-        m_pending_since = clock::now();
-        return m_stable_scale;
-      }
-      m_stable_scale = m_stable_scale - 1;
-      if (m_stable_scale < desired_scale) {
-        m_stable_scale = desired_scale;
-      }
-      m_reached_desired = (m_stable_scale <= desired_scale);
-      m_pending_scale = desired_scale;
-      m_pending_since = clock::now();
-      return m_stable_scale;
-    }
-    m_stable_scale = desired_scale;
-    m_reached_desired = true;
-    m_pending_scale = desired_scale;
-    m_pending_since = clock::now();
-    return m_stable_scale;
-  }
-  if (desired_scale != m_pending_scale) {
-    m_pending_scale = desired_scale;
-    m_pending_since = clock::now();
-    return m_stable_scale;
-  }
-  if (clock::now() - m_pending_since >= kScaleHold) {
-    m_stable_scale = desired_scale;
-    m_reached_desired = true;
-    return m_stable_scale;
-  }
-  return m_stable_scale;
-}
-
-bool TileSession::request_scale_holding() const
-{
-  return m_have_stable_scale && m_desired_scale != m_stable_scale;
-}
-
-bool TileSession::visible_keys_settled() const
-{
-  // No plan yet: stay on current scale until set_viewport builds keys.
-  if (m_visible_keys.empty()) {
-    return false;
-  }
-  int success = 0;
-  int failed = 0;
-  int inflight = 0;
-  for (TileKey const& key : m_visible_keys) {
-    CacheEntry const* e = m_cache->find(key);
-    if (!e) {
-      continue;  // unissued — counts against the 75% terminal bar
-    }
-    if (e->state == TileState::InFlight) {
-      ++inflight;
-    } else if (e->state == TileState::Succeeded && e->bitmap.valid()) {
-      ++success;
-    } else if (e->state == TileState::Failed) {
-      ++failed;
-    }
-  }
-  if (inflight > 0) {
-    return false;
-  }
-  // At least one exact success required — all-Failed must not climb denser.
-  if (success <= 0) {
-    return false;
-  }
-  // Do not require 100% of the margin ring. A few unissued edge cells used to
-  // block progressive denser forever (stuck at s=0 with PARENT fill).
-  int const vis = static_cast<int>(m_visible_keys.size());
-  int const terminal = success + failed;
-  int const need = std::max(1, (vis * 3 + 3) / 4);  // ≥75%
-  return terminal >= need;
-}
-
-bool TileSession::advance_progressive_scale()
-{
-  if (!m_have_stable_scale || m_content_w <= 0) {
-    return false;
-  }
-  // Only during cold progressive climb — not after zoom settle.
-  if (m_reached_desired || m_stable_scale <= m_desired_scale) {
-    return false;
-  }
-  if (!visible_keys_settled()) {
-    return false;
-  }
-  // Never enter denser (scale < 0) without exact layout cells in this cache.
-  if (m_stable_scale <= 0 && m_desired_scale < 0
-      && !has_succeeded_at_scale(0)) {
-    return false;
-  }
-  int const prev = m_stable_scale;
-  m_stable_scale = m_stable_scale - 1;
-  if (m_stable_scale <= m_desired_scale) {
-    m_stable_scale = m_desired_scale;
-    m_reached_desired = true;
-  }
-
-  // Re-plan at the new held scale with the current viewport.
-  PlannerInput in;
-  in.content_w = m_content_w;
-  in.content_h = m_content_h;
-  in.min_scale = m_stable_scale;
-  in.max_scale = m_stable_scale;
-  in.viewport = m_viewport;
-  in.margin_content = 0;
-  PlannerOutput const out = plan_visible_tiles(in);
-  bool const plan_changed =
-      out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
-  if (plan_changed) {
-    ++m_generation;
-  }
-  m_target_scale = out.target_scale;
-  m_visible_keys = out.visible_keys;
-  if (plan_changed) {
-    cancel_obsolete();
-    m_draw_plan_dirty = true;
-  }
-  return m_stable_scale != prev;
 }
 
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
 {
   m_viewport = vp;
-  // Integer content pixels — subpixel rect noise must not reshuffle tile keys.
-  {
-    RectF &r = m_viewport.content_rect;
-    int const x0 = static_cast<int>(std::floor(r.x));
-    int const y0 = static_cast<int>(std::floor(r.y));
-    int const x1 = static_cast<int>(std::ceil(r.x + r.w));
-    int const y1 = static_cast<int>(std::ceil(r.y + r.h));
-    r.x = static_cast<double>(x0);
-    r.y = static_cast<double>(y0);
-    r.w = static_cast<double>(std::max(0, x1 - x0));
-    r.h = static_cast<double>(std::max(0, y1 - y0));
-  }
+  m_margin = margin_content;
+  m_have_viewport = true;
+  replan();
+}
 
+void TileSession::replan()
+{
+  if (m_content_w <= 0 || m_content_h <= 0) {
+    return;
+  }
   PlannerInput in;
   in.content_w = m_content_w;
   in.content_h = m_content_h;
   in.min_scale = m_min_scale;
   in.max_scale = m_max_scale;
-  in.viewport = vp;
-  in.margin_content = margin_content;
-
-  // Desired scale from density, then hold adjacent steps during continuous zoom.
-  PlannerOutput const ideal = plan_visible_tiles(in);
-  int const prev_desired = m_desired_scale;
-  m_desired_scale = ideal.target_scale;
-  int const held = stable_request_scale(m_desired_scale);
-  in.viewport = vp;
-  // Re-plan visible keys at the held request scale (not every intermediate).
-  if (held != ideal.target_scale) {
-    // Force planner to use held scale by adjusting density so target matches held.
-    // denser → lower scale. We instead set max=min=held via temporary clamp.
-    in.min_scale = held;
-    in.max_scale = held;
-  }
-  PlannerOutput const out = plan_visible_tiles(in);
-  int const prev_target = m_target_scale;
-
-  // Bump generation when the plan changes, or when density intent changes so
-  // Failed keys can be retried after a zoom (no-spam still holds for stable plan).
-  bool const plan_changed =
-      out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
-  // Bump on plan change. Also when denser (lower desired) so Failed keys can
-  // retry after zoom-in — not on every equal desired re-set (CPU spin).
-  if (plan_changed || (m_desired_scale < prev_desired)) {
-    ++m_generation;
-  }
-
-  m_target_scale = out.target_scale;
-  m_visible_keys = out.visible_keys;
-
-  // Zoomed out: drop finer Succeeded tiles only on a *private* cache.
-  // Shared path caches must not drop scale-0 cells another ImageItem of the
-  // same path still needs (Workspace duplicates / multi-view).
-  if (m_target_scale > prev_target && m_cache == &m_owned_cache) {
-    m_cache->drop_finer_than(m_target_scale);
-  }
-
-  // Host calls set_viewport every paint/tick; cancel work is only useful when
-  // the visible set or scale changed.
-  if (plan_changed) {
-    cancel_obsolete();
-    m_draw_plan_dirty = true;
-  }
-}
-
-void TileSession::set_wake(std::function<void()> wake)
-{
-  if (!m_inbox) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(m_inbox->mu);
-  m_inbox->wake = std::move(wake);
-}
-
-void TileSession::on_source_completion(TileKey key,
-                                       std::optional<TileBitmap> bitmap,
-                                       std::uint64_t gen)
-{
-  if (!m_inbox || !m_inbox->alive.load()) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(m_inbox->mu);
-  if (!m_inbox->alive.load()) {
-    return;
-  }
-  m_inbox->pending.push_back(PendingCompletion{key, std::move(bitmap), gen});
-}
-
-void TileSession::inject_completion(TileKey key,
-                                    std::optional<TileBitmap> bitmap)
-{
-  on_source_completion(std::move(key), std::move(bitmap), m_generation);
-}
-
-int TileSession::pump()
-{
-  std::vector<PendingCompletion> batch;
-  if (m_inbox) {
-    std::lock_guard<std::mutex> lock(m_inbox->mu);
-    // Cap per tick so a completion storm (warm durable pyramid) cannot hold
-    // the GUI for seconds inside TileLoadCoordinator::tick.
-    constexpr std::size_t kMaxPumpPerTick = 16;
-    if (m_inbox->pending.size() <= kMaxPumpPerTick) {
-      batch.swap(m_inbox->pending);
-    } else {
-      batch.reserve(kMaxPumpPerTick);
-      for (std::size_t i = 0; i < kMaxPumpPerTick; ++i) {
-        batch.push_back(std::move(m_inbox->pending[i]));
-      }
-      m_inbox->pending.erase(m_inbox->pending.begin(),
-                             m_inbox->pending.begin() + static_cast<std::ptrdiff_t>(kMaxPumpPerTick));
-    }
-  }
-
-  int applied = 0;
-  for (auto& pc : batch) {
-    // Ignore completions from older viewport generations when key is InFlight
-    // for a newer gen — still accept Succeeded data for fallback utility.
-    CacheEntry const* existing = m_cache->find(pc.key);
-    if (existing && existing->state == TileState::InFlight &&
-        existing->generation > pc.generation) {
-      continue;
-    }
-    if (pc.bitmap && pc.bitmap->valid()) {
-      m_cache->set_succeeded(pc.key, std::move(*pc.bitmap), pc.generation);
-    } else {
-      // nullopt is a real miss only while still InFlight. Cancel/supersede
-      // completions must not pin Failed (terminal for this generation → LQIP).
-      CacheEntry const* e = m_cache->find(pc.key);
-      if (e && e->state == TileState::InFlight
-          && e->generation == pc.generation) {
-        m_cache->set_failed(pc.key, pc.generation);
-      }
-    }
-    ++applied;
-  }
-  // Protect visible keys, a 1-cell ring (scroll reuse), and coarser parents.
-  // Without the ring, a small pan drops edge cells and forces full re-fetch.
-  std::vector<TileKey> protect;
-  protect.reserve(m_visible_keys.size() * 12);
-  for (TileKey const& k : m_visible_keys) {
-    for (int dy = -1; dy <= 1; ++dy) {
-      for (int dx = -1; dx <= 1; ++dx) {
-        if (k.x + dx < 0 || k.y + dy < 0) {
-          continue;
-        }
-        TileKey const nk{k.scale, k.x + dx, k.y + dy};
-        m_cache->touch(nk, m_generation);
-        protect.push_back(nk);
-      }
-    }
-    for (int d = 1; k.scale + d <= m_max_scale; ++d) {
-      TileKey const pk = parent_key(k, d);
-      m_cache->touch(pk, m_generation);
-      protect.push_back(pk);
-    }
-  }
-  m_cache->trim_to_budget(m_byte_budget, protect);
-  if (applied > 0) {
-    m_draw_plan_dirty = true;
-  }
-  // Coarse tiles landed while viewport is static: host prepareTileLod skips
-  // set_viewport, so stable_request_scale never ran again. Advance held scale
-  // here so the next issue_requests targets one level finer.
-  if (applied > 0) {
-    (void)advance_progressive_scale();
-  }
-  return applied;
-}
-
-
-bool TileSession::backoff_failed_denser()
-{
-  // Only after denser keys were actually attempted and all terminal-Failed.
-  // Never treat *missing* (not yet issued) as failure — that aborted denser
-  // every tick (miss=N inflight=0) and left PARENT-only paint.
-  if (m_target_scale >= 0 || m_content_w <= 0) {
-    return false;
-  }
-  Coverage const cov = coverage();
-  if (cov.visible <= 0 || cov.in_flight > 0 || cov.missing > 0) {
-    return false;
-  }
-  if (cov.exact_succeeded > 0) {
-    return false;
-  }
-  if (cov.failed < cov.visible) {
-    return false;
-  }
-  // Stop denser climb at the last good layout scale (usually 0). Do **not**
-  // raise m_min_scale permanently — that clamped desired to 0 for the rest of
-  // the session ("stuck on s=0, never denser").
-  int const fallback = std::max(0, m_target_scale + 1);
-  m_stable_scale = fallback;
-  m_desired_scale = fallback;
-  m_reached_desired = true;
-  m_pending_scale = fallback;
-  ++m_generation;
-  PlannerInput in;
-  in.content_w = m_content_w;
-  in.content_h = m_content_h;
-  in.min_scale = fallback;
-  in.max_scale = fallback;
   in.viewport = m_viewport;
-  in.margin_content = 0;
-  PlannerOutput const out = plan_visible_tiles(in);
-  m_target_scale = out.target_scale;
-  m_visible_keys = out.visible_keys;
-  cancel_obsolete();
-  m_draw_plan_dirty = true;
-  return true;
+  in.margin_content = m_margin;
+  PlannerOutput out = plan_visible_tiles(in);
+  bool const changed =
+      out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
+  if (changed) {
+    m_target_scale = out.target_scale;
+    m_visible_keys = std::move(out.visible_keys);
+    ++m_generation;
+    m_draw_plan_dirty = true;
+    publish_demand();
+  } else {
+    renew();
+  }
 }
 
-int TileSession::issue_requests(int budget)
+std::vector<Demand> TileSession::build_demand() const
 {
-  IssueDiag d{};
-  d.budget = budget;
-  d.content_w = m_content_w;
-  d.content_h = m_content_h;
-  d.target = m_target_scale;
-  d.gen = m_generation;
-  d.s0 = has_succeeded_at_scale(0) ? 1 : 0;
-  d.vis = static_cast<int>(m_visible_keys.size());
-
-  if (!m_source) {
-    d.early = 1;
-    m_last_issue = d;
-    return 0;
+  std::vector<Demand> out;
+  if (m_content_w <= 0 || m_content_h <= 0 || m_visible_keys.empty()) {
+    return out;
   }
-  if (budget <= 0) {
-    d.early = 2;
-    m_last_issue = d;
-    return 0;
+  int const t = m_target_scale;
+  // Levels with their coarseness rank (higher rank = issued earlier).
+  std::vector<std::pair<int, int>> levels;  // (scale, rank)
+  if (t >= 0) {
+    int const top = std::min(m_max_scale, t + kOverviewLevels);
+    for (int s = top; s >= t; --s) {
+      levels.emplace_back(s, s - t);
+    }
+  } else {
+    // Live denser (document pages): layout scale 0 as the overview, then the
+    // target. Intermediate denser levels each re-raster the whole page in
+    // thumtoo — requesting them all thrashed its page cache.
+    if (m_max_scale >= 0) {
+      levels.emplace_back(0, 1);
+    }
+    levels.emplace_back(t, 0);
   }
-  if (m_content_w <= 0) {
-    d.early = 3;
-    m_last_issue = d;
-    return 0;
-  }
-
-  // Climb one level if the current plan is fully settled.
-  (void)advance_progressive_scale();
-  // Do NOT backoff before issue — missing denser keys must be requested first.
-  // Re-sample after possible progressive replan.
-  d.target = m_target_scale;
-  d.gen = m_generation;
-  d.vis = static_cast<int>(m_visible_keys.size());
-  d.s0 = has_succeeded_at_scale(0) ? 1 : 0;
-
-  // Issue only keys in the current plan (m_visible_keys at m_target_scale).
-  // Coarser parents are drawn as stand-ins via draw_plan; requesting every
-  // parent chain in the same batch mixed overview with target and felt like
-  // "proper res first". Progressive scale already walks max → desired.
-  //
-  // Failed is terminal for this generation (no retry spam). Generation bumps
-  // on viewport/plan change reopen Failed. Incomplete Store cells must be
-  // fixed by encode-on-request in thumtoo, not host polling.
-  struct Scored {
-    TileKey key;
-    double dist2 = 0;
-  };
-  std::vector<Scored> missing;
-  missing.reserve(m_visible_keys.size());
 
   double const cx = m_viewport.content_rect.x + m_viewport.content_rect.w * 0.5;
   double const cy = m_viewport.content_rect.y + m_viewport.content_rect.h * 0.5;
+  std::int64_t const cls = static_cast<std::int64_t>(m_priority_class) * kClassWeight;
 
-  for (TileKey const& key : m_visible_keys) {
-    CacheEntry const* e = m_cache->find(key);
-    if (e && (e->state == TileState::Succeeded ||
-              e->state == TileState::InFlight)) {
-      ++d.skip_ok;
-      continue;
+  std::set<TileKey> seen;
+  for (auto const& [scale, rank] : levels) {
+    std::vector<TileKey> keys;
+    if (scale == t) {
+      keys = m_visible_keys;
+    } else {
+      PlannerInput in;
+      in.content_w = m_content_w;
+      in.content_h = m_content_h;
+      in.min_scale = scale;
+      in.max_scale = scale;
+      in.viewport = m_viewport;
+      in.margin_content = m_margin;
+      keys = plan_visible_tiles(in).visible_keys;
     }
-    if (e && e->state == TileState::Failed && e->generation == m_generation) {
-      ++d.skip_fail;
-      continue;
-    }
-    // Raster pyramids (min_scale >= 0): require a coarser success before
-    // scale 0 so overview arrives first. Document live denser (min_scale < 0)
-    // starts progressive at 0 without coarser — the old gate deadlocked
-    // (never issue 0 → never denser; hold forever with exact=0 inflight=0).
-    if (key.scale == 0 && m_min_scale >= 0 && m_max_scale > 0
-        && !has_succeeded_scale_ge(1)) {
-      ++d.skip_s0gate;
-      continue;
-    }
-    // Denser live cells need **exact scale 0** success first. Coarser-only
-    // pathRam (s=1,2) used to pass has_succeeded_scale_ge(0) and leave tgt=-1
-    // with exact=0 inflight=0 forever (denser gated, progressive already past 0).
-    if (key.scale < 0 && !has_succeeded_at_scale(0)) {
-      ++d.skip_denser;
-      continue;
-    }
-    RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
-    double const tx = cr.x + cr.w * 0.5;
-    double const ty = cr.y + cr.h * 0.5;
-    double const dx = tx - cx;
-    double const dy = ty - cy;
-    missing.push_back({key, dx * dx + dy * dy});
-  }
-
-  d.cand = static_cast<int>(missing.size());
-  std::sort(missing.begin(), missing.end(),
-            [](Scored const& a, Scored const& b) { return a.dist2 < b.dist2; });
-
-  std::vector<TileKey> batch;
-  batch.reserve(static_cast<size_t>(budget));
-  std::uint64_t const gen = m_generation;
-
-  for (Scored const& s : missing) {
-    if (static_cast<int>(batch.size()) >= budget) {
-      break;
-    }
-    CacheEntry const* e = m_cache->find(s.key);
-    if (e && (e->state == TileState::Succeeded ||
-              e->state == TileState::InFlight)) {
-      continue;
-    }
-    m_cache->set_in_flight(s.key, gen);
-    batch.push_back(s.key);
-  }
-
-  d.batched = static_cast<int>(batch.size());
-  m_last_issue = d;
-
-  if (batch.empty()) {
-    if (m_target_scale < 0 && m_content_w > 0) {
-      Coverage const cov = coverage();
-      if (cov.in_flight == 0 && cov.exact_succeeded == 0) {
-        if (!has_succeeded_at_scale(0)) {
-          // Progressive overshot to denser without layout cells in *this*
-          // session cache. Drop hold back to s=0 and re-plan (keep desired).
-          m_stable_scale = 0;
-          m_reached_desired = false;
-          ++m_generation;
-          PlannerInput in;
-          in.content_w = m_content_w;
-          in.content_h = m_content_h;
-          in.min_scale = 0;
-          in.max_scale = 0;
-          in.viewport = m_viewport;
-          in.margin_content = 0;
-          PlannerOutput const out = plan_visible_tiles(in);
-          m_target_scale = out.target_scale;
-          m_visible_keys = out.visible_keys;
-          cancel_obsolete();
-          m_draw_plan_dirty = true;
-          return 0;
-        }
-        // All denser keys terminal-Failed (not merely unissued missing).
-        if (cov.missing == 0 && cov.failed >= cov.visible
-            && request_scale_holding()) {
-          (void)backoff_failed_denser();
-        }
+    for (TileKey const& k : keys) {
+      if (!seen.insert(k).second) {
+        continue;
       }
+      RectI const cr = tile_content_rect(m_content_w, m_content_h, k);
+      double const dx = cr.x + cr.w * 0.5 - cx;
+      double const dy = cr.y + cr.h * 0.5 - cy;
+      auto const dist = static_cast<std::int64_t>(std::sqrt(dx * dx + dy * dy));
+      std::int64_t const prio = cls + static_cast<std::int64_t>(rank) * kLevelWeight
+                                + (kMaxDistance - std::min(dist, kMaxDistance));
+      out.push_back({k, prio});
     }
-    return 0;
   }
-
-  std::shared_ptr<CompletionInbox> inbox = m_inbox;
-  m_source->request(batch, [inbox, gen](TileKey key,
-                                        std::optional<TileBitmap> bitmap) {
-    if (!inbox || !inbox->alive.load()) {
-      return;
-    }
-    std::function<void()> wake;
-    {
-      std::lock_guard<std::mutex> lock(inbox->mu);
-      if (!inbox->alive.load()) {
-        return;
-      }
-      inbox->pending.push_back(
-          PendingCompletion{std::move(key), std::move(bitmap), gen});
-      wake = inbox->wake;
-    }
-    if (wake) {
-      wake();
-    }
-  });
-
-  return static_cast<int>(batch.size());
+  return out;
 }
 
-void TileSession::cancel_obsolete()
+void TileSession::publish_demand()
 {
-  if (!m_source) {
+  if (m_passive) {
     return;
   }
-  // Keep exact visible keys and their coarser parents (prefetch / stand-ins).
-  std::set<TileKey> keep(m_visible_keys.begin(), m_visible_keys.end());
-  for (TileKey const& k : m_visible_keys) {
-    for (int d = 1; k.scale + d <= m_max_scale; ++d) {
-      keep.insert(parent_key(k, d));
+  std::vector<Demand> d = build_demand();
+  bool same = m_demand_published && d.size() == m_demand.size();
+  if (same) {
+    for (std::size_t i = 0; i < d.size(); ++i) {
+      if (d[i].key != m_demand[i].key || d[i].priority != m_demand[i].priority) {
+        same = false;
+        break;
+      }
     }
   }
-  std::vector<TileKey> drop;
-  for (TileKey const& key : m_cache->in_flight_keys()) {
-    if (keep.find(key) == keep.end()) {
-      drop.push_back(key);
-    }
-  }
-  if (drop.empty()) {
+  if (same) {
+    m_loader->renew_demand(m_view, m_loader->now_ms());
     return;
   }
-  m_source->cancel(drop);
-  for (TileKey const& key : drop) {
-    // Drop InFlight so the key can be re-requested if it returns to view.
-    // Never erase Succeeded tiles — shared caches keep stand-ins for other
-    // viewports of the same path.
-    CacheEntry const* e = m_cache->find(key);
-    if (e && e->state == TileState::Succeeded) {
-      continue;
-    }
-    m_cache->erase(key);
+  m_demand = d;
+  m_demand_published = true;
+  m_loader->set_demand(m_view, std::move(d), m_loader->now_ms());
+}
+
+void TileSession::renew()
+{
+  if (m_passive) {
+    return;
   }
+  if (!m_demand_published) {
+    publish_demand();
+    return;
+  }
+  // The lease may have lapsed (view not renewed for a while): re-publish so
+  // the loader has it again; otherwise just extend.
+  if (!m_demand.empty() && !m_loader->has_demand(m_view)) {
+    m_loader->set_demand(m_view, m_demand, m_loader->now_ms());
+    return;
+  }
+  m_loader->renew_demand(m_view, m_loader->now_ms());
+}
+
+void TileSession::clear_demand()
+{
+  m_demand.clear();
+  m_demand_published = false;
+  m_loader->clear_demand(m_view);
 }
 
 DrawPlan TileSession::draw_plan() const
@@ -758,94 +246,149 @@ DrawPlan TileSession::draw_plan() const
   in.max_scale = m_max_scale;
   in.visible_keys = m_visible_keys;
   in.has_lqip = m_has_lqip;
-  in.lookup = [this](TileKey const& k) -> CacheEntry const* {
-    return m_cache->find(k);
-  };
+  TileLoader const* loader = m_loader.get();
+  in.lookup = [loader](TileKey const& k) { return loader->find(k); };
   m_draw_plan_cache = build_draw_plan(in);
   m_draw_plan_dirty = false;
   return m_draw_plan_cache;
-}
-
-bool TileSession::has_any_succeeded_tile() const
-{
-  return m_cache && m_cache->has_succeeded();
-}
-
-bool TileSession::has_succeeded_scale_ge(int min_scale) const
-{
-  for (auto const& [k, e] : m_cache->map()) {
-    if (k.scale >= min_scale && e.state == TileState::Succeeded
-        && e.bitmap.valid()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool TileSession::has_succeeded_at_scale(int scale) const
-{
-  if (!m_cache) {
-    return false;
-  }
-  for (auto const& [k, e] : m_cache->map()) {
-    if (k.scale == scale && e.state == TileState::Succeeded
-        && e.bitmap.valid()) {
-      return true;
-    }
-  }
-  return false;
 }
 
 TileSession::Coverage TileSession::coverage() const
 {
   Coverage c;
   c.visible = static_cast<int>(m_visible_keys.size());
+  int const max_attempts = m_loader->config().max_attempts;
   for (TileKey const& key : m_visible_keys) {
-    CacheEntry const* e = m_cache->find(key);
+    TileCell const* e = m_loader->find(key);
+    bool has_pixels = false;
     if (!e) {
       ++c.missing;
-      continue;
-    }
-    if (e->state == TileState::Succeeded && e->bitmap.valid()) {
-      ++c.exact_succeeded;
-    } else if (e->state == TileState::InFlight) {
-      ++c.in_flight;
-    } else if (e->state == TileState::Failed) {
-      ++c.failed;
     } else {
-      ++c.missing;
+      switch (e->state) {
+      case CellState::Ready:
+        if (e->ready()) {
+          ++c.ready;
+          has_pixels = true;
+        } else {
+          ++c.missing;
+        }
+        break;
+      case CellState::Queued:
+        ++c.queued;
+        break;
+      case CellState::Failed:
+        if (e->attempts < max_attempts) {
+          ++c.retrying;
+        } else {
+          ++c.failed;
+        }
+        break;
+      case CellState::Unavailable:
+        ++c.unavailable;
+        break;
+      }
+    }
+    if (!has_pixels) {
+      bool parent = false;
+      for (int d = 1; key.scale + d <= m_max_scale; ++d) {
+        TileCell const* p = m_loader->find(parent_key(key, d));
+        if (p && p->ready()) {
+          parent = true;
+          break;
+        }
+      }
+      if (!parent) {
+        ++c.holes;
+      }
     }
   }
   return c;
+}
+
+TileSession::Phase TileSession::phase() const
+{
+  if (m_content_w <= 0 || m_visible_keys.empty()) {
+    return Phase::Idle;
+  }
+  Coverage const c = coverage();
+  if (c.fully_covered()) {
+    return Phase::Complete;
+  }
+  if (c.loading()) {
+    return Phase::Loading;
+  }
+  return c.holes > 0 ? Phase::Error : Phase::Degraded;
+}
+
+char const* TileSession::phase_name(Phase p)
+{
+  switch (p) {
+  case Phase::Idle:
+    return "idle";
+  case Phase::Loading:
+    return "loading";
+  case Phase::Complete:
+    return "complete";
+  case Phase::Degraded:
+    return "degraded";
+  case Phase::Error:
+    return "error";
+  }
+  return "?";
+}
+
+std::string TileSession::first_error() const
+{
+  for (TileKey const& key : m_visible_keys) {
+    TileCell const* e = m_loader->find(key);
+    if (e && (e->state == CellState::Failed || e->state == CellState::Unavailable)
+        && !e->error.empty()) {
+      char buf[48];
+      std::snprintf(buf, sizeof buf, "s=%d %d,%d: ", key.scale, key.x, key.y);
+      return buf + e->error;
+    }
+  }
+  return {};
+}
+
+std::string TileSession::status_line() const
+{
+  Coverage const c = coverage();
+  Phase const p = phase();
+  char buf[160];
+  switch (p) {
+  case Phase::Idle:
+    return "tiles idle";
+  case Phase::Complete:
+    std::snprintf(buf, sizeof buf, "tiles s=%d complete (%d)", m_target_scale,
+                  c.visible);
+    return buf;
+  case Phase::Loading:
+    std::snprintf(buf, sizeof buf, "tiles s=%d loading %d/%d (queued %d, retry %d)",
+                  m_target_scale, c.ready, c.visible, c.queued, c.retrying);
+    return buf;
+  case Phase::Degraded:
+  case Phase::Error:
+    std::snprintf(buf, sizeof buf, "tiles s=%d %s: %d/%d ready, %d failed, %d unavailable — ",
+                  m_target_scale, phase_name(p), c.ready, c.visible, c.failed,
+                  c.unavailable);
+    return buf + first_error();
+  }
+  return {};
 }
 
 TileSession::DebugSnapshot TileSession::debug_snapshot() const
 {
   DebugSnapshot s;
   s.target_scale = m_target_scale;
-  s.desired_scale = m_desired_scale;
-  s.stable_scale = m_stable_scale;
   s.min_scale = m_min_scale;
   s.max_scale = m_max_scale;
-  s.holding = request_scale_holding();
-  s.reached_desired = m_reached_desired;
-  s.generation = m_generation;
-  s.issue = m_last_issue;
+  s.cov = coverage();
+  s.phase = phase();
+  s.demand = static_cast<int>(m_demand.size());
   s.has_lqip = m_has_lqip;
-  s.scale0_ok = has_succeeded_at_scale(0) ? 1 : 0;
-  Coverage const c = coverage();
-  s.visible = c.visible;
-  s.exact_succeeded = c.exact_succeeded;
-  s.in_flight = c.in_flight;
-  s.failed = c.failed;
-  s.missing = c.missing;
-  for (auto const& [k, e] : m_cache->map()) {
-    (void)k;
-    if (e.state == TileState::Succeeded && e.bitmap.valid()) {
-      ++s.cache_succeeded;
-    }
-  }
-  // Plan histogram: rebuild is cheap (RAM lookup only); counts paint kinds.
+  s.generation = m_generation;
+  s.loader = m_loader->stats();
   DrawPlan const plan = draw_plan();
   for (DrawCommand const& cmd : plan.commands) {
     switch (cmd.kind) {
@@ -863,14 +406,11 @@ TileSession::DebugSnapshot TileSession::debug_snapshot() const
       break;
     }
   }
-  // Keys with no command are holes (no exact/parent/underlay).
-  int const commanded = s.plan_exact + s.plan_parent + s.plan_underlay
-                        + s.plan_empty;
-  if (s.visible > commanded) {
-    s.plan_empty += s.visible - commanded;
+  int const commanded = s.plan_exact + s.plan_parent + s.plan_underlay + s.plan_empty;
+  if (s.cov.visible > commanded) {
+    s.plan_empty += s.cov.visible - commanded;
   }
   return s;
 }
-
 
 }  // namespace tilelod

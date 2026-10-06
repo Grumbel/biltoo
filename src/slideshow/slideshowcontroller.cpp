@@ -1913,6 +1913,22 @@ tilelod::TileLodController *SlideshowController::slideshowTilesForPath(const QSt
 
 
 
+void SlideshowController::installSlideshowTileHook(tilelod::TileLodController *lod) const
+{
+    if (!lod || !m_view) {
+        return;
+    }
+    // Cell changes (Ready / Failed) repaint the composite; loading itself is
+    // driven by tilelod::TileScheduler. Re-installed after every path bind
+    // (setOnChange survives rebinds inside the controller).
+    QPointer<ImageView> view(m_view);
+    lod->setOnChange([view]() {
+        if (view && view->viewport()) {
+            view->viewport()->update();
+        }
+    });
+}
+
 bool SlideshowController::tickSlideshowTileLod(int budget)
 {
     if (!hud().isProgressActive() || budget <= 0) {
@@ -1926,25 +1942,7 @@ bool SlideshowController::tickSlideshowTileLod(int budget)
         if (lod->path() != path) {
             lod->setPath(path);
         }
-        if (lod->session() && m_view) {
-            // Prefer QPointer to this controller (QObject) over hostDisplayPipeline:
-            // the latter asserts on a null pipeline and trips -Wnull-dereference
-            // when the ImageView capture is only checked at the call site.
-            QPointer<SlideshowController> self(this);
-            QPointer<ImageView> view(m_view);
-            lod->session()->set_wake([self, view]() {
-                QTimer::singleShot(0, QCoreApplication::instance(), [self, view]() {
-                    if (self) {
-                        // Pump progressive climb; update-only left inbox tiles
-                        // unapplied until the next slideshow timer tick.
-                        (void)self->tickSlideshowTileLod(32);
-                    }
-                    if (view && view->viewport()) {
-                        view->viewport()->update();
-                    }
-                });
-            });
-        }
+        installSlideshowTileHook(lod);
         QSize native = m_view->logicalSizeForPath(path);
         if (!isPositiveSize(native)) {
             native = ThumtooCache::cachedSize(path);
@@ -1961,10 +1959,10 @@ bool SlideshowController::tickSlideshowTileLod(int budget)
         const QSize layout = resolveMotionLogicalSize(path);
         const double dpc = tilelod::cover_device_per_content(
             QSizeF(vw, vh), layout.isValid() ? layout : native);
+        lod->setPriority(tilelod::TileLodController::kPriorityFocus);
         lod->setContentSize(native.width(), native.height(), /*minScale=*/0);
         lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
-        const int applied = lod->tick(budget);
-        if (applied > 0 || !lod->viewportFullyCovered()) {
+        if (lod->refresh()) {
             needMore = true;
         }
     };
@@ -2008,24 +2006,7 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     if (lod->path() != path) {
         lod->setPath(path);
     }
-    // Completions arrive off the GUI. ImageItem installs wake in prepareTileLodPlan;
-    // phase sessions never did — without it, new tiles only appear on the next
-    // progress tick (or never if the timer is idle). Always rebind wake here.
-    if (lod->session() && m_view) {
-        QPointer<SlideshowController> self(
-            const_cast<SlideshowController *>(this));
-        QPointer<ImageView> view(m_view);
-        lod->session()->set_wake([self, view]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [self, view]() {
-                if (self) {
-                    (void)self->tickSlideshowTileLod(32);
-                }
-                if (view && view->viewport()) {
-                    view->viewport()->update();
-                }
-            });
-        });
-    }
+    installSlideshowTileHook(lod);
     QSize native = m_view->logicalSizeForPath(path);
     if (!isPositiveSize(native)) {
         native = ThumtooCache::cachedSize(path);
@@ -2047,7 +2028,6 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
     args.native = native;
     args.dest = dest;
     args.underlay = underlay;
-    args.tick_budget = 32;
     args.min_scale = 0;
     args.tick = true;
     WorkspaceItemState app;
@@ -2056,15 +2036,8 @@ bool SlideshowController::paintSlideshowTiles(QPainter *painter, const QString &
         args.xform = ContentXform::Value::fromState(app);
     }
     const bool drew = tilelod::prepare_and_paint_cover(painter, args);
-    // Keep climbing: incomplete coverage OR denser scale still holding.
-    // (Previously only !fullyCovered; after last cell of a coarse step lands,
-    // progressive advance issues finer keys — need another frame.)
-    if (m_view->viewport()
-        && ((lod->session() && lod->session()->request_scale_holding())
-            || !lod->viewportFullyCovered())) {
-        m_view->viewport()->update();
-    }
-    // Drive phase + ImageItem LOD (tickPrimaryTileLod handles slideshow arms).
+    // No repaint loop here: arriving cells repaint through the change hook
+    // (installSlideshowTileHook); the pipeline tick renews demand leases.
     m_view->hostDisplayPipeline().tickPrimaryTileLod(32);
     return drew;
 }

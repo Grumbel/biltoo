@@ -30,8 +30,7 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     //   level rect L = exclusive cell on dim_at_tile_scale(content, s)
     //   dest = L * 2^s   (integer, from tile_content_rect)
     //   src  = [0,0]×L   (cap width/height to bitmap; legacy 257 → first 256)
-    if (CacheEntry const* exact = in.lookup(key);
-        exact && exact->state == TileState::Succeeded && exact->bitmap.valid()) {
+    if (TileCell const* exact = in.lookup(key); exact && exact->ready()) {
       cmd.src_key = key;
       // Full bitmap → content-space cell. DCT/floor-half size drift is
       // stretched here; do not crop to tile_level_rect or the cell shows
@@ -51,9 +50,8 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
     int const max_delta = std::max(0, in.max_scale - key.scale);
     for (int delta = 1; delta <= max_delta; ++delta) {
       TileKey const pk = parent_key(key, delta);
-      CacheEntry const* parent = in.lookup(pk);
-      if (!parent || parent->state != TileState::Succeeded ||
-          !parent->bitmap.valid()) {
+      TileCell const* parent = in.lookup(pk);
+      if (!parent || !parent->ready()) {
         continue;
       }
       cmd.src_key = pk;

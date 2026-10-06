@@ -12,10 +12,10 @@
 namespace tilelod {
 
 /**
- * Lookup function for the RAM cache: return Succeeded entry or nullopt.
- * Pure relative to the provided lookup — no side effects required.
+ * Lookup into the path's TileLoader cells (nullptr = Missing). Only Ready
+ * cells are drawn. Pure relative to the lookup — no side effects.
  */
-using TileLookup = std::function<CacheEntry const*(TileKey const&)>;
+using TileLookup = std::function<TileCell const*(TileKey const&)>;
 
 struct BuildDrawPlanInput {
   int content_w = 0;
@@ -23,7 +23,7 @@ struct BuildDrawPlanInput {
   int target_scale = 0;
   int max_scale = 0;
   std::vector<TileKey> visible_keys;
-  TileLookup lookup;  ///< Required; returns nullptr if missing/not succeeded
+  TileLookup lookup;  ///< Required; returns nullptr if Missing
   bool has_lqip = false;
 };
 

@@ -11,20 +11,34 @@
 #include <QImage>
 #include <QRectF>
 #include <QString>
+#include <functional>
 #include <memory>
+#include <string>
 
 namespace tilelod {
 
 /**
- * Host glue for one ImageItem: bind to process-wide path cache + private
- * viewport session. Call from GUI thread: setPath, setContentSize,
- * updateViewport, tick, paint.
+ * Host glue for one view surface (ImageItem, filmstrip cell, slideshow phase,
+ * neighbour prefetch, Gallery peek): binds a TileSession to the process-wide
+ * path loader. GUI thread only.
  *
- * setPath / destroy release registry interest only; Succeeded tiles for the
- * path stay in TileLodRegistry until global LRU eviction (see TILE_LOD.md).
+ * Loading is driven by TileScheduler (event-driven); this class only plans,
+ * publishes demand and paints. `refresh()` renews the demand lease while the
+ * view is visible. Cell changes call the `onChange` hook (repaint).
+ *
+ * setPath / destroy release registry interest only; Ready tiles for the path
+ * stay in TileLodRegistry until global LRU eviction (see TILE_LOD.md).
  */
 class TileLodController {
 public:
+  /// Issue priority classes (TileSession::set_priority_class).
+  enum Priority : int {
+    kPrioritySpeculative = 0,  ///< neighbour prefetch
+    kPriorityStrip = 1,        ///< filmstrip cells
+    kPriorityVisible = 2,      ///< Gallery / Workspace items in view
+    kPriorityFocus = 3,        ///< Image mode / slideshow
+  };
+
   TileLodController();
   ~TileLodController();
 
@@ -33,6 +47,12 @@ public:
 
   void setPath(QString path);
   QString path() const { return m_path; }
+
+  /// Repaint hook (GUI thread), re-installed on every path bind.
+  void setOnChange(std::function<void()> cb);
+  void setPriority(int cls);
+  /// Paint-only: plan and draw, never publish demand.
+  void setPassive(bool on);
 
   void setContentSize(int w, int h, int minScale = 0);
   void setHasLqip(bool on);
@@ -44,24 +64,22 @@ public:
   void updateViewport(QRectF const& contentVisible, double devicePerContent,
                       double marginContent = 0.0);
 
-  /** pump completions + issue up to budget requests. @return completions applied. */
-  int tick(int requestBudget = 8);
+  /// Keep demand alive while visible; returns true while still loading.
+  bool refresh();
 
   /** Paint tiles into content space; returns true if any tile was drawn. */
   bool paint(QPainter* painter, QImage const& lqipUnderlay = {}) const;
 
-  bool enabled() const { return m_enabled; }
-  void setEnabled(bool on) { m_enabled = on; }
-
   bool hasAnyTile() const;
-  /**
-   * Succeeded tiles present in the shared path cache (retained after a prior
-   * session release). True even before the first set_viewport / tick.
-   */
+  /** Ready tiles in the shared path loader (retained from earlier views). */
   bool hasRetainedTiles() const;
   bool viewportFullyCovered() const;
-  /** Visible keys all Succeeded or Failed (no InFlight/missing) — no issue left. */
+  /** Nothing left that will change without user action (not Loading). */
   bool viewportSettled() const;
+  bool isLoading() const;
+  TileSession::Phase phase() const;
+  /** "" while fine; the failure reason when Degraded / Error. */
+  std::string statusLine() const;
   int targetScale() const;
   TileSession* session() { return m_session.get(); }
   TileSession const* session() const { return m_session.get(); }
@@ -77,8 +95,10 @@ private:
   void unbind();
 
   QString m_path;
-  bool m_enabled = true;
   double m_device_per_content = 0.0;
+  int m_priority = kPriorityVisible;
+  bool m_passive = false;
+  std::function<void()> m_on_change;
   std::shared_ptr<SharedPathTiles> m_shared;
   std::unique_ptr<TileSession> m_session;
 };

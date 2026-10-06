@@ -27,13 +27,14 @@ struct CoverPaintArgs {
   QRectF dest;                  ///< device/view destination rect (layout aspect)
   QImage underlay;              ///< LQIP / soft under holes (identity path only)
   ContentXform::Value xform;    ///< identity → pure cover; else orient at paint
-  int tick_budget = 24;         ///< issue budget per prepare
   int min_scale = 0;            ///< Image/Slideshow: 0 so density can climb
-  bool tick = true;             ///< false when host already ticked this frame
+  /// Renew the controller's demand lease (visible surface). Loading itself is
+  /// TileScheduler's job; passive controllers never demand.
+  bool tick = true;
 };
 
 /**
- * Update viewport for full-content cover into @p args.dest, optionally tick,
+ * Update viewport (plan + demand) for full-content cover into @p args.dest,
  * then paint tiles in dest space.
  * @return true if any tile (or tile underlay plan) was drawn.
  */

@@ -298,6 +298,8 @@ private:
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();
     void prepareTileLodPlan();
+    /** TileLoader change → coalesced repaint (installed per controller). */
+    void installTileChangeHook();
     qreal tileDevicePerContent() const;
     QSize tileNativeSize() const;
     void clearTileGradedCache() const;

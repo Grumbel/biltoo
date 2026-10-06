@@ -196,8 +196,8 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (!tileLodBag().controller || !tileLodBag().controller->session()) {
         return {};
     }
-    tilelod::CacheEntry const *e = tileLodBag().controller->session()->cache().find(key);
-    if (!e || e->state != tilelod::TileState::Succeeded || !e->bitmap.valid()) {
+    tilelod::TileCell const *e = tileLodBag().controller->session()->find(key);
+    if (!e || !e->ready()) {
         return {};
     }
     // Cache QImage conversion for identity and graded alike. Identity used to
@@ -234,31 +234,17 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
 
 QSize ImageItem::tileNativeSize() const
 {
+    // The tile grid is defined by the *authoritative* native size (thumtoo
+    // size probe → ProcessMemos). Never fall back to imageSize(): before the
+    // probe lands that is often a soft/LQIP sample, and a grid planned from it
+    // requests the wrong cells, then the real size wipes the path's tiles for
+    // every view. No size yet → no tiles yet (probe scheduled by the tick;
+    // sizeReady ticks the tile band again).
     const QSize cached = ThumtooCache::cachedSize(m_path);
     if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
         return cached;
     }
-    // PDF/EPUB/DjVu page refs and archive members: never use soft/ladder
-    // imageSize() as the tile grid. Thumtoo keys cells by authoritative page
-    // size; a PreferCache sample (~512 long edge) as "native" yields wrong
-    // (x,y) at every scale → Failed denser cells and PARENT-only paint.
-    if (PagePath::isPageRef(m_path) || PagePath::isTextForceRef(m_path)
-        || PagePath::isPdfImageRef(m_path) || ArchivePath::isArchiveRef(m_path)) {
-        return {};
-    }
-    // Layout imageSize() is *oriented* / post-crop content size. Tile grid is
-    // always file-native. Orient or crop makes layout ≠ native (UV / density
-    // mismatch → squished tiles in a correct crop box).
-    const ContentXform::Value x = liveContentXformForPaint();
-    if (ContentXform::normalizeQuarterTurns(x.quarterTurns) != 0
-        || x.hFlip || x.vFlip
-        || (x.hasCrop && !x.cropRect.isEmpty())) {
-        return {};
-    }
-    // Raster identity xform only: layout size matches native probe.
-    // Soft/ladder samples are still possible here — callers that need a hard
-    // guarantee should wait for ProcessMemos / sizeReady.
-    return imageSize();
+    return {};
 }
 
 bool ImageItem::tileLodWanted() const
@@ -273,15 +259,7 @@ bool ImageItem::tileLodWanted() const
     // Prefer thumtoo file-native size. Fall back to imageSize only when content
     // xform is identity (layout size == native). Never use oriented layout as
     // tile-grid native (UV / density mismatch — see tileNativeSize).
-    QSize native = tileNativeSize();
-    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-        const ContentXform::Value x = liveContentXformForPaint();
-        if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
-            && !x.hFlip && !x.vFlip
-            && !(x.hasCrop && !x.cropRect.isEmpty())) {
-            native = imageSize();
-        }
-    }
+    const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
     }
@@ -342,20 +320,13 @@ void ImageItem::prepareTileLodPlan()
     if (!m_tileLodAttached) {
         return;
     }
-    QSize native = tileNativeSize();
-    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-        const ContentXform::Value x = liveContentXformForPaint();
-        if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
-            && !x.hFlip && !x.vFlip
-            && !(x.hasCrop && !x.cropRect.isEmpty())) {
-            native = imageSize();
-        }
-    }
+    const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return;
     }
     if (!tileLodBag().controller) {
         tileLodBag().controller = std::make_unique<tilelod::TileLodController>();
+        installTileChangeHook();
         tileLodBag().controller->setPath(m_path);
     } else if (tileLodBag().controller->path() != m_path) {
         tileLodBag().controller->setPath(m_path);
@@ -372,6 +343,18 @@ void ImageItem::prepareTileLodPlan()
         && tileLodBag().lastDpc > 0.0) {
         tileLodBag().lastDpc = -1.0;
         tileLodBag().lastVisSource = QRectF();
+    }
+    // Issue priority: Image-mode focus outranks Gallery/Workspace cells.
+    {
+        int prio = tilelod::TileLodController::kPriorityVisible;
+        if (scene() && !scene()->views().isEmpty()) {
+            if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+                if (iv->isImageMode()) {
+                    prio = tilelod::TileLodController::kPriorityFocus;
+                }
+            }
+        }
+        tileLodBag().controller->setPriority(prio);
     }
     // Tile grid is always full native (source) size.
     // Gallery: floor min_scale at density so overview never requests scale 0
@@ -444,15 +427,8 @@ void ImageItem::prepareTileLodPlan()
             }
         }
     }
-    const quint64 genBefore =
-        tileLodBag().controller->session() ? tileLodBag().controller->session()->generation() : 0;
+    // Re-plans by itself when the floor changes (no viewport change needed).
     tileLodBag().controller->setContentSize(native.width(), native.height(), minScale);
-    // min_scale lower (1230) bumps generation but dpc/vis may be unchanged —
-    // clear the skip cache so updateViewport re-plans at the new floor.
-    if (tileLodBag().controller->session()
-        && tileLodBag().controller->session()->generation() != genBefore) {
-        tileLodBag().lastDpc = -1.0;
-    }
 
     const qreal dpc = tileDevicePerContent();
     QRectF visLocal = contentRect();
@@ -508,58 +484,6 @@ void ImageItem::prepareTileLodPlan()
         visSource = QRectF(0, 0, native.width(), native.height());
     }
 
-    // Completions arrive off the GUI; without a wake, pump never runs until the
-    // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
-    // Install on *every* prepare — including the static-viewport early return —
-    // so a rebound session / slideshow phase controller is never left without a
-    // wake while density is unchanged.
-    auto installTileWake = [this]() {
-        if (!tileLodBag().controller || !tileLodBag().controller->session()) {
-            return;
-        }
-        std::shared_ptr<bool> alive = tileLodBag().alive;
-        tileLodBag().controller->session()->set_wake([this, alive]() {
-            QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
-                if (!alive || !*alive || !tileLodBag().controller) {
-                    return;
-                }
-                const int applied = tileLodBag().controller->tick(12);
-                // Pump remaining inbox / progressive climb without a paint storm.
-                // singleShot(0) every completion while inflight was regenerating
-                // the tile plan every frame (generation spin, denser stuck).
-                if (alive && *alive && tileLodBag().controller
-                    && !tileLodBag().controller->viewportFullyCovered()) {
-                    auto *session = tileLodBag().controller->session();
-                    if (session
-                        && (session->request_scale_holding()
-                            || session->coverage().in_flight > 0
-                            || applied > 0)) {
-                        QTimer::singleShot(16, QCoreApplication::instance(),
-                                           [this, alive]() {
-                            if (!alive || !*alive || !tileLodBag().controller) {
-                                return;
-                            }
-                            const int more = tileLodBag().controller->tick(12);
-                            if (more > 0) {
-                                update();
-                            }
-                        });
-                    }
-                }
-                if (applied > 0) {
-                    update();
-                    if (scene()) {
-                        for (QGraphicsView *v : scene()->views()) {
-                            if (v && v->viewport()) {
-                                v->viewport()->update();
-                            }
-                        }
-                    }
-                }
-            });
-        });
-    };
-
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
     // Progressive climb advances in TileSession::pump/issue (tick path), not here.
@@ -570,7 +494,8 @@ void ImageItem::prepareTileLodPlan()
         && qAbs(visSource.y() - tileLodBag().lastVisSource.y()) < 0.5
         && qAbs(visSource.width() - tileLodBag().lastVisSource.width()) < 0.5
         && qAbs(visSource.height() - tileLodBag().lastVisSource.height()) < 0.5) {
-        installTileWake();
+        // Static viewport: keep the demand lease alive while cells load.
+        tileLodBag().controller->refresh();
         return;
     }
     tileLodBag().lastDpc = dpc;
@@ -597,7 +522,33 @@ void ImageItem::prepareTileLodPlan()
     // ring of cells; not a full off-screen ring (that multiplies issue work).
     const double margin = 256.0 / qMax(1e-6, dpc);
     tileLodBag().controller->updateViewport(visSource, dpc, margin);
-    installTileWake();
+}
+
+void ImageItem::installTileChangeHook()
+{
+    if (!tileLodBag().controller) {
+        return;
+    }
+    // TileLoader → TileSession → here, on the GUI thread, whenever a cell
+    // this item may draw changed (Ready, Failed, evicted, invalidated).
+    // Coalesce into one queued repaint per event-loop turn.
+    std::shared_ptr<bool> alive = tileLodBag().alive;
+    tileLodBag().controller->setOnChange([this, alive]() {
+        if (!alive || !*alive || tileLodBag().repaintQueued) {
+            return;
+        }
+        tileLodBag().repaintQueued = true;
+        QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
+            if (!alive || !*alive) {
+                return;
+            }
+            tileLodBag().repaintQueued = false;
+            if (!m_interactive && cacheMode() != QGraphicsItem::NoCache) {
+                setCacheMode(QGraphicsItem::NoCache);
+            }
+            update();
+        });
+    });
 }
 
 void ImageItem::prepareTileLod()
@@ -607,12 +558,19 @@ void ImageItem::prepareTileLod()
 
 void ImageItem::tickTileLod(int budget)
 {
-    // Sole per-item tile service entry (called only from TileLoadCoordinator).
-    // Leave tile band: do not pump/issue on a stale deep-zoom viewport.
+    Q_UNUSED(budget); // Issue budget belongs to TileScheduler (global cap).
+    // Per-item tile service entry (TileLoadCoordinator): plan + demand lease.
+    // Loading and repaint on arrival are event-driven (TileScheduler →
+    // installTileChangeHook); this only keeps the view's demand current.
     if (!tileLodWanted()) {
-        // Size probe may still be pending — without it we never enter the band.
+        // Native size unknown → no tile band yet; make sure it is probed.
         if (!m_path.isEmpty() && !ThumtooCache::cachedSize(m_path).isValid()) {
             ThumtooCache::scheduleProbe(m_path);
+        }
+        // Left the band (zoomed out): withdraw demand so the loader cancels
+        // cells nobody draws any more.
+        if (tileLodBag().controller && tileLodBag().controller->session()) {
+            tileLodBag().controller->session()->clear_demand();
         }
         if (!m_interactive && cacheMode() == QGraphicsItem::NoCache
             && hasDisplayPixels()) {
@@ -629,43 +587,15 @@ void ImageItem::tickTileLod(int budget)
     if (!tileLodBag().controller) {
         return;
     }
-    const int applied = tileLodBag().controller->tick(budget);
+    tileLodBag().controller->refresh();
     const std::uint64_t gen =
         tileLodBag().controller->session() ? tileLodBag().controller->session()->generation() : 0;
-    // Repaint only when tiles actually landed — gen-only changes every pan
-    // queued a singleShot(0) storm (100% CPU, still LQIP).
-    if (applied > 0) {
+    if (gen != tileLodBag().lastUpdateGen) {
+        // Plan change (pan/zoom): parent stand-ins move — repaint.
         tileLodBag().lastUpdateGen = gen;
-        if (!m_interactive) {
-            setCacheMode(QGraphicsItem::NoCache);
-            // Keep LQIP pixmap until paint draws tiles over it — clearing
-            // caused temporary disappear (blank cells while plan catches up).
-        }
-        if (!tileLodBag().repaintQueued) {
-            tileLodBag().repaintQueued = true;
-            QGraphicsScene *sc = scene();
-            QObject *ctx = sc ? static_cast<QObject *>(sc)
-                              : static_cast<QObject *>(QCoreApplication::instance());
-            std::shared_ptr<bool> alive = tileLodBag().alive;
-            QTimer::singleShot(0, ctx, [this, sc, alive]() {
-                if (!alive || !*alive) {
-                    return;
-                }
-                if (sc && scene() != sc) {
-                    tileLodBag().repaintQueued = false;
-                    return;
-                }
-                tileLodBag().repaintQueued = false;
-                update();
-            });
-        }
-    } else if (gen != tileLodBag().lastUpdateGen) {
-        tileLodBag().lastUpdateGen = gen;
-        // Plan-only change (pan): cheap mark, no pixmap clear.
         update();
     } else if (tileLodBag().lastUpdateGen == 0 && tileLodBag().controller->hasRetainedTiles()) {
-        // A→B→A: Succeeded tiles already in shared cache — pump applied 0 but
-        // paint must run once so retained cells appear without waiting for issue.
+        // A→B→A: Ready tiles already in the shared loader — paint once.
         tileLodBag().lastUpdateGen = gen ? gen : 1;
         update();
     }
@@ -676,7 +606,7 @@ bool ImageItem::tileLodActive() const
     // Succeeded tiles in the *shared path cache* count even before this
     // session's first pump — otherwise paint treats the cell as underlay-only
     // and draws EMB while TileLodRegistry already holds the pyramid.
-    if (!tileLodBag().controller || !tileLodBag().controller->enabled()) {
+    if (!tileLodBag().controller) {
         return false;
     }
     return tileLodBag().controller->hasAnyTile()
@@ -722,47 +652,41 @@ QString ImageItem::tileLodDebugLine() const
     }
     const tilelod::TileSession::DebugSnapshot s =
         tileLodBag().controller->session()->debug_snapshot();
+    const auto &c = s.cov;
     // plan=E/P/U/H: Exact / Parent / Underlay / Hole counts for visible keys.
-    const auto &iss = s.issue;
-    return QStringLiteral(
-               "%1 tgt=%2 des=%3 st=%4 min=%5 max=%6 vis=%7 exact=%8 miss=%9 "
-               "fail=%10 inflight=%11 cacheOk=%12 s0=%13 plan=%14/%15/%16/%17 "
-               "lqip=%18 hold=%19 reached=%20 gen=%21 pathRam=%22 disp=%23 | "
-               "issue early=%24 vis=%25 cand=%26 bat=%27 skipOk=%28 skipFail=%29 "
-               "skipS0g=%30 skipDen=%31 bud=%32 cw=%33x%34 iss0=%35")
+    QString line = QStringLiteral(
+               "%1 %2 tgt=%3 min=%4 max=%5 vis=%6 ready=%7 queued=%8 miss=%9 "
+               "retry=%10 failed=%11 unavail=%12 holes=%13 plan=%14/%15/%16/%17 "
+               "demand=%18 gen=%19 pathRam=%20 | loader issued=%21 stale=%22 "
+               "stalls=%23 cancels=%24 sizeChanges=%25")
         .arg(name)
+        .arg(QString::fromLatin1(tilelod::TileSession::phase_name(s.phase)))
         .arg(s.target_scale)
-        .arg(s.desired_scale)
-        .arg(s.stable_scale)
         .arg(s.min_scale)
         .arg(s.max_scale)
-        .arg(s.visible)
-        .arg(s.exact_succeeded)
-        .arg(s.missing)
-        .arg(s.failed)
-        .arg(s.in_flight)
-        .arg(s.cache_succeeded)
-        .arg(s.scale0_ok)
+        .arg(c.visible)
+        .arg(c.ready)
+        .arg(c.queued)
+        .arg(c.missing)
+        .arg(c.retrying)
+        .arg(c.failed)
+        .arg(c.unavailable)
+        .arg(c.holes)
         .arg(s.plan_exact)
         .arg(s.plan_parent)
         .arg(s.plan_underlay)
         .arg(s.plan_empty)
-        .arg(s.has_lqip ? 1 : 0)
-        .arg(s.holding ? 1 : 0)
-        .arg(s.reached_desired ? 1 : 0)
+        .arg(s.demand)
         .arg(static_cast<qulonglong>(s.generation))
         .arg(pathRam)
-        .arg(displayPixelLongEdge())
-        .arg(iss.early)
-        .arg(iss.vis)
-        .arg(iss.cand)
-        .arg(iss.batched)
-        .arg(iss.skip_ok)
-        .arg(iss.skip_fail)
-        .arg(iss.skip_s0gate)
-        .arg(iss.skip_denser)
-        .arg(iss.budget)
-        .arg(iss.content_w)
-        .arg(iss.content_h)
-        .arg(iss.s0);
+        .arg(static_cast<qulonglong>(s.loader.issued_total))
+        .arg(static_cast<qulonglong>(s.loader.stale_results))
+        .arg(static_cast<qulonglong>(s.loader.stalls))
+        .arg(static_cast<qulonglong>(s.loader.cancels_sent))
+        .arg(s.loader.content_changes);
+    const std::string err = tileLodBag().controller->session()->first_error();
+    if (!err.empty()) {
+        line += QStringLiteral(" | error: ") + QString::fromStdString(err);
+    }
+    return line;
 }

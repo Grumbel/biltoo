@@ -140,37 +140,30 @@ void TileLoadCoordinator::tick(int globalBudget)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("TileLoadCoordinator::tick");
-    if (!m_pipeline || !m_pipeline->host() || globalBudget < 0) {
+    // Issue budget and order belong to tilelod::TileScheduler (global cap,
+    // priority across paths). This pass only keeps each visible item's plan
+    // and demand lease current.
+    Q_UNUSED(globalBudget);
+    if (!m_pipeline || !m_pipeline->host()) {
         return;
     }
+    // Slideshow pure-phase drives its own sessions (tickSlideshowTileLod).
     if (m_pipeline->host()->hostSlideshow().hud().isProgressActive()) {
         return;
     }
-    // Image ←/→ key-repeat: soft swap only; tile plan/issue stalls the GUI.
+    // Image ←/→ key-repeat: soft swap only; tiles resume on settle.
     if (m_pipeline->host()->hostSlideshow().hud().isNavHot()) {
         return;
     }
-    // Size probes first: do not compete with EnsureTiles while Gallery is still
-    // resolving the session (thumtoo prefers tiles over ProbeSize in the queue).
+    // Size probes first: do not compete with tiles while Gallery is still
+    // resolving the session.
     if (m_pipeline->host()->hostGallerySizeResolve().active()) {
         return;
     }
 
-    // Coalesce scroll storms — Image mode only. Gallery issue is pure enqueue
-    // (thumtoo workers); do not drip-feed 6–32 cells/frame and starve the pool.
     const bool gallery = m_pipeline->host()->isGalleryMode();
-    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (!gallery && m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
-        return;
-    }
-    m_lastTickMs = nowMs;
-
     QElapsedTimer wall;
     wall.start();
-    // Image: keep a short wall (tickItemTileLod still does plan work on GUI).
-    // Gallery: high wall so one tick can enqueue the whole viewport; workers
-    // do decode. Old 8–24ms + kMaxTargets=6 was intentional when issue did
-    // SQLite/JPEG on this thread — that is gone.
     const qint64 kWallMs = gallery ? 100 : 16;
 
     QRectF sceneVis;
@@ -179,128 +172,57 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     QList<Cand> cands = collectCandidates(sceneVis);
-    if (cands.isEmpty() || wall.elapsed() >= kWallMs) {
+    if (cands.isEmpty()) {
         return;
     }
     sortByPolicy(cands);
-
-    // Gallery: issue every candidate that still needs coverage (viewport can
-    // be 100–200 cells). Image: one focus item.
-    const int kMaxTargets = gallery ? 256 : 1;
+    constexpr int kMaxTargets = 256;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
 
-    bool anyInViewNeedsCoverage = false;
-    for (const Cand &c : cands) {
-        if (c.inView && !c.fullyCovered) {
-            anyInViewNeedsCoverage = true;
-            break;
-        }
-    }
-
-    QList<ImageItem *> issueTargets;
-    issueTargets.reserve(cands.size());
-    PathRasterService *pathRaster = m_pipeline->host()->hostPathRaster();
-
-    for (const Cand &c : cands) {
-        if (wall.elapsed() >= kWallMs) {
-            break;
-        }
-        if (anyInViewNeedsCoverage && (c.fullyCovered || c.settled)) {
-            continue;
-        }
-        ImageItem *item = c.item;
-        if (!item) {
-            continue;
-        }
-        // Soft cancel is deferred to a single pass after issue targets are
-        // chosen — cancel inside the hot loop blocked on PathRaster state.
-        issueTargets.append(item);
-    }
-
-    if (pathRaster) {
-        for (ImageItem *item : issueTargets) {
-            if (!item) {
-                continue;
-            }
-            const QString path = item->path();
+    // Entering the tile band: cancel the whole-frame PreferCache climb once.
+    if (PathRasterService *pathRaster = m_pipeline->host()->hostPathRaster()) {
+        for (const Cand &c : cands) {
+            const QString path = c.item ? c.item->path() : QString();
             if (path.isEmpty() || m_preferCancelled.contains(path)) {
                 continue;
             }
             pathRaster->cancel(path);
             m_preferCancelled.insert(path);
-            if (wall.elapsed() >= kWallMs) {
-                break;
-            }
         }
     }
 
-    if (issueTargets.isEmpty()) {
-        // Pump-only for settled/covered candidates — do not issue_requests(0).
-        for (const Cand &c : cands) {
-            if (wall.elapsed() >= kWallMs) {
-                break;
-            }
-            if (c.item) {
-                m_pipeline->tickItemTileLod(c.item, 0);
-            }
-        }
-        return;
-    }
-
-    const int n = issueTargets.size();
-    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 24) : globalBudget);
-    // Image focus: allow larger batches so denser grids (50+ cells) can climb.
-    const int perCellCap = gallery ? 4 : qMax(12, globalBudget);
-    for (int i = 0; i < n; ++i) {
+    // Every visible item renews its demand (Workspace has several; a lapsed
+    // lease would cancel its loading). Most-needy first in case the wall
+    // budget runs out on huge galleries.
+    for (const Cand &c : cands) {
         if (wall.elapsed() >= kWallMs) {
             break;
         }
-        ImageItem *item = issueTargets.at(i);
-        if (!item) {
-            continue;
-        }
-        const int left = n - i;
-        const int share = remaining > 0
-            ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
-            : 0;
-        m_pipeline->tickItemTileLod(item, share);
-        remaining -= share;
-        if (wall.elapsed() >= kWallMs) {
-            break;
+        if (c.item) {
+            m_pipeline->tickItemTileLod(c.item, 0);
         }
     }
 
-    // Sample AFTER issue so IssueDiag matches this tick (not a prior budget-0 pass).
     if (const char *td = std::getenv("BILTOO_TILE_DEBUG");
         td && td[0] && td[0] != '0') {
         static qint64 s_last = 0;
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - s_last >= 500) {
             s_last = now;
-            int zero = 0;
-            for (const Cand &c : cands) {
-                if (!c.hasAnyTile && !c.settled) {
-                    ++zero;
-                }
-            }
             const QString regLine =
                 tilelod::TileLodRegistry::instance().debug_summary();
-            std::fprintf(stderr,
-                         "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d "
-                         "budget=%d wall=%lldms %s\n",
-                         static_cast<int>(cands.size()), zero,
-                         static_cast<int>(issueTargets.size()), globalBudget,
+            std::fprintf(stderr, "biltoo/tile-coord: cands=%d wall=%lldms %s\n",
+                         static_cast<int>(cands.size()),
                          static_cast<long long>(wall.elapsed()),
                          qPrintable(regLine));
             int samples = 0;
-            for (ImageItem *item : issueTargets) {
-                if (!item || samples >= 4) {
+            for (const Cand &c : cands) {
+                if (!c.item || samples >= 4) {
                     break;
                 }
-                std::fprintf(stderr, "  %s\n",
-                             qPrintable(item->tileLodDebugLine()));
+                std::fprintf(stderr, "  %s\n", qPrintable(c.item->tileLodDebugLine()));
                 ++samples;
             }
             std::fflush(stderr);

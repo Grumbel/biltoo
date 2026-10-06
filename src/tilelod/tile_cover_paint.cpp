@@ -55,7 +55,7 @@ bool prepare_and_paint_cover(QPainter *painter, CoverPaintArgs const& args)
   args.lod->updateViewport(
       QRectF(0, 0, args.native.width(), args.native.height()), dpc, 0.0);
   if (args.tick) {
-    (void)args.lod->tick(args.tick_budget);
+    (void)args.lod->refresh();
   }
 
   if (!args.lod->hasAnyTile() && !args.lod->hasRetainedTiles()) {
@@ -118,8 +118,8 @@ bool prepare_and_paint_cover(QPainter *painter, CoverPaintArgs const& args)
     if (!session) {
       return {};
     }
-    CacheEntry const *e = session->cache().find(key);
-    if (!e || e->state != TileState::Succeeded || !e->bitmap.valid()) {
+    TileCell const *e = session->find(key);
+    if (!e || !e->ready()) {
       return {};
     }
     return tile_bitmap_to_qimage(e->bitmap);

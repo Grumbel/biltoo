@@ -102,18 +102,53 @@ struct TileBitmap {
   }
 };
 
-enum class TileState {
-  Missing,
-  InFlight,
-  Succeeded,
-  Failed
+/**
+ * Explicit per-cell load state, owned by the path's TileLoader.
+ * A key with no entry is **Missing**. See docs/TILE_STATE_MACHINE.md.
+ *
+ *   Missing ──issue──▶ Queued ──Ok──▶ Ready
+ *                        │  ├─Cancelled──▶ Missing
+ *                        │  ├─Failed────▶ Failed (retry_at, attempts++)
+ *                        │  ├─Unavailable▶ Unavailable (permanent)
+ *                        │  └─stall timeout▶ Failed ("no reply after …")
+ *   Failed ──retry due & demanded──▶ Queued
+ */
+enum class CellState : std::uint8_t {
+  Queued,       ///< Exactly one request outstanding at the backend (ticket)
+  Ready,        ///< Pixels present
+  Failed,       ///< Last attempt failed; retried at retry_at while demanded
+  Unavailable,  ///< Backend says the cell cannot exist; never retried
 };
 
-struct CacheEntry {
-  TileState state = TileState::Missing;
-  TileBitmap bitmap;
-  std::uint64_t generation = 0;  ///< Viewport generation when requested
-  std::uint64_t last_used = 0;    ///< For budget eviction (monotonic touch)
+[[nodiscard]] constexpr char const* cell_state_name(CellState s) noexcept
+{
+  switch (s) {
+  case CellState::Queued:
+    return "queued";
+  case CellState::Ready:
+    return "ready";
+  case CellState::Failed:
+    return "failed";
+  case CellState::Unavailable:
+    return "unavailable";
+  }
+  return "?";
+}
+
+struct TileCell {
+  CellState state = CellState::Queued;
+  TileBitmap bitmap;            ///< Ready only
+  std::uint64_t ticket = 0;     ///< Queued: id of the outstanding request
+  int attempts = 0;             ///< Finished Failed attempts since last success
+  std::string error;            ///< Failed / Unavailable: reason (backend text)
+  std::int64_t since_ms = 0;    ///< Loader clock when the state was entered
+  std::int64_t retry_at_ms = 0; ///< Failed: earliest re-issue
+  std::uint64_t last_used = 0;  ///< Loader-wide LRU clock (Ready eviction)
+
+  bool ready() const noexcept
+  {
+    return state == CellState::Ready && bitmap.valid();
+  }
 };
 
 enum class DrawKind {

@@ -4,7 +4,7 @@
 #include "host/thumtoocache.h"
 #include "util/backgroundworklog.h"
 #include "host/thumtoo_process_memos.h"
-#include "tilelod/thumtoo_tile_source.hpp"
+#include "tilelod/thumtoo_tile_backend.hpp"
 #include "tilelod/tile_painter.hpp"
 #include "host/imageloader.h"
 #include "display/imagecache.h"
@@ -2938,7 +2938,11 @@ void preparePaths(const QStringList &paths)
             }
             putEmbeddedOrLqipUnderlay(path, reply);
             clearSourceUnavailable(path);
-            emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
+            const QSize sz(reply.size->width, reply.size->height);
+            // Memo before emit: tile planning only trusts cachedSize (a soft
+            // sample size as tile grid misplaces every cell).
+            noteCachedSize(path, sz);
+            emit bridge()->sizeReady(path, sz);
         });
     });
 }
@@ -2961,12 +2965,18 @@ void warmUris(const QStringList &paths)
     });
 }
 
-void requestTiles(const QString &path, const QVector<TileCoord> &coords,
-                  TileBitmapCellCallback on_cell)
+void requestTileCells(const QString &path, const QVector<TileCoord> &coords,
+                      TileCellResultCallback on_cell)
 {
     if (!on_cell || coords.isEmpty()) {
         return;
     }
+    auto failAll = [&](const char *why) {
+        for (int i = 0; i < coords.size(); ++i) {
+            on_cell(static_cast<std::size_t>(i),
+                    TileCellResult{tilelod::FetchStatus::Failed, std::nullopt, why});
+        }
+    };
     {
         int minS = coords.front().scale;
         int maxS = minS;
@@ -2986,9 +2996,7 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
-        for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), std::nullopt);
-        }
+        failAll("path has no thumtoo URI");
         return;
     }
     thumtoo::Client *c = nullptr;
@@ -2997,9 +3005,7 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
         c = clientUnlocked();
     }
     if (!c) {
-        for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), std::nullopt);
-        }
+        failAll("thumtoo unavailable");
         return;
     }
     std::vector<thumtoo::Client::TileCoord> tc;
@@ -3007,20 +3013,32 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     for (const TileCoord &t : coords) {
         tc.push_back({t.scale, t.x, t.y});
     }
-    // Completions arrive on the Qt executor (GUI). Interactive tiles are
-    // delivered as rgb888 (thumtoo decodes durable JPEG on the worker in
-    // materialize_tile_cell / decode_tile_blob_to_rgb888). Expanding rgb→rgba
-    // here is linear in cell size and stays off the worker pool.
-    c->request_tiles(
+    // Results arrive on the Qt executor (GUI), one per cell (thumtoo cell
+    // contract). rgb888 → rgba8 expansion is linear in cell size.
+    c->request_tile_cells(
         uri, std::move(tc),
-        [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
-            if (!tile) {
-                on_cell(index, std::nullopt);
-                return;
+        [on_cell](std::size_t index, thumtoo::TileResult r) {
+            TileCellResult out;
+            out.error = std::move(r.error);
+            switch (r.status) {
+            case thumtoo::TileStatus::Ok:
+                out.status = tilelod::FetchStatus::Ok;
+                if (r.tile) {
+                    out.tile = tilelod::decode_tile_payload(
+                        r.tile->width, r.tile->height, r.tile->codec, r.tile->bytes);
+                }
+                break;
+            case thumtoo::TileStatus::Cancelled:
+                out.status = tilelod::FetchStatus::Cancelled;
+                break;
+            case thumtoo::TileStatus::Failed:
+                out.status = tilelod::FetchStatus::Failed;
+                break;
+            case thumtoo::TileStatus::Unavailable:
+                out.status = tilelod::FetchStatus::Unavailable;
+                break;
             }
-            on_cell(index, tilelod::decode_tile_payload(
-                               tile->width, tile->height, tile->codec,
-                               tile->bytes));
+            on_cell(index, std::move(out));
         });
 }
 

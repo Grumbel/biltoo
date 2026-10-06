@@ -186,6 +186,10 @@ ImageView::ImageView(QWidget *parent)
                             }
                         }
                     }
+                    // Tiles wait for the authoritative native size (never a
+                    // soft sample); entering the band needs a tick now.
+                    ThumtooCache::noteCachedSize(path, size);
+                    m_displayPipeline->tickPrimaryTileLod(8);
                 }
                 hostGallerySizeResolve().noteProbeSettled(path, valid);
             });

@@ -77,8 +77,10 @@ private:
     class QTimer *m_timer = nullptr;
 
     static constexpr double kPrefetchMaxDpc = 0.25;
+    /// Ticks only renew the demand lease (loading is TileScheduler's): 500 ms
+    /// × 30 bounds a slot to ~15 s of speculative work.
     static constexpr int kPrefetchMaxTicks = 30;
-    static constexpr int kTickIntervalMs = 33;
+    static constexpr int kTickIntervalMs = 500;
     /** Max concurrent off-canvas prefetch controllers. */
     static constexpr int kPrefetchMaxSlots = 4;
 };

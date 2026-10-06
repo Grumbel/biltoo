@@ -1136,6 +1136,56 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         painter->restore();
     }
 
+    // Tile load ended without full detail: say so, with the backend's reason,
+    // instead of silently staying on a coarse stand-in. Degraded = parents
+    // still cover (lower resolution); Error = some area has no pixels at all.
+    if (m_tileLodAttached && tileLodBag().controller
+        && tileLodBag().controller->path() == m_path && r.width() > 8.0
+        && r.height() > 8.0) {
+        const tilelod::TileSession::Phase phase = tileLodBag().controller->phase();
+        const qreal screenH = r.height() * screenScale();
+        if ((phase == tilelod::TileSession::Phase::Degraded
+             || phase == tilelod::TileSession::Phase::Error)
+            && screenH >= 120.0) {
+            const tilelod::TileSession *session = tileLodBag().controller->session();
+            QString why = session ? QString::fromStdString(session->first_error())
+                                  : QString();
+            if (why.size() > 140) {
+                why = why.left(137) + QStringLiteral("...");
+            }
+            const QString head = phase == tilelod::TileSession::Phase::Error
+                ? QCoreApplication::translate("ImageItem", "Tiles failed")
+                : QCoreApplication::translate("ImageItem",
+                                              "Showing lower resolution");
+            const QString line = why.isEmpty() ? head : head + QStringLiteral(": ") + why;
+            painter->save();
+            painter->setOpacity(1.0);
+            const qreal inv = 1.0 / ViewTransform::floorScale(screenScale());
+            QFont f = painter->font();
+            f.setPointSizeF(qBound(4.0, 10.0 * inv, 400.0));
+            painter->setFont(f);
+            const QFontMetricsF fm(f);
+            // Bottom of the *visible* part (deep zoom: image bottom is off-screen).
+            QRectF vis = r;
+            if (scene() && !scene()->views().isEmpty()) {
+                QGraphicsView *view = scene()->views().first();
+                const QRectF localVis =
+                    mapFromScene(view->mapToScene(view->viewport()->rect())).boundingRect();
+                const QRectF hit = localVis.intersected(r);
+                if (!hit.isEmpty()) {
+                    vis = hit;
+                }
+            }
+            const qreal barH = qMin(vis.height() * 0.3, fm.height() * 2.6);
+            const QRectF bar(vis.left(), vis.bottom() - barH, vis.width(), barH);
+            painter->fillRect(bar, QColor(50, 35, 10, 200));
+            painter->setPen(QColor(255, 210, 140));
+            painter->drawText(bar.adjusted(6.0 * inv, 0, -6.0 * inv, 0),
+                              Qt::AlignCenter | Qt::TextWordWrap, line);
+            painter->restore();
+        }
+    }
+
     // Gallery: selection frame is painted by ImageView::drawForeground so
     // ItemCoordinateCache is not invalidated on every selection change / scroll.
     // Content-only paint stays cacheable across view pan under OpenGL.

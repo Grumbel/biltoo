@@ -1688,41 +1688,45 @@ void DisplayPipelineController::dropAllTileLodSessions()
 void DisplayPipelineController::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();
-    // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
+    // Key-repeat: do not plan tiles — soft underlay only until settle.
     if (m_host->hostSlideshow().hud().isNavHot()) {
         return;
     }
+    // Loading itself is event-driven (tilelod::TileScheduler wakes on results,
+    // retries and stalls; ImageItem/views repaint via their change hook).
+    // This tick only (re)plans visible views and renews their demand leases,
+    // so it re-arms slowly while something is still loading.
+    constexpr int kLeaseRenewMs = 250;
+    auto armRenew = [this]() {
+        if (!tileLodTimer()) {
+            tileLodTimer() = new QTimer(m_host->hostObject());
+            tileLodTimer()->setSingleShot(true);
+            QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(),
+                             [this]() { tickPrimaryTileLod(8); });
+        }
+        if (!tileLodTimer()->isActive()) {
+            tileLodTimer()->start(kLeaseRenewMs);
+        }
+    };
 
-    // Slideshow pure-phase: ImageItems are not tileLodWanted (hidden). Phase
-    // TileLodControllers only climbed inside paintSlideshowTiles; with motion
-    // off that meant completions could load into the registry while the dwell
-    // frame stayed on coarse parents until the next key press. Drive phase
-    // sessions here (same budget path as Image focus).
+    // Slideshow pure-phase: phase sessions own the viewport (hidden ImageItems
+    // are not tileLodWanted).
     if (m_host->hostSlideshow().hud().isProgressActive()) {
         if (m_host->hostSlideshow().tickSlideshowTileLod(budget)) {
-            if (m_host->viewportWidget()) {
-                m_host->viewportWidget()->update();
-            }
             BackgroundWorkLog::noteTileLodTick();
-            if (!tileLodTimer()) {
-                tileLodTimer() = new QTimer(m_host->hostObject());
-                tileLodTimer()->setSingleShot(true);
-                QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(), [this]() {
-                    tickPrimaryTileLod(m_host->isGalleryMode() ? 256 : 32);
-                });
-            }
-            if (!tileLodTimer()->isActive()) {
-                tileLodTimer()->start(16);
-            }
-            return;
+            armRenew();
         }
+        return;
     }
 
-    // Decide first whether any visible (Gallery) / live (Image/Workspace) item
-    // still needs tiles. Gallery watchdog used to call this every 1s even when
-    // coverage was done — that ran TileLoadCoordinator::tick and could re-arm
-    // the 16 ms timer forever (GUI + worker churn after settle).
+    // Any visible (Gallery) / live (Image/Workspace) item that wants tiles
+    // and is not settled (no controller yet, or still Loading)?
     bool needMore = false;
+    auto consider = [&needMore](ImageItem *ii) {
+        if (ii && ii->tileLodWanted() && !ii->tileLodSettled()) {
+            needMore = true;
+        }
+    };
     if (m_host->isGalleryMode()) {
         QRectF sceneVis;
         if (m_host->viewportWidget()) {
@@ -1732,23 +1736,16 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
             const QList<QGraphicsItem *> hit = m_host->canvasScene()->items(
                 sceneVis, Qt::IntersectsItemBoundingRect);
             for (QGraphicsItem *gi : hit) {
-                auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
-                if (!ii || !ii->tileLodWanted()) {
-                    continue;
-                }
-                if (!ii->tileLodViewportCovered()) {
-                    needMore = true;
+                consider(qgraphicsitem_cast<ImageItem *>(gi));
+                if (needMore) {
                     break;
                 }
             }
         }
     } else {
         for (ImageItem *ii : m_host->liveItems()) {
-            if (!ii || !ii->tileLodWanted()) {
-                continue;
-            }
-            if (!ii->tileLodViewportCovered()) {
-                needMore = true;
+            consider(ii);
+            if (needMore) {
                 break;
             }
         }
@@ -1762,19 +1759,7 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
         tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
     }
     tileCoordinator()->tick(budget);
-
-    if (!tileLodTimer()) {
-        tileLodTimer() = new QTimer(m_host->hostObject());
-        tileLodTimer()->setSingleShot(true);
-        QObject::connect(tileLodTimer(), &QTimer::timeout, m_host->hostObject(), [this]() {
-            // Image focus: higher budget so density climb is not starved.
-            tickPrimaryTileLod(m_host->isGalleryMode() ? 256 : 32);
-        });
-    }
-    // Gallery: re-tick ASAP while coverage is incomplete (issue is cheap).
-    if (!tileLodTimer()->isActive()) {
-        tileLodTimer()->start(m_host->isGalleryMode() ? 4 : 16);
-    }
+    armRenew();
 }
 
 
