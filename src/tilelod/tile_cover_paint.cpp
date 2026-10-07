@@ -4,7 +4,8 @@
 #include "tilelod/tile_cover_paint.hpp"
 #include "tilelod/tile_display_paint.hpp"
 #include "tilelod/tile_painter.hpp"
-#include "tilelod/tile_session.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_session.hpp>
 #include "tilelod/tile_plan_debug_overlay.hpp"
 
 #include <algorithm>

@@ -4,7 +4,8 @@
 #ifndef BILTOO_TILELOD_THUMTOO_TILE_BACKEND_HPP
 #define BILTOO_TILELOD_THUMTOO_TILE_BACKEND_HPP
 
-#include "tilelod/tile_backend.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_backend.hpp>
 
 #include <QString>
 

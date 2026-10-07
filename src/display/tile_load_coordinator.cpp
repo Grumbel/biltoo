@@ -13,7 +13,8 @@
 #include "gallery/gallerysizeresolve.h"
 #include "display/pathrasterservice.h"
 #include "host/thumtoocache.h"
-#include "tilelod/tile_session.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_session.hpp>
 #include "tilelod/tile_lod_registry.hpp"
 
 #include <QDateTime>

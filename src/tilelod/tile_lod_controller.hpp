@@ -5,7 +5,8 @@
 #define BILTOO_TILELOD_TILE_LOD_CONTROLLER_HPP
 
 #include "tilelod/tile_lod_registry.hpp"
-#include "tilelod/tile_session.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_session.hpp>
 #include "tilelod/tile_painter.hpp"
 
 #include <QImage>

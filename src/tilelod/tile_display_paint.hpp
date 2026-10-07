@@ -15,8 +15,9 @@
  * are per surface; Succeeded tiles are shared across modes and widgets.
  */
 
-#include "tilelod/draw_plan.hpp"
-#include "tilelod/tile_session.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/draw_plan.hpp>
+#include <thumtoo/lod/tile_session.hpp>
 #include "content/contentxform.h"
 
 #include <QImage>

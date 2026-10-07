@@ -44,7 +44,8 @@
 #include <QGraphicsItem>
 #include "host/thumtoocache.h"
 #include "host/pagepath.h"
-#include "tilelod/lod_math.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/lod_math.hpp>
 
 
 SlideshowController::SlideshowController(ImageView *view)

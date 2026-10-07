@@ -1,8 +1,9 @@
 # Source records, page profiles and the Status panel
 
 **Normative.** How biltoo learns about a source (session path), decides how to
-show it, and makes every such decision visible. Code: `src/tilelod/source_records.*`,
-`page_profile_service.*`, `source_status.*`, `src/shell/statuspanel.*`.
+show it, and makes every such decision visible. Code: thumtoo
+`include/thumtoo/lod/source_records.hpp` / `source_status.hpp` (moved from
+`src/tilelod/`), `src/tilelod/page_profile_service.*`, `src/shell/statuspanel.*`.
 
 ## Why
 
@@ -95,4 +96,4 @@ decodes shared between threads, document lock waits). Problems are coloured.
 keeps writing that text for scripted runs.
 
 `build_status_sections(SourceStatus)` turns the data into rows; the panel only
-renders them (unit-tested in `tests/tilelod_test.cpp`).
+renders them (unit-tested in thumtoo `tests/test_lod.cpp`).

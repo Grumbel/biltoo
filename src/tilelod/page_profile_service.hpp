@@ -4,7 +4,8 @@
 #ifndef BILTOO_TILELOD_PAGE_PROFILE_SERVICE_HPP
 #define BILTOO_TILELOD_PAGE_PROFILE_SERVICE_HPP
 
-#include "tilelod/source_records.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/source_records.hpp>
 
 #include <QString>
 

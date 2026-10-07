@@ -3,7 +3,8 @@
 
 #include "tilelod/tile_scheduler_qt.hpp"
 
-#include "tilelod/tile_scheduler.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_scheduler.hpp>
 
 #include <QMetaObject>
 #include <QObject>
@@ -12,6 +13,7 @@
 #include <QTimer>
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 
 namespace tilelod {
@@ -48,6 +50,13 @@ private:
 
 void installTileSchedulerQtDriver(QObject *parent)
 {
+  // thumtoo's scheduler traces with Config::trace (or THUMTOO_LOD_DEBUG);
+  // keep BILTOO_TILE_DEBUG switching it on as before.
+  TileScheduler::Config cfg = TileScheduler::instance().config();
+  char const* td = std::getenv("BILTOO_TILE_DEBUG");
+  cfg.trace = cfg.trace || (td && td[0] && td[0] != '0');
+  TileScheduler::instance().set_config(cfg);
+
   auto *driver = new TileSchedulerDriver(parent);
   QPointer<TileSchedulerDriver> guard(driver);
   TileScheduler::instance().set_wake_hook([guard](std::int64_t delay_ms) {

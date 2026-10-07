@@ -490,12 +490,7 @@ set(BILTOO_LIB_SOURCES
   src/shell/defaultapps.h
   src/shell/openwith.cpp
   src/shell/openwith.h
-  src/tilelod/lod_planner.cpp
-  src/tilelod/draw_plan.cpp
-  src/tilelod/tile_loader.cpp
-  src/tilelod/tile_scheduler.cpp
   src/tilelod/tile_scheduler_qt.cpp
-  src/tilelod/tile_session.cpp
   src/tilelod/tile_painter.cpp
   src/tilelod/tile_cover_paint.cpp
   src/tilelod/tile_plan_debug_overlay.cpp
@@ -503,8 +498,6 @@ set(BILTOO_LIB_SOURCES
   src/tilelod/thumtoo_tile_backend.cpp
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp
-  src/tilelod/source_records.cpp
-  src/tilelod/source_status.cpp
   src/tilelod/page_profile_service.cpp
   src/shell/icons.qrc
 )
@@ -900,7 +893,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-sessiondocument-test PRIVATE src)
+  target_include_directories(biltoo-sessiondocument-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
     add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
 
@@ -948,7 +941,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-itemworld-test PRIVATE src)
+  target_include_directories(biltoo-itemworld-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
@@ -979,7 +972,7 @@ if(Qt6Test_FOUND)
       src/content/contentxform.cpp
       src/color/coloradjust.cpp
     )
-    target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
+    target_include_directories(biltoo-imageview-characterization-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
     target_link_libraries(biltoo-imageview-characterization-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   endif()
   add_test(NAME imageview-characterization COMMAND biltoo-imageview-characterization-test)
@@ -994,7 +987,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-pathorder-dual-model-test PRIVATE src)
+  target_include_directories(biltoo-pathorder-dual-model-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-pathorder-dual-model-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME pathorder-dual-model COMMAND biltoo-pathorder-dual-model-test)
 
@@ -1007,7 +1000,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-packorderview-test PRIVATE src)
+  target_include_directories(biltoo-packorderview-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-packorderview-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME packorderview COMMAND biltoo-packorderview-test)
 
@@ -1020,7 +1013,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-packorderoverlay-test PRIVATE src)
+  target_include_directories(biltoo-packorderoverlay-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-packorderoverlay-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME packorderoverlay COMMAND biltoo-packorderoverlay-test)
 
@@ -1033,7 +1026,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-session-gallery-crop-scenario-test PRIVATE src)
+  target_include_directories(biltoo-session-gallery-crop-scenario-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-session-gallery-crop-scenario-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME session-gallery-crop-scenario COMMAND biltoo-session-gallery-crop-scenario-test)
 
@@ -1046,7 +1039,7 @@ if(Qt6Test_FOUND)
     src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
-  target_include_directories(biltoo-sessionappearance-test PRIVATE src)
+  target_include_directories(biltoo-sessionappearance-test PRIVATE src "${THUMTOO_SOURCE_DIR}/include")
   target_link_libraries(biltoo-sessionappearance-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessionappearance COMMAND biltoo-sessionappearance-test)
 
@@ -1128,19 +1121,4 @@ if(Qt6Test_FOUND)
   # sessionappearance TU without imageitem (undefined refs at link time).
 endif()
 
-# tilelod core: pure C++ (no Qt)
-add_executable(biltoo-tilelod-test
-  tests/tilelod_test.cpp
-  src/tilelod/lod_planner.cpp
-  src/tilelod/draw_plan.cpp
-  src/tilelod/tile_loader.cpp
-  src/tilelod/tile_scheduler.cpp
-  src/tilelod/tile_session.cpp
-  src/tilelod/source_records.cpp
-  src/tilelod/source_status.cpp
-)
-target_include_directories(biltoo-tilelod-test PRIVATE src)
-# Page profile / render stats types and page_content_kind_name.
-target_link_libraries(biltoo-tilelod-test PRIVATE thumtoo)
-target_compile_features(biltoo-tilelod-test PRIVATE cxx_std_17)
-add_test(NAME tilelod COMMAND biltoo-tilelod-test)
+# The tilelod core moved to thumtoo (thumtoo::lod, tests/test_lod.cpp there).

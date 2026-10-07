@@ -4,7 +4,8 @@
 #ifndef BILTOO_TILELOD_TILE_LOD_REGISTRY_HPP
 #define BILTOO_TILELOD_TILE_LOD_REGISTRY_HPP
 
-#include "tilelod/tile_loader.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_loader.hpp>
 
 #include <QString>
 #include <cstddef>

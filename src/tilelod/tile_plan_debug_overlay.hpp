@@ -8,8 +8,9 @@
  * Used by ImageItem paint and Gallery virtual-slot paint — same HUD, no special cases.
  */
 
-#include "tilelod/draw_plan.hpp"
-#include "tilelod/tile_session.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/draw_plan.hpp>
+#include <thumtoo/lod/tile_session.hpp>
 #include "content/contentxform.h"
 
 #include <QPainter>

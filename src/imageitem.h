@@ -20,7 +20,8 @@
 #include <QRect>
 #include <cstdint>
 
-#include "tilelod/tile_types.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_types.hpp>
 #include "tilelod/tile_lod_item_bag.hpp"
 
 /**

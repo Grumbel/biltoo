@@ -4,7 +4,8 @@
 #ifndef BILTOO_TILELOD_TILE_PAINTER_HPP
 #define BILTOO_TILELOD_TILE_PAINTER_HPP
 
-#include "tilelod/tile_types.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_types.hpp>
 
 #include <QImage>
 #include <QPainter>

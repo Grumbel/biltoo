@@ -16,8 +16,9 @@
 #include <functional>
 #include <optional>
 #include <string>
-#include "tilelod/tile_backend.hpp"
-#include "tilelod/tile_types.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/tile_backend.hpp>
+#include <thumtoo/lod/tile_types.hpp>
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).

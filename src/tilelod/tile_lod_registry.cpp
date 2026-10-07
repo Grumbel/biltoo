@@ -3,10 +3,11 @@
 
 #include "tilelod/tile_lod_registry.hpp"
 
-#include "tilelod/source_records.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/source_records.hpp>
 
 #include "tilelod/thumtoo_tile_backend.hpp"
-#include "tilelod/tile_scheduler.hpp"
+#include <thumtoo/lod/tile_scheduler.hpp>
 #include "tilelod/tile_scheduler_qt.hpp"
 
 #include <QCoreApplication>

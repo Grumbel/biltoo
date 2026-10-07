@@ -30,7 +30,7 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 5. **Scrollbar drag** while zoomed — same as pan (visible set updates).
 6. **Retina / DPR > 1** — finer scales requested than on a 1× display at the same logical zoom.
 7. PreferCache whole-frame climb should **not** run while in the tile band (`m_tileLodPreferCancelled`).
-8. **Failed cells** — retried after 0.5 s and 1 s, then a 30 s cooldown; the item shows "Showing lower resolution: <reason>" (parents cover) or "Tiles failed: <reason>" (holes). `Unavailable` cells (outside grid, finer than a raster PDF page needs) are never retried. A stall (no reply in 45 s) logs `biltoo/tile: STALL`.
+8. **Failed cells** — retried after 0.5 s and 1 s, then a 30 s cooldown; the item shows "Showing lower resolution: <reason>" (parents cover) or "Tiles failed: <reason>" (holes). `Unavailable` cells (outside grid, finer than a raster PDF page needs) are never retried. A stall (no reply in 45 s) logs `thumtoo/lod: STALL`.
 8b. **PDF pages** (benchtoo `pdf-classes`, Panels → Status open) — a scan stops
    refining at its profile's cap (300 dpi → scale −1) with the decision and
    reason listed; vector and mixed pages (text, Bates stamp on a scan) keep

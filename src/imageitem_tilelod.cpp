@@ -11,9 +11,10 @@
 #include <cstdlib>
 #include <cmath>
 #include "tilelod/page_profile_service.hpp"
-#include "tilelod/source_records.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/source_records.hpp>
 #include "tilelod/tile_lod_controller.hpp"
-#include "tilelod/lod_math.hpp"
+#include <thumtoo/lod/lod_math.hpp>
 #include "tilelod/tile_lod_registry.hpp"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"

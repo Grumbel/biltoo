@@ -7,7 +7,8 @@
 #include "imageitem.h"
 #include "imageview.h"
 #include "tilelod/page_profile_service.hpp"
-#include "tilelod/source_status.hpp"
+#include "tilelod/core.hpp"
+#include <thumtoo/lod/source_status.hpp>
 #include "tilelod/tile_lod_controller.hpp"
 
 #include <thumtoo/djvu.hpp>
@@ -150,6 +151,7 @@ void StatusPanel::refresh()
     }
     const QString path = item->path();
     tilelod::SourceStatus status;
+    status.host = "biltoo";
     status.record = tilelod::PageProfileService::instance().observe(path);
     if (tilelod::TileLodController *lod = item->tileLodController()) {
         if (const tilelod::TileSession *session = lod->session()) {

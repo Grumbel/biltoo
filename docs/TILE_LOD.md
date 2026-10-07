@@ -5,6 +5,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile level-of-detail (LOD) — host display path
 
+> **Code location:** the Qt-free core (planner, `TileLoader`, `TileScheduler`,
+> `TileSession`, draw plan, source records) moved to thumtoo as
+> `thumtoo::lod` (`include/thumtoo/lod/`, thumtoo `docs/TILE_LOD.md`), shared
+> with Galapix. biltoo keeps the Qt glue in `src/tilelod/` (registry,
+> controller, painters, scheduler Qt driver, `ThumtooTileBackend`); the core
+> names are visible in `namespace tilelod` through `src/tilelod/core.hpp`.
+
 > **Loading / scheduling is normative in [TILE_STATE_MACHINE.md](TILE_STATE_MACHINE.md)**
 > (TileLoader cell states, demand leases, TileScheduler, thumtoo
 > `request_tile_cells`). Sections below about TileSession progressive climb,

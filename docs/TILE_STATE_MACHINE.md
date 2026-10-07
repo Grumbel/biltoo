@@ -5,6 +5,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Tile loading state machine (normative)
 
+> **Code location:** the Qt-free core (planner, `TileLoader`, `TileScheduler`,
+> `TileSession`, draw plan, source records) moved to thumtoo as
+> `thumtoo::lod` (`include/thumtoo/lod/`, thumtoo `docs/TILE_LOD.md`), shared
+> with Galapix. biltoo keeps the Qt glue in `src/tilelod/` (registry,
+> controller, painters, scheduler Qt driver, `ThumtooTileBackend`); the core
+> names are visible in `namespace tilelod` through `src/tilelod/core.hpp`.
+
 Supersedes the runtime/scheduling parts of [TILE_LOD.md](TILE_LOD.md)
 (TileSession progressive climb, scale hold, generations, coverage heartbeat,
 coordinator budgets). Geometry, planner, draw plan and paint rules in
@@ -103,7 +110,7 @@ Rules:
    (transient NFS/IO recovers). `Unavailable` is never retried.
 5. **Stall watchdog:** `Queued` for 45 s without any reply → `Failed` with
    "no reply from tile backend … (backend contract violation)", logged as
-   `biltoo/tile: STALL …`. With the thumtoo contract this should never fire;
+   `thumtoo/lod: STALL …`. With the thumtoo contract this should never fire;
    if it does, the log says so.
 6. **Epoch:** `invalidate()` (reload, session replace) and a content-size
    change cancel everything, drop all cells and bump the epoch, so late
@@ -169,7 +176,7 @@ scheduler anyway.
 a banner on the visible part of the image for Degraded ("Showing lower
 resolution: …") and Error ("Tiles failed: …"). The debug overlay
 (`BILTOO_DEBUG_OVERLAY` / `BILTOO_TILE_DEBUG`) shows phase, counts and reason.
-`BILTOO_TILE_DEBUG=1` prints `biltoo/tile-sched:` per pump with work, and
+`BILTOO_TILE_DEBUG=1` prints `thumtoo/lod-sched:` per pump with work, and
 `biltoo/tile-coord:` item lines with phase, counts, loader issued / stale /
 stalls / cancels / sizeChanges and the error.
 
@@ -190,7 +197,7 @@ stalls / cancels / sizeChanges and the error.
 
 ### Tests
 
-`tests/tilelod_test.cpp` (Qt-free, deterministic clock) pins each bug:
+thumtoo `tests/test_lod.cpp` (Qt-free, deterministic clock) pins each bug:
 two views share one request (B1), destroying a peer/passive view never
 cancels (B2), draw plan follows loader changes (B4), size change drops cells
 and is recorded (B5), coarse-first order with no gates (B6), backoff → Error
