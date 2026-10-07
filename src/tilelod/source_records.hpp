@@ -107,6 +107,10 @@ public:
               std::string const& value, std::string const& why,
               std::int64_t now_ms);
 
+  /// The decision @p what no longer applies (e.g. the view left Gallery).
+  /// @return true when one was removed.
+  bool retract(std::string const& path, std::string const& what);
+
   /// File changed / session replaced: forget what was learned about @p path.
   void forget(std::string const& path);
   void clear();

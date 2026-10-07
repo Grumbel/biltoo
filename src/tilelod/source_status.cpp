@@ -27,12 +27,14 @@ bool is_document(SourceKind k)
   return k != SourceKind::Image;
 }
 
-std::string scale_text(int scale, bool document)
+/// @p base_dpi: dpi of scale 0 (144 for PDF layout, the page dpi for DjVu,
+/// 0 for images).
+std::string scale_text(int scale, double base_dpi)
 {
-  if (!document) {
+  if (base_dpi <= 0.0) {
     return fmt("%d (1/%d)", scale, 1 << std::max(0, scale));
   }
-  return fmt("%d (%.0f dpi)", scale, thumtoo::kPdfLayoutDpi * std::ldexp(1.0, -scale));
+  return fmt("%d (%.0f dpi)", scale, base_dpi * std::ldexp(1.0, -scale));
 }
 
 char const* phase_name(TileSession::Phase p)
@@ -68,8 +70,20 @@ std::string image_text(thumtoo::PdfPageImage const& im)
 }
 
 void add_decode_rows(std::vector<StatusRow>& rows, thumtoo::PdfDecodeStats const& d,
-                     std::int64_t cells)
+                     std::int64_t cells, bool djvu)
 {
+  if (djvu) {
+    rows.push_back({"page decodes",
+                    fmt("%lld for %lld cells — ideal is one per page (decoded pages are "
+                        "kept)",
+                        static_cast<long long>(d.decodes), static_cast<long long>(cells))});
+    if (d.decodes > 0) {
+      rows.push_back({"decoded", fmt("%.1f MP in %.1f ms",
+                                     static_cast<double>(d.decoded_pixels) / 1e6,
+                                     d.decode_ms)});
+    }
+    return;
+  }
   if (d.decodes == 0 && d.shared_waits == 0) {
     rows.push_back({"image decodes", "none"});
     return;
@@ -109,6 +123,12 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
   std::vector<StatusSection> out;
   SourceRecord const& r = s.record;
   bool const doc = is_document(r.kind);
+  double base_dpi = 0.0;
+  if (r.kind == SourceKind::PdfPage) {
+    base_dpi = thumtoo::kPdfLayoutDpi;
+  } else if (r.kind == SourceKind::DjvuPage && r.profile && r.profile->native_dpi > 0) {
+    base_dpi = r.profile->native_dpi;
+  }
 
   {
     StatusSection sec{"Source", {}};
@@ -118,14 +138,20 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
       sec.rows.push_back({"document", fmt("%s, page %d", r.document_file.c_str(), r.page)});
     }
     if (s.tiles && s.tiles->content_w > 0) {
+      std::string at;
+      if (r.kind == SourceKind::PdfPage) {
+        at = " at 144 dpi";
+      } else if (base_dpi > 0) {
+        at = fmt(" (native, %.0f dpi)", base_dpi);
+      }
       sec.rows.push_back({doc ? "layout size" : "size",
                           fmt("%d×%d px%s", s.tiles->content_w, s.tiles->content_h,
-                              doc ? " at 144 dpi" : "")});
+                              at.c_str())});
     }
     out.push_back(std::move(sec));
   }
 
-  if (r.kind == SourceKind::PdfPage) {
+  if (r.kind == SourceKind::PdfPage || r.kind == SourceKind::DjvuPage) {
     StatusSection sec{"Page analysis (thumtoo)", {}};
     StatusTone tone = StatusTone::Normal;
     if (r.profile_state == ProfileState::Known) {
@@ -155,12 +181,18 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
                             fmt("%d further draws not listed",
                                 p.image_draws - static_cast<int>(p.images.size()))});
       }
-      sec.rows.push_back({"vector", fmt("%d paths, %d shadings (%.0f%% of page)",
-                                        p.vector_paths, p.shadings,
-                                        p.vector_coverage * 100.0)});
-      sec.rows.push_back({"glyphs", fmt("%d visible, %d clip, %d invisible (OCR)",
-                                        p.visible_glyphs, p.clip_glyphs,
-                                        p.invisible_glyphs)});
+      if (r.kind == SourceKind::DjvuPage) {
+        sec.rows.push_back({"hidden text", p.invisible_glyphs > 0
+                                               ? fmt("%d glyphs", p.invisible_glyphs)
+                                               : std::string("none")});
+      } else {
+        sec.rows.push_back({"vector", fmt("%d paths, %d shadings (%.0f%% of page)",
+                                          p.vector_paths, p.shadings,
+                                          p.vector_coverage * 100.0)});
+        sec.rows.push_back({"glyphs", fmt("%d visible, %d clip, %d invisible (OCR)",
+                                          p.visible_glyphs, p.clip_glyphs,
+                                          p.invisible_glyphs)});
+      }
       if (p.background_fill_ignored) {
         sec.rows.push_back({"background", "page-size fill treated as paper, not detail"});
       }
@@ -180,9 +212,9 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     TileSession::DebugSnapshot const& t = *s.tiles;
     StatusSection sec{"Tiles (this view)", {}};
     sec.rows.push_back({"state", phase_name(t.phase), phase_tone(t.phase)});
-    sec.rows.push_back({"target scale", scale_text(t.target_scale, doc)});
-    sec.rows.push_back({"scale range", fmt("%s … %s", scale_text(t.min_scale, doc).c_str(),
-                                           scale_text(t.max_scale, doc).c_str())});
+    sec.rows.push_back({"target scale", scale_text(t.target_scale, base_dpi)});
+    sec.rows.push_back({"scale range", fmt("%s … %s", scale_text(t.min_scale, base_dpi).c_str(),
+                                           scale_text(t.max_scale, base_dpi).c_str())});
     TileSession::Coverage const& c = t.cov;
     sec.rows.push_back({"visible cells",
                         fmt("%d: %d ready, %d queued, %d missing, %d retrying, %d failed, "
@@ -243,10 +275,12 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     if (!page) {
       sec.rows.push_back({"page", "not rendered yet"});
     } else {
+      if (r.kind == SourceKind::PdfPage) {
       sec.rows.push_back({"display list", fmt("built %lld× (%.1f ms)",
                                               static_cast<long long>(page->display_list_builds),
                                               page->display_list_ms),
                           page->display_list_builds > 1 ? StatusTone::Warn : StatusTone::Normal});
+      }
       double const avg = page->cells_rendered > 0
                              ? page->render_ms / static_cast<double>(page->cells_rendered)
                              : 0.0;
@@ -259,7 +293,8 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
         sec.rows.push_back({"page rasters", fmt("%lld whole-page renders (thumbnails)",
                                                 static_cast<long long>(page->page_rasters))});
       }
-      add_decode_rows(sec.rows, page->decode, page->cells_rendered + page->page_rasters);
+      add_decode_rows(sec.rows, page->decode, page->cells_rendered + page->page_rasters,
+                      r.kind == SourceKind::DjvuPage);
       if (!page->last_error.empty()) {
         sec.rows.push_back({"last error", page->last_error, StatusTone::Bad});
       }
@@ -274,7 +309,7 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     for (auto const& p : d.pages) {
       cells += p.cells_rendered + p.page_rasters;
     }
-    add_decode_rows(ds.rows, d.decode, cells);
+    add_decode_rows(ds.rows, d.decode, cells, r.kind == SourceKind::DjvuPage);
     if (d.lock_waits > 0) {
       ds.rows.push_back({"document lock",
                          fmt("%lld waits, %.1f ms total, %.1f ms longest",

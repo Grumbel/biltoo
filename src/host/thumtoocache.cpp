@@ -761,26 +761,37 @@ std::string thumtooUri(const QString &path)
     return toThumtooUri(path);
 }
 
-std::optional<PdfPageRef> pdfPageForPath(const QString &path)
+std::optional<DocumentPageRef> documentPageForPath(const QString &path)
 {
-#if defined(BILTOO_HAVE_THUMTOO_PDF)
     if (!PagePath::isPageRef(path) && !PagePath::isTextForceRef(path)) {
         return std::nullopt;
     }
     const PagePath::Ref ref = PagePath::parse(path);
-    if (ref.isEpub() || PagePath::isDjvuFile(ref.pdfPath)) {
+    if (ref.isEpub()) {
         return std::nullopt;
     }
     const std::string uri = toThumtooUri(path);
-    auto parsed = thumtoo::parse_pdf_uri(uri);
-    if (!parsed) {
-        return std::nullopt;
+#if defined(BILTOO_HAVE_THUMTOO_DJVU)
+    if (PagePath::isDjvuFile(ref.pdfPath)) {
+        auto parsed = thumtoo::parse_djvu_uri(uri);
+        if (!parsed) {
+            return std::nullopt;
+        }
+        return DocumentPageRef{DocumentPageRef::Backend::Djvu, uri,
+                               parsed->djvu_path.string(), parsed->page};
     }
-    return PdfPageRef{uri, parsed->pdf_path.string(), parsed->page};
-#else
-    (void)path;
-    return std::nullopt;
 #endif
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (!PagePath::isDjvuFile(ref.pdfPath)) {
+        auto parsed = thumtoo::parse_pdf_uri(uri);
+        if (!parsed) {
+            return std::nullopt;
+        }
+        return DocumentPageRef{DocumentPageRef::Backend::MuPdf, uri,
+                               parsed->pdf_path.string(), parsed->page};
+    }
+#endif
+    return std::nullopt;
 }
 
 void forgetCachedSize(const QString &path)

@@ -450,6 +450,8 @@ void ImageItem::prepareTileLodPlan()
                       screenLong, contentLong, dens);
         tilelod::SourceRecords::instance().decide(pathKey, "gallery floor", value, why,
                                                   tilelod::PageProfileService::now_ms());
+    } else {
+        tilelod::SourceRecords::instance().retract(pathKey, "gallery floor");
     }
     // Re-plans by itself when the floor changes (no viewport change needed).
     tileLodBag().controller->setContentSize(native.width(), native.height(), minScale);

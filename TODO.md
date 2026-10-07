@@ -17,7 +17,8 @@ dumps it. Denser targets demand the same T+1/T+2 overview as rasters.
 Open follow-ups:
 - Manual GUI QA: zoom into the benchtoo `pdf-classes` (scan stops at its
   cap, vector/mixed pages to −4, Status panel values); real-world PDFs.
-- DjVu / EPUB have no profile yet (floor −4, no decode stats).
+- EPUB has no profile yet (floor −4, no decode stats). DjVu: profile +
+  page-decode stats in Status; zoom floor 0 (native pixels).
 
 ### Tile loading state machine
 Normative: [docs/TILE_STATE_MACHINE.md](docs/TILE_STATE_MACHINE.md) (includes
@@ -35,8 +36,8 @@ Open follow-ups:
   the PDF rendering rewrite is pushed (`nix build` needs it).
 
 ### Depends on
-thumtoo `28d209c` (PDF rendering rewrite: pdf_page_profile,
-pdf_document_render_stats, PdfCellRender) or later.
+thumtoo `66b13e9` (PDF + DjVu rendering rewrites: pdf/djvu_page_profile,
+*_document_render_stats, PdfCellRender / DjvuCellRender) or later.
 
 ### Earlier: 2892.16
 

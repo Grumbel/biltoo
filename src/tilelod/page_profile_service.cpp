@@ -7,6 +7,7 @@
 #include "host/thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"
 
+#include <thumtoo/djvu.hpp>
 #include <thumtoo/pdf.hpp>
 
 #include <QCoreApplication>
@@ -65,10 +66,10 @@ SourceRecord const& PageProfileService::observe(QString const& path, bool want_p
 void PageProfileService::request(SourceRecord& rec)
 {
   QString const path = QString::fromStdString(rec.path);
-  auto const ref = ThumtooCache::pdfPageForPath(path);
+  auto const ref = ThumtooCache::documentPageForPath(path);
   if (!ref) {
     rec.profile_state = ProfileState::Failed;
-    rec.profile_error = "path does not map to a MuPDF page";
+    rec.profile_error = "path does not map to a PDF or DjVu page";
     SourceRecords::instance().touch();
     return;
   }
@@ -83,6 +84,7 @@ void PageProfileService::request(SourceRecord& rec)
   std::string const uri = ref->uri;
   std::string const key = rec.path;
   std::uint64_t const request = rec.profile_request;
+  bool const djvu = ref->backend == ThumtooCache::DocumentPageRef::Backend::Djvu;
   // Own small pool: profiles of one document serialize on its lock in
   // thumtoo; on the global pool they would park decode threads.
   static QThreadPool* pool = [] {
@@ -90,11 +92,17 @@ void PageProfileService::request(SourceRecord& rec)
     p->setMaxThreadCount(2);
     return p;
   }();
-  pool->start([uri, key, path, request]() {
+  pool->start([uri, key, path, request, djvu]() {
     std::string error;
     std::optional<thumtoo::PdfPageProfile> profile;
-    // Parse on this thread: //text pages arm MuPDF's text open per thread.
-    if (auto parsed = thumtoo::parse_pdf_uri(uri)) {
+    if (djvu) {
+      if (auto parsed = thumtoo::parse_djvu_uri(uri)) {
+        profile = thumtoo::djvu_page_profile(parsed->djvu_path, parsed->page, &error);
+      } else {
+        error = "not a DjVu page URI: " + uri;
+      }
+    } else if (auto parsed = thumtoo::parse_pdf_uri(uri)) {
+      // Parse on this thread: //text pages arm MuPDF's text open per thread.
       profile = thumtoo::pdf_page_profile(parsed->pdf_path, parsed->page, &error);
     } else {
       error = "not a PDF page URI: " + uri;

@@ -36,6 +36,11 @@ SourceRecords (process-wide, GUI thread)      key = session path
 
 ## Page profiles (thumtoo)
 
+DjVu pages get the same profile type from `thumtoo::djvu_page_profile`:
+always raster, with the JB2 mask / IW44 layers and their dpi and the hidden
+text layer size; their render stats count page decodes (decoded pages are
+kept, so the ideal is one per page).
+
 `thumtoo::pdf_page_profile` runs the page's display list (contents,
 annotations, widgets) through a profiling device and reports:
 
@@ -65,7 +70,8 @@ cells reuse, so asking for it costs nothing extra.
 | PDF page, profile failed | 0, with the error |
 | PDF raster page | `max(−4, finest_useful_scale)` |
 | PDF vector / mixed / empty page | −4 |
-| DjVu / EPUB page | −4 (no profile yet) |
+| DjVu page | 0 — layout is the page's native pixel grid (profile: layers + dpi) |
+| EPUB page | −4 (no profile yet) |
 
 Recorded decisions (`what`):
 

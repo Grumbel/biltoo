@@ -996,7 +996,19 @@ void test_zoom_floor_policy()
 
   tilelod::SourceRecord djvu;
   djvu.kind = SourceKind::DjvuPage;
-  CHECK_EQ(tilelod::decide_zoom_floor(djvu, doc).min_scale, doc);
+  djvu.profile_state = ProfileState::Pending;
+  CHECK_EQ(tilelod::decide_zoom_floor(djvu, doc).min_scale, 0);
+  CHECK(tilelod::decide_zoom_floor(djvu, doc).provisional);
+  djvu.profile_state = ProfileState::Known;
+  djvu.profile = raster_profile(300, 0);
+  f = tilelod::decide_zoom_floor(djvu, doc);
+  CHECK_EQ(f.min_scale, 0);
+  CHECK(!f.provisional);
+  CHECK(f.reason.find("native pixels") != std::string::npos);
+
+  tilelod::SourceRecord epub;
+  epub.kind = SourceKind::EpubPage;
+  CHECK_EQ(tilelod::decide_zoom_floor(epub, doc).min_scale, doc);
 }
 
 /// Decisions are keyed by `what`; unchanged values do not bump generation.
@@ -1014,6 +1026,10 @@ void test_source_record_decisions()
   CHECK(r && r->decisions.size() == 1);
   CHECK(r && r->decision("zoom floor") && r->decision("zoom floor")->value == "scale -1");
   CHECK(!recs.decide("/missing", "x", "y", "z", 4));
+  CHECK(recs.decide("/a.pdf//page:1", "gallery floor", "scale 2", "small cell", 5));
+  CHECK(recs.retract("/a.pdf//page:1", "gallery floor"));
+  CHECK(!recs.retract("/a.pdf//page:1", "gallery floor"));
+  CHECK(recs.find("/a.pdf//page:1")->decision("gallery floor") == nullptr);
   recs.forget("/a.pdf//page:1");
   CHECK(recs.find("/a.pdf//page:1") == nullptr);
   CHECK(recs.ensure("/b.png", tilelod::SourceKind::Image).profile_state

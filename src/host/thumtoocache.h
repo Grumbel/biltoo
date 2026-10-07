@@ -361,15 +361,18 @@ bool hasDurableTilesKnown(const QString &path);
 std::string thumtooUri(const QString &path);
 
 /**
- * MuPDF-backed page behind a session path (PDF, Markdown, plain text
- * //page:N), or nullopt for anything else. GUI-safe (string work only).
+ * Document page behind a session path: MuPDF (PDF, Markdown, plain text
+ * //page:N) or DjVu; nullopt for anything else (EPUB, images). GUI-safe
+ * (string work only).
  */
-struct PdfPageRef {
+struct DocumentPageRef {
+    enum class Backend { MuPdf, Djvu };
+    Backend backend = Backend::MuPdf;
     std::string uri;   /**< thumtoo page URI (parse on the rendering thread) */
     std::string file;  /**< document file */
     int page = 0;      /**< 1-based */
 };
-std::optional<PdfPageRef> pdfPageForPath(const QString &path);
+std::optional<DocumentPageRef> documentPageForPath(const QString &path);
 
 /**
  * Worker: Store has_tile for @p path (deduped). Emits durableTilesReady on first yes.

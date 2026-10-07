@@ -71,13 +71,13 @@ ZoomFloor decide_zoom_floor(SourceRecord const& record, int document_floor)
     f.min_scale = 0;
     f.reason = "raster image: scale 0 is the file's full resolution";
     return f;
-  case SourceKind::DjvuPage:
   case SourceKind::EpubPage:
     f.min_scale = document_floor;
     f.reason = std::string(source_kind_name(record.kind))
                + ": no page profile; biltoo's document floor " + scale_text(document_floor);
     return f;
   case SourceKind::PdfPage:
+  case SourceKind::DjvuPage:
     break;
   }
   switch (record.profile_state) {
@@ -97,6 +97,16 @@ ZoomFloor decide_zoom_floor(SourceRecord const& record, int document_floor)
     break;
   }
   thumtoo::PdfPageProfile const& p = *record.profile;
+  if (record.kind == SourceKind::DjvuPage) {
+    // Layout is the page's native pixel grid: scale 0 shows every pixel.
+    f.min_scale = std::max(document_floor, p.finest_useful_scale.value_or(0));
+    char buf[160];
+    std::snprintf(buf, sizeof buf,
+                  "DjVu page (raster, %.0f dpi): scale %d is the page's native pixels",
+                  p.native_dpi, f.min_scale);
+    f.reason = buf;
+    return f;
+  }
   if (p.kind == thumtoo::PageContentKind::Raster && p.finest_useful_scale) {
     f.min_scale = std::max(document_floor, *p.finest_useful_scale);
     char buf[160];
@@ -128,8 +138,9 @@ SourceRecord& SourceRecords::ensure(std::string const& path, SourceKind kind)
   SourceRecord r;
   r.path = path;
   r.kind = kind;
-  r.profile_state =
-      kind == SourceKind::PdfPage ? ProfileState::Unknown : ProfileState::NotApplicable;
+  r.profile_state = (kind == SourceKind::PdfPage || kind == SourceKind::DjvuPage)
+                        ? ProfileState::Unknown
+                        : ProfileState::NotApplicable;
   ++m_generation;
   return m_records.emplace(path, std::move(r)).first->second;
 }
@@ -167,6 +178,23 @@ bool SourceRecords::decide(std::string const& path, std::string const& what,
     }
   }
   r->decisions.push_back({what, value, why, now_ms});
+  ++m_generation;
+  return true;
+}
+
+bool SourceRecords::retract(std::string const& path, std::string const& what)
+{
+  SourceRecord* r = find_mutable(path);
+  if (!r) {
+    return false;
+  }
+  auto const before = r->decisions.size();
+  r->decisions.erase(std::remove_if(r->decisions.begin(), r->decisions.end(),
+                                    [&](Decision const& d) { return d.what == what; }),
+                     r->decisions.end());
+  if (r->decisions.size() == before) {
+    return false;
+  }
   ++m_generation;
   return true;
 }

@@ -10,6 +10,7 @@
 #include "tilelod/source_status.hpp"
 #include "tilelod/tile_lod_controller.hpp"
 
+#include <thumtoo/djvu.hpp>
 #include <thumtoo/pdf.hpp>
 
 #include <QApplication>
@@ -155,9 +156,12 @@ void StatusPanel::refresh()
             status.tile_error = session->first_error();
         }
     }
-    if (status.record.kind == tilelod::SourceKind::PdfPage
-        && !status.record.document_file.empty()) {
-        status.render = thumtoo::pdf_document_render_stats(status.record.document_file);
+    if (!status.record.document_file.empty()) {
+        if (status.record.kind == tilelod::SourceKind::PdfPage) {
+            status.render = thumtoo::pdf_document_render_stats(status.record.document_file);
+        } else if (status.record.kind == tilelod::SourceKind::DjvuPage) {
+            status.render = thumtoo::djvu_document_render_stats(status.record.document_file);
+        }
     }
     const auto sections = tilelod::build_status_sections(status);
     m_title->setText(PagePath::displayName(path));
