@@ -2,8 +2,22 @@
 
 ## Status (2026-10-07)
 
-**Tip:** tile loading rewrite — explicit state machine (Claude Code, direct
+**Tip:** source records + page profiles + Status panel (Claude Code, direct
 commits on master; no bundle).
+
+### Source records, page profiles, Status panel
+Normative: [docs/SOURCE_RECORDS.md](docs/SOURCE_RECORDS.md). PDF pages get a
+thumtoo page profile (vector / raster / mixed, image dpi); the zoom floor
+comes from it (`decide_zoom_floor`) instead of stepping down after
+Unavailable answers (ProcessMemos denser floor removed). Every heuristic is
+recorded as a decision with its reason. Panels → Status shows page analysis,
+decisions, tile state and thumtoo decode counts; `BILTOO_STATUS_REPORT=<file>`
+dumps it. Denser targets demand the same T+1/T+2 overview as rasters.
+
+Open follow-ups:
+- Manual GUI QA: zoom into the benchtoo `pdf-classes` (scan stops at its
+  cap, vector/mixed pages to −4, Status panel values); real-world PDFs.
+- DjVu / EPUB have no profile yet (floor −4, no decode stats).
 
 ### Tile loading state machine
 Normative: [docs/TILE_STATE_MACHINE.md](docs/TILE_STATE_MACHINE.md) (includes
@@ -18,10 +32,11 @@ Open follow-ups:
 - Manual QA of the TILE_LOD_RUNTIME checklist in the real GUI (zoom/pan,
   Workspace duplicates, slideshow, filmstrip, PDF denser on scans).
 - `flake.lock` still pins an older thumtoo; bump after thumtoo master with
-  `request_tile_cells` is pushed (`nix build` needs it).
+  the PDF rendering rewrite is pushed (`nix build` needs it).
 
 ### Depends on
-thumtoo `183d053` (request_tile_cells) or later.
+thumtoo `28d209c` (PDF rendering rewrite: pdf_page_profile,
+pdf_document_render_stats, PdfCellRender) or later.
 
 ### Earlier: 2892.16
 

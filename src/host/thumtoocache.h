@@ -15,6 +15,7 @@
 #include <atomic>
 #include <functional>
 #include <optional>
+#include <string>
 #include "tilelod/tile_backend.hpp"
 #include "tilelod/tile_types.hpp"
 
@@ -356,15 +357,20 @@ bool hasDurableTiles(const QString &path);
  */
 bool hasDurableTilesKnown(const QString &path);
 
+/** thumtoo URI for a session path ("" when it does not map). Cache-only. */
+std::string thumtooUri(const QString &path);
+
 /**
- * Finest live denser scale (scale < 0) thumtoo renders for a document page,
- * learned from Unavailable answers (image-heavy pages need a full-page raster
- * within thumtoo's pixel budget). INT_MIN = no limit known yet.
+ * MuPDF-backed page behind a session path (PDF, Markdown, plain text
+ * //page:N), or nullopt for anything else. GUI-safe (string work only).
  */
-int denserScaleFloor(const QString &path);
-/** thumtoo answered Unavailable for every visible cell at @p scale (< 0). */
-/** @return true when the floor was raised (caller should re-plan). */
-bool noteDenserScaleUnavailable(const QString &path, int scale);
+struct PdfPageRef {
+    std::string uri;   /**< thumtoo page URI (parse on the rendering thread) */
+    std::string file;  /**< document file */
+    int page = 0;      /**< 1-based */
+};
+std::optional<PdfPageRef> pdfPageForPath(const QString &path);
+
 /**
  * Worker: Store has_tile for @p path (deduped). Emits durableTilesReady on first yes.
  * GUI-safe. Use when filmstrip/Gallery need warm TileSynth but process memo is unknown.

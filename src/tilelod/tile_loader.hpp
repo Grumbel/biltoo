@@ -105,6 +105,9 @@ public:
   /// True while @p id holds a non-expired demand.
   bool has_demand(ViewId id) const;
   std::size_t view_count() const { return m_views.size(); }
+  /// Host facts that shape every view's plan changed (e.g. a page profile
+  /// arrived and moved the zoom floor): run each view's change hook.
+  void notify_views();
 
   // --- Driven by TileScheduler (GUI thread) ------------------------------
   /// Called with a delay when the loader needs a pump (0 = asap). Thread-safe
@@ -181,7 +184,6 @@ private:
     std::function<void(std::int64_t)> wake;  // guarded by mu
   };
 
-  void notify_views();
   void rebuild_union();
   void set_cell_ready(TileKey const& key, TileBitmap bitmap, std::int64_t now_ms);
   void erase_cell(std::map<TileKey, TileCell>::iterator it);

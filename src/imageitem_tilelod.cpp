@@ -7,8 +7,11 @@
 #include "display/displayquality.h"
 #include "util/biltoo_thread.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include "tilelod/page_profile_service.hpp"
+#include "tilelod/source_records.hpp"
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/lod_math.hpp"
 #include "tilelod/tile_lod_registry.hpp"
@@ -357,21 +360,32 @@ void ImageItem::prepareTileLodPlan()
         tileLodBag().controller->setPriority(prio);
     }
     // Tile grid is always full native (source) size.
-    // Gallery: floor min_scale at density so overview never requests scale 0
-    // (full JPEG decode). Image/Workspace: min_scale 0 for rasters so density
-    // can climb to full-res; document pages (PDF/DjVu/EPUB //page:) may use
-    // negative scales for live denser tiles (thumtoo; not stored below -2).
-    // SVG: treated as raster/image path today — no negative scale until a
-    // document-page URI path exists.
-    const bool documentLiveTiles =
-        PagePath::isPageRef(m_path) || PagePath::isTextForceRef(m_path);
-    // Thumtoo refuses denser scales whose full-page raster exceeds its budget
-    // on image-heavy pages (Unavailable). The learned per-page floor keeps
-    // the finest scale that renders (e.g. −2 on a Letter scan, not 0).
-    const int scaleFloor = documentLiveTiles
-        ? qMin(0, qMax(tilelod::kDocumentLiveMinScale,
-                       ThumtooCache::denserScaleFloor(m_path)))
-        : 0;
+    // Zoom floor (finest scale this source may plan): decided from the source
+    // record — scale 0 for rasters, the page profile's cap for raster PDF
+    // pages, biltoo's document floor for vector pages and DjVu/EPUB. The
+    // decision and its reason are recorded for the Status panel; the
+    // profile's arrival re-plans every view of the path.
+    // Gallery additionally floors at screen density (overview stays coarse).
+    const std::string pathKey = m_path.toStdString();
+    // Ask for the page profile only when this view would plan finer than the
+    // layout scale — that is the only plan it changes.
+    const bool wantsDenser = tilelod::target_scale_for_density(
+                                 static_cast<double>(tileDevicePerContent()),
+                                 tilelod::kDocumentLiveMinScale,
+                                 tilelod::max_scale_for_size(native.width(), native.height()))
+                             < 0;
+    const tilelod::ZoomFloor zoomFloor = tilelod::decide_zoom_floor(
+        tilelod::PageProfileService::instance().observe(m_path, wantsDenser),
+        tilelod::kDocumentLiveMinScale);
+    {
+        char value[32];
+        std::snprintf(value, sizeof value, "scale %d%s", zoomFloor.min_scale,
+                      zoomFloor.provisional ? " (provisional)" : "");
+        tilelod::SourceRecords::instance().decide(
+            pathKey, "zoom floor", value, zoomFloor.reason,
+            tilelod::PageProfileService::now_ms());
+    }
+    const int scaleFloor = zoomFloor.min_scale;
     int minScale = scaleFloor;
     bool galleryLayout = !m_galleryCellSize.isEmpty();
     if (!galleryLayout && scene() && !scene()->views().isEmpty()) {
@@ -427,6 +441,15 @@ void ImageItem::prepareTileLodPlan()
                 minScale = 1;
             }
         }
+        char value[32];
+        char why[160];
+        std::snprintf(value, sizeof value, "scale %d", minScale);
+        std::snprintf(why, sizeof why,
+                      "Gallery cell %.0f px on screen for %.0f px content "
+                      "(density scale %d): finer levels would not be visible",
+                      screenLong, contentLong, dens);
+        tilelod::SourceRecords::instance().decide(pathKey, "gallery floor", value, why,
+                                                  tilelod::PageProfileService::now_ms());
     }
     // Re-plans by itself when the floor changes (no viewport change needed).
     tileLodBag().controller->setContentSize(native.width(), native.height(), minScale);

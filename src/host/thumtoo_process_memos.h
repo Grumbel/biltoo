@@ -65,17 +65,6 @@ public:
      */
     void clearSessionReplaceDurable();
 
-    // --- PDF denser live tiles (thumtoo image-heavy gate) -------------------
-    /**
-     * Thumtoo refuses scale < 0 for image-heavy pages (scans / large XObject
-     * coverage). After a denser plan all-Fails, memo so biltoo stops requesting
-     * −1/−2 and floors min_scale at 0.
-     */
-    /** Finest live denser scale thumtoo renders for @p path (INT_MIN = no limit known). */
-    int denserScaleFloor(const QString &path) const;
-    /** @p scale was refused (Unavailable): floor becomes at least scale + 1. */
-    bool noteDenserScaleUnavailable(const QString &path, int scale);
-
 private:
     ProcessMemos() = default;
 
@@ -84,7 +73,6 @@ private:
     QSet<QString> m_durableYes;
     QHash<QString, int> m_durableMinScale;
     QHash<QString, qint64> m_durableNoUntilMs;
-    QHash<QString, int> m_denserFloor;
 };
 
 } // namespace ThumtooCache

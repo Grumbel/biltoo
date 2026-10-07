@@ -958,16 +958,15 @@ Biltoo:
 
 - `tilelod::dim_at_tile_scale` expands for `scale < 0` (matches thumtoo
   `pdf_page_size_at_scale`).
-- Image-mode floor: `kDocumentLiveMinScale` (−4) for page refs so density can
-  request live finer tiles when zoomed past 1:1 layout.
-- **Image-heavy pages** (thumtoo: image XObject coverage ≥ 0.45, typical
-  scans) render denser scales only from a full-page raster within
-  `kTileMaxSourcePixels` (100 MP). Larger scales answer **Unavailable** with
-  the raster size in the reason. When every visible cell at the target is
-  Unavailable, biltoo raises a per-page floor one step
-  (`ThumtooCache::noteDenserScaleUnavailable` / `denserScaleFloor`) and
-  re-plans immediately, so it settles on the finest scale that renders
-  (e.g. −2 on a Letter scan) instead of retrying or dropping to 0.
+- **Zoom floor** per source from `decide_zoom_floor`
+  (docs/SOURCE_RECORDS.md): PDF pages ask thumtoo for a page profile
+  (`PageProfileService`). Raster pages (scans: images only) stop at the
+  profile's `finest_useful_scale` — the coarsest scale that shows every image
+  pixel (300 dpi scan → −1). Vector and Mixed pages (text, diagrams, a stamp
+  on a scan) go to `kDocumentLiveMinScale` (−4). Until the profile arrives
+  the floor is 0 (provisional); its arrival re-plans every view of the path.
+  DjVu / EPUB use −4 (no profile yet). thumtoo renders every scale per cell
+  (no full-page raster, no pixel limit).
 - **Planner content stride** for `scale < 0` is `kTileSize / 2^{-scale}`
   (not `kTileSize`). Using positive-scale stride skipped half the keys at −1.
 - **Slideshow** cover paint/tick: `min_scale` **0** only (shared

@@ -135,19 +135,12 @@ std::vector<Demand> TileSession::build_demand() const
   int const t = m_target_scale;
   // Levels with their coarseness rank (higher rank = issued earlier).
   std::vector<std::pair<int, int>> levels;  // (scale, rank)
-  if (t >= 0) {
-    int const top = std::min(m_max_scale, t + kOverviewLevels);
-    for (int s = top; s >= t; --s) {
-      levels.emplace_back(s, s - t);
-    }
-  } else {
-    // Live denser (document pages): layout scale 0 as the overview, then the
-    // target. Intermediate denser levels each re-raster the whole page in
-    // thumtoo — requesting them all thrashed its page cache.
-    if (m_max_scale >= 0) {
-      levels.emplace_back(0, 1);
-    }
-    levels.emplace_back(t, 0);
+  // Same rule for every target, denser document scales included: thumtoo
+  // renders any level per cell from one shared display list and one image
+  // decode, so intermediate levels are cheap overview.
+  int const top = std::min(m_max_scale, t + kOverviewLevels);
+  for (int s = top; s >= t; --s) {
+    levels.emplace_back(s, s - t);
   }
 
   double const cx = m_viewport.content_rect.x + m_viewport.content_rect.w * 0.5;
@@ -380,6 +373,8 @@ std::string TileSession::status_line() const
 TileSession::DebugSnapshot TileSession::debug_snapshot() const
 {
   DebugSnapshot s;
+  s.content_w = m_content_w;
+  s.content_h = m_content_h;
   s.target_scale = m_target_scale;
   s.min_scale = m_min_scale;
   s.max_scale = m_max_scale;

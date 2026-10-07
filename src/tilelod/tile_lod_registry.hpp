@@ -77,6 +77,9 @@ public:
 
   int path_refcount(QString const& path) const;
 
+  /// Run the change hook of every view bound to @p path (re-plan + repaint).
+  void notify_path_views(QString const& path);
+
   /**
    * True if the path entry exists and holds at least one Ready tile.
    * Does not acquire (refcount unchanged). Used to skip redundant prefetch

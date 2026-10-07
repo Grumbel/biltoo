@@ -113,7 +113,6 @@ void ProcessMemos::clearDurablePath(const QString &path)
     m_durableYes.remove(path);
     m_durableMinScale.remove(path);
     m_durableNoUntilMs.remove(path);
-    m_denserFloor.remove(path);
 }
 
 void ProcessMemos::clearSessionReplaceDurable()
@@ -122,31 +121,6 @@ void ProcessMemos::clearSessionReplaceDurable()
     m_durableYes.clear();
     m_durableMinScale.clear();
     m_durableNoUntilMs.clear();
-    m_denserFloor.clear();
-}
-
-int ProcessMemos::denserScaleFloor(const QString &path) const
-{
-    if (path.isEmpty()) {
-        return std::numeric_limits<int>::min();
-    }
-    std::lock_guard lock(m_mu);
-    return m_denserFloor.value(path, std::numeric_limits<int>::min());
-}
-
-bool ProcessMemos::noteDenserScaleUnavailable(const QString &path, int scale)
-{
-    if (path.isEmpty()) {
-        return false;
-    }
-    std::lock_guard lock(m_mu);
-    const int floor = scale + 1;
-    auto it = m_denserFloor.find(path);
-    if (it == m_denserFloor.end() || it.value() < floor) {
-        m_denserFloor.insert(path, floor);
-        return true;
-    }
-    return false;
 }
 
 } // namespace ThumtooCache

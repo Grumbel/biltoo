@@ -1494,6 +1494,13 @@ void MainWindow::createMenus()
         perfAct->setStatusTip(tr("Background pool and schedule activity (debug)"));
         m_panelsMenu->addAction(perfAct);
     }
+    if (m_statusDock) {
+        QAction *statusAct = m_statusDock->toggleAction();
+        statusAct->setText(tr("Show &Status"));
+        statusAct->setStatusTip(
+            tr("How the current image or page is analysed, decided and rendered"));
+        m_panelsMenu->addAction(statusAct);
+    }
     m_panelsMenu->addAction(m_toggleLayoutPanelAct);
     m_panelsMenu->addSeparator();
     m_panelsMenu->addAction(m_resetDockLayoutAct);

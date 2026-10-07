@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include "shell/messagelogpanel.h"
 #include "shell/performancepanel.h"
+#include "shell/statuspanel.h"
 #include "shell/chromecolors.h"
 #include <QScrollBar>
 #include "text/textsearchpolicy.h"
@@ -752,6 +753,16 @@ m_ocrPanel = new OcrPanel(this);
             m_performancePanel->refresh();
         }
     });
+
+    // Panels → Status: how the focused source is processed (page analysis,
+    // decisions, tile state, decode counts). Samples only while open.
+    m_statusPanel = new StatusPanel(this);
+    m_statusPanel->setImageView(m_imageView);
+    m_statusDock = new DockWidget(QStringLiteral("StatusDock"));
+    m_statusDock->setTitle(tr("Status"));
+    m_statusDock->setWidget(m_statusPanel);
+    addDockWidget(m_statusDock, KDDockWidgets::Location_OnRight);
+    m_statusDock->close();
     if (m_ocrPanel) {
         // UniqueConnection is not valid with functors/lambdas (Qt asserts).
         connect(m_ocrPanel, &OcrPanel::logLineAppended, this, [this](const QString &line) {

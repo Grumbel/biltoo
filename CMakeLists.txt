@@ -455,6 +455,7 @@ set(BILTOO_LIB_SOURCES
   src/shell/messagelogpanel.cpp
   src/shell/messagelogpanel.h
   src/shell/performancepanel.cpp
+  src/shell/statuspanel.cpp
   src/shell/performancepanel.h
   src/util/backgroundworklog.cpp
   src/util/backgroundworklog.h
@@ -502,6 +503,9 @@ set(BILTOO_LIB_SOURCES
   src/tilelod/thumtoo_tile_backend.cpp
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp
+  src/tilelod/source_records.cpp
+  src/tilelod/source_status.cpp
+  src/tilelod/page_profile_service.cpp
   src/shell/icons.qrc
 )
 
@@ -1132,7 +1136,11 @@ add_executable(biltoo-tilelod-test
   src/tilelod/tile_loader.cpp
   src/tilelod/tile_scheduler.cpp
   src/tilelod/tile_session.cpp
+  src/tilelod/source_records.cpp
+  src/tilelod/source_status.cpp
 )
 target_include_directories(biltoo-tilelod-test PRIVATE src)
+# Page profile / render stats types and page_content_kind_name.
+target_link_libraries(biltoo-tilelod-test PRIVATE thumtoo)
 target_compile_features(biltoo-tilelod-test PRIVATE cxx_std_17)
 add_test(NAME tilelod COMMAND biltoo-tilelod-test)

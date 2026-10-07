@@ -756,14 +756,31 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
-int denserScaleFloor(const QString &path)
+std::string thumtooUri(const QString &path)
 {
-    return ProcessMemos::instance().denserScaleFloor(path);
+    return toThumtooUri(path);
 }
 
-bool noteDenserScaleUnavailable(const QString &path, int scale)
+std::optional<PdfPageRef> pdfPageForPath(const QString &path)
 {
-    return ProcessMemos::instance().noteDenserScaleUnavailable(path, scale);
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
+    if (!PagePath::isPageRef(path) && !PagePath::isTextForceRef(path)) {
+        return std::nullopt;
+    }
+    const PagePath::Ref ref = PagePath::parse(path);
+    if (ref.isEpub() || PagePath::isDjvuFile(ref.pdfPath)) {
+        return std::nullopt;
+    }
+    const std::string uri = toThumtooUri(path);
+    auto parsed = thumtoo::parse_pdf_uri(uri);
+    if (!parsed) {
+        return std::nullopt;
+    }
+    return PdfPageRef{uri, parsed->pdf_path.string(), parsed->page};
+#else
+    (void)path;
+    return std::nullopt;
+#endif
 }
 
 void forgetCachedSize(const QString &path)

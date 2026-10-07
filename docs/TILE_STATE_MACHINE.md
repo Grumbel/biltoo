@@ -117,8 +117,8 @@ Rules:
 - Target scale from density (`target_scale_for_density`, clamped
   `[min_scale, max_scale]`), with no hold or progressive gating.
 - Demanded levels: target `T` plus overview `T+1`, `T+2` (capped at
-  `max_scale`) for rasters. For live denser `T < 0`: `{0, T}` only, because
-  intermediate denser levels each re-raster the page in thumtoo.
+  `max_scale`), for live denser document scales too — thumtoo renders every
+  level per cell from one shared display list and one image decode.
 - Priority = `class·10¹² + coarseness·10⁹ − distance-to-centre`. Classes:
   prefetch 0, filmstrip 1, Gallery/Workspace 2, Image/slideshow 3. Coarse
   cells come first, so the first pixels are an overview and arrive fast. No
@@ -127,10 +127,13 @@ Rules:
   tick, filmstrip renew timer, slideshow tick, prefetch tick). A view that
   disappears without saying so stops renewing and its cells get cancelled.
   A lapsed view re-publishes on its next renew.
-- Refused denser scales (image-heavy PDF page whose full-page raster exceeds
-  thumtoo's budget) come back **Unavailable** before any render. When the
-  whole visible target is Unavailable, the controller raises the page's
-  denser floor one step and re-plans (`denserScaleFloor`).
+- **Zoom floor** (`min_scale`) comes from the source record
+  (`decide_zoom_floor`, docs/SOURCE_RECORDS.md): scale 0 for rasters; for
+  PDF pages the page profile's `finest_useful_scale` on raster pages and the
+  document floor (−4) otherwise. Until the profile is known the floor is the
+  layout scale (provisional). There is no learning from failures: a cell
+  thumtoo still refuses comes back **Unavailable** with its reason and shows
+  as such.
 - **Passive** sessions (Gallery virtual-slot peek) plan and draw but never
   publish demand, so creating or destroying them cannot affect loading.
 

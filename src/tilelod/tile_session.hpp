@@ -123,6 +123,8 @@ public:
   std::string status_line() const;
 
   struct DebugSnapshot {
+    int content_w = 0;
+    int content_h = 0;
     int target_scale = 0;
     int min_scale = 0;
     int max_scale = 0;

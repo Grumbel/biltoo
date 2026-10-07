@@ -32,6 +32,7 @@ and `man biltoo`.
 | **`BILTOO_DEBUG_APPEARANCE`** | Session appearance / materialize path logging. |
 | **`BILTOO_PERF`** | Paint and decode-window timing (FPS-style HUD path). Also enabled when `THUMTOO_DEBUG` is on. |
 | **`BILTOO_TILE_DEBUG`** | Tile LOD coordinator / per-item lines on stderr (~500 ms). Reports `regPaths` / `idle` / `ramMiB` / `maxIdle` (global path RAM) and per-item `pathRam=K`. |
+| **`BILTOO_STATUS_REPORT`**=*file* | Keep writing the Panels → Status report for the focused item (page analysis, decisions, tile state, thumtoo decode counts) to *file*, rewritten on change. For bug reports and scripted QA. |
 | **`THUMTOO_DEBUG_OVERLAY`** / **`BILTOO_DEBUG_OVERLAY`** | Stamp a tiled watermark + border on decoded samples so soft vs full vs host origin is visible on the canvas. |
 
 These flag-style diagnostics can also be toggled at runtime from the

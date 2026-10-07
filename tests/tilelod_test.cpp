@@ -12,6 +12,8 @@
 #include "tilelod/tile_loader.hpp"
 #include "tilelod/tile_scheduler.hpp"
 #include "tilelod/tile_session.hpp"
+#include "tilelod/source_records.hpp"
+#include "tilelod/source_status.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -880,8 +882,8 @@ void test_no_busy_wake_when_capacity_full()
   }
 }
 
-/// Live denser document target: layout scale 0 as overview, then the target
-/// (intermediate denser levels thrash thumtoo's page raster cache).
+/// Live denser document target: same overview rule as rasters (T+1, T+2) —
+/// thumtoo renders any level per cell from one display list and one decode.
 void test_document_denser_demand_levels()
 {
   Rig rig;
@@ -898,7 +900,7 @@ void test_document_denser_demand_levels()
   }
   std::sort(scales.begin(), scales.end());
   scales.erase(std::unique(scales.begin(), scales.end()), scales.end());
-  CHECK(scales == (std::vector<int>{-2, 0}));
+  CHECK(scales == (std::vector<int>{-2, -1, 0}));
 }
 
 /// Two views wanting the same key: one leaving does not cancel it.
@@ -940,6 +942,128 @@ void test_min_scale_change_replans_static_view()
 
 }  // namespace
 
+thumtoo::PdfPageProfile raster_profile(double dpi, int cap)
+{
+  thumtoo::PdfPageProfile p;
+  p.kind = thumtoo::PageContentKind::Raster;
+  p.native_dpi = dpi;
+  p.finest_useful_scale = cap;
+  p.image_draws = 1;
+  p.summary = "raster: test";
+  return p;
+}
+
+/// Zoom floor policy: images 0; PDF pages provisional 0 until the profile is
+/// known; raster pages at their cap; vector/mixed at the document floor.
+void test_zoom_floor_policy()
+{
+  using tilelod::ProfileState;
+  using tilelod::SourceKind;
+  int const doc = tilelod::kDocumentLiveMinScale;
+  tilelod::SourceRecord img;
+  img.kind = SourceKind::Image;
+  CHECK_EQ(tilelod::decide_zoom_floor(img, doc).min_scale, 0);
+
+  tilelod::SourceRecord pdf;
+  pdf.kind = SourceKind::PdfPage;
+  pdf.profile_state = ProfileState::Pending;
+  auto f = tilelod::decide_zoom_floor(pdf, doc);
+  CHECK_EQ(f.min_scale, 0);
+  CHECK(f.provisional);
+  CHECK(f.reason.find("pending") != std::string::npos);
+
+  pdf.profile_state = ProfileState::Known;
+  pdf.profile = raster_profile(300, -1);
+  f = tilelod::decide_zoom_floor(pdf, doc);
+  CHECK_EQ(f.min_scale, -1);
+  CHECK(!f.provisional);
+  CHECK(f.reason.find("300 dpi") != std::string::npos);
+
+  pdf.profile = raster_profile(5000, -6);  // finer than biltoo allows
+  CHECK_EQ(tilelod::decide_zoom_floor(pdf, doc).min_scale, doc);
+
+  pdf.profile->kind = thumtoo::PageContentKind::Mixed;
+  pdf.profile->finest_useful_scale.reset();
+  f = tilelod::decide_zoom_floor(pdf, doc);
+  CHECK_EQ(f.min_scale, doc);
+  CHECK(f.reason.find("mixed") != std::string::npos);
+
+  pdf.profile_state = ProfileState::Failed;
+  pdf.profile_error = "cannot open";
+  f = tilelod::decide_zoom_floor(pdf, doc);
+  CHECK_EQ(f.min_scale, 0);
+  CHECK(f.reason.find("cannot open") != std::string::npos);
+
+  tilelod::SourceRecord djvu;
+  djvu.kind = SourceKind::DjvuPage;
+  CHECK_EQ(tilelod::decide_zoom_floor(djvu, doc).min_scale, doc);
+}
+
+/// Decisions are keyed by `what`; unchanged values do not bump generation.
+void test_source_record_decisions()
+{
+  auto& recs = tilelod::SourceRecords::instance();
+  recs.clear();
+  recs.ensure("/a.pdf//page:1", tilelod::SourceKind::PdfPage);
+  auto const g0 = recs.generation();
+  CHECK(recs.decide("/a.pdf//page:1", "zoom floor", "scale 0", "pending", 1));
+  CHECK(!recs.decide("/a.pdf//page:1", "zoom floor", "scale 0", "pending", 2));
+  CHECK(recs.decide("/a.pdf//page:1", "zoom floor", "scale -1", "raster", 3));
+  CHECK(recs.generation() > g0);
+  auto const* r = recs.find("/a.pdf//page:1");
+  CHECK(r && r->decisions.size() == 1);
+  CHECK(r && r->decision("zoom floor") && r->decision("zoom floor")->value == "scale -1");
+  CHECK(!recs.decide("/missing", "x", "y", "z", 4));
+  recs.forget("/a.pdf//page:1");
+  CHECK(recs.find("/a.pdf//page:1") == nullptr);
+  CHECK(recs.ensure("/b.png", tilelod::SourceKind::Image).profile_state
+        == tilelod::ProfileState::NotApplicable);
+  recs.clear();
+}
+
+/// The Status panel's rows carry the facts: profile verdict, decisions with
+/// reasons, tile phase, decode counts, and problems are toned.
+void test_status_sections()
+{
+  tilelod::SourceStatus st;
+  st.record.path = "/doc.pdf//page:3";
+  st.record.kind = tilelod::SourceKind::PdfPage;
+  st.record.document_file = "/doc.pdf";
+  st.record.page = 3;
+  st.record.profile_state = tilelod::ProfileState::Known;
+  st.record.profile = raster_profile(300, -1);
+  st.record.profile->images.push_back({2550, 3300, 1, 8, false, 300.0, 1.0});
+  st.record.decisions.push_back({"zoom floor", "scale -1", "raster page", 0});
+  tilelod::TileSession::DebugSnapshot t;
+  t.phase = tilelod::TileSession::Phase::Error;
+  t.cov.visible = 4;
+  t.cov.holes = 2;
+  st.tiles = t;
+  st.tile_error = "s=-1 0,0: boom";
+  thumtoo::PdfDocumentRenderStats rs;
+  rs.opens = 1;
+  thumtoo::PdfPageRenderStats ps;
+  ps.page = 3;
+  ps.cells_rendered = 12;
+  ps.decode.decodes = 1;
+  ps.decode.full_decodes = 1;
+  rs.pages.push_back(ps);
+  rs.decode = ps.decode;
+  st.render = rs;
+
+  auto const sections = tilelod::build_status_sections(st);
+  std::string const text = tilelod::format_status_text(sections);
+  CHECK(text.find("Page analysis") != std::string::npos);
+  CHECK(text.find("raster: test") != std::string::npos);
+  CHECK(text.find("2550×3300 gray 8-bit · 300 dpi") != std::string::npos);
+  CHECK(text.find("zoom floor: scale -1 — raster page") != std::string::npos);
+  CHECK(text.find("state: error  [problem]") != std::string::npos);
+  CHECK(text.find("holes") != std::string::npos);
+  CHECK(text.find("s=-1 0,0: boom") != std::string::npos);
+  CHECK(text.find("image decodes: 1 (whole image 1, per-cell subarea 0) for 12 cells —")
+        != std::string::npos);
+}
+
 int main()
 {
   test_dim_at_tile_scale();
@@ -978,6 +1102,9 @@ int main()
   test_document_denser_demand_levels();
   test_shared_key_survives_one_view_leaving();
   test_min_scale_change_replans_static_view();
+  test_zoom_floor_policy();
+  test_source_record_decisions();
+  test_status_sections();
 
   if (g_failures) {
     std::cerr << g_failures << " failure(s)\n";

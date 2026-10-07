@@ -3,6 +3,8 @@
 
 #include "tilelod/tile_lod_registry.hpp"
 
+#include "tilelod/source_records.hpp"
+
 #include "tilelod/thumtoo_tile_backend.hpp"
 #include "tilelod/tile_scheduler.hpp"
 #include "tilelod/tile_scheduler_qt.hpp"
@@ -182,9 +184,27 @@ void TileLodRegistry::invalidate(QString const& path)
       m_by_path.erase(it);
     }
   }
+  // What was learned about the old file no longer holds.
+  SourceRecords::instance().forget(key);
   // Outside the lock: invalidate notifies views (repaint hooks).
   if (loader) {
     loader->invalidate("reload");
+  }
+}
+
+void TileLodRegistry::notify_path_views(QString const& path)
+{
+  std::shared_ptr<TileLoader> loader;
+  {
+    std::lock_guard<std::mutex> lock(m_mu);
+    auto it = m_by_path.find(path.toStdString());
+    if (it == m_by_path.end() || !it->second) {
+      return;
+    }
+    loader = it->second->loader;
+  }
+  if (loader) {
+    loader->notify_views();
   }
 }
 
@@ -207,6 +227,7 @@ void TileLodRegistry::invalidateAll()
       }
     }
   }
+  SourceRecords::instance().clear();
   for (auto const& l : loaders) {
     l->invalidate("session replace");
   }

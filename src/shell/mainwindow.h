@@ -43,6 +43,7 @@ class OcrPanel;
 class FacePanel;
 class MessageLogPanel;
 class PerformancePanel;
+class StatusPanel;
 class TextPanel;
 class TextToSpeechController;
 class LayoutPanel;
@@ -663,9 +664,11 @@ private:
     KDDockWidgets::QtWidgets::DockWidget *m_textDock = nullptr;
     MessageLogPanel *m_messageLogPanel = nullptr;
     PerformancePanel *m_performancePanel = nullptr;
+    StatusPanel *m_statusPanel = nullptr;
     QString m_lastReportedLoadError;
     KDDockWidgets::QtWidgets::DockWidget *m_messageLogDock = nullptr;
     KDDockWidgets::QtWidgets::DockWidget *m_performanceDock = nullptr;
+    KDDockWidgets::QtWidgets::DockWidget *m_statusDock = nullptr;
     QAction *m_toggleMessageLogAct = nullptr;
     TextToSpeechController *m_tts = nullptr;
     /** Session path the active SpeakPlan was built for (region indices are page-local). */
