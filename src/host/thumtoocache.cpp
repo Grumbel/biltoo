@@ -767,10 +767,19 @@ std::optional<DocumentPageRef> documentPageForPath(const QString &path)
         return std::nullopt;
     }
     const PagePath::Ref ref = PagePath::parse(path);
-    if (ref.isEpub()) {
-        return std::nullopt;
-    }
     const std::string uri = toThumtooUri(path);
+    if (ref.isEpub()) {
+#if defined(BILTOO_HAVE_THUMTOO_EPUB)
+        auto parsed = thumtoo::parse_epub_uri(uri);
+        if (!parsed) {
+            return std::nullopt;
+        }
+        return DocumentPageRef{DocumentPageRef::Backend::Epub, uri,
+                               parsed->epub_path.string(), parsed->page};
+#else
+        return std::nullopt;
+#endif
+    }
 #if defined(BILTOO_HAVE_THUMTOO_DJVU)
     if (PagePath::isDjvuFile(ref.pdfPath)) {
         auto parsed = thumtoo::parse_djvu_uri(uri);

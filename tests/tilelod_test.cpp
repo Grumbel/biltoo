@@ -1008,6 +1008,13 @@ void test_zoom_floor_policy()
 
   tilelod::SourceRecord epub;
   epub.kind = SourceKind::EpubPage;
+  epub.profile_state = ProfileState::Pending;
+  CHECK_EQ(tilelod::decide_zoom_floor(epub, doc).min_scale, 0);
+  epub.profile_state = ProfileState::Known;
+  epub.profile = raster_profile(111, 0);  // full-page cover image
+  CHECK_EQ(tilelod::decide_zoom_floor(epub, doc).min_scale, 0);
+  epub.profile->kind = thumtoo::PageContentKind::Vector;
+  epub.profile->finest_useful_scale.reset();
   CHECK_EQ(tilelod::decide_zoom_floor(epub, doc).min_scale, doc);
 }
 

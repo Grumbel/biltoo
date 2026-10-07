@@ -966,7 +966,8 @@ Biltoo:
   on a scan) go to `kDocumentLiveMinScale` (−4). Until the profile arrives
   the floor is 0 (provisional); its arrival re-plans every view of the path.
   DjVu pages stop at 0 (layout is their native pixel grid; thumtoo refuses
-  finer scales); EPUB uses −4 (no profile yet). thumtoo renders every scale per cell
+  finer scales); EPUB pages follow the PDF rules (same runtime, profile per
+  layout). thumtoo renders every scale per cell
   (no full-page raster, no pixel limit).
 - **Planner content stride** for `scale < 0` is `kTileSize / 2^{-scale}`
   (not `kTileSize`). Using positive-scale stride skipped half the keys at −1.

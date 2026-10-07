@@ -8,6 +8,7 @@
 #include "tilelod/tile_lod_registry.hpp"
 
 #include <thumtoo/djvu.hpp>
+#include <thumtoo/epub.hpp>
 #include <thumtoo/pdf.hpp>
 
 #include <QCoreApplication>
@@ -69,7 +70,7 @@ void PageProfileService::request(SourceRecord& rec)
   auto const ref = ThumtooCache::documentPageForPath(path);
   if (!ref) {
     rec.profile_state = ProfileState::Failed;
-    rec.profile_error = "path does not map to a PDF or DjVu page";
+    rec.profile_error = "path does not map to a PDF, DjVu or EPUB page";
     SourceRecords::instance().touch();
     return;
   }
@@ -84,7 +85,8 @@ void PageProfileService::request(SourceRecord& rec)
   std::string const uri = ref->uri;
   std::string const key = rec.path;
   std::uint64_t const request = rec.profile_request;
-  bool const djvu = ref->backend == ThumtooCache::DocumentPageRef::Backend::Djvu;
+  using Backend = ThumtooCache::DocumentPageRef::Backend;
+  Backend const backend = ref->backend;
   // Own small pool: profiles of one document serialize on its lock in
   // thumtoo; on the global pool they would park decode threads.
   static QThreadPool* pool = [] {
@@ -92,10 +94,17 @@ void PageProfileService::request(SourceRecord& rec)
     p->setMaxThreadCount(2);
     return p;
   }();
-  pool->start([uri, key, path, request, djvu]() {
+  pool->start([uri, key, path, request, backend]() {
     std::string error;
     std::optional<thumtoo::PdfPageProfile> profile;
-    if (djvu) {
+    if (backend == Backend::Epub) {
+      if (auto parsed = thumtoo::parse_epub_uri(uri)) {
+        profile = thumtoo::epub_page_profile(parsed->epub_path, parsed->page, parsed->layout,
+                                             &error);
+      } else {
+        error = "not an EPUB page URI: " + uri;
+      }
+    } else if (backend == Backend::Djvu) {
       if (auto parsed = thumtoo::parse_djvu_uri(uri)) {
         profile = thumtoo::djvu_page_profile(parsed->djvu_path, parsed->page, &error);
       } else {

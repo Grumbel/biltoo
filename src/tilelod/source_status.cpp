@@ -124,7 +124,8 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
   SourceRecord const& r = s.record;
   bool const doc = is_document(r.kind);
   double base_dpi = 0.0;
-  if (r.kind == SourceKind::PdfPage) {
+  bool const mupdf = r.kind == SourceKind::PdfPage || r.kind == SourceKind::EpubPage;
+  if (mupdf) {
     base_dpi = thumtoo::kPdfLayoutDpi;
   } else if (r.kind == SourceKind::DjvuPage && r.profile && r.profile->native_dpi > 0) {
     base_dpi = r.profile->native_dpi;
@@ -139,7 +140,7 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     }
     if (s.tiles && s.tiles->content_w > 0) {
       std::string at;
-      if (r.kind == SourceKind::PdfPage) {
+      if (mupdf) {
         at = " at 144 dpi";
       } else if (base_dpi > 0) {
         at = fmt(" (native, %.0f dpi)", base_dpi);
@@ -151,7 +152,7 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     out.push_back(std::move(sec));
   }
 
-  if (r.kind == SourceKind::PdfPage || r.kind == SourceKind::DjvuPage) {
+  if (doc) {
     StatusSection sec{"Page analysis (thumtoo)", {}};
     StatusTone tone = StatusTone::Normal;
     if (r.profile_state == ProfileState::Known) {
@@ -275,7 +276,7 @@ std::vector<StatusSection> build_status_sections(SourceStatus const& s)
     if (!page) {
       sec.rows.push_back({"page", "not rendered yet"});
     } else {
-      if (r.kind == SourceKind::PdfPage) {
+      if (mupdf) {
       sec.rows.push_back({"display list", fmt("built %lld× (%.1f ms)",
                                               static_cast<long long>(page->display_list_builds),
                                               page->display_list_ms),

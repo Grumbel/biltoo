@@ -362,11 +362,11 @@ std::string thumtooUri(const QString &path);
 
 /**
  * Document page behind a session path: MuPDF (PDF, Markdown, plain text
- * //page:N) or DjVu; nullopt for anything else (EPUB, images). GUI-safe
+ * //page:N), DjVu or EPUB; nullopt for anything else. GUI-safe
  * (string work only).
  */
 struct DocumentPageRef {
-    enum class Backend { MuPdf, Djvu };
+    enum class Backend { MuPdf, Djvu, Epub };
     Backend backend = Backend::MuPdf;
     std::string uri;   /**< thumtoo page URI (parse on the rendering thread) */
     std::string file;  /**< document file */

@@ -11,6 +11,7 @@
 #include "tilelod/tile_lod_controller.hpp"
 
 #include <thumtoo/djvu.hpp>
+#include <thumtoo/epub.hpp>
 #include <thumtoo/pdf.hpp>
 
 #include <QApplication>
@@ -159,6 +160,8 @@ void StatusPanel::refresh()
     if (!status.record.document_file.empty()) {
         if (status.record.kind == tilelod::SourceKind::PdfPage) {
             status.render = thumtoo::pdf_document_render_stats(status.record.document_file);
+        } else if (status.record.kind == tilelod::SourceKind::EpubPage) {
+            status.render = thumtoo::epub_document_render_stats(status.record.document_file);
         } else if (status.record.kind == tilelod::SourceKind::DjvuPage) {
             status.render = thumtoo::djvu_document_render_stats(status.record.document_file);
         }

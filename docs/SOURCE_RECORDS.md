@@ -36,6 +36,8 @@ SourceRecords (process-wide, GUI thread)      key = session path
 
 ## Page profiles (thumtoo)
 
+EPUB pages are profiled exactly like PDF pages (`thumtoo::epub_page_profile`,
+per layout); their stats share the PDF registry (`opens` counts layouts).
 DjVu pages get the same profile type from `thumtoo::djvu_page_profile`:
 always raster, with the JB2 mask / IW44 layers and their dpi and the hidden
 text layer size; their render stats count page decodes (decoded pages are
@@ -71,7 +73,7 @@ cells reuse, so asking for it costs nothing extra.
 | PDF raster page | `max(−4, finest_useful_scale)` |
 | PDF vector / mixed / empty page | −4 |
 | DjVu page | 0 — layout is the page's native pixel grid (profile: layers + dpi) |
-| EPUB page | −4 (no profile yet) |
+| EPUB page | as PDF (laid-out pages run on the same MuPDF runtime): a cover image is capped, text goes to −4 |
 
 Recorded decisions (`what`):
 

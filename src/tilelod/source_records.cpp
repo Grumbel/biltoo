@@ -71,13 +71,9 @@ ZoomFloor decide_zoom_floor(SourceRecord const& record, int document_floor)
     f.min_scale = 0;
     f.reason = "raster image: scale 0 is the file's full resolution";
     return f;
-  case SourceKind::EpubPage:
-    f.min_scale = document_floor;
-    f.reason = std::string(source_kind_name(record.kind))
-               + ": no page profile; biltoo's document floor " + scale_text(document_floor);
-    return f;
   case SourceKind::PdfPage:
   case SourceKind::DjvuPage:
+  case SourceKind::EpubPage:
     break;
   }
   switch (record.profile_state) {
@@ -138,9 +134,8 @@ SourceRecord& SourceRecords::ensure(std::string const& path, SourceKind kind)
   SourceRecord r;
   r.path = path;
   r.kind = kind;
-  r.profile_state = (kind == SourceKind::PdfPage || kind == SourceKind::DjvuPage)
-                        ? ProfileState::Unknown
-                        : ProfileState::NotApplicable;
+  r.profile_state = kind == SourceKind::Image ? ProfileState::NotApplicable
+                                              : ProfileState::Unknown;
   ++m_generation;
   return m_records.emplace(path, std::move(r)).first->second;
 }

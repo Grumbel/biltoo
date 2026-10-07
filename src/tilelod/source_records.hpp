@@ -84,7 +84,8 @@ struct ZoomFloor {
  * - PDF pages: Raster pages stop at the profile's finest useful scale;
  *   Vector / Mixed / Empty pages go to @p document_floor. Until the profile is
  *   known the floor is the layout scale (0) — provisional, never a guess.
- * - DjVu / EPUB: no profile; @p document_floor.
+ * - EPUB pages: the same rules as PDF (laid-out pages run on the same
+ *   MuPDF runtime). DjVu pages: 0 — layout is their native pixel grid.
  */
 [[nodiscard]] ZoomFloor decide_zoom_floor(SourceRecord const& record,
                                           int document_floor);
