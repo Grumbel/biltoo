@@ -5,6 +5,13 @@
 **Tip:** source records + page profiles + Status panel (Claude Code, direct
 commits on master; no bundle).
 
+### Session 2026-10-08 (tile corruption, --no-cache, thumtoo subtree)
+Details and open checks: [docs/SESSION_2026-10-08_TILE_CORRUPTION.md](docs/SESSION_2026-10-08_TILE_CORRUPTION.md).
+Open: GUI re-check of PDF/EPUB cover tiles; test whether the scalable-image
+sub-area problem reproduces in plain MuPDF (upstream report?); `subtree push`
+of thumtoo fixes; `nix build` after the subtree move; verify `--no-cache`
+writes nothing.
+
 ### Source records, page profiles, Status panel
 Normative: [docs/SOURCE_RECORDS.md](docs/SOURCE_RECORDS.md). PDF pages get a
 thumtoo page profile (vector / raster / mixed, image dpi); the zoom floor
