@@ -3,7 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    thumtoo.url = "github:Grumbel/thumtoo";
+    # Vendored git subtree (external/thumtoo). Relative path inputs are not
+    # pinned in flake.lock: the subtree commit is the pin.
+    thumtoo = {
+      url = "path:./external/thumtoo";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Piper TTS server + default voice (Speak works without manual --piper-socket).
     text2sprech = {
       url = "github:Grumbel/text2sprech";
@@ -333,17 +338,11 @@
                 _biltoo_canon_path "''${THUMTOO_SOURCE_DIR}"
                 return 0
               fi
-              local cand
-              for cand in \
-                "''${BILTOO_SOURCE}/../thumtoo" \
-                "''${BILTOO_SOURCE}/../thumtoo.git" \
-                "''${BILTOO_SOURCE}/../thumtoo/thumtoo.git"
-              do
-                if [ -f "''${cand}/CMakeLists.txt" ]; then
-                  _biltoo_canon_path "''${cand}"
-                  return 0
-                fi
-              done
+              # Vendored subtree: live in-tree path (incremental rebuilds).
+              if [ -f "''${BILTOO_SOURCE}/external/thumtoo/CMakeLists.txt" ]; then
+                _biltoo_canon_path "''${BILTOO_SOURCE}/external/thumtoo"
+                return 0
+              fi
               printf '%s\n' "${thumtoo}"
             }
             export THUMTOO_SOURCE_DIR="$(_biltoo_resolve_thumtoo)"
@@ -537,17 +536,8 @@ except Exception:
             # Same live-tree resolution as biltoo-configure (see biltooDevPreamble).
             if [ -n "''${THUMTOO_SOURCE_DIR:-}" ] && [ -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
               THUMTOO_SOURCE_DIR="$(cd "''${THUMTOO_SOURCE_DIR}" && pwd)"
-            elif [ -z "''${THUMTOO_SOURCE_DIR:-}" ] || [ ! -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
-              for cand in \
-                "$BILTOO_SOURCE/../thumtoo" \
-                "$BILTOO_SOURCE/../thumtoo.git" \
-                "$BILTOO_SOURCE/../thumtoo/thumtoo.git"
-              do
-                if [ -f "$cand/CMakeLists.txt" ]; then
-                  THUMTOO_SOURCE_DIR="$(cd "$cand" && pwd)"
-                  break
-                fi
-              done
+            elif [ -f "$BILTOO_SOURCE/external/thumtoo/CMakeLists.txt" ]; then
+              THUMTOO_SOURCE_DIR="$(cd "$BILTOO_SOURCE/external/thumtoo" && pwd)"
             fi
             export THUMTOO_SOURCE_DIR="''${THUMTOO_SOURCE_DIR:-${thumtoo}}"
             case "$THUMTOO_SOURCE_DIR" in

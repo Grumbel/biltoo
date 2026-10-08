@@ -84,7 +84,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # thumtoo is required (Store index, tiles, soft ladder, archive/page URIs).
-set(THUMTOO_SOURCE_DIR "" CACHE PATH "Path to thumtoo source tree (required)")
+# Default: the vendored git subtree. Override to build against another checkout.
+set(THUMTOO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/thumtoo" CACHE PATH
+    "Path to thumtoo source tree (default: external/thumtoo)")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -694,8 +696,8 @@ biltoo_consume_system_includes(biltoo_lib PkgConfig::VIPS PkgConfig::EXIV2 PkgCo
 # thumtoo — required Store index + tiles / soft / archive-page URIs
 if(NOT THUMTOO_SOURCE_DIR OR NOT EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
   message(FATAL_ERROR
-    "thumtoo is required. Set -DTHUMTOO_SOURCE_DIR=/path/to/thumtoo "
-    "(flake sets this via THUMTOO_SOURCE_DIR / biltoo-configure).")
+    "thumtoo is required: external/thumtoo is missing. Set "
+    "-DTHUMTOO_SOURCE_DIR=/path/to/thumtoo to use another checkout.")
 endif()
 set(THUMTOO_BUILD_TESTS OFF CACHE BOOL "thumtoo tests" FORCE)
 set(THUMTOO_BUILD_TOOLS OFF CACHE BOOL "thumtoo tools" FORCE)

@@ -55,22 +55,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1790689126,
-        "narHash": "sha256-ilerN1WLSvF+HMjziC/Wv99J5y02maDH+6hZPwsORKg=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b4fd65b198c599cbe814fcb9f42d25d021595ec9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "piper-voice-json": {
       "flake": false,
       "locked": {
@@ -143,21 +127,19 @@
     "thumtoo": {
       "inputs": {
         "benchtoo": "benchtoo",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
-        "lastModified": 1791377652,
-        "narHash": "sha256-O78v8Jwt84lSISj9CCixKnCTF/l/kH8+Prb3eSMtMQQ=",
-        "owner": "Grumbel",
-        "repo": "thumtoo",
-        "rev": "7e87428616734747f6ba31d6675c401c37134bdf",
-        "type": "github"
+        "path": "./external/thumtoo",
+        "type": "path"
       },
       "original": {
-        "owner": "Grumbel",
-        "repo": "thumtoo",
-        "type": "github"
-      }
+        "path": "./external/thumtoo",
+        "type": "path"
+      },
+      "parent": []
     }
   },
   "root": "root",

@@ -525,44 +525,32 @@ HIG-conformant on every desktop.
 ## thumtoo
 
 Durable size index and display ladder live in the **thumtoo** library
-(<https://github.com/Grumbel/thumtoo>), integrated as a **flake input**
-(`inputs.thumtoo`) and CMake **`add_subdirectory(THUMTOO_SOURCE_DIR)`**.
+(<https://github.com/Grumbel/thumtoo>), vendored as a **git subtree** (`external/thumtoo`)
+and built via CMake **`add_subdirectory(THUMTOO_SOURCE_DIR)`**.
 
-### Live source vs flake snapshot (incremental builds)
+### Vendored subtree (`external/thumtoo`)
 
-CMake already builds thumtoo via `add_subdirectory`. The flake input only
-supplies a **default path**. That path is usually a **`/nix/store/...` snapshot**
-(locked rev or `--override-input thumtoo /path`).
+thumtoo lives in this repo as a **squashed git subtree** at `external/thumtoo`
+(no submodule). CMake defaults `THUMTOO_SOURCE_DIR` to it and builds it with
+`add_subdirectory`; the dev shell exports the same live in-tree path, so
+`.cpp` edits under `external/thumtoo/` rebuild incrementally with
+`biltoo-build`. The flake input is `path:./external/thumtoo` (not pinned in
+`flake.lock`; the subtree commit is the pin). Setting `THUMTOO_SOURCE_DIR`
+still overrides the path (e.g. another checkout) — re-run `biltoo-configure`.
 
-| Mode | What CMake sees | Edit `~/…/thumtoo` then `biltoo-build` |
-|------|-----------------|----------------------------------------|
-| Store path (`${thumtoo}`) | Frozen copy | **Misses edits** until reconfigure; new store path → **full rebuild** |
-| Live checkout | Real tree | **Incremental** `.cpp` rebuilds |
-
-**Day-to-day dual-repo work (preferred):**
+Edit thumtoo in place and commit it as an ordinary biltoo commit (keep thumtoo
+changes in their own commits, touching only `external/thumtoo/`). Sync with the
+standalone thumtoo repo (`~/projects/thumtoo/thumtoo.git`, branch `master`):
 
 ```bash
-export THUMTOO_SOURCE_DIR=/path/to/thumtoo
-nix develop   # or: nix develop ./ -c bash
-biltoo-configure   # once (or when thumtoo CMake options/deps change)
-biltoo-build       # incremental — picks up thumtoo source edits
-biltoo-run
+# pull upstream thumtoo changes into biltoo
+git subtree pull --squash --prefix=external/thumtoo ~/projects/thumtoo/thumtoo.git master
+# push biltoo-side thumtoo fixes back out
+git subtree push --prefix=external/thumtoo ~/projects/thumtoo/thumtoo.git master
 ```
 
-`--override-input thumtoo /path` is **not** enough for live edits: Nix still
-copies into the store. Prefer `THUMTOO_SOURCE_DIR` as above.
-
-`biltoo-configure` / the dev shell also auto-prefer siblings when present:
-`$BILTOO_SOURCE/../thumtoo`, `../thumtoo.git`, `../thumtoo/thumtoo.git`.
-
-Re-run **configure** only when: first setup, `THUMTOO_SOURCE_DIR` changes, or
-thumtoo’s CMake feature flags/deps change. Ordinary `.cpp` edits need **build** only.
-
-`biltoo-build` compares the CMake cache’s `THUMTOO_SOURCE_DIR` to the current
-resolved path. If they differ (classic: cache still on `/nix/store/…-source`
-after the flake input moved), it re-runs configure automatically and prints both
-paths. That avoids silently linking an **old** store tree. Switching *between*
-store hashes still rebuilds thumtoo; keep a stable live path to stay incremental.
+Nested thumtoo has no `.git` of its own, so its dev version string comes from
+its `VERSION` file only (no `.N+gHASH` suffix).
 
 **Deps for nested thumtoo:** biltoo’s derivation merges `thumtoo.lib.mkBuildInputs`
 (libunarr, mupdf, …). Without that, `add_subdirectory` configures thumtoo without
