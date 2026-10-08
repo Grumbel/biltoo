@@ -306,6 +306,16 @@ fz_pixmap* counting_get_pixmap(fz_context* ctx, fz_image* img, fz_irect* subarea
                                int w, int h, int* l2factor) {
   auto* ci = reinterpret_cast<CountingImage*>(img);
   fz_image* inner = ci->inner;
+  if (inner->scalable && subarea) {
+    // fz_get_pixmap_from_image asks a scalable (display-list / SVG) image for
+    // a sub-area but, unlike the raster path, never adjusts the CTM for it, so
+    // a sub-pixmap is stretched over the whole image extent (scrambled tiles
+    // whenever the device rect is not the full image). Whole image only.
+    subarea->x0 = 0;
+    subarea->y0 = 0;
+    subarea->x1 = inner->w;
+    subarea->y1 = inner->h;
+  }
   if (inner->decoded || inner->scalable || !subarea || !l2factor) {
     // Already-decoded pixmap images / vector images: no decompression here.
     return inner->get_pixmap(ctx, inner, subarea, w, h, l2factor);
