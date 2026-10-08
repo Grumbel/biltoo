@@ -13,6 +13,11 @@ Flag-style variables treat a value as **on** when it is non-empty and not
 `0`, `f`/`F`, or `n`/`N` (case-insensitive first character). Numeric limits
 clamp to the ranges noted below.
 
+**`--no-cache`** bypasses every on-disk cache: thumtoo `Client::open_memory`
+(index/bulk/user as SQLite `:memory:`), an in-memory appearance DB (flip/crop/
+annotations are lost at exit), and a temp dir for HTTP downloads. Qt settings
+(`biltoo.conf`) are config, not cache, and still apply.
+
 Also see CLI flags `--debug` and `--thumtoo-debug` in [README.md](../README.md)
 and `man biltoo`.
 

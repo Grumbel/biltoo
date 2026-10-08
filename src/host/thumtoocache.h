@@ -59,6 +59,11 @@ void init();
 /** Force THUMTOO_DEBUG-style traces (stderr + ~/.cache/biltoo/thumtoo-debug.log). */
 void enableDebugTracing();
 
+/// --no-cache: thumtoo Client::open_memory, in-memory appearance DB, temp
+/// download dir. Must be called before init().
+void setEphemeral(bool on);
+bool isEphemeral();
+
 /** Drop the client (join thumtoo worker). Safe to call more than once. */
 void shutdown();
 

@@ -125,6 +125,8 @@ bool envFlagOn(const char *name)
 }
 
 bool g_forceDebug = false;
+bool g_ephemeral = false; // --no-cache: no on-disk caches
+
 
 bool thumtooDebugEnabled()
 {
@@ -663,8 +665,13 @@ void openClientUnlocked()
         thumtoo::image_library_init();
         // data_root: user.sqlite under XDG_DATA so tags/sets survive cache wipe.
         // Store-only Client (schema ≥100); user.sqlite under data_root.
-        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor(), 0,
-                                        defaultDataRoot());
+        if (g_ephemeral) {
+            // --no-cache: index/bulk/user are all SQLite :memory:.
+            g_client = thumtoo::Client::open_memory(qtExecutor(), 0);
+        } else {
+            g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor(), 0,
+                                            defaultDataRoot());
+        }
     } catch (...) {
         g_client.reset();
     }
@@ -741,6 +748,16 @@ void shutdown()
         g_client.reset();
         g_inited = false;
     }
+}
+
+void setEphemeral(bool on)
+{
+    g_ephemeral = on;
+}
+
+bool isEphemeral()
+{
+    return g_ephemeral;
 }
 
 void enableDebugTracing()
@@ -4304,17 +4321,22 @@ void appearanceLog(const QString &msg)
 sqlite3 *appearanceDb()
 {
     static sqlite3 *db = []() -> sqlite3 * {
-        QString root;
-        if (const char *xdg = std::getenv("XDG_STATE_HOME"); xdg && xdg[0]) {
-            root = QString::fromLocal8Bit(xdg) + QStringLiteral("/biltoo");
-        } else if (const char *home = std::getenv("HOME"); home && home[0]) {
-            root = QString::fromLocal8Bit(home)
-                + QStringLiteral("/.local/state/biltoo");
+        QString path;
+        if (g_ephemeral) {
+            path = QStringLiteral(":memory:");
         } else {
-            root = QStringLiteral(".local/state/biltoo");
+            QString root;
+            if (const char *xdg = std::getenv("XDG_STATE_HOME"); xdg && xdg[0]) {
+                root = QString::fromLocal8Bit(xdg) + QStringLiteral("/biltoo");
+            } else if (const char *home = std::getenv("HOME"); home && home[0]) {
+                root = QString::fromLocal8Bit(home)
+                    + QStringLiteral("/.local/state/biltoo");
+            } else {
+                root = QStringLiteral(".local/state/biltoo");
+            }
+            QDir().mkpath(root);
+            path = root + QStringLiteral("/locator_appearance.sqlite3");
         }
-        QDir().mkpath(root);
-        const QString path = root + QStringLiteral("/locator_appearance.sqlite3");
         sqlite3 *out = nullptr;
         if (sqlite3_open(path.toUtf8().constData(), &out) != SQLITE_OK) {
             if (out) {
@@ -4322,7 +4344,9 @@ sqlite3 *appearanceDb()
             }
             return nullptr;
         }
-        sqlite3_exec(out, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+        if (!g_ephemeral) {
+            sqlite3_exec(out, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+        }
         sqlite3_exec(out, "PRAGMA busy_timeout=5000;", nullptr, nullptr, nullptr);
         const char *ddl =
             "CREATE TABLE IF NOT EXISTS locator_appearance ("

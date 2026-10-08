@@ -55,10 +55,11 @@ int main(int argc, char *argv[])
             want = true;
         }
         for (int i = 1; i < argc; ++i) {
-            if (std::strcmp(argv[i], "--thumtoo-debug") == 0
-                || std::strcmp(argv[i], "--debug") == 0) {
+            if (std::strcmp(argv[i], "--no-cache") == 0) {
+                ThumtooCache::setEphemeral(true);
+            } else if (std::strcmp(argv[i], "--thumtoo-debug") == 0
+                       || std::strcmp(argv[i], "--debug") == 0) {
                 want = true;
-                break;
             }
         }
         if (want) {
@@ -258,6 +259,13 @@ int main(int argc, char *argv[])
             "Trace thumtoo ladder/tile work to stderr and "
             "~/.cache/biltoo/thumtoo-debug.log"));
     parser.addOption(thumtooDebugOption);
+
+    QCommandLineOption noCacheOption(
+        QStringList() << QStringLiteral("no-cache"),
+        QCoreApplication::translate("main",
+            "Bypass all on-disk caches (thumtoo store, appearance, downloads); "
+            "use fresh in-memory databases"));
+    parser.addOption(noCacheOption);
 
     QCommandLineOption piperSocketOption(
         QStringList() << QStringLiteral("piper-socket"),

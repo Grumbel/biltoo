@@ -16,6 +16,7 @@
 #include <QNetworkRequest>
 #include <QObject>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QTimer>
 #include <QUrl>
 
@@ -42,8 +43,11 @@ QString materializeHttpUrl(const QUrl &url, const ReportFn &report,
         return {};
     }
 
-    const QString cacheRoot =
-        QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    // --no-cache: downloads go to a per-process temp dir removed at exit.
+    static QTemporaryDir ephemeralDir;
+    const QString cacheRoot = ThumtooCache::isEphemeral()
+        ? ephemeralDir.path()
+        : QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     const QString dest = SessionInputPath::remoteCachePath(url, cacheRoot);
     {
         const QFileInfo existing(dest);
